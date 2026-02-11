@@ -23,13 +23,23 @@ class ZoneController extends Controller
 
     public function store(Request $request)
     {
+        // Sanitize empty strings to null for nullable fields
+        $input = $request->all();
+        foreach (['retribution_classification_id', 'amount', 'code', 'description'] as $field) {
+            if (isset($input[$field]) && $input[$field] === '') {
+                $input[$field] = null;
+            }
+        }
+        $request->merge($input);
+
         $request->validate([
             'opd_id' => 'required|exists:opds,id',
             'retribution_type_id' => 'required|exists:retribution_types,id',
+            'retribution_classification_id' => 'nullable|exists:retribution_classifications,id',
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:10|unique:zones',
+            'code' => 'nullable|string|max:10|unique:zones',
             'multiplier' => 'required|numeric|min:0',
-            'amount' => 'required|numeric|min:0',
+            'amount' => 'nullable|numeric|min:0',
             'description' => 'nullable|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
@@ -37,7 +47,7 @@ class ZoneController extends Controller
 
         $zone = Zone::create($request->all());
 
-        return response()->json($zone->load(['opd', 'retributionType']), 201);
+        return response()->json($zone->load(['opd', 'retributionType', 'classification']), 201);
     }
 
     public function show(Zone $zone)
@@ -47,13 +57,23 @@ class ZoneController extends Controller
 
     public function update(Request $request, Zone $zone)
     {
+        // Sanitize empty strings to null for nullable fields
+        $input = $request->all();
+        foreach (['retribution_classification_id', 'amount', 'code', 'description'] as $field) {
+            if (isset($input[$field]) && $input[$field] === '') {
+                $input[$field] = null;
+            }
+        }
+        $request->merge($input);
+
         $request->validate([
             'opd_id' => 'sometimes|exists:opds,id',
             'retribution_type_id' => 'sometimes|exists:retribution_types,id',
+            'retribution_classification_id' => 'nullable|exists:retribution_classifications,id',
             'name' => 'sometimes|string|max:255',
-            'code' => 'sometimes|string|max:10|unique:zones,code,' . $zone->id,
+            'code' => 'nullable|string|max:10|unique:zones,code,' . $zone->id,
             'multiplier' => 'sometimes|numeric|min:0',
-            'amount' => 'sometimes|numeric|min:0',
+            'amount' => 'nullable|numeric|min:0',
             'description' => 'nullable|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
@@ -61,7 +81,7 @@ class ZoneController extends Controller
 
         $zone->update($request->all());
 
-        return response()->json($zone->load(['opd', 'retributionType']));
+        return response()->json($zone->load(['opd', 'retributionType', 'classification']));
     }
 
     public function destroy(Zone $zone)
