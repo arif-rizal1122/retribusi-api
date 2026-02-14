@@ -43,11 +43,12 @@ class RetributionClassificationController extends Controller
         $request->validate([
             'retribution_type_id' => 'required|exists:retribution_types,id',
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:10',
+            'code' => 'required|string|max:50',
             'description' => 'nullable|string',
             'icon' => 'nullable|image|max:2048',
             'form_schema' => 'nullable|string',
             'requirements' => 'nullable|string',
+            'calculation_formula' => 'nullable|string',
         ]);
 
         $cloudinary = app(\App\Services\CloudinaryService::class);
@@ -102,15 +103,24 @@ class RetributionClassificationController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $request->validate([
-            'retribution_type_id' => 'sometimes|exists:retribution_types,id',
-            'name' => 'sometimes|string|max:255',
-            'code' => 'sometimes|string|max:10',
-            'description' => 'nullable|string',
-            'icon' => 'nullable|image|max:2048',
-            'form_schema' => 'nullable|string',
-            'requirements' => 'nullable|string',
-        ]);
+        try {
+            $request->validate([
+                'retribution_type_id' => 'sometimes|exists:retribution_types,id',
+                'name' => 'sometimes|string|max:255',
+                'code' => 'sometimes|string|max:50',
+                'description' => 'nullable|string',
+                'icon' => 'nullable', // Allow string (URL) or file
+                'form_schema' => 'nullable|string',
+                'requirements' => 'nullable|string',
+                'calculation_formula' => 'nullable|string',
+            ]);
+
+            if ($request->hasFile('icon')) {
+                $request->validate(['icon' => 'image|max:2048']);
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        }
 
         $data = $request->all();
 

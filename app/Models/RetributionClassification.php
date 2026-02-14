@@ -15,6 +15,7 @@ class RetributionClassification extends Model
         'icon',
         'form_schema',
         'requirements',
+        'calculation_formula',
     ];
 
     protected $casts = [

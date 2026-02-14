@@ -134,8 +134,6 @@ class BapendaMasterDataSeeder extends Seeder
                     'retribution_type_id' => $typeModels['Retribusi PKD']->id,
                     'retribution_classification_id' => $pkdCls->id,
                     'code' => $info['code'],
-                    'multiplier' => 1.0,
-                    'amount' => 0,
                     'latitude' => $info['lat'],
                     'longitude' => $info['lng'],
                 ]

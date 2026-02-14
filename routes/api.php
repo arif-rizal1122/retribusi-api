@@ -31,6 +31,49 @@ Route::post('/citizen/register', [AuthController::class, 'registerCitizen']);
 Route::get('/opds', [OpdController::class, 'index']); // Public access
 Route::get('/citizen/bills', [BillController::class, 'citizenBills']); // Public access for demo
 
+// Tax Simulation (public, no auth needed)
+Route::post('/simulate-tax', function (Request $request) {
+    $request->validate([
+        'classification_id' => 'nullable|exists:retribution_classifications,id',
+        'calculation_formula' => 'nullable|string',
+        'variables' => 'required|array',
+    ]);
+    
+    $formula = $request->calculation_formula;
+    $name = 'Simulasi';
+    
+    if ($request->classification_id) {
+        $classification = \App\Models\RetributionClassification::findOrFail($request->classification_id);
+        if (!$formula) $formula = $classification->calculation_formula;
+        $name = $classification->name;
+    }
+    
+    if (!$formula) {
+        return response()->json(['error' => 'Rumus perhitungan tidak ditemukan.'], 422);
+    }
+    
+    $parser = new \App\Services\FormulaParserService();
+    $result = $parser->calculate($formula, $request->variables);
+    
+    return response()->json([
+        'classification' => $name,
+        'formula' => $formula,
+        'variables' => $request->variables,
+        'result' => $result,
+        'formatted' => 'Rp ' . number_format($result, 0, ',', '.'),
+    ]);
+});
+
+// Public: Get classifications with formulas for simulation
+Route::get('/tax-formulas', function () {
+    $classifications = \App\Models\RetributionClassification::whereNotNull('calculation_formula')
+        ->where('calculation_formula', '!=', '')
+        ->with('retributionType:id,name')
+        ->get(['id', 'name', 'code', 'calculation_formula', 'retribution_type_id', 'form_schema']);
+    
+    return response()->json(['data' => $classifications]);
+});
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth
