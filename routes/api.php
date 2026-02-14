@@ -82,6 +82,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
     Route::post('/user/password', [AuthController::class, 'changePassword']);
+
+    // Me / Self Profile (New for Mobile & better control)
+    Route::get('/me', [\App\Http\Controllers\MeController::class, 'show']);
+    Route::post('/me/update', [\App\Http\Controllers\MeController::class, 'update']);
     
     // Citizen Service Registration
     Route::prefix('citizen/services')->group(function () {
