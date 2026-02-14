@@ -90,6 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Citizen Service Registration
     Route::prefix('citizen/services')->group(function () {
         Route::get('/', [\App\Http\Controllers\CitizenServiceController::class, 'index']);
+        Route::get('/pending-periods', [\App\Http\Controllers\CitizenServiceController::class, 'getPendingPeriods']);
         Route::get('/{id}', [\App\Http\Controllers\CitizenServiceController::class, 'show']);
         Route::post('/{id}/register', [\App\Http\Controllers\CitizenServiceController::class, 'register']);
         Route::get('/{id}/bills', [\App\Http\Controllers\CitizenServiceController::class, 'bills']);
@@ -107,10 +108,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Tax Objects (OPD-scoped)
     Route::apiResource('tax-objects', TaxObjectController::class);
 
-    // Billings
-    Route::post('/bills/bulk', [BillController::class, 'bulkStore']);
-    Route::apiResource('bills', BillController::class)->except(['update', 'destroy']);
-    Route::post('/bills/{bill}/pay', [PaymentController::class, 'store']);
+    // Payments & Dynamic Billing (Virtual Ledger)
+    Route::get('/tax-objects/{taxObject}/pending-periods', [PaymentController::class, 'getPendingPeriods']);
+    Route::post('/payments', [PaymentController::class, 'store']);
+    Route::post('/bills/{bill}/pay', [PaymentController::class, 'store']); // Backward compatibility
     
     // Verifications
     Route::put('/verifications/{verification}/status', [VerificationController::class, 'updateStatus']);

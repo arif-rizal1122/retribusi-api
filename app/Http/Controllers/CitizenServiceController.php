@@ -213,4 +213,36 @@ class CitizenServiceController extends Controller
 
         return response()->json(['data' => $bills]);
     }
+
+    /**
+     * Get all pending billing periods for the logged-in citizen across all objects
+     */
+    public function getPendingPeriods(Request $request)
+    {
+        $user = $request->user();
+        
+        $objects = TaxObject::where('taxpayer_id', $user->id)
+            ->where('status', 'active')
+            ->with(['retributionType', 'classification', 'opd'])
+            ->get();
+
+        $billingService = app(\App\Services\BillingService::class);
+        $allPending = collect();
+
+        foreach ($objects as $obj) {
+            $periods = $billingService->getPendingPeriods($obj);
+            foreach ($periods as $period) {
+                $allPending->push(array_merge($period, [
+                    'id' => 'VIRTUAL-' . $obj->id . '-' . $period['period'],
+                    'tax_object_id' => $obj->id,
+                    'tax_object' => $obj,
+                    'retribution_type' => $obj->retributionType,
+                    'classification' => $obj->classification,
+                    'opd' => $obj->opd,
+                ]));
+            }
+        }
+
+        return response()->json(['data' => $allPending]);
+    }
 }

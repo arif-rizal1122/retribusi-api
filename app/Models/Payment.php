@@ -9,9 +9,13 @@ class Payment extends Model
 {
     protected $fillable = [
         'bill_id',
+        'taxpayer_id',
+        'tax_object_id',
         'transaction_id',
         'payment_method',
         'amount',
+        'status',
+        'billing_period',
         'paid_at',
         'approved_by',
         'proof_url',
@@ -24,6 +28,16 @@ class Payment extends Model
     public function bill(): BelongsTo
     {
         return $this->belongsTo(Bill::class);
+    }
+
+    public function taxpayer(): BelongsTo
+    {
+        return $this->belongsTo(Taxpayer::class);
+    }
+
+    public function taxObject(): BelongsTo
+    {
+        return $this->belongsTo(TaxObject::class);
     }
 
     public function approver(): BelongsTo
