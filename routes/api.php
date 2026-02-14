@@ -98,6 +98,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Retribution Types (OPD-scoped)
     Route::apiResource('retribution-types', RetributionTypeController::class);
     
+    // Taxpayer Search (New)
+    Route::get('/taxpayers/search/{nik}', [\App\Http\Controllers\TaxpayerSearchController::class, 'searchByNik']);
+
     // Taxpayers (OPD-scoped)
     Route::apiResource('taxpayers', TaxpayerController::class);
 

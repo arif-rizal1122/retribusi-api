@@ -106,23 +106,42 @@ class TaxpayerController extends Controller
             $metadata['formulir_data_dukung'] = $cloudinary->upload($request->file('formulir_data_dukung'), 'taxpayers/docs');
         }
 
-        $taxpayer = Taxpayer::create([
-            'opd_id' => $opdId,
-            'nik' => $request->nik,
-            'name' => $request->name,
-            'address' => $request->address,
-            'district' => $request->district,
-            'sub_district' => $request->sub_district,
-            'phone' => $request->phone,
-            'npwpd' => $request->npwpd,
-            'object_name' => $request->object_name,
-            'object_address' => $request->object_address,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'is_active' => $request->boolean('is_active', true),
-            'metadata' => $metadata,
-            'created_by' => $user->id,
-        ]);
+        // Check if taxpayer with this NIK already exists
+        $taxpayer = null;
+        if ($request->nik) {
+            $taxpayer = Taxpayer::where('nik', $request->nik)->first();
+        }
+
+        if ($taxpayer) {
+            // Update existing taxpayer basic info if provided
+            $taxpayer->update($request->only(['name', 'address', 'district', 'sub_district', 'phone', 'npwpd']));
+            
+            // Merge metadata
+            if (!empty($metadata)) {
+                $existingMetadata = $taxpayer->metadata ?: [];
+                $taxpayer->metadata = array_merge($existingMetadata, $metadata);
+                $taxpayer->save();
+            }
+        } else {
+            // Create new taxpayer
+            $taxpayer = Taxpayer::create([
+                'opd_id' => $opdId,
+                'nik' => $request->nik,
+                'name' => $request->name,
+                'address' => $request->address,
+                'district' => $request->district,
+                'sub_district' => $request->sub_district,
+                'phone' => $request->phone,
+                'npwpd' => $request->npwpd,
+                'object_name' => $request->object_name,
+                'object_address' => $request->object_address,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'is_active' => $request->boolean('is_active', true),
+                'metadata' => $metadata,
+                'created_by' => $user->id,
+            ]);
+        }
 
         // Attach retribution types and classifications
         $typeIds = $validTypesIds;
