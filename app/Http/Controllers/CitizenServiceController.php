@@ -41,6 +41,7 @@ class CitizenServiceController extends Controller
                     'opd' => $cls->retributionType->opd,
                     'object_count' => $objects->count(),
                     'active_objects_count' => $objects->where('status', 'active')->count(),
+                    'calculation_formula' => $cls->calculation_formula,
                 ];
             });
 
@@ -84,6 +85,7 @@ class CitizenServiceController extends Controller
                 'opd' => $service->opd,
                 'form_schema' => $classification->form_schema,
                 'requirements' => $classification->requirements,
+                'calculation_formula' => $classification->calculation_formula,
                 'objects' => $objects,
                 'bills' => $bills,
             ]

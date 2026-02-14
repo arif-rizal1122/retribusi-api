@@ -7,11 +7,19 @@ use App\Models\Taxpayer;
 use App\Models\TaxObject;
 use App\Models\RetributionType;
 use App\Models\RetributionRate;
+use App\Models\RetributionClassification;
+use App\Services\FormulaParserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class BillController extends Controller
 {
+    protected $formulaParser;
+
+    public function __construct(FormulaParserService $formulaParser)
+    {
+        $this->formulaParser = $formulaParser;
+    }
     /**
      * List bills (OPD-scoped)
      */
@@ -97,7 +105,7 @@ class BillController extends Controller
                 'retribution_type_id' => $taxObject->retribution_type_id,
                 'retribution_classification_id' => $taxObject->retribution_classification_id,
                 'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
-                'amount' => $request->amount ?? $this->calculateAmount($taxObject),
+                'amount' => $request->amount ?? $this->calculateAmount($taxObject, $request->metadata ?? []),
                 'status' => 'pending',
                 'period' => $request->period,
                 'metadata' => $request->metadata,
@@ -172,7 +180,7 @@ class BillController extends Controller
                 'retribution_type_id' => $type->id,
                 'retribution_classification_id' => $obj->retribution_classification_id,
                 'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
-                'amount' => $this->calculateAmount($obj), 
+                'amount' => $this->calculateAmount($obj, $request->metadata ?? []), 
                 'status' => 'pending',
                 'period' => $request->period,
                 'due_date' => $request->due_date,
@@ -224,11 +232,11 @@ class BillController extends Controller
     }
 
     /**
-     * Helper to calculate bill amount based on tax object hierarchy
+     * Helper to calculate bill amount based on tax object hierarchy and formulas
      */
-    private function calculateAmount($taxObject)
+    private function calculateAmount($taxObject, $inputData = [])
     {
-        // Try to find a specific rate for this classification and zone
+        // 1. Try to find a specific rate for this classification and zone
         $rate = RetributionRate::where('retribution_type_id', $taxObject->retribution_type_id)
             ->where('retribution_classification_id', $taxObject->retribution_classification_id)
             ->where(function($q) use ($taxObject) {
@@ -241,11 +249,33 @@ class BillController extends Controller
             ->where('is_active', true)
             ->first();
 
+        // 2. Determine base variables for formula
+        $variables = array_merge(
+            $taxObject->metadata ?? [], 
+            $inputData,
+            [
+                'amount' => $rate ? $rate->amount : 0,
+                'tariff' => $rate ? ($rate->amount / 100) : 0, // Assume amount is percent for some cases
+            ]
+        );
+
+        // 3. Check for dynamic formula in Rate first
+        if ($rate && $rate->calculation_formula) {
+            return $this->formulaParser->calculate($rate->calculation_formula, $variables);
+        }
+
+        // 4. Check for dynamic formula in Classification
+        $classification = RetributionClassification::find($taxObject->retribution_classification_id);
+        if ($classification && $classification->calculation_formula) {
+            return $this->formulaParser->calculate($classification->calculation_formula, $variables);
+        }
+
+        // 5. Fallback to fixed rate amount
         if ($rate) {
             return $rate->amount;
         }
 
-        // Fallback to base amount of the type
+        // 6. Final fallback to base amount of the type
         $type = RetributionType::find($taxObject->retribution_type_id);
         return $type ? $type->base_amount : 0;
     }

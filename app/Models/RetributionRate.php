@@ -15,6 +15,7 @@ class RetributionRate extends Model
         'amount',
         'unit',
         'is_active',
+        'calculation_formula',
     ];
 
     protected $casts = [
