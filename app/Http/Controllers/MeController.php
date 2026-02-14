@@ -18,9 +18,6 @@ class MeController extends Controller
         ]);
     }
 
-    /**
-     * Update current user profile
-     */
     public function update(Request $request)
     {
         $user = $request->user();
@@ -30,27 +27,37 @@ class MeController extends Controller
             'name' => 'sometimes|string|max:255',
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:20',
-            'avatar' => 'nullable|image|max:2048', // Allow avatar upload
+            'avatar' => 'nullable|image|max:2048',
         ]);
 
-        $data = $request->only(['name', 'address', 'phone']);
+        // Basic fields
+        if ($request->has('name')) $user->name = $request->name;
+        if ($request->has('address')) $user->address = $request->address;
+        if ($request->has('phone')) $user->phone = $request->phone;
         
+        // Metadata fields
+        $metadata = $user->metadata ?? [];
+        if (is_string($metadata)) {
+            $metadata = json_decode($metadata, true) ?: [];
+        }
+
         // Handle Avatar/Photo Upload
         if ($request->hasFile('avatar')) {
             $avatarUrl = $cloudinary->upload(
                 $request->file('avatar'), 
                 'avatars/taxpayers'
             );
-            
-            $metadata = $user->metadata ?? [];
-            if (is_string($metadata)) {
-                $metadata = json_decode($metadata, true) ?: [];
-            }
             $metadata['avatar_url'] = $avatarUrl;
-            $data['metadata'] = $metadata;
         }
 
-        $user->update($data);
+        $user->metadata = $metadata;
+        $user->save();
+
+        // Log for debugging
+        \Log::info('Profile updated for taxpayer ID: ' . $user->id, [
+            'name' => $user->name,
+            'has_avatar' => isset($metadata['avatar_url'])
+        ]);
 
         return response()->json([
             'message' => 'Profil berhasil diperbarui',
