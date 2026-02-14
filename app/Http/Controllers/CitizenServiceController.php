@@ -157,6 +157,15 @@ class CitizenServiceController extends Controller
             'status' => 'pending',
         ]);
 
+        // Pick the first available file URL for the primary verification proof
+        $firstFileUrl = null;
+        foreach ($metadata as $val) {
+            if (is_string($val) && (str_starts_with($val, 'http') || str_contains($val, 'cloudinary'))) {
+                $firstFileUrl = $val;
+                break;
+            }
+        }
+
         // Create a verification record for the admin to review
         $verification = Verification::create([
             'opd_id' => $service->opd_id,
@@ -167,6 +176,7 @@ class CitizenServiceController extends Controller
             'type' => 'Pendaftaran Objek',
             'amount' => 0,
             'status' => 'pending',
+            'proof_file_url' => $firstFileUrl,
             'submitted_at' => Carbon::now(),
             'notes' => 'Pendaftaran unit baru (' . $classification->name . '): ' . $taxObject->name,
         ]);
