@@ -118,9 +118,23 @@ class CitizenServiceController extends Controller
 
         // Handle dynamic document uploads based on requirements from this classification
         $requirements = $classification->requirements ?? [];
+        $processedKeys = [];
+
         foreach ($requirements as $req) {
             $key = $req['key'] ?? null;
             if ($key && $request->hasFile($key)) {
+                $metadata[$key] = $cloudinary->upload(
+                    $request->file($key), 
+                    'citizen/documents/' . $service->id
+                );
+                $processedKeys[] = $key;
+            }
+        }
+
+        // Safety fallback: Handle common keys from mobile app if they were sent but not in requirements
+        $fallbacks = ['foto_lokasi_open_kamera', 'formulir_data_dukung'];
+        foreach ($fallbacks as $key) {
+            if (!in_array($key, $processedKeys) && $request->hasFile($key)) {
                 $metadata[$key] = $cloudinary->upload(
                     $request->file($key), 
                     'citizen/documents/' . $service->id
