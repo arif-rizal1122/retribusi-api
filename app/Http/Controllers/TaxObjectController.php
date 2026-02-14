@@ -64,17 +64,35 @@ class TaxObjectController extends Controller
     }
 
     /**
-     * Show details
+     * Delete a pending tax object
      */
-    public function show(Request $request, TaxObject $taxObject)
+    public function destroy(Request $request, TaxObject $taxObject)
     {
         $user = $request->user();
-        if (!$user->isSuperAdmin() && $taxObject->opd_id !== $user->opd_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        
+        // Authorization: Only owner can delete (if user is a taxpayer)
+        // If it's an OPD admin, they might have different rules, but here we focus on Citizen/Taxpayer
+        if ($user->role === 'citizen') {
+            if ($taxObject->taxpayer_id !== $user->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+        } elseif ($user->role === 'opd') {
+            if ($taxObject->opd_id !== $user->opd_id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
         }
 
-        return response()->json([
-            'data' => $taxObject->load(['taxpayer', 'retributionType', 'opd', 'classification'])
-        ]);
+        // Only allow deletion if status is pending
+        if ($taxObject->status !== 'pending') {
+            return response()->json(['message' => 'Hanya objek dengan status pending yang dapat dihapus.'], 422);
+        }
+
+        // Cleanup: Delete associated verifications
+        \App\Models\Verification::where('tax_object_id', $taxObject->id)->delete();
+        
+        // Delete the object
+        $taxObject->delete();
+
+        return response()->json(['message' => 'Pengajuan objek berhasil dibatalkan dan dihapus']);
     }
 }
