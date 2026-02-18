@@ -58,9 +58,19 @@ class TaxHierarchySyncSeeder extends Seeder
         // --- WILAYAH I (Official Assessment & Assets) ---
         $this->command->info('🔄 Syncing Wilayah I (Bidang Pendapatan I)...');
 
+        // Generate NJOP Class Options for PBB-P2
+        $bumiClasses = array_map(fn($i) => sprintf('%03d', $i), range(1, 100));
+        $bangunanClasses = array_map(fn($i) => sprintf('%03d', $i), range(1, 40));
+
         $this->syncClassification($bapenda, $w1, 'PBB-P2', [
-            'code' => 'PBB-UMUM', 'icon' => self::ICON_PAJAK, 'formula' => '(njop - 10000000) * (njkp_percent / 100) * (tariff / 100)',
+            'code' => 'PBB-UMUM', 
+            'icon' => self::ICON_PAJAK, 
+            'formula' => '(njop - 10000000) * (njkp_percent / 100) * (tariff / 100)',
             'schema' => [
+                ['key' => 'luas_tanah', 'label' => 'Luas Tanah (m2)', 'type' => 'number', 'required' => true],
+                ['key' => 'kelas_bumi', 'label' => 'Kelas NJOP Bumi', 'type' => 'select', 'options' => $bumiClasses, 'required' => true],
+                ['key' => 'luas_bangunan', 'label' => 'Luas Bangunan (m2)', 'type' => 'number', 'required' => true],
+                ['key' => 'kelas_bangunan', 'label' => 'Kelas NJOP Bangunan', 'type' => 'select', 'options' => $bangunanClasses, 'required' => true],
                 ['key' => 'nomor_sertifikat', 'label' => 'Nomor Sertifikat (SHM/HGB)', 'type' => 'text', 'required' => true],
                 ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
             ],
