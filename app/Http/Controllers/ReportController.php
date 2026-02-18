@@ -97,7 +97,7 @@ class ReportController extends Controller
     public function getPetugasPerformance(Request $request)
     {
         $admin = $request->user();
-        $opdId = !$admin->isSuperAdmin() ? $admin->opd_id : $request->query('opd_id');
+        $opdId = (!$admin->isSuperAdmin() && !$admin->isPengawas()) ? $admin->opd_id : $request->query('opd_id');
 
         $performance = User::where('role', 'petugas')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))

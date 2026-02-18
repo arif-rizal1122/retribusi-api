@@ -57,13 +57,38 @@ class FormulaParserService
     }
 
     /**
-     * Calculate penalty (2% monthly, max 24 months)
+     * Calculate penalty based on Perwali No. 58/2024.
+     * 
+     * @param float $amount
+     * @param int $monthsLate
+     * @param string $type Rate types:
+     *   - 'stpd': 1% (Default late payment)
+     *   - 'skpdkb': 1.8% (General audit)
+     *   - 'jabatan': 2.2% (No reporting/bookkeeping audit)
+     *   - 'angsuran' / 'penundaan' / 'salah_hitung': 0.6%
+     * @return float
      */
-    public function calculatePenalty(float $amount, int $monthsLate): float
+    public function calculatePenalty(float $amount, int $monthsLate, string $type = 'stpd'): float
     {
+        $monthsLate = (int) $monthsLate;
         $monthsLate = min($monthsLate, 24);
         if ($monthsLate <= 0) return 0.0;
         
-        return $amount * 0.02 * $monthsLate;
+        $rate = match (strtolower($type)) {
+            'skpdkb' => 0.018,
+            'jabatan' => 0.022,
+            'angsuran', 'penundaan', 'salah_hitung', 'restitusi' => 0.006,
+            default => 0.01, // Terlambat Bayar / Setor (STPD) 1%
+        };
+        
+        return floor($amount * $rate * $monthsLate);
+    }
+
+    /**
+     * Get fixed fine amount for not reporting SPTPD.
+     */
+    public function getFixedFineForNoReporting(): float
+    {
+        return 100000.0; // Rp 100.000 for not submitting SPTPD
     }
 }

@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use App\Traits\Auditable;
+
 class TaxObject extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable;
 
     protected $fillable = [
         'nop',
@@ -29,6 +31,7 @@ class TaxObject extends Model
         'tanggal_pernyataan',
         'tanda_tangan_url',
         'status',
+        'audit_status',
         'approved_at',
         'approved_by',
     ];
@@ -38,6 +41,7 @@ class TaxObject extends Model
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
         'approved_at' => 'datetime',
+        'audit_status' => 'string',
     ];
 
     /**
@@ -102,5 +106,13 @@ class TaxObject extends Model
     public function verifications(): HasMany
     {
         return $this->hasMany(ObjectVerification::class);
+    }
+
+    /**
+     * Get all payments for this object
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
     }
 }

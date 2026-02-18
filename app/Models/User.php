@@ -10,10 +10,12 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
  
+use App\Traits\Auditable;
+
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, Auditable;
  
     /**
      * The attributes that are mass assignable.
@@ -64,11 +66,21 @@ class User extends Authenticatable
     }
 
     /**
+     * Role Constants
+     */
+    const ROLE_SUPER_ADMIN = 'super_admin';
+    const ROLE_OPD = 'opd';
+    const ROLE_PENGAWAS = 'pengawas';
+    const ROLE_KABID_PENGAWAS = 'kabid_pengawas';
+    const ROLE_KASUBID_PENGAWAS = 'kasubid_pengawas';
+    const ROLE_PETUGAS = 'petugas';
+
+    /**
      * Check if user is super admin
      */
     public function isSuperAdmin(): bool
     {
-        return $this->role === 'super_admin';
+        return $this->role === self::ROLE_SUPER_ADMIN;
     }
 
     /**
@@ -76,7 +88,35 @@ class User extends Authenticatable
      */
     public function isOpd(): bool
     {
-        return $this->role === 'opd';
+        return $this->role === self::ROLE_OPD;
+    }
+
+    /**
+     * Check if user is Pengawas (General or specific)
+     */
+    public function isPengawas(): bool
+    {
+        return in_array($this->role, [
+            self::ROLE_PENGAWAS, 
+            self::ROLE_KABID_PENGAWAS, 
+            self::ROLE_KASUBID_PENGAWAS
+        ]);
+    }
+
+    /**
+     * Check if user is Kabid Pengawas
+     */
+    public function isKabid(): bool
+    {
+        return $this->role === self::ROLE_KABID_PENGAWAS;
+    }
+
+    /**
+     * Check if user is Kasubid Pengawas
+     */
+    public function isKasubid(): bool
+    {
+        return $this->role === self::ROLE_KASUBID_PENGAWAS;
     }
 
     /**
