@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class RetributionRate extends Model
 {
+    use HasFactory, Auditable;
     protected $fillable = [
         'opd_id',
         'retribution_type_id',

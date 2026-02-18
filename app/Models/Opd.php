@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+
 
 class Opd extends Model
 {
@@ -50,8 +52,32 @@ class Opd extends Model
     }
 
     /**
+     * Get all bills belonging to this OPD
+     */
+    public function bills(): HasMany
+    {
+        return $this->hasMany(Bill::class);
+    }
+
+    /**
+     * Get all payments belonging to this OPD
+     */
+    public function payments(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Payment::class,
+            Bill::class,
+            'opd_id', // Foreign key on bills table
+            'bill_id', // Foreign key on payments table
+            'id', // Local key on opds table
+            'id' // Local key on bills table
+        );
+    }
+
+    /**
      * Scope to get only approved OPDs
      */
+
     public function scopeApproved($query)
     {
         return $query->where('status', 'approved');

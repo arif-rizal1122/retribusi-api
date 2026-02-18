@@ -79,6 +79,8 @@ class BapendaMasterDataSeeder extends Seeder
             'PBJT - Jasa Perhotelan' => 'PBJT-HTL',
             'PBJT - Jasa Parkir' => 'PBJT-PRK',
             'PBJT - Jasa Kesenian dan Hiburan' => 'PBJT-HBR',
+            'PBJT - Jasa Catering' => 'PBJT-CAT',
+            'PBJT - Jasa Event/Lainnya' => 'PBJT-EVT',
         ];
 
         foreach ($pbjtSubs as $name => $code) {

@@ -30,7 +30,8 @@ class Taxpayer extends Authenticatable
         'longitude',
         'is_active',
         'metadata',
-        'created_by'
+        'created_by',
+        'password'
     ];
 
     protected $hidden = [

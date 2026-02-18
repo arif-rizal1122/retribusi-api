@@ -8,9 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use App\Traits\Auditable;
+
 class RetributionType extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable;
 
     protected $fillable = [
         'opd_id',
@@ -20,6 +22,7 @@ class RetributionType extends Model
         'icon',
         'base_amount',
         'unit',
+        'billing_cycle',
         'is_active',
     ];
 

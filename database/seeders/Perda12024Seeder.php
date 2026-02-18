@@ -21,6 +21,8 @@ class Perda12024Seeder extends Seeder
             'PBJT - Jasa Perhotelan' => 'nilai_pembayaran * 0.1',
             'PBJT - Jasa Parkir' => 'nilai_pembayaran * 0.1',
             'PBJT - Jasa Kesenian dan Hiburan' => 'harga_tiket * 0.1',
+            'PBJT - Jasa Catering' => 'omzet_penjualan * 0.1',
+            'PBJT - Jasa Event/Lainnya' => 'omzet_penjualan * 0.1',
         ];
 
         foreach ($pbjtClassifications as $name => $formula) {

@@ -236,26 +236,42 @@ class DashboardController extends Controller
         $user = $request->user();
         $opdId = !$user->isSuperAdmin() ? $user->opd_id : null;
         
-        $query = \App\Models\Zone::with(['opd', 'retributionType'])
+        // 1. Get Zones (Potentials)
+        $zones = \App\Models\Zone::with(['opd', 'retributionType'])
             ->whereNotNull('latitude')
-            ->whereNotNull('longitude');
+            ->whereNotNull('longitude')
+            ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
+            ->get()
+            ->map(function($obj) {
+                return [
+                    'position' => [(float)$obj->latitude, (float)$obj->longitude],
+                    'name' => $obj->name . ' (' . ($obj->retributionType->name ?? 'N/A') . ')',
+                    'agency' => $obj->opd->name ?? 'N/A',
+                    'address' => $obj->description,
+                    'status' => 'zone',
+                    'icon' => $obj->retributionType->icon ?? null,
+                    'retribution_type_id' => $obj->retribution_type_id,
+                ];
+            });
 
-        if ($opdId) {
-            $query->where('opd_id', $opdId);
-        }
+        // 2. Get Taxpayers (Tax Objects)
+        $taxObjects = \App\Models\TaxObject::with(['taxpayer', 'retributionType', 'opd'])
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
+            ->get()
+            ->map(function($obj) {
+                return [
+                    'position' => [(float)$obj->latitude, (float)$obj->longitude],
+                    'name' => $obj->taxpayer->name . ' - ' . $obj->name,
+                    'agency' => $obj->opd->name ?? 'N/A',
+                    'address' => $obj->address,
+                    'status' => 'taxpayer',
+                    'icon' => null, // We will use user icon in frontend
+                    'retribution_type_id' => $obj->retribution_type_id,
+                ];
+            });
 
-        $potentials = $query->get()->map(function($obj) {
-            return [
-                'position' => [(float)$obj->latitude, (float)$obj->longitude],
-                'name' => $obj->name . ' (' . ($obj->retributionType->name ?? 'N/A') . ')',
-                'agency' => $obj->opd->name ?? 'N/A',
-                'address' => $obj->description,
-                'status' => 'active',
-                'icon' => $obj->retributionType->icon ?? null,
-                'retribution_type_id' => $obj->retribution_type_id,
-            ];
-        });
-
-        return response()->json($potentials);
+        return response()->json($zones->concat($taxObjects));
     }
 }

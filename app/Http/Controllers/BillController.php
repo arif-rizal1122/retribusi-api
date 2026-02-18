@@ -232,12 +232,55 @@ class BillController extends Controller
     }
 
     /**
+     * Export/Preview SKRD
+     */
+    public function exportSKRD(Bill $bill, \App\Services\OfficialDocumentService $docService)
+    {
+        $data = $docService->generateSKRD($bill->load(['retributionType', 'taxpayer']));
+        
+        return view('pdf.skrd', $data);
+    }
+
+    /**
+     * Export/Preview SSPD
+     */
+    public function exportSSPD(Bill $bill, \App\Services\OfficialDocumentService $docService)
+    {
+        try {
+            $data = $docService->generateSSPD($bill->load(['retributionType', 'taxpayer', 'payments']));
+            return view('pdf.sspd', $data);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
+    }
+
+    /**
      * Helper to calculate bill amount based on tax object hierarchy and formulas
      */
     private function calculateAmount($taxObject, $inputData = [])
     {
+        $type = $taxObject->retributionType;
+
+        // 0. Handle PBB-P2 Special Calculation
+        if (str_contains(strtolower($type->name), 'pbb') || str_contains(strtolower($type->category), 'pajak bumi')) {
+            $pbbService = app(\App\Services\PbbCalculationService::class);
+            $metadata = array_merge($taxObject->metadata ?? [], $inputData);
+            
+            $luasBumi = (float) ($metadata['luas_bumi'] ?? $metadata['luas_tanah'] ?? 0);
+            $kelasBumi = (string) ($metadata['kelas_bumi'] ?? '');
+            $luasBangunan = (float) ($metadata['luas_bangunan'] ?? 0);
+            $kelasBangunan = (string) ($metadata['kelas_bangunan'] ?? '');
+            
+            // Allow overrides from metadata for NJOPTKP and Tariff
+            $njoptkp = (float) ($metadata['njoptkp'] ?? 10000000);
+            $tariff = (float) ($metadata['tariff'] ?? 0.001);
+
+            $result = $pbbService->calculate($luasBumi, $kelasBumi, $luasBangunan, $kelasBangunan, $njoptkp, $tariff);
+            return (float) $result['pbb_terhutang'];
+        }
+
         // 1. Try to find a specific rate for this classification and zone
-        $rate = RetributionRate::where('retribution_type_id', $taxObject->retribution_type_id)
+        $rate = \App\Models\RetributionRate::where('retribution_type_id', $taxObject->retribution_type_id)
             ->where('retribution_classification_id', $taxObject->retribution_classification_id)
             ->where(function($q) use ($taxObject) {
                 if ($taxObject->zone_id) {
@@ -265,7 +308,7 @@ class BillController extends Controller
         }
 
         // 4. Check for dynamic formula in Classification
-        $classification = RetributionClassification::find($taxObject->retribution_classification_id);
+        $classification = \App\Models\RetributionClassification::find($taxObject->retribution_classification_id);
         if ($classification && $classification->calculation_formula) {
             return $this->formulaParser->calculate($classification->calculation_formula, $variables);
         }
@@ -276,7 +319,35 @@ class BillController extends Controller
         }
 
         // 6. Final fallback to base amount of the type
-        $type = RetributionType::find($taxObject->retribution_type_id);
         return $type ? $type->base_amount : 0;
+    }
+
+    /**
+     * Sign a bill using TTE
+     */
+    public function signTTE(Request $request, \App\Services\OfficialDocumentService $docService)
+    {
+        $validated = $request->validate([
+            'bill_id' => 'required|exists:bills,id',
+            'notes' => 'nullable|string',
+        ]);
+
+        $bill = Bill::findOrFail($validated['bill_id']);
+        
+        // Authorization check (Kadis/Kabid usually)
+        $user = $request->user();
+        if (!$user->isSuperAdmin() && $user->role !== 'kadis' && $user->role !== 'kabid') {
+            return response()->json(['message' => 'Unauthorized to sign. Higher authority required.'], 403);
+        }
+
+        try {
+            $signedDoc = $docService->signDocument('bill', $bill->id, $user, $validated['notes']);
+            return response()->json([
+                'message' => 'Dokumen berhasil ditandatangani secara elektronik.',
+                'signed_document' => $signedDoc
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
     }
 }

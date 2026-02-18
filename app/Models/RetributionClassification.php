@@ -2,14 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+
+use App\Traits\Auditable;
 
 class RetributionClassification extends Model
 {
+    use HasFactory, Auditable;
     protected $fillable = [
         'opd_id',
         'retribution_type_id',
         'name',
+        'is_self_assessment',
         'code',
         'description',
         'icon',
@@ -19,6 +24,7 @@ class RetributionClassification extends Model
     ];
 
     protected $casts = [
+        'is_self_assessment' => 'boolean',
         'form_schema' => 'array',
         'requirements' => 'array',
     ];
