@@ -17,109 +17,131 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Create Super Admin
-        User::create([
-            'name' => 'Super Admin',
-            'email' => 'admin@retribusi.id',
-            'password' => Hash::make('password123'),
-            'role' => 'super_admin',
-            'status' => 'active',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'admin@retribusi.id'],
+            [
+                'name' => 'Super Admin',
+                'password' => Hash::make('password123'),
+                'role' => 'super_admin',
+                'status' => 'active',
+            ]
+        );
 
         // Create Dev Super Admin
-        User::create([
-            'name' => 'Dev Super Admin',
-            'email' => 'superadmin@sipanda.online',
-            'password' => Hash::make('Sipanda123#'),
-            'role' => 'super_admin',
-            'status' => 'active',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'superadmin@sipanda.online'],
+            [
+                'name' => 'Dev Super Admin',
+                'password' => Hash::make('Sipanda123#'),
+                'role' => 'super_admin',
+                'status' => 'active',
+            ]
+        );
 
         // Create sample OPDs with approved status
-        $dishub = Opd::create([
-            'name' => 'Dinas Perhubungan',
-            'code' => 'DISHUB',
-            'address' => 'Jl. Protokol No. 1',
-            'phone' => '0401-123456',
-            'email' => 'dishub@baubau.go.id',
-            'status' => 'approved',
-            'is_active' => true,
-        ]);
+        $dishub = Opd::updateOrCreate(
+            ['code' => 'DISHUB'],
+            [
+                'name' => 'Dinas Perhubungan',
+                'address' => 'Jl. Protokol No. 1',
+                'phone' => '0401-123456',
+                'email' => 'dishub@baubau.go.id',
+                'status' => 'approved',
+                'is_active' => true,
+            ]
+        );
 
-        $disperindag = Opd::create([
-            'name' => 'Dinas Perindustrian dan Perdagangan',
-            'code' => 'DISPERINDAG',
-            'address' => 'Jl. Pasar No. 2',
-            'phone' => '0401-654321',
-            'email' => 'disperindag@baubau.go.id',
-            'status' => 'approved',
-            'is_active' => true,
-        ]);
+        $disperindag = Opd::updateOrCreate(
+            ['code' => 'DISPERINDAG'],
+            [
+                'name' => 'Dinas Perindustrian dan Perdagangan',
+                'address' => 'Jl. Pasar No. 2',
+                'phone' => '0401-654321',
+                'email' => 'disperindag@baubau.go.id',
+                'status' => 'approved',
+                'is_active' => true,
+            ]
+        );
 
-        $dlh = Opd::create([
-            'name' => 'Dinas Lingkungan Hidup',
-            'code' => 'DLH',
-            'address' => 'Jl. Hijau No. 3',
-            'phone' => '0401-111222',
-            'email' => 'dlh@baubau.go.id',
-            'status' => 'approved',
-            'is_active' => true,
-        ]);
+        $dlh = Opd::updateOrCreate(
+            ['code' => 'DLH'],
+            [
+                'name' => 'Dinas Lingkungan Hidup',
+                'address' => 'Jl. Hijau No. 3',
+                'phone' => '0401-111222',
+                'email' => 'dlh@baubau.go.id',
+                'status' => 'approved',
+                'is_active' => true,
+            ]
+        );
 
-        $bapenda = Opd::create([
-            'name' => 'Badan Pendapatan Daerah',
-            'code' => 'BAPENDA',
-            'address' => 'Jl. Bapenda No. 1',
-            'phone' => '0401-999888',
-            'email' => 'bapenda@baubau.go.id',
-            'status' => 'approved',
-            'is_active' => true,
-        ]);
+        $bapenda = Opd::updateOrCreate(
+            ['code' => 'BAPENDA'],
+            [
+                'name' => 'Badan Pendapatan Daerah',
+                'address' => 'Jl. Bapenda No. 1',
+                'phone' => '0401-999888',
+                'email' => 'bapenda@baubau.go.id',
+                'status' => 'approved',
+                'is_active' => true,
+            ]
+        );
 
         // Create OPD admin users
-        User::create([
-            'name' => 'Admin Dishub',
-            'email' => 'dishub@retribusi.id',
-            'password' => Hash::make('password123'),
-            'role' => 'opd',
-            'opd_id' => $dishub->id,
-            'status' => 'active',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'dishub@retribusi.id'],
+            [
+                'name' => 'Admin Dishub',
+                'password' => Hash::make('password123'),
+                'role' => 'opd',
+                'opd_id' => $dishub->id,
+                'status' => 'active',
+            ]
+        );
 
-        User::create([
-            'name' => 'Admin Disperindag',
-            'email' => 'disperindag@retribusi.id',
-            'password' => Hash::make('password123'),
-            'role' => 'opd',
-            'opd_id' => $disperindag->id,
-            'status' => 'active',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'disperindag@retribusi.id'],
+            [
+                'name' => 'Admin Disperindag',
+                'password' => Hash::make('password123'),
+                'role' => 'opd',
+                'opd_id' => $disperindag->id,
+                'status' => 'active',
+            ]
+        );
 
-        User::create([
-            'name' => 'Admin DLH',
-            'email' => 'dlh@retribusi.id',
-            'password' => Hash::make('password123'),
-            'role' => 'opd',
-            'opd_id' => $dlh->id,
-            'status' => 'active',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'dlh@retribusi.id'],
+            [
+                'name' => 'Admin DLH',
+                'password' => Hash::make('password123'),
+                'role' => 'opd',
+                'opd_id' => $dlh->id,
+                'status' => 'active',
+            ]
+        );
 
-        User::create([
-            'name' => 'Admin BAPENDA',
-            'email' => 'admin@bapenda.go.id',
-            'password' => Hash::make('password123'),
-            'role' => 'opd',
-            'opd_id' => $bapenda->id,
-            'status' => 'active',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'bapenda@baubaukota.go.id'],
+            [
+                'name' => 'Admin BAPENDA',
+                'password' => Hash::make('password123'),
+                'role' => 'opd',
+                'opd_id' => $bapenda->id,
+                'status' => 'active',
+            ]
+        );
 
-        User::create([
-            'name' => 'Petugas BAPENDA',
-            'email' => 'petugas@bapenda.go.id',
-            'password' => Hash::make('password123'),
-            'role' => 'petugas',
-            'opd_id' => $bapenda->id,
-            'status' => 'active',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'petugas@bapenda.go.id'],
+            [
+                'name' => 'Petugas BAPENDA',
+                'password' => Hash::make('password123'),
+                'role' => 'petugas',
+                'opd_id' => $bapenda->id,
+                'status' => 'active',
+            ]
+        );
 
         // Create retribution types for Dishub
         $parkirMobil = RetributionType::create([
