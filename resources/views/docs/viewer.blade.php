@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title }} | SIPANDA Docs</title>
+    <title>{{ $title }} | MITRA Docs</title>
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
@@ -27,12 +27,14 @@
                         <div class="p-2 bg-white/10 rounded-lg">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         </div>
-                        <span class="font-bold text-xl tracking-tight">SIPANDA System Docs</span>
+                        <span class="font-bold text-xl tracking-tight uppercase">MITRA System Docs</span>
                     </div>
                     <nav class="flex items-center gap-6 text-sm font-medium">
-                        <a href="{{ url('/docs/README') }}" class="{{ $current_page === 'README' ? 'text-white underline underline-offset-8' : 'text-slate-300 hover:text-white' }} transition-colors">Utama</a>
-                        <a href="{{ url('/docs/system_documentation') }}" class="{{ $current_page === 'system_documentation' ? 'text-white underline underline-offset-8' : 'text-slate-300 hover:text-white' }} transition-colors">Arsitektur</a>
-                        <a href="{{ url('/docs/retribusi_system_diagrams') }}" class="{{ $current_page === 'retribusi_system_diagrams' ? 'text-white underline underline-offset-8' : 'text-slate-300 hover:text-white' }} transition-colors">Diagram</a>
+                        <a href="{{ url('/docs/README') }}" class="{{ $current_page === 'README' ? 'text-white border-b-2 border-white pb-1' : 'text-slate-300 hover:text-white' }} transition-all">Utama</a>
+                        <a href="{{ url('/docs/public_apis') }}" class="{{ $current_page === 'public_apis' ? 'text-white border-b-2 border-white pb-1' : 'text-slate-300 hover:text-white' }} transition-all text-xs">Public</a>
+                        <a href="{{ url('/docs/core_apis') }}" class="{{ $current_page === 'core_apis' ? 'text-white border-b-2 border-white pb-1' : 'text-slate-300 hover:text-white' }} transition-all text-xs">Core</a>
+                        <a href="{{ url('/docs/surveillance_tte') }}" class="{{ $current_page === 'surveillance_tte' ? 'text-white border-b-2 border-white pb-1' : 'text-slate-300 hover:text-white' }} transition-all text-xs">Advanced</a>
+                        <a href="{{ url('/docs/system_documentation') }}" class="{{ $current_page === 'system_documentation' ? 'text-white border-b-2 border-white pb-1' : 'text-slate-300 hover:text-white' }} transition-all text-xs">Arsitektur</a>
                     </nav>
                 </div>
             </div>
@@ -53,7 +55,7 @@
         <!-- Footer -->
         <footer class="bg-white border-t border-slate-200 py-6">
             <div class="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
-                &copy; {{ date('Y') }} SIPANDA Retribusi System. Seluruh hak cipta dilindungi.
+                &copy; {{ date('Y') }} MITRA Bapenda - Manajemen Integrasi Tax, Retribusi, dan Aset Daerah.
             </div>
         </footer>
     </div>
