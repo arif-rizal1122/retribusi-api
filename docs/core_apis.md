@@ -1,4 +1,4 @@
-# Core APIs (Sipanda)
+# Core APIs (MITRA)
 
 Modul ini menangani pengelolaan entitas bisnis inti: Wajib Pajak, Objek Pajak, Penagihan (Billing), dan Pembayaran. Kebanyakan endpoint ini memerlukan **Bearer Token**.
 
