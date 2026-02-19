@@ -6,6 +6,7 @@ use App\Models\Opd;
 use App\Models\RetributionType;
 use App\Models\RetributionClassification;
 use App\Models\RetributionRate;
+use App\Models\PbbNjopClassification;
 use App\Models\Zone;
 use Illuminate\Database\Seeder;
 
@@ -58,9 +59,32 @@ class TaxHierarchySyncSeeder extends Seeder
         // --- WILAYAH I (Official Assessment & Assets) ---
         $this->command->info('🔄 Syncing Wilayah I (Bidang Pendapatan I)...');
 
+        // Generate NJOP Class Options for PBB-P2 dynamically with labels
+        $bumiClasses = PbbNjopClassification::where('type', 'bumi')
+            ->orderBy('class_code', 'asc')
+            ->get()
+            ->map(fn($c) => [
+                'value' => $c->class_code,
+                'label' => "Kelas {$c->class_code} | Rp " . number_format($c->min_value, 0, ',', '.') . " - " . number_format($c->max_value, 0, ',', '.')
+            ])->toArray();
+
+        $bangunanClasses = PbbNjopClassification::where('type', 'bangunan')
+            ->orderBy('class_code', 'asc')
+            ->get()
+            ->map(fn($c) => [
+                'value' => $c->class_code,
+                'label' => "Kelas {$c->class_code} | Rp " . number_format($c->min_value, 0, ',', '.') . " - " . number_format($c->max_value, 0, ',', '.')
+            ])->toArray();
+
         $this->syncClassification($bapenda, $w1, 'PBB-P2', [
-            'code' => 'PBB-UMUM', 'icon' => self::ICON_PAJAK, 'formula' => '(njop - 10000000) * (njkp_percent / 100) * (tariff / 100)',
+            'code' => 'PBB-UMUM', 
+            'icon' => self::ICON_PAJAK, 
+            'formula' => '(njop - 10000000) * (njkp_percent / 100) * (tariff / 100)',
             'schema' => [
+                ['key' => 'luas_tanah', 'label' => 'Luas Tanah (m2)', 'type' => 'number', 'required' => true],
+                ['key' => 'kelas_bumi', 'label' => 'Kelas NJOP Bumi', 'type' => 'select', 'options' => $bumiClasses, 'required' => true],
+                ['key' => 'luas_bangunan', 'label' => 'Luas Bangunan (m2)', 'type' => 'number', 'required' => true],
+                ['key' => 'kelas_bangunan', 'label' => 'Kelas NJOP Bangunan', 'type' => 'select', 'options' => $bangunanClasses, 'required' => true],
                 ['key' => 'nomor_sertifikat', 'label' => 'Nomor Sertifikat (SHM/HGB)', 'type' => 'text', 'required' => true],
                 ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
             ],

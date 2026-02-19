@@ -1,0 +1,15 @@
+#!/usr/bin/expect -f
+set timeout 300
+set password "Sipanda123#"
+spawn ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74
+expect "password:"
+send "$password\r"
+expect "$ "
+send "cd /home/sipanda/retribusi-api\r"
+expect "$ "
+send "php artisan db:seed --force\r"
+expect "$ "
+send "php artisan db:seed --class=TaxHierarchySyncSeeder --force\r"
+expect "$ "
+send "exit\r"
+expect eof
