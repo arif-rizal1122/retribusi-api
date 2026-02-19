@@ -1,16 +1,29 @@
-# SIPANDA Documentation README
+# MITRA - Mitra Bapenda
 
-This folder contains the complete technical documentation and visual diagrams for the SIPANDA Retribusi system.
+Selamat datang di dokumentasi API MITRA (Mitra Bapenda - Manajemen Integrasi Tax, Retribusi, dan Aset Daerah). Dokumentasi ini mencakup seluruh endpoint yang tersedia untuk integrasi dengan aplikasi Admin, Petugas, dan Mobile.
 
-**Live Documentation Portal**: [api.sipanda.online/docs](https://api.sipanda.online/docs)
+## Daftar Dokumentasi
 
-## 📂 Folder Structure
-- `system_documentation.md`: Technical breakdown of architecture, schema, and roles.
-- `retribusi_system_diagrams.md`: Mermaid flowcharts for registration and billing flows.
-- `architecture_diagram.png`: Visual overview of the multi-repo ecosystem.
+1.  **[Public APIs](public_apis.md)**
+    *   Endpoint yang dapat diakses tanpa autentikasi atau untuk kebutuhan awal (Login, Simulasi Pajak, PBB Lookup).
+2.  **[Core APIs](core_apis.md)**
+    *   Fungsi inti aplikasi: Pengelolaan Wajib Pajak, Objek Pajak, Pembuatan Tagihan (Billing), dan Pembayaran.
+3.  **[Surveillance & TTE](surveillance_tte.md)**
+    *   Modul lanjutan untuk Pengawasan (Audit Log, Anomali, Penindakan) serta E-Registry dan Tanda Tangan Elektronik (TTE).
+4.  **[Informasi Tambahan](spopd-form-structure.md)**
+    *   Struktur data formulir SPOPD dan pemetaan field database.
+5.  **[Project Artifacts](artifacts/task.md)**
+    *   Berisi [Task List](artifacts/task.md), [Implementation Plan](artifacts/implementation_plan.md), dan [Walkthrough](artifacts/walkthrough.md) pengerjaan fitur.
 
-## 🚀 Repositories Covered
-1. **retribusi-api**: The core backend engine.
-2. **retribusi-admin**: Desktop management dashboard.
-3. **retribusi-mobile**: Citizen portal mobile app.
-4. **retribusi-petugas**: Field officer application.
+## Standar API
+
+- **Base URL**: `https://api.sipanda.online/api`
+- **Format Respons**: JSON
+- **Autentikasi**: Laravel Sanctum (Bearer Token)
+- **Status Codes**: 
+    - `200 OK`: Berhasil
+    - `201 Created`: Berhasil membuat data
+    - `401 Unauthorized`: Token tidak valid atau sesi berakhir
+    - `403 Forbidden`: Tidak memiliki izin akses
+    - `422 Unprocessable Content`: Validasi input gagal
+    - `500 Server Error`: Kesalahan pada server
