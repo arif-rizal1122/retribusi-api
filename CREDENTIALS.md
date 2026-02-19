@@ -1,4 +1,4 @@
-# SIPANDA Account Credentials
+# MITRA System Credentials
 
 ## 1. Super Admin (Akses Penuh)
 - **Email**: `admin@retribusi.id`
