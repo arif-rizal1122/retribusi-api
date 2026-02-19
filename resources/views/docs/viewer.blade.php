@@ -33,6 +33,7 @@
                         <a href="{{ url('/docs/README') }}" class="{{ $current_page === 'README' ? 'text-white border-b-2 border-white pb-1' : 'text-slate-300 hover:text-white' }} transition-all">Utama</a>
                         <a href="{{ url('/docs/public_apis') }}" class="{{ $current_page === 'public_apis' ? 'text-white border-b-2 border-white pb-1' : 'text-slate-300 hover:text-white' }} transition-all text-xs">Public</a>
                         <a href="{{ url('/docs/core_apis') }}" class="{{ $current_page === 'core_apis' ? 'text-white border-b-2 border-white pb-1' : 'text-slate-300 hover:text-white' }} transition-all text-xs">Core</a>
+                        <a href="{{ url('/docs/penalty_scheme') }}" class="{{ $current_page === 'penalty_scheme' ? 'text-white border-b-2 border-white pb-1' : 'text-slate-300 hover:text-white' }} transition-all text-xs">Penalty</a>
                         <a href="{{ url('/docs/surveillance_tte') }}" class="{{ $current_page === 'surveillance_tte' ? 'text-white border-b-2 border-white pb-1' : 'text-slate-300 hover:text-white' }} transition-all text-xs">Advanced</a>
                         <a href="{{ url('/docs/system_documentation') }}" class="{{ $current_page === 'system_documentation' ? 'text-white border-b-2 border-white pb-1' : 'text-slate-300 hover:text-white' }} transition-all text-xs">Arsitektur</a>
                     </nav>

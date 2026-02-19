@@ -18,9 +18,9 @@ class TaxpayerSearchController extends Controller
 
         if (!$taxpayer) {
             return response()->json([
-                'message' => 'Data wajib pajak tidak ditemukan',
+                'message' => 'Data wajib pajak belum terdaftar',
                 'found' => false
-            ], 404);
+            ], 200);
         }
 
         return response()->json([
