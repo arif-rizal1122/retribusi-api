@@ -2,6 +2,10 @@
     - [ ] **Card: SPPT Online (PBB)**
         - **Skenario**: Buka detail tagihan PBB -> Klik tombol/link Cetak SPPT -> Pastikan PDF terunduh dengan format yang benar.
         - **Data**: Pastikan tagihan bertipe PBB-P2.
+    - [x] **Card: Synchronization & Git**
+        - [x] Push all changes to `dev` branch
+        - [x] Sync documentation artifacts to `docs/artifacts`
+        - [x] Update documentation at `/docs` endpoint
     - [x] **Implementation: Expand API Docs**
         - [x] Create `docs/README.md` (Main Index)
         - [x] Document Public APIs (`simulate-tax`, `login`, `pbb`)
