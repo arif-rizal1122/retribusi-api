@@ -157,6 +157,26 @@ class TaxHierarchySyncSeeder extends Seeder
             'rates' => [['name' => 'Tarif Standar 10%', 'amount' => 10, 'unit' => '%', 'formula' => 'omzet * 0.10']],
         ]);
 
+        $this->syncClassification($bapenda, $w2, 'PBJT - Jasa Catering', [
+            'code' => 'PBJT-CAT', 'icon' => self::ICON_PAJAK, 'formula' => 'omzet * 0.10',
+            'schema' => [
+                ['key' => 'omzet', 'label' => 'Omzet Penjualan (Rata-rata/Bulan)', 'type' => 'number', 'required' => true],
+                ['key' => 'nama_perusahaan', 'label' => 'Nama Perusahan/Catering', 'type' => 'text', 'required' => true],
+                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
+            ],
+            'rates' => [['name' => 'Tarif Standar 10%', 'amount' => 10, 'unit' => '%', 'formula' => 'omzet * 0.10']],
+        ]);
+
+        $this->syncClassification($bapenda, $w2, 'PBJT - Jasa Event/Hiburan Lainnya', [
+            'code' => 'PBJT-EVT', 'icon' => self::ICON_PAJAK, 'formula' => 'omzet * 0.10',
+            'schema' => [
+                ['key' => 'omzet', 'label' => 'Omzet Penjualan Event', 'type' => 'number', 'required' => true],
+                ['key' => 'nama_event', 'label' => 'Nama Event/Kegiatan', 'type' => 'text', 'required' => true],
+                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
+            ],
+            'rates' => [['name' => 'Tarif Standar 10%', 'amount' => 10, 'unit' => '%', 'formula' => 'omzet * 0.10']],
+        ]);
+
         $this->syncClassification($bapenda, $w2, 'PBJT - Tenaga Listrik', [
             'code' => 'PBJT-LIS', 'icon' => self::ICON_PAJAK, 'formula' => 'tagihan_listrik * tariff',
             'schema' => [
