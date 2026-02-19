@@ -255,6 +255,25 @@ class BillController extends Controller
     }
 
     /**
+     * Export/Preview SPPT (PBB)
+     */
+    public function exportSPPT(Bill $bill, \App\Services\OfficialDocumentService $docService)
+    {
+        try {
+            // Verify if this is actually a PBB bill
+            $name = strtolower($bill->retributionType->name ?? '');
+            if (!str_contains($name, 'pbb') && !str_contains($name, 'pajak bumi')) {
+                return response()->json(['message' => 'Hanya tagihan PBB yang dapat mencetak SPPT.'], 400);
+            }
+
+            $data = $docService->generateSPPT($bill);
+            return view('pdf.sppt', $data);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Gagal generate SPPT: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Helper to calculate bill amount based on tax object hierarchy and formulas
      */
     private function calculateAmount($taxObject, $inputData = [])
