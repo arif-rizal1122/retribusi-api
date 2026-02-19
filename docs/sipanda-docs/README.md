@@ -10,7 +10,9 @@ Selamat datang di dokumentasi API MITRA (Mitra Bapenda - Manajemen Integrasi Tax
     *   Fungsi inti aplikasi: Pengelolaan Wajib Pajak, Objek Pajak, Pembuatan Tagihan (Billing), dan Pembayaran.
 3.  **[Surveillance & TTE](surveillance_tte.md)**
     *   Modul lanjutan untuk Pengawasan (Audit Log, Anomali, Penindakan) serta E-Registry dan Tanda Tangan Elektronik (TTE).
-4.  **[Informasi Tambahan](spopd-form-structure.md)**
+4.  **[Skema Penalty & Denda](penalty_scheme.md)**
+    *   Penjelasan tarif bunga keterlambatan, denda lapor, dan prosedur amnesty.
+5.  **[Informasi Tambahan](spopd-form-structure.md)**
     *   Struktur data formulir SPOPD dan pemetaan field database.
 5.  **[Project Artifacts](artifacts/task.md)**
     *   Berisi [Task List](artifacts/task.md), [Implementation Plan](artifacts/implementation_plan.md), dan [Walkthrough](artifacts/walkthrough.md) pengerjaan fitur.
