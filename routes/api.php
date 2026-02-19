@@ -163,6 +163,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/bills/{bill}/pay', [PaymentController::class, 'store']); // Backward compatibility
     Route::get('/bills/{bill}/skrd', [BillController::class, 'exportSKRD']);
     Route::get('/bills/{bill}/sspd', [BillController::class, 'exportSSPD']);
+    Route::get('/bills/{bill}/sppt', [BillController::class, 'exportSPPT']);
     
     // Verifications
     Route::put('/verifications/{verification}/status', [VerificationController::class, 'updateStatus']);

@@ -84,6 +84,52 @@ class OfficialDocumentService
     }
 
     /**
+     * Generate SPPT (Surat Pemberitahuan Pajak Terutang) for PBB-P2
+     */
+    public function generateSPPT(Bill $bill)
+    {
+        $bill->load(['taxpayer', 'taxObject.classification', 'retributionType']);
+        
+        $metadata = array_merge($bill->taxObject->metadata ?? [], $bill->metadata ?? []);
+        
+        $luasBumi = (float) ($metadata['luas_bumi'] ?? $metadata['luas_tanah'] ?? 0);
+        $kelasBumi = (string) ($metadata['kelas_bumi'] ?? '');
+        $luasBangunan = (float) ($metadata['luas_bangunan'] ?? 0);
+        $kelasBangunan = (string) ($metadata['kelas_bangunan'] ?? '');
+        
+        $pbbService = app(\App\Services\PbbCalculationService::class);
+        $njoptkp = (float) ($metadata['njoptkp'] ?? 10000000);
+        $tariff = (float) ($metadata['tariff'] ?? 0.001);
+
+        $calc = $pbbService->calculate($luasBumi, $kelasBumi, $luasBangunan, $kelasBangunan, $njoptkp, $tariff);
+
+        $totalPbb = (float) $calc['pbb_terhutang'];
+
+        return [
+            'nop' => $bill->taxObject->nop ?? 'BELUM ADA NOP',
+            'year' => date('Y', strtotime($bill->period_start ?? $bill->created_at)),
+            'taxpayer_name' => $bill->taxpayer->name,
+            'taxpayer_address' => $bill->taxpayer->address ?? 'Kota Baubau',
+            'luas_tanah' => $luasBumi,
+            'kelas_bumi' => $kelasBumi,
+            'njop_bumi_m2' => $calc['njop_bumi_per_m2'],
+            'total_njop_bumi' => $calc['total_njop_bumi'],
+            'luas_bangunan' => $luasBangunan,
+            'kelas_bangunan' => $kelasBangunan,
+            'njop_bangunan_m2' => $calc['njop_bangunan_per_m2'],
+            'total_njop_bangunan' => $calc['total_njop_bangunan'],
+            'total_njop' => $calc['total_njop'],
+            'njoptkp' => $njoptkp,
+            'njop_kp' => $calc['total_njop'] - $njoptkp,
+            'tariff_percent' => $tariff * 100,
+            'pbb_terhutang' => $totalPbb,
+            'terbilang' => self::terbilang($totalPbb),
+            'due_date' => $bill->due_date ? $bill->due_date->isoFormat('D MMMM YYYY') : '-',
+            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+        ];
+    }
+
+    /**
      * Sign an official document (TTE)
      */
     public function signDocument($type, $id, \App\Models\User $signer, $notes = null)

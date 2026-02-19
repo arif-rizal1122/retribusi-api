@@ -8,13 +8,18 @@ use App\Services\CloudinaryService;
 
 class MeController extends Controller
 {
-    /**
-     * Get current user profile (Taxpayer/Citizen)
-     */
     public function show(Request $request)
     {
+        $user = $request->user();
+        $isTaxpayer = $user instanceof \App\Models\Taxpayer;
+
+        $load = ['opd'];
+        if ($isTaxpayer) {
+            $load = array_merge($load, ['retributionTypes', 'retributionClassifications']);
+        }
+
         return response()->json([
-            'data' => $request->user()->load(['opd', 'retributionTypes', 'retributionClassifications'])
+            'data' => $user->load($load)
         ]);
     }
 
@@ -22,6 +27,7 @@ class MeController extends Controller
     {
         $user = $request->user();
         $cloudinary = app(CloudinaryService::class);
+        $isTaxpayer = $user instanceof \App\Models\Taxpayer;
 
         $request->validate([
             'name' => 'sometimes|string|max:255',
@@ -43,9 +49,10 @@ class MeController extends Controller
 
         // Handle Avatar/Photo Upload
         if ($request->hasFile('avatar')) {
+            $folder = $isTaxpayer ? 'avatars/taxpayers' : 'avatars/users';
             $avatarUrl = $cloudinary->upload(
                 $request->file('avatar'), 
-                'avatars/taxpayers'
+                $folder
             );
             $metadata['avatar_url'] = $avatarUrl;
         }
@@ -54,14 +61,19 @@ class MeController extends Controller
         $user->save();
 
         // Log for debugging
-        \Log::info('Profile updated for taxpayer ID: ' . $user->id, [
+        \Log::info('Profile updated for ID: ' . $user->id . ' (Type: ' . class_basename($user) . ')', [
             'name' => $user->name,
             'has_avatar' => isset($metadata['avatar_url'])
         ]);
 
+        $load = ['opd'];
+        if ($isTaxpayer) {
+            $load = array_merge($load, ['retributionTypes', 'retributionClassifications']);
+        }
+
         return response()->json([
             'message' => 'Profil berhasil diperbarui',
-            'data' => $user->fresh()->load(['opd', 'retributionTypes', 'retributionClassifications'])
+            'data' => $user->fresh()->load($load)
         ]);
     }
 }
