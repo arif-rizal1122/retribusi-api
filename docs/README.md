@@ -1,6 +1,6 @@
-# Sipanda API Documentation
+# MITRA - Mitra Bapenda
 
-Selamat datang di dokumentasi API Sipanda (Sistem Informasi Pajak dan Retribusi Daerah). Dokumentasi ini mencakup seluruh endpoint yang tersedia untuk integrasi dengan aplikasi Admin, Petugas, dan Mobile.
+Selamat datang di dokumentasi API MITRA (Mitra Bapenda - Manajemen Integrasi Tax, Retribusi, dan Aset Daerah). Dokumentasi ini mencakup seluruh endpoint yang tersedia untuk integrasi dengan aplikasi Admin, Petugas, dan Mobile.
 
 ## Daftar Dokumentasi
 
@@ -12,6 +12,8 @@ Selamat datang di dokumentasi API Sipanda (Sistem Informasi Pajak dan Retribusi 
     *   Modul lanjutan untuk Pengawasan (Audit Log, Anomali, Penindakan) serta E-Registry dan Tanda Tangan Elektronik (TTE).
 4.  **[Informasi Tambahan](spopd-form-structure.md)**
     *   Struktur data formulir SPOPD dan pemetaan field database.
+5.  **[Project Artifacts](artifacts/task.md)**
+    *   Berisi [Task List](artifacts/task.md), [Implementation Plan](artifacts/implementation_plan.md), dan [Walkthrough](artifacts/walkthrough.md) pengerjaan fitur.
 
 ## Standar API
 

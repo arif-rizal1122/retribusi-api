@@ -89,7 +89,7 @@
     </div>
 
     <div class="footer">
-        <p>Dokumen ini diterbitkan secara otomatis oleh Sistem Informasi Pajak dan Retribusi Daerah (SIPANDA) Kota Baubau.</p>
+        <p>Dokumen ini diterbitkan secara otomatis oleh MITRA (Mitra Bapenda - Manajemen Integrasi Tax, Retribusi, dan Aset Daerah) Kota Baubau.</p>
         <p>Bukti ini sah dan memiliki kekuatan hukum yang sama dengan tanda terima manual sesuai regulasi e-Government.</p>
         <p>ID Transaksi: {{ md5($number . $paid_at) }}</p>
     </div>
