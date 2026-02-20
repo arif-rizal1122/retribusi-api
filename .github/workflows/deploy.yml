@@ -19,7 +19,7 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            cd /var/www/retribusi-api
+            cd /home/sipanda/retribusi-api
 
             # Pull latest code
             git pull origin main
