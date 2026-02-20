@@ -86,7 +86,7 @@ class TaxHierarchySyncSeeder extends Seeder
                 ['key' => 'luas_bangunan', 'label' => 'Luas Bangunan (m2)', 'type' => 'number', 'required' => true],
                 ['key' => 'kelas_bangunan', 'label' => 'Kelas NJOP Bangunan', 'type' => 'select', 'options' => $bangunanClasses, 'required' => true],
                 ['key' => 'nomor_sertifikat', 'label' => 'Nomor Sertifikat (SHM/HGB)', 'type' => 'text', 'required' => true],
-                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
+                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'google_map', 'required' => true],
             ],
             'rates' => [
                 ['name' => 'Lahan Produksi Pangan 0.25%', 'amount' => 0.25, 'unit' => '%', 'formula' => '(njop - 10000000) * (njkp_percent / 100) * 0.0025'],
@@ -117,7 +117,7 @@ class TaxHierarchySyncSeeder extends Seeder
             'code' => 'WALET', 'icon' => self::ICON_WALET, 'formula' => 'nilai_jual * 0.10',
             'schema' => [
                 ['key' => 'nilai_jual', 'label' => 'Nilai Jual Sarang (Rp)', 'type' => 'number', 'required' => true],
-                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
+                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'google_map', 'required' => true],
             ],
             'rates' => [['name' => 'Tarif Walet 10%', 'amount' => 10, 'unit' => '%', 'formula' => 'nilai_jual * 0.10']],
         ]);
@@ -152,7 +152,7 @@ class TaxHierarchySyncSeeder extends Seeder
             'schema' => [
                 ['key' => 'omzet', 'label' => 'Omzet Penjualan (Rata-rata/Bulan)', 'type' => 'number', 'required' => true],
                 ['key' => 'keterangan_usaha', 'label' => 'Keterangan Usaha', 'type' => 'select', 'options' => ['Aktif', 'Tidak Aktif'], 'required' => true],
-                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
+                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'google_map', 'required' => true],
             ],
             'rates' => [['name' => 'Tarif Standar 10%', 'amount' => 10, 'unit' => '%', 'formula' => 'omzet * 0.10']],
         ]);
@@ -162,7 +162,7 @@ class TaxHierarchySyncSeeder extends Seeder
             'schema' => [
                 ['key' => 'omzet', 'label' => 'Omzet Penjualan (Rata-rata/Bulan)', 'type' => 'number', 'required' => true],
                 ['key' => 'nama_perusahaan', 'label' => 'Nama Perusahan/Catering', 'type' => 'text', 'required' => true],
-                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
+                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'google_map', 'required' => true],
             ],
             'rates' => [['name' => 'Tarif Standar 10%', 'amount' => 10, 'unit' => '%', 'formula' => 'omzet * 0.10']],
         ]);
@@ -172,7 +172,7 @@ class TaxHierarchySyncSeeder extends Seeder
             'schema' => [
                 ['key' => 'omzet', 'label' => 'Omzet Penjualan Event', 'type' => 'number', 'required' => true],
                 ['key' => 'nama_event', 'label' => 'Nama Event/Kegiatan', 'type' => 'text', 'required' => true],
-                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
+                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'google_map', 'required' => true],
             ],
             'rates' => [['name' => 'Tarif Standar 10%', 'amount' => 10, 'unit' => '%', 'formula' => 'omzet * 0.10']],
         ]);
@@ -182,7 +182,7 @@ class TaxHierarchySyncSeeder extends Seeder
             'schema' => [
                 ['key' => 'tagihan_listrik', 'label' => 'Tagihan Listrik / Bulan', 'type' => 'number', 'required' => true],
                 ['key' => 'keterangan_usaha', 'label' => 'Keterangan Usaha', 'type' => 'select', 'options' => ['Aktif', 'Tidak Aktif'], 'required' => true],
-                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
+                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'google_map', 'required' => true],
             ],
             'rates' => [
                 ['name' => 'Umum 10%', 'amount' => 10, 'unit' => '%', 'formula' => 'tagihan_listrik * 0.10'],
@@ -196,7 +196,7 @@ class TaxHierarchySyncSeeder extends Seeder
             'schema' => [
                 ['key' => 'omzet', 'label' => 'Omzet / Pendapatan Kamar (Rata-rata/Bulan)', 'type' => 'number', 'required' => true],
                 ['key' => 'keterangan_usaha', 'label' => 'Keterangan Usaha', 'type' => 'select', 'options' => ['Aktif', 'Tidak Aktif'], 'required' => true],
-                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
+                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'google_map', 'required' => true],
             ],
             'rates' => [['name' => 'Tarif Standar 10%', 'amount' => 10, 'unit' => '%', 'formula' => 'omzet * 0.10']],
         ]);
@@ -206,7 +206,7 @@ class TaxHierarchySyncSeeder extends Seeder
             'schema' => [
                 ['key' => 'omzet', 'label' => 'Pendapatan Parkir (Rata-rata/Bulan)', 'type' => 'number', 'required' => true],
                 ['key' => 'keterangan_usaha', 'label' => 'Keterangan Usaha', 'type' => 'select', 'options' => ['Aktif', 'Tidak Aktif'], 'required' => true],
-                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
+                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'google_map', 'required' => true],
             ],
             'rates' => [['name' => 'Tarif Standar 10%', 'amount' => 10, 'unit' => '%', 'formula' => 'omzet * 0.10']],
         ]);
@@ -216,7 +216,7 @@ class TaxHierarchySyncSeeder extends Seeder
             'schema' => [
                 ['key' => 'omzet', 'label' => 'Omzet Penjualan (Rata-rata/Bulan)', 'type' => 'number', 'required' => true],
                 ['key' => 'keterangan_usaha', 'label' => 'Keterangan Usaha', 'type' => 'select', 'options' => ['Aktif', 'Tidak Aktif'], 'required' => true],
-                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
+                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'google_map', 'required' => true],
             ],
             'rates' => [
                 ['name' => 'Umum 10%', 'amount' => 10, 'unit' => '%', 'formula' => 'omzet * 0.10'],
@@ -237,7 +237,7 @@ class TaxHierarchySyncSeeder extends Seeder
             'code' => 'PTKU', 'icon' => self::ICON_RETRIB, 'formula' => 'amount',
             'schema' => [
                 ['key' => 'jenis_usaha', 'label' => 'Jenis Usaha', 'type' => 'text', 'required' => true],
-                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'text', 'required' => true],
+                ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'google_map', 'required' => true],
             ],
         ]);
 
