@@ -341,9 +341,6 @@ class BillController extends Controller
         return $type ? $type->base_amount : 0;
     }
 
-    /**
-     * Sign a bill using TTE
-     */
     public function signTTE(Request $request, \App\Services\OfficialDocumentService $docService)
     {
         $validated = $request->validate([
@@ -360,13 +357,18 @@ class BillController extends Controller
         }
 
         try {
-            $signedDoc = $docService->signDocument('bill', $bill->id, $user, $validated['notes']);
+            $signedDoc = $docService->signDocument('bill', $bill->id, $user, $validated['notes'] ?? null);
             return response()->json([
                 'message' => 'Dokumen berhasil ditandatangani secara elektronik.',
                 'signed_document' => $signedDoc
             ]);
-        } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("TTE Signing Error: " . $e->getMessage(), [
+                'exception' => $e,
+                'user_id' => $user->id,
+                'bill_id' => $bill->id
+            ]);
+            return response()->json(['message' => 'Gagal menandatangani: ' . $e->getMessage()], 500);
         }
     }
 }
