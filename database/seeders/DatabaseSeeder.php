@@ -184,54 +184,13 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        // Create sample taxpayers
-        $wp1 = Taxpayer::create([
-            'opd_id' => $dishub->id,
-            'nik' => '7301010101010001',
-            'name' => 'Budi Santoso',
-            'address' => 'Jl. Merdeka No. 10',
-            'phone' => '081234567890',
-            'npwpd' => 'NPWPD-001',
-            'object_name' => 'Lahan Parkir Mall',
-            'object_address' => 'Jl. Pusat Kota No. 1',
-            'password' => Hash::make('password123'),
-            'is_active' => true,
-        ]);
-        $wp1->retributionTypes()->attach([$parkirMobil->id, $parkirMotor->id]);
-
-        $wp2 = Taxpayer::create([
-            'opd_id' => $disperindag->id,
-            'nik' => '7301010101010002',
-            'name' => 'Siti Aminah',
-            'address' => 'Jl. Pasar No. 5',
-            'phone' => '081234567891',
-            'npwpd' => 'NPWPD-002',
-            'object_name' => 'Kios A-01',
-            'object_address' => 'Pasar Sentral Blok A',
-            'password' => Hash::make('password123'),
-            'is_active' => true,
-        ]);
-        $wp2->retributionTypes()->attach([$kios->id]);
-
-        $wp3 = Taxpayer::create([
-            'opd_id' => $dlh->id,
-            'nik' => '7301010101010003',
-            'name' => 'Ahmad Yani',
-            'address' => 'Jl. Perumahan No. 20',
-            'phone' => '081234567892',
-            'npwpd' => 'NPWPD-003',
-            'object_name' => 'Rumah Tinggal',
-            'object_address' => 'Jl. Perumahan No. 20',
-            'password' => Hash::make('password123'),
-            'is_active' => true,
-        ]);
-        $wp3->retributionTypes()->attach([$sampah->id]);
-
         // Run BAPENDA Master Data Seeder
         $this->call(BapendaMasterDataSeeder::class);
+        $this->call(TestingScenarioSeeder::class);
 
         $this->command->info('Database seeded successfully!');
-        $this->command->info('Super Admin: admin@retribusi.id / password123');
+        $this->command->info('Super Admin: superadmin@sipanda.online / password');
+        $this->command->info('OPD Bapenda: admin@bapenda.go.id / password123');
         $this->command->info('OPD Dishub: dishub@retribusi.id / password123');
         $this->command->info('OPD Disperindag: disperindag@retribusi.id / password123');
         $this->command->info('OPD DLH: dlh@retribusi.id / password123');

@@ -5,7 +5,7 @@ spawn ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74
 expect "password:"
 send "$password\r"
 expect "$ "
-send "ls /etc/nginx/sites-enabled/\r"
+send "grep -r "dev.sipanda.online" /etc/nginx/sites-enabled/\r"
 expect "$ "
 send "exit\r"
 expect eof

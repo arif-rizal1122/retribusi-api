@@ -26,7 +26,7 @@ class BillController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = Bill::with(['retributionType', 'user', 'opd', 'taxObject', 'taxpayer']);
+        $query = Bill::with(['retributionType', 'user', 'opd', 'taxObject', 'taxpayer', 'classification']);
 
         if ($user && in_array($user->role, ['opd', 'petugas'])) {
             $query->where('opd_id', $user->opd_id);
