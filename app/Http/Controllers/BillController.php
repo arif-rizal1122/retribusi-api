@@ -353,9 +353,9 @@ class BillController extends Controller
 
         $bill = Bill::findOrFail($validated['bill_id']);
         
-        // Authorization check (Kadis/Kabid usually)
+        // Authorization check (Higher authority or OPD Admin)
         $user = $request->user();
-        if (!$user->isSuperAdmin() && $user->role !== 'kadis' && $user->role !== 'kabid') {
+        if (!$user->isSuperAdmin() && !in_array($user->role, ['kadis', 'kabid', 'opd'])) {
             return response()->json(['message' => 'Unauthorized to sign. Higher authority required.'], 403);
         }
 
