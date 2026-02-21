@@ -107,26 +107,37 @@ class AnalyticsController extends Controller
     {
         $year = $request->get('year', date('Y'));
 
-        // 1. Aggregate revenue per tax object location
-        $taxObjects = DB::table('tax_objects')
-            ->join('taxpayers', 'tax_objects.taxpayer_id', '=', 'taxpayers.id')
-            ->join('bills', 'tax_objects.id', '=', 'bills.tax_object_id')
-            ->join('payments', 'bills.id', '=', 'payments.bill_id')
-            ->join('retribution_types', 'tax_objects.retribution_type_id', '=', 'retribution_types.id')
-            ->whereYear('payments.paid_at', $year)
-            ->where('payments.status', 'success')
-            ->select(
-                'tax_objects.id',
-                DB::raw("CONCAT(taxpayers.name, ' - ', tax_objects.name) as name"),
-                'tax_objects.latitude',
-                'tax_objects.longitude',
-                'retribution_types.icon',
-                DB::raw('SUM(payments.amount) as total_revenue')
-            )
-            ->whereNotNull('tax_objects.latitude')
-            ->whereNotNull('tax_objects.longitude')
-            ->groupBy('tax_objects.id', 'taxpayers.name', 'tax_objects.name', 'tax_objects.latitude', 'tax_objects.longitude', 'retribution_types.icon')
-            ->get();
+        // 1. Get all Tax Objects with coordinates
+        $taxObjects = \App\Models\TaxObject::with(['taxpayer', 'retributionType', 'classification'])
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get()
+            ->map(function($obj) use ($year) {
+                // Calculate total revenue for this object in the specified year
+                $totalRevenue = Payment::join('bills', 'payments.bill_id', '=', 'bills.id')
+                    ->where('bills.tax_object_id', $obj->id)
+                    ->whereYear('payments.paid_at', $year)
+                    ->where('payments.status', 'success')
+                    ->sum('payments.amount');
+
+                // Check if there are any pending bills for this tax object
+                $hasUnpaidBills = \App\Models\Bill::where('tax_object_id', $obj->id)
+                    ->where('status', 'pending')
+                    ->exists();
+
+                return [
+                    'id' => $obj->id,
+                    'name' => $obj->taxpayer->name . ' - ' . $obj->name,
+                    'latitude' => (float)$obj->latitude,
+                    'longitude' => (float)$obj->longitude,
+                    'icon' => $obj->retributionType->icon ?? null,
+                    'total_revenue' => (float)$totalRevenue,
+                    'status' => 'taxpayer',
+                    'is_paid' => !$hasUnpaidBills,
+                    'classification_name' => $obj->classification->name ?? 'N/A',
+                    'taxpayer_photo' => $obj->taxpayer->metadata['foto_lokasi_open_kamera'] ?? null,
+                ];
+            });
 
         // 2. Include Zones as well
         $zones = \App\Models\Zone::with(['retributionType'])
@@ -141,7 +152,9 @@ class AnalyticsController extends Controller
                     'longitude' => (float)$z->longitude,
                     'icon' => $z->retributionType->icon ?? null,
                     'is_zone' => true,
-                    'total_revenue' => 0
+                    'total_revenue' => 0,
+                    'status' => 'zone',
+                    'is_paid' => true,
                 ];
             });
 

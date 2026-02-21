@@ -11,7 +11,7 @@ Semua project telah diupdate ke versi terbaru dari branch `dev`:
 
 ## 2. Perbaikan Port Conflict
 Terdapat konflik pada port `3001` antara `wa-gateway` dan `retribusi-admin`.
-- **Perubahan**: Port `retribusi-admin` diubah dari `3001` ke **`3004`** di file `retribusi-admin/vite.config.ts`.
+- **Perubahan**: Port `retribusi-admin` diubah dari `3001` ke **`3001`** di file `retribusi-admin/vite.config.ts`.
 - **Tujuan**: Memungkinkan kedua service berjalan bersamaan di satu mesin.
 
 ## 3. Resolusi Error 500 (Tambah Wajib Pajak)
@@ -29,7 +29,7 @@ Aplikasi frontend sebelumnya diarahkan ke `api.sipanda.online` (production).
 - **Tujuan**: Agar fitur baru yang belum di-deploy ke production bisa langsung ditest secara lokal menggunakan backend lokal.
 
 ## 5. Ringkasan Akses Lokal
-- **Admin Dashboard**: [http://localhost:3004](http://localhost:3004)
+- **Admin Dashboard**: [http://localhost:3001](http://localhost:3001)
 - **Aplikasi Mobile**: [http://localhost:3002](http://localhost:3002)
 - **Aplikasi Petugas**: [http://localhost:3003](http://localhost:3003)
 - **Backend API**: [http://127.0.0.1:8000](http://127.0.0.1:8000)
