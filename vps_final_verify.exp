@@ -1,0 +1,3 @@
+#!/usr/bin/expect -f
+set timeout 15
+set password "Sipanda123#"

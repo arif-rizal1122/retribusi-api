@@ -1,13 +1,11 @@
 #!/usr/bin/expect -f
-set timeout 120
+set timeout 15
 set password "Sipanda123#"
 spawn ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74
 expect "password:"
 send "$password\r"
 expect "$ "
-send "ls /etc/nginx/sites-enabled\r"
-expect "$ "
-send "cat /etc/nginx/sites-enabled/admin.sipanda.online\r"
+send "grep -r \"dev.sipanda.online\" /etc/nginx/sites-enabled/\r"
 expect "$ "
 send "exit\r"
 expect eof
