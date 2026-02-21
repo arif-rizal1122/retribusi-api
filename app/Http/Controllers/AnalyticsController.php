@@ -63,10 +63,10 @@ class AnalyticsController extends Controller
             ];
         }
 
-        // 4. Performance by Territory (Wilayah I & II)
+        $bapendaId = Opd::where('code', 'BAPENDA')->first()->id ?? 46;
         $territoryPerformance = DB::table('retribution_types')
             ->whereIn('name', ['Wilayah I', 'Wilayah II'])
-            ->where('opd_id', 46) // BAPENDA
+            ->where('opd_id', $bapendaId)
             ->get()
             ->map(function($type) use ($year) {
                 $billed = Bill::where('retribution_type_id', $type->id)
