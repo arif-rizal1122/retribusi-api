@@ -1,0 +1,80 @@
+[
+    {
+        "name": "Zona Pusat Kuliner Pantai Kamali",
+        "code": "Z-KAMALI-01",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 8,
+        "geometry_type": "polygon",
+        "description": "Wilayah kuliner dan UMKM sekitar Pantai Kamali",
+        "coordinates": [
+            [
+                -5.4600,
+                122.5990
+            ],
+            [
+                -5.4600,
+                122.6015
+            ],
+            [
+                -5.4630,
+                122.6015
+            ],
+            [
+                -5.4630,
+                122.5990
+            ]
+        ]
+    },
+    {
+        "name": "Zona Perhotelan & Wisata Benteng",
+        "code": "Z-BENTENG-01",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 12,
+        "geometry_type": "polygon",
+        "description": "Area perhotelan dan penginapan sekitar Benteng Keraton Buton",
+        "coordinates": [
+            [
+                -5.4720,
+                122.6080
+            ],
+            [
+                -5.4720,
+                122.6140
+            ],
+            [
+                -5.4770,
+                122.6140
+            ],
+            [
+                -5.4770,
+                122.6080
+            ]
+        ]
+    },
+    {
+        "name": "Zona Parkir & Niaga Kotamara",
+        "code": "Z-KOTAMARA-01",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 13,
+        "geometry_type": "polygon",
+        "description": "Wilayah parkir terpadu dan kawasan bisnis Kotamara",
+        "coordinates": [
+            [
+                -5.4680,
+                122.5900
+            ],
+            [
+                -5.4680,
+                122.5960
+            ],
+            [
+                -5.4730,
+                122.5960
+            ],
+            [
+                -5.4730,
+                122.5900
+            ]
+        ]
+    }
+]
