@@ -17,6 +17,16 @@ class TTEService
     {
         $docNumber = $documentable->bill_number ?? $documentable->number ?? 'DOC-' . strtoupper(uniqid());
         
+        // Check if already signed
+        $existing = SignedDocument::where('document_type', get_class($documentable))
+            ->where('document_id', $documentable->id)
+            ->where('status', 'signed')
+            ->first();
+            
+        if ($existing) {
+            return $existing;
+        }
+
         // Generate a mock signature hash
         $hash = hash('sha256', $docNumber . $signer->id . now()->toIso8601String() . Str::random(16));
 
