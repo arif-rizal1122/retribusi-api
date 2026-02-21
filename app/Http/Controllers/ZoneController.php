@@ -43,6 +43,8 @@ class ZoneController extends Controller
             'description' => 'nullable|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'geometry_type' => 'nullable|in:point,polygon',
+            'coordinates' => 'nullable|array',
         ]);
 
         $zone = Zone::create($request->all());
@@ -77,6 +79,8 @@ class ZoneController extends Controller
             'description' => 'nullable|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'geometry_type' => 'nullable|in:point,polygon',
+            'coordinates' => 'nullable|array',
         ]);
 
         $zone->update($request->all());

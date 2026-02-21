@@ -141,20 +141,20 @@ class AnalyticsController extends Controller
 
         // 2. Include Zones as well
         $zones = \App\Models\Zone::with(['retributionType'])
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
             ->get()
             ->map(function($z) {
                 return [
                     'id' => 'zone-' . $z->id,
                     'name' => $z->name . ' (Zona)',
-                    'latitude' => (float)$z->latitude,
-                    'longitude' => (float)$z->longitude,
+                    'latitude' => (float)($z->latitude ?? ($z->coordinates[0][0] ?? 0)),
+                    'longitude' => (float)($z->longitude ?? ($z->coordinates[0][1] ?? 0)),
                     'icon' => $z->retributionType->icon ?? null,
                     'is_zone' => true,
                     'total_revenue' => 0,
                     'status' => 'zone',
                     'is_paid' => true,
+                    'geometry_type' => $z->geometry_type,
+                    'coordinates' => $z->coordinates,
                 ];
             });
 

@@ -17,6 +17,12 @@ class Zone extends Model
         'description',
         'latitude',
         'longitude',
+        'geometry_type',
+        'coordinates',
+    ];
+
+    protected $casts = [
+        'coordinates' => 'array',
     ];
 
     public function opd()
