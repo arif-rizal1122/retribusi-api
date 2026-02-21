@@ -19,7 +19,7 @@ cd /Users/pondokit/Herd/retribusi-api && php artisan serve --port=8000 > /dev/nu
 sleep 2
 
 # Start Admin Frontend
-echo "🖥️ Starting Admin (Port 3001)..."
+echo "🖥️ Starting Admin (Port 3004)..."
 cd /Users/pondokit/Herd/retribusi-admin && npm run dev > /dev/null 2>&1 &
 
 # Start Mobile Frontend
@@ -32,7 +32,7 @@ cd /Users/pondokit/Herd/retribusi-petugas && npm run dev > /dev/null 2>&1 &
 
 echo "✨ All services are starting in the background."
 echo "   - API: http://localhost:8000"
-echo "   - Admin: http://localhost:3001"
+echo "   - Admin: http://localhost:3004"
 echo "   - Mobile: http://localhost:3002"
 echo "   - Petugas: http://localhost:3003"
 echo "Press Ctrl+C to stop all services."
