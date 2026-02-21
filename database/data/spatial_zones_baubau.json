@@ -1,11 +1,172 @@
 [
     {
-        "name": "Zona Pusat Kuliner Pantai Kamali",
-        "code": "Z-KAMALI-01",
+        "_comment": "=== PBB-P2 (Pajak Bumi & Bangunan) ===",
+        "name": "Zona PBB Kel. Bataraguru",
+        "code": "Z-PBB-01",
+        "retribution_type_id": 18,
+        "retribution_classification_id": 1,
+        "geometry_type": "polygon",
+        "description": "Kawasan pemukiman padat Kelurahan Bataraguru",
+        "coordinates": [
+            [
+                -5.4580,
+                122.5950
+            ],
+            [
+                -5.4580,
+                122.5990
+            ],
+            [
+                -5.4620,
+                122.5990
+            ],
+            [
+                -5.4620,
+                122.5950
+            ]
+        ]
+    },
+    {
+        "name": "Zona PBB Kel. Wale",
+        "code": "Z-PBB-02",
+        "retribution_type_id": 18,
+        "retribution_classification_id": 1,
+        "geometry_type": "polygon",
+        "description": "Kawasan pemukiman Kelurahan Wale",
+        "coordinates": [
+            [
+                -5.4500,
+                122.6050
+            ],
+            [
+                -5.4500,
+                122.6100
+            ],
+            [
+                -5.4540,
+                122.6100
+            ],
+            [
+                -5.4540,
+                122.6050
+            ]
+        ]
+    },
+    {
+        "_comment": "=== BPHTB ===",
+        "name": "Zona BPHTB Kel. Kadolomoko",
+        "code": "Z-BPHTB-01",
+        "retribution_type_id": 18,
+        "retribution_classification_id": 2,
+        "geometry_type": "polygon",
+        "description": "Kawasan perkembangan properti Kelurahan Kadolomoko",
+        "coordinates": [
+            [
+                -5.4650,
+                122.5860
+            ],
+            [
+                -5.4650,
+                122.5920
+            ],
+            [
+                -5.4700,
+                122.5920
+            ],
+            [
+                -5.4700,
+                122.5860
+            ]
+        ]
+    },
+    {
+        "_comment": "=== Pajak Reklame ===",
+        "name": "Zona Reklame Jl. Sultan Hasanuddin",
+        "code": "Z-RKL-01",
+        "retribution_type_id": 18,
+        "retribution_classification_id": 3,
+        "geometry_type": "polygon",
+        "description": "Koridor reklame utama Jl. Sultan Hasanuddin",
+        "coordinates": [
+            [
+                -5.4660,
+                122.5980
+            ],
+            [
+                -5.4660,
+                122.6020
+            ],
+            [
+                -5.4680,
+                122.6020
+            ],
+            [
+                -5.4680,
+                122.5980
+            ]
+        ]
+    },
+    {
+        "name": "Zona Reklame Jl. Betoambari",
+        "code": "Z-RKL-02",
+        "retribution_type_id": 18,
+        "retribution_classification_id": 3,
+        "geometry_type": "polygon",
+        "description": "Koridor reklame Jl. Betoambari",
+        "coordinates": [
+            [
+                -5.4700,
+                122.6030
+            ],
+            [
+                -5.4700,
+                122.6070
+            ],
+            [
+                -5.4720,
+                122.6070
+            ],
+            [
+                -5.4720,
+                122.6030
+            ]
+        ]
+    },
+    {
+        "_comment": "=== Pajak MBLB ===",
+        "name": "Zona Galian MBLB Kel. Sulaa",
+        "code": "Z-MBLB-01",
+        "retribution_type_id": 18,
+        "retribution_classification_id": 5,
+        "geometry_type": "polygon",
+        "description": "Area pertambangan mineral bukan logam Kel. Sulaa",
+        "coordinates": [
+            [
+                -5.4850,
+                122.5800
+            ],
+            [
+                -5.4850,
+                122.5880
+            ],
+            [
+                -5.4920,
+                122.5880
+            ],
+            [
+                -5.4920,
+                122.5800
+            ]
+        ]
+    },
+    {
+        "_comment": "=== PBJT - Makan dan Minum ===",
+        "name": "Zona Kuliner Pantai Kamali",
+        "code": "Z-PBJT-MM-01",
         "retribution_type_id": 19,
         "retribution_classification_id": 8,
         "geometry_type": "polygon",
-        "description": "Wilayah kuliner dan UMKM sekitar Pantai Kamali",
+        "description": "Kawasan kuliner dan rumah makan sepanjang Pantai Kamali",
         "coordinates": [
             [
                 -5.4600,
@@ -26,12 +187,119 @@
         ]
     },
     {
-        "name": "Zona Perhotelan & Wisata Benteng",
-        "code": "Z-BENTENG-01",
+        "name": "Zona Kuliner Pasar Wameo",
+        "code": "Z-PBJT-MM-02",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 8,
+        "geometry_type": "polygon",
+        "description": "Pusat kuliner dan jajanan di sekitar Pasar Wameo",
+        "coordinates": [
+            [
+                -5.4640,
+                122.6000
+            ],
+            [
+                -5.4640,
+                122.6030
+            ],
+            [
+                -5.4660,
+                122.6030
+            ],
+            [
+                -5.4660,
+                122.6000
+            ]
+        ]
+    },
+    {
+        "name": "Zona Kuliner Kel. Lanto",
+        "code": "Z-PBJT-MM-03",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 8,
+        "geometry_type": "polygon",
+        "description": "Kawasan UMKM makanan Kelurahan Lanto",
+        "coordinates": [
+            [
+                -5.4550,
+                122.6020
+            ],
+            [
+                -5.4550,
+                122.6050
+            ],
+            [
+                -5.4570,
+                122.6050
+            ],
+            [
+                -5.4570,
+                122.6020
+            ]
+        ]
+    },
+    {
+        "_comment": "=== PBJT - Jasa Catering ===",
+        "name": "Zona Catering Kel. Katobengke",
+        "code": "Z-PBJT-CT-01",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 9,
+        "geometry_type": "polygon",
+        "description": "Sentra jasa catering Kelurahan Katobengke",
+        "coordinates": [
+            [
+                -5.4730,
+                122.6100
+            ],
+            [
+                -5.4730,
+                122.6130
+            ],
+            [
+                -5.4760,
+                122.6130
+            ],
+            [
+                -5.4760,
+                122.6100
+            ]
+        ]
+    },
+    {
+        "_comment": "=== PBJT - Jasa Event/Hiburan ===",
+        "name": "Zona Hiburan Lapangan Betoambari",
+        "code": "Z-PBJT-EV-01",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 10,
+        "geometry_type": "polygon",
+        "description": "Area event dan hiburan di sekitar Lapangan Betoambari",
+        "coordinates": [
+            [
+                -5.4690,
+                122.6040
+            ],
+            [
+                -5.4690,
+                122.6070
+            ],
+            [
+                -5.4710,
+                122.6070
+            ],
+            [
+                -5.4710,
+                122.6040
+            ]
+        ]
+    },
+    {
+        "_comment": "=== PBJT - Jasa Perhotelan ===",
+        "name": "Zona Hotel Kawasan Benteng",
+        "code": "Z-PBJT-HT-01",
         "retribution_type_id": 19,
         "retribution_classification_id": 12,
         "geometry_type": "polygon",
-        "description": "Area perhotelan dan penginapan sekitar Benteng Keraton Buton",
+        "description": "Kawasan perhotelan dan penginapan sekitar Benteng Keraton Buton",
         "coordinates": [
             [
                 -5.4720,
@@ -52,12 +320,39 @@
         ]
     },
     {
-        "name": "Zona Parkir & Niaga Kotamara",
-        "code": "Z-KOTAMARA-01",
+        "name": "Zona Hotel Waterfront Kamali",
+        "code": "Z-PBJT-HT-02",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 12,
+        "geometry_type": "polygon",
+        "description": "Kawasan hotel dan wisata tepi pantai Kamali",
+        "coordinates": [
+            [
+                -5.4590,
+                122.5970
+            ],
+            [
+                -5.4590,
+                122.6010
+            ],
+            [
+                -5.4620,
+                122.6010
+            ],
+            [
+                -5.4620,
+                122.5970
+            ]
+        ]
+    },
+    {
+        "_comment": "=== PBJT - Jasa Parkir ===",
+        "name": "Zona Parkir Pusat Kota (Pasar Karya)",
+        "code": "Z-PBJT-PK-01",
         "retribution_type_id": 19,
         "retribution_classification_id": 13,
         "geometry_type": "polygon",
-        "description": "Wilayah parkir terpadu dan kawasan bisnis Kotamara",
+        "description": "Area parkir terpadu sekitar Pasar Karya dan pusat bisnis",
         "coordinates": [
             [
                 -5.4680,
@@ -74,6 +369,220 @@
             [
                 -5.4730,
                 122.5900
+            ]
+        ]
+    },
+    {
+        "name": "Zona Parkir Terminal Kariangau",
+        "code": "Z-PBJT-PK-02",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 13,
+        "geometry_type": "polygon",
+        "description": "Area parkir Terminal Kariangau dan sekitarnya",
+        "coordinates": [
+            [
+                -5.4520,
+                122.5880
+            ],
+            [
+                -5.4520,
+                122.5930
+            ],
+            [
+                -5.4560,
+                122.5930
+            ],
+            [
+                -5.4560,
+                122.5880
+            ]
+        ]
+    },
+    {
+        "_comment": "=== PBJT - Jasa Kesenian dan Hiburan ===",
+        "name": "Zona Seni Budaya Keraton",
+        "code": "Z-PBJT-SN-01",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 14,
+        "geometry_type": "polygon",
+        "description": "Kawasan seni budaya dan pertunjukan di area Keraton Buton",
+        "coordinates": [
+            [
+                -5.4740,
+                122.6090
+            ],
+            [
+                -5.4740,
+                122.6120
+            ],
+            [
+                -5.4760,
+                122.6120
+            ],
+            [
+                -5.4760,
+                122.6090
+            ]
+        ]
+    },
+    {
+        "_comment": "=== Pajak Air Tanah ===",
+        "name": "Zona Air Tanah Kel. Ngkari-Ngkari",
+        "code": "Z-AIR-01",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 15,
+        "geometry_type": "polygon",
+        "description": "Zona pemanfaatan air tanah Kelurahan Ngkari-Ngkari",
+        "coordinates": [
+            [
+                -5.4480,
+                122.6080
+            ],
+            [
+                -5.4480,
+                122.6150
+            ],
+            [
+                -5.4530,
+                122.6150
+            ],
+            [
+                -5.4530,
+                122.6080
+            ]
+        ]
+    },
+    {
+        "_comment": "=== Penyediaan Tempat Kegiatan Usaha ===",
+        "name": "Zona Usaha Kel. Tomba",
+        "code": "Z-TKU-01",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 16,
+        "geometry_type": "polygon",
+        "description": "Kawasan penyediaan tempat kegiatan usaha Kelurahan Tomba",
+        "coordinates": [
+            [
+                -5.4600,
+                122.5920
+            ],
+            [
+                -5.4600,
+                122.5960
+            ],
+            [
+                -5.4640,
+                122.5960
+            ],
+            [
+                -5.4640,
+                122.5920
+            ]
+        ]
+    },
+    {
+        "_comment": "=== Retribusi Jasa Umum ===",
+        "name": "Zona Retribusi Sampah Kel. Bone-Bone",
+        "code": "Z-RJU-01",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 17,
+        "geometry_type": "polygon",
+        "description": "Kawasan pelayanan retribusi jasa umum (kebersihan/sampah) Kel. Bone-Bone",
+        "coordinates": [
+            [
+                -5.4560,
+                122.5870
+            ],
+            [
+                -5.4560,
+                122.5920
+            ],
+            [
+                -5.4600,
+                122.5920
+            ],
+            [
+                -5.4600,
+                122.5870
+            ]
+        ]
+    },
+    {
+        "_comment": "=== Retribusi Perizinan Tertentu ===",
+        "name": "Zona Perizinan Kawasan Industri Kel. Bugi",
+        "code": "Z-RPT-01",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 18,
+        "geometry_type": "polygon",
+        "description": "Kawasan perizinan usaha dan industri Kelurahan Bugi",
+        "coordinates": [
+            [
+                -5.4800,
+                122.5850
+            ],
+            [
+                -5.4800,
+                122.5930
+            ],
+            [
+                -5.4860,
+                122.5930
+            ],
+            [
+                -5.4860,
+                122.5850
+            ]
+        ]
+    },
+    {
+        "_comment": "=== Persetujuan Bangunan Gedung (PBG) ===",
+        "name": "Zona PBG Kel. Lamangga",
+        "code": "Z-PBG-01",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 19,
+        "geometry_type": "polygon",
+        "description": "Kawasan pengembangan bangunan baru Kelurahan Lamangga",
+        "coordinates": [
+            [
+                -5.4430,
+                122.6000
+            ],
+            [
+                -5.4430,
+                122.6060
+            ],
+            [
+                -5.4480,
+                122.6060
+            ],
+            [
+                -5.4480,
+                122.6000
+            ]
+        ]
+    },
+    {
+        "name": "Zona PBG Kel. Lipu",
+        "code": "Z-PBG-02",
+        "retribution_type_id": 19,
+        "retribution_classification_id": 19,
+        "geometry_type": "polygon",
+        "description": "Kawasan pengembangan perumahan Kelurahan Lipu",
+        "coordinates": [
+            [
+                -5.4760,
+                122.5940
+            ],
+            [
+                -5.4760,
+                122.5990
+            ],
+            [
+                -5.4800,
+                122.5990
+            ],
+            [
+                -5.4800,
+                122.5940
             ]
         ]
     }
