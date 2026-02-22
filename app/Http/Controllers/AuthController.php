@@ -87,13 +87,31 @@ class AuthController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:' . ($user instanceof \App\Models\User ? 'users' : 'taxpayers') . ',email,' . $user->id,
+            'surat_penugasan' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
         $user->update($request->only('name', 'email'));
 
+        // Handle Surat Penugasan upload
+        if ($request->hasFile('surat_penugasan')) {
+            $cloudinary = app(\App\Services\CloudinaryService::class);
+            $url = $cloudinary->upload(
+                $request->file('surat_penugasan'),
+                'retribusi/surat_penugasan'
+            );
+
+            $metadata = $user->metadata ?? [];
+            if (is_string($metadata)) {
+                $metadata = json_decode($metadata, true) ?: [];
+            }
+            $metadata['surat_penugasan_url'] = $url;
+            $user->metadata = $metadata;
+            $user->save();
+        }
+
         return response()->json([
             'message' => 'Profil berhasil diperbarui',
-            'user' => $user->load('opd')
+            'user' => $user->fresh()->load('opd')
         ]);
     }
 
