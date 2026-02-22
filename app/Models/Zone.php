@@ -12,11 +12,15 @@ class Zone extends Model
         'retribution_classification_id',
         'name',
         'code',
-        'multiplier',
-        'amount',
         'description',
         'latitude',
         'longitude',
+        'geometry_type',
+        'coordinates',
+    ];
+
+    protected $casts = [
+        'coordinates' => 'array',
     ];
 
     public function opd()

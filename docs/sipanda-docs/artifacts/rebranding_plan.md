@@ -1,6 +1,6 @@
 # Rebranding Sipanda to MITRA
 
-Rebranding all system components from "Sipanda" to "MITRA (Mitra Bapenda - Manajemen Integrasi Tax, Retribusi, dan Aset Daerah)".
+Rebranding all system components from "Sipanda" to "MITRA (Mitra PAD - Manajemen Integrasi Tax, Retribusi, dan Aset Daerah)".
 
 ## Proposed Changes
 
@@ -18,7 +18,7 @@ Rebranding all system components from "Sipanda" to "MITRA (Mitra Bapenda - Manaj
 ### [Frontend] retribusi-admin, retribusi-mobile, retribusi-petugas
 
 #### [MODIFY] [index.html](file:///Users/pondokit/Herd/retribusi-admin/index.html)
-- Update `<title>` to "MITRA - Mitra Bapenda".
+- Update `<title>` to "Mitra PAD".
 
 #### [MODIFY] [Login/Landing Pages](file:///Users/pondokit/Herd/retribusi-admin/src/pages/)
 - Update UI text and branding.
