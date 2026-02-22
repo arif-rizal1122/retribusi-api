@@ -1,6 +1,6 @@
-# MITRA - Mitra Bapenda
+# Mitra PAD
 
-Selamat datang di dokumentasi API MITRA (Mitra Bapenda - Manajemen Integrasi Tax, Retribusi, dan Aset Daerah). Dokumentasi ini mencakup seluruh endpoint yang tersedia untuk integrasi dengan aplikasi Admin, Petugas, dan Mobile.
+Selamat datang di dokumentasi API MITRA (Mitra PAD - Manajemen Integrasi Tax, Retribusi, dan Aset Daerah). Dokumentasi ini mencakup seluruh endpoint yang tersedia untuk integrasi dengan aplikasi Admin, Petugas, dan Mobile.
 
 ## Daftar Dokumentasi
 

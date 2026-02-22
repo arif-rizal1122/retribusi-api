@@ -34,12 +34,18 @@ class MeController extends Controller
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:20',
             'avatar' => 'nullable|image|max:2048',
+            'surat_penugasan' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
         // Basic fields
         if ($request->has('name')) $user->name = $request->name;
         if ($request->has('address')) $user->address = $request->address;
         if ($request->has('phone')) $user->phone = $request->phone;
+        
+        // Email update (with unique check)
+        if ($request->has('email')) {
+            $user->email = $request->email;
+        }
         
         // Metadata fields
         $metadata = $user->metadata ?? [];
@@ -55,6 +61,15 @@ class MeController extends Controller
                 $folder
             );
             $metadata['avatar_url'] = $avatarUrl;
+        }
+
+        // Handle Surat Penugasan Upload
+        if ($request->hasFile('surat_penugasan')) {
+            $url = $cloudinary->upload(
+                $request->file('surat_penugasan'),
+                'retribusi/surat_penugasan'
+            );
+            $metadata['surat_penugasan_url'] = $url;
         }
 
         $user->metadata = $metadata;

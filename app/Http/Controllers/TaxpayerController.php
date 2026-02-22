@@ -187,8 +187,17 @@ class TaxpayerController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        $relatedAssets = [];
+        if ($taxpayer->nik) {
+            $relatedAssets = Taxpayer::where('nik', $taxpayer->nik)
+                ->where('id', '!=', $taxpayer->id)
+                ->with(['opd', 'retributionTypes', 'retributionClassifications'])
+                ->get();
+        }
+
         return response()->json([
-            'data' => $taxpayer->load(['opd', 'retributionTypes', 'retributionClassifications', 'creator'])
+            'data' => $taxpayer->load(['opd', 'retributionTypes', 'retributionClassifications', 'creator']),
+            'related_assets' => $relatedAssets
         ]);
     }
 

@@ -38,11 +38,11 @@ class ZoneController extends Controller
             'retribution_classification_id' => 'nullable|exists:retribution_classifications,id',
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:10|unique:zones',
-            'multiplier' => 'required|numeric|min:0',
-            'amount' => 'nullable|numeric|min:0',
             'description' => 'nullable|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'geometry_type' => 'nullable|in:point,polygon',
+            'coordinates' => 'nullable|array',
         ]);
 
         $zone = Zone::create($request->all());
@@ -72,11 +72,11 @@ class ZoneController extends Controller
             'retribution_classification_id' => 'nullable|exists:retribution_classifications,id',
             'name' => 'sometimes|string|max:255',
             'code' => 'nullable|string|max:10|unique:zones,code,' . $zone->id,
-            'multiplier' => 'sometimes|numeric|min:0',
-            'amount' => 'nullable|numeric|min:0',
             'description' => 'nullable|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'geometry_type' => 'nullable|in:point,polygon',
+            'coordinates' => 'nullable|array',
         ]);
 
         $zone->update($request->all());

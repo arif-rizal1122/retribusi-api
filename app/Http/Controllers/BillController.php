@@ -26,7 +26,7 @@ class BillController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = Bill::with(['retributionType', 'user', 'opd', 'taxObject', 'taxpayer']);
+        $query = Bill::with(['retributionType', 'user', 'opd', 'taxObject', 'taxpayer', 'classification']);
 
         if ($user && in_array($user->role, ['opd', 'petugas'])) {
             $query->where('opd_id', $user->opd_id);
@@ -341,9 +341,6 @@ class BillController extends Controller
         return $type ? $type->base_amount : 0;
     }
 
-    /**
-     * Sign a bill using TTE
-     */
     public function signTTE(Request $request, \App\Services\OfficialDocumentService $docService)
     {
         $validated = $request->validate([
@@ -353,20 +350,25 @@ class BillController extends Controller
 
         $bill = Bill::findOrFail($validated['bill_id']);
         
-        // Authorization check (Kadis/Kabid usually)
+        // Authorization check (Higher authority or OPD Admin)
         $user = $request->user();
-        if (!$user->isSuperAdmin() && $user->role !== 'kadis' && $user->role !== 'kabid') {
+        if (!$user->isSuperAdmin() && !in_array($user->role, ['kadis', 'kabid', 'opd'])) {
             return response()->json(['message' => 'Unauthorized to sign. Higher authority required.'], 403);
         }
 
         try {
-            $signedDoc = $docService->signDocument('bill', $bill->id, $user, $validated['notes']);
+            $signedDoc = $docService->signDocument('bill', $bill->id, $user, $validated['notes'] ?? null);
             return response()->json([
                 'message' => 'Dokumen berhasil ditandatangani secara elektronik.',
                 'signed_document' => $signedDoc
             ]);
-        } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("TTE Signing Error: " . $e->getMessage(), [
+                'exception' => $e,
+                'user_id' => $user->id,
+                'bill_id' => $bill->id
+            ]);
+            return response()->json(['message' => 'Gagal menandatangani: ' . $e->getMessage()], 500);
         }
     }
 }
