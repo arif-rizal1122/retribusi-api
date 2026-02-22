@@ -99,13 +99,13 @@ class NIK1234567890123456Seeder extends Seeder
             ]
         );
 
-        // 4. Create comprehensive Bills & Payments history
+        // 4. Create Bills - ALL PENDING (Belum Lunas)
         // ==========================================
         // PARKIR BILLS (Monthly - DISHUB)
         // ==========================================
-        
-        // Parkir - Jan 2025 (PAID)
-        $bill1 = Bill::updateOrCreate(
+
+        // Parkir - Jan 2025
+        Bill::updateOrCreate(
             ['bill_number' => 'INV-202501-PRK-001'],
             [
                 'taxpayer_id' => $taxpayer->id,
@@ -113,27 +113,14 @@ class NIK1234567890123456Seeder extends Seeder
                 'opd_id' => $dishub->id,
                 'retribution_type_id' => $parkirType->id,
                 'amount' => 50000,
-                'status' => 'paid',
+                'status' => 'pending',
                 'period' => 'Januari 2025',
                 'due_date' => Carbon::create(2025, 1, 31),
             ]
         );
-        Payment::updateOrCreate(
-            ['bill_id' => $bill1->id],
-            [
-                'taxpayer_id' => $taxpayer->id,
-                'tax_object_id' => $parkirObject->id,
-                'amount' => 50000,
-                'payment_method' => 'VA_BCA',
-                'status' => 'success',
-                'billing_period' => '2025-01',
-                'paid_at' => Carbon::create(2025, 1, 20),
-                'transaction_id' => 'TRX-PRK-' . strtoupper(Str::random(8)),
-            ]
-        );
 
-        // Parkir - Feb 2025 (PAID)
-        $bill2 = Bill::updateOrCreate(
+        // Parkir - Feb 2025
+        Bill::updateOrCreate(
             ['bill_number' => 'INV-202502-PRK-001'],
             [
                 'taxpayer_id' => $taxpayer->id,
@@ -141,26 +128,13 @@ class NIK1234567890123456Seeder extends Seeder
                 'opd_id' => $dishub->id,
                 'retribution_type_id' => $parkirType->id,
                 'amount' => 50000,
-                'status' => 'paid',
+                'status' => 'pending',
                 'period' => 'Februari 2025',
                 'due_date' => Carbon::create(2025, 2, 28),
             ]
         );
-        Payment::updateOrCreate(
-            ['bill_id' => $bill2->id],
-            [
-                'taxpayer_id' => $taxpayer->id,
-                'tax_object_id' => $parkirObject->id,
-                'amount' => 50000,
-                'payment_method' => 'QRIS',
-                'status' => 'success',
-                'billing_period' => '2025-02',
-                'paid_at' => Carbon::create(2025, 2, 15),
-                'transaction_id' => 'TRX-PRK-' . strtoupper(Str::random(8)),
-            ]
-        );
 
-        // Parkir - Mar 2025 (PENDING - belum bayar bulan ini)
+        // Parkir - Mar 2025
         Bill::updateOrCreate(
             ['bill_number' => 'INV-202503-PRK-001'],
             [
@@ -179,8 +153,8 @@ class NIK1234567890123456Seeder extends Seeder
         // PBB BILLS (Yearly - BAPENDA)
         // ==========================================
 
-        // PBB - Tahun 2024 (PAID)
-        $billPbb2024 = Bill::updateOrCreate(
+        // PBB - Tahun 2024
+        Bill::updateOrCreate(
             ['bill_number' => 'INV-2024-PBB-001'],
             [
                 'taxpayer_id' => $taxpayer->id,
@@ -188,26 +162,13 @@ class NIK1234567890123456Seeder extends Seeder
                 'opd_id' => $bapenda->id,
                 'retribution_type_id' => $pbbType->id,
                 'amount' => 750000,
-                'status' => 'paid',
+                'status' => 'pending',
                 'period' => 'Tahun 2024',
                 'due_date' => Carbon::create(2024, 9, 30),
             ]
         );
-        Payment::updateOrCreate(
-            ['bill_id' => $billPbb2024->id],
-            [
-                'taxpayer_id' => $taxpayer->id,
-                'tax_object_id' => $pbbObject->id,
-                'amount' => 750000,
-                'payment_method' => 'TRANSFER_BANK',
-                'status' => 'success',
-                'billing_period' => '2024',
-                'paid_at' => Carbon::create(2024, 8, 10),
-                'transaction_id' => 'TRX-PBB-' . strtoupper(Str::random(8)),
-            ]
-        );
 
-        // PBB - Tahun 2025 (PENDING - jatuh tempo Sept 2025)
+        // PBB - Tahun 2025
         Bill::updateOrCreate(
             ['bill_number' => 'INV-2025-PBB-001'],
             [
@@ -226,7 +187,7 @@ class NIK1234567890123456Seeder extends Seeder
         // SAMPAH BILLS (Monthly - DLH)
         // ==========================================
 
-        // Sampah - Nov 2024 (OVERDUE - nunggak)
+        // Sampah - Nov 2024
         Bill::updateOrCreate(
             ['bill_number' => 'INV-202411-SMP-001'],
             [
@@ -242,7 +203,7 @@ class NIK1234567890123456Seeder extends Seeder
             ]
         );
 
-        // Sampah - Des 2024 (OVERDUE - nunggak)
+        // Sampah - Des 2024
         Bill::updateOrCreate(
             ['bill_number' => 'INV-202412-SMP-001'],
             [
@@ -258,8 +219,8 @@ class NIK1234567890123456Seeder extends Seeder
             ]
         );
 
-        // Sampah - Jan 2025 (PAID)
-        $billSmpJan = Bill::updateOrCreate(
+        // Sampah - Jan 2025
+        Bill::updateOrCreate(
             ['bill_number' => 'INV-202501-SMP-001'],
             [
                 'taxpayer_id' => $taxpayer->id,
@@ -267,27 +228,14 @@ class NIK1234567890123456Seeder extends Seeder
                 'opd_id' => $dlh->id,
                 'retribution_type_id' => $sampahType->id,
                 'amount' => 25000,
-                'status' => 'paid',
+                'status' => 'pending',
                 'period' => 'Januari 2025',
                 'due_date' => Carbon::create(2025, 1, 31),
             ]
         );
-        Payment::updateOrCreate(
-            ['bill_id' => $billSmpJan->id],
-            [
-                'taxpayer_id' => $taxpayer->id,
-                'tax_object_id' => $sampahObject->id,
-                'amount' => 25000,
-                'payment_method' => 'CASH',
-                'status' => 'success',
-                'billing_period' => '2025-01',
-                'paid_at' => Carbon::create(2025, 1, 25),
-                'transaction_id' => 'TRX-SMP-' . strtoupper(Str::random(8)),
-            ]
-        );
 
-        // Sampah - Feb 2025 (PAID)
-        $billSmpFeb = Bill::updateOrCreate(
+        // Sampah - Feb 2025
+        Bill::updateOrCreate(
             ['bill_number' => 'INV-202502-SMP-001'],
             [
                 'taxpayer_id' => $taxpayer->id,
@@ -295,26 +243,13 @@ class NIK1234567890123456Seeder extends Seeder
                 'opd_id' => $dlh->id,
                 'retribution_type_id' => $sampahType->id,
                 'amount' => 25000,
-                'status' => 'paid',
+                'status' => 'pending',
                 'period' => 'Februari 2025',
                 'due_date' => Carbon::create(2025, 2, 28),
             ]
         );
-        Payment::updateOrCreate(
-            ['bill_id' => $billSmpFeb->id],
-            [
-                'taxpayer_id' => $taxpayer->id,
-                'tax_object_id' => $sampahObject->id,
-                'amount' => 25000,
-                'payment_method' => 'QRIS',
-                'status' => 'success',
-                'billing_period' => '2025-02',
-                'paid_at' => Carbon::create(2025, 2, 18),
-                'transaction_id' => 'TRX-SMP-' . strtoupper(Str::random(8)),
-            ]
-        );
 
-        // Sampah - Mar 2025 (PENDING - bulan ini)
+        // Sampah - Mar 2025
         Bill::updateOrCreate(
             ['bill_number' => 'INV-202503-SMP-001'],
             [
@@ -329,6 +264,6 @@ class NIK1234567890123456Seeder extends Seeder
             ]
         );
 
-        $this->command->info('✅ Seeder NIK 1234567890123456: 3 objek pajak, 11 tagihan (6 lunas, 5 menunggu/nunggak), 6 pembayaran.');
+        $this->command->info('✅ Seeder NIK 1234567890123456: 3 objek pajak, 10 tagihan (semua BELUM LUNAS).');
     }
 }
