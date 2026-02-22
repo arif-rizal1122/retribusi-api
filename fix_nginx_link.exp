@@ -1,17 +1,0 @@
-#!/usr/bin/expect -f
-set timeout 15
-set password "Sipanda123#"
-spawn ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74
-expect "password:"
-send "$password"
-expect "$ "
-send "sudo ln -s /etc/nginx/sites-available/retribusi-frontend-dev /etc/nginx/sites-enabled/retribusi-frontend-dev"
-expect "password for sipanda:"
-send "$password"
-expect "$ "
-send "sudo nginx -t && sudo systemctl reload nginx"
-expect "$ "
-send "ls -la /etc/nginx/sites-enabled/"
-expect "$ "
-send "exit"
-expect eof

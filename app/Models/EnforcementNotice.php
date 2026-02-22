@@ -9,6 +9,7 @@ class EnforcementNotice extends Model
 {
     protected $fillable = [
         'tax_object_id',
+        'assigned_to',
         'type',
         'number',
         'status',
@@ -24,6 +25,11 @@ class EnforcementNotice extends Model
     public function taxObject(): BelongsTo
     {
         return $this->belongsTo(TaxObject::class);
+    }
+
+    public function assignedPetugas(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     public function creator(): BelongsTo
