@@ -20,7 +20,7 @@ class FormulaParserService
         }
 
         // 1. Replace variables with their numeric values
-        // Sort keys by length descending to avoid partial replacement (e.g., 'tariff' before 'tarif')
+        // Sort keys by length descending to avoid partial replacement
         uksort($variables, function($a, $b) {
             return strlen($b) - strlen($a);
         });
@@ -29,29 +29,33 @@ class FormulaParserService
             $formula = str_ireplace($key, (string)($value ?? 0), $formula);
         }
 
-        // 2. Sanitize: Only allow numbers, math operators, dots, and parentheses
-        $sanitizedFormula = preg_replace('/[^-+*.\/()0-9 ]/', '', $formula);
+        // 2. Add support for IF(cond, true, false) by converting to ternary
+        // Pattern: IF(condition, true_val, false_val) -> (condition ? true_val : false_val)
+        // This is a simple regex for basic IF nesting
+        $formula = preg_replace_callback('/IF\s*\(([^,]+),([^,]+),([^)]+)\)/i', function($m) {
+            return "(" . trim($m[1]) . " ? " . trim($m[2]) . " : " . trim($m[3]) . ")";
+        }, $formula);
 
-        // 3. Basic validity check (prevent empty or malformed strings)
-        if (trim($sanitizedFormula) === '' || preg_match('/[+*.\/]{2,}/', $sanitizedFormula)) {
+        // 3. Sanitize: Allow numbers, math operators, dots, parentheses, and logical operators
+        // Added: > < = ? : ! & | (for logical comparisons and ternary)
+        $sanitizedFormula = preg_replace('/[^-+*.\/()0-9 ><=? :!&|]/', '', $formula);
+
+        // 4. Basic validity check
+        if (trim($sanitizedFormula) === '') {
             return 0.0;
         }
 
-        // 4. Evaluate safely
+        // 5. Evaluate safely
         try {
-            // We use a simple evaluation logic. 
-            // In a more complex scenario, we could use a proper expression language library.
             $result = 0.0;
             
-            // Check if it's a simple math expression
-            if (preg_match('/^[-+*.\/()0-9 ]+$/', $sanitizedFormula)) {
-                // Use PHP's internal calc if possible or a simple return
-                $result = @eval("return $sanitizedFormula;");
-            }
+            // We use PHP's eval for power, but with strict character sanitization above.
+            // Note: PHP eval requires a semicolon and return.
+            $result = @eval("return $sanitizedFormula;");
 
             return (float) ($result ?? 0.0);
         } catch (\Throwable $e) {
-            \Log::error("Formula calculation error: " . $e->getMessage() . " | Formula: " . $formula);
+            \Log::error("Formula calculation error: " . $e->getMessage() . " | Original: " . $formula . " | Sanitized: " . $sanitizedFormula);
             return 0.0;
         }
     }
