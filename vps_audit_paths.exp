@@ -1,17 +1,15 @@
 #!/usr/bin/expect -f
-set timeout 120
+set timeout 30
 set password "Sipanda123#"
 spawn ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74
 expect "password:"
 send "$password\r"
 expect "$ "
-send "grep -r 'admin.sipanda.online' /etc/nginx\r"
+send "cat /etc/nginx/sites-enabled/retribusi-frontend-dev\r"
 expect "$ "
-send "ls -F /var/www\r"
+send "cat /etc/nginx/sites-enabled/retribusi-frontend\r"
 expect "$ "
-send "ls -la /home/sipanda/retribusi-admin\r"
-expect "$ "
-send "ls -la /home/sipanda/sipanda-admin\r"
+send "find /home/sipanda -name index.html -not -path '*/node_modules/*'\r"
 expect "$ "
 send "exit\r"
 expect eof

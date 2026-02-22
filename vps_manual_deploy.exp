@@ -1,0 +1,28 @@
+#!/usr/bin/expect -f
+set timeout 300
+set password "Sipanda123#"
+set host "sipanda@157.10.252.74"
+
+# Upload Admin
+spawn scp -o StrictHostKeyChecking=no /Users/pondokit/Herd/retribusi-admin/dist.tar.gz $host:/home/sipanda/retribusi-admin-dev/
+expect "password:"
+send "$password\r"
+expect eof
+
+# Upload Petugas
+spawn scp -o StrictHostKeyChecking=no /Users/pondokit/Herd/retribusi-petugas/dist.tar.gz $host:/home/sipanda/retribusi-petugas-dev/
+expect "password:"
+send "$password\r"
+expect eof
+
+# Extract on VPS
+spawn ssh -o StrictHostKeyChecking=no $host
+expect "password:"
+send "$password\r"
+expect "$ "
+send "cd /home/sipanda/retribusi-admin-dev/dist && tar -xzf ../dist.tar.gz && rm ../dist.tar.gz\r"
+expect "$ "
+send "cd /home/sipanda/retribusi-petugas-dev/dist && tar -xzf ../dist.tar.gz && rm ../dist.tar.gz\r"
+expect "$ "
+send "exit\r"
+expect eof
