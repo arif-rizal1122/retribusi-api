@@ -1,0 +1,42 @@
+name: Deploy Dev to VPS
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    name: Deploy Laravel API (Dev)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            cd /home/sipanda/retribusi-api-dev
+
+            # Pull latest code from dev branch
+            git pull origin dev
+
+            # Install dependencies (development)
+            composer install --no-interaction --prefer-dist --optimize-autoloader
+
+            # Run migrations
+            php artisan migrate --force
+
+            # Clear and rebuild caches
+            php artisan config:clear
+            php artisan route:clear
+            php artisan view:clear
+
+            # Set correct permissions
+            sudo chown -R sipanda:sipanda storage bootstrap/cache 2>/dev/null || true
+            sudo chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+
+            echo "✅ Dev Deploy completed successfully!"
