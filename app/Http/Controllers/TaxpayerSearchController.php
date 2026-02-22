@@ -12,21 +12,25 @@ class TaxpayerSearchController extends Controller
      */
     public function searchByNik(Request $request, $nik)
     {
-        $taxpayer = Taxpayer::where('nik', $nik)
+        $taxpayers = Taxpayer::where('nik', $nik)
             ->with(['opd', 'retributionTypes', 'retributionClassifications'])
-            ->first();
+            ->get();
 
-        if (!$taxpayer) {
+        if ($taxpayers->isEmpty()) {
             return response()->json([
                 'message' => 'Data wajib pajak belum terdaftar',
-                'found' => false
+                'found' => false,
+                'count' => 0,
+                'data' => []
             ], 200);
         }
 
         return response()->json([
             'message' => 'Data wajib pajak ditemukan',
             'found' => true,
-            'data' => $taxpayer
+            'count' => $taxpayers->count(),
+            'data' => $taxpayers->first(), // For backward compatibility with simpler auto-fill
+            'all_assets' => $taxpayers // The full list for multi-asset lookup
         ]);
     }
 }
