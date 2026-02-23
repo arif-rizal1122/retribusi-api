@@ -1,0 +1,19 @@
+#!/usr/bin/expect -f
+set timeout 15
+set password "Sipanda123#"
+spawn ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74
+expect "password:"
+send "$password\r"
+expect "$ "
+send "echo '<h1>Admin Dev - Sipanda Online (Deploying...)</h1>' | sudo tee /home/sipanda/retribusi-admin-dev/dist/index.html\r"
+expect "password for sipanda:"
+send "$password\r"
+expect "$ "
+send "echo '<h1>Petugas Dev - Sipanda Online (Deploying...)</h1>' | sudo tee /home/sipanda/retribusi-petugas-dev/dist/index.html\r"
+expect "$ "
+send "sudo chmod -R 755 /home/sipanda/retribusi-admin-dev/dist /home/sipanda/retribusi-petugas-dev/dist\r"
+expect "$ "
+send "sudo chown -R sipanda:sipanda /home/sipanda/retribusi-admin-dev/dist /home/sipanda/retribusi-petugas-dev/dist\r"
+expect "$ "
+send "exit\r"
+expect eof
