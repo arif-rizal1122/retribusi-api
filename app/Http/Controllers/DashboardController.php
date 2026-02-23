@@ -95,6 +95,10 @@ class DashboardController extends Controller
             'revenue_by_type' => Payment::join('bills', 'payments.bill_id', '=', 'bills.id')
                 ->join('retribution_types', 'bills.retribution_type_id', '=', 'retribution_types.id')
                 ->when($opdId, fn($q) => $q->where('bills.opd_id', $opdId))
+                ->when($user->role === 'petugas', function($q) use ($user) {
+                    $typeIds = $user->assignments->pluck('retribution_type_id')->unique()->toArray();
+                    $q->whereIn('bills.retribution_type_id', $typeIds);
+                })
                 ->whereBetween('payments.paid_at', [$start->startOfDay(), $end->endOfDay()])
                 ->select('retribution_types.name', DB::raw('SUM(payments.amount) as total'))
                 ->groupBy('retribution_types.name')
@@ -113,6 +117,16 @@ class DashboardController extends Controller
                         ->where('bills.opd_id', $opdId);
                 });
             })
+            ->when(auth()->user()->role === 'petugas', function ($query) {
+                $user = auth()->user();
+                $typeIds = $user->assignments->pluck('retribution_type_id')->unique()->toArray();
+                $query->whereExists(function ($sub) use ($typeIds) {
+                    $sub->select(DB::raw(1))
+                        ->from('bills')
+                        ->whereColumn('bills.id', 'payments.bill_id')
+                        ->whereIn('bills.retribution_type_id', $typeIds);
+                });
+            })
             ->whereBetween('paid_at', [$start->startOfDay(), $end->endOfDay()])
             ->sum('amount');
     }
@@ -121,6 +135,10 @@ class DashboardController extends Controller
     {
         return Bill::where('status', 'pending')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
+            ->when(auth()->user()->role === 'petugas', function($q) {
+                $typeIds = auth()->user()->assignments->pluck('retribution_type_id')->unique()->toArray();
+                $q->whereIn('retribution_type_id', $typeIds);
+            })
             ->whereBetween('created_at', [$start->startOfDay(), $end->endOfDay()])
             ->count();
     }
@@ -128,11 +146,19 @@ class DashboardController extends Controller
     private function getCollectionRate($opdId, $start, $end)
     {
         $totalBills = Bill::when($opdId, fn($q) => $q->where('opd_id', $opdId))
+            ->when(auth()->user()->role === 'petugas', function($q) {
+                $typeIds = auth()->user()->assignments->pluck('retribution_type_id')->unique()->toArray();
+                $q->whereIn('retribution_type_id', $typeIds);
+            })
             ->whereBetween('created_at', [$start->startOfDay(), $end->endOfDay()])
             ->count();
         
         $paidBills = Bill::where('status', 'lunas')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
+            ->when(auth()->user()->role === 'petugas', function($q) {
+                $typeIds = auth()->user()->assignments->pluck('retribution_type_id')->unique()->toArray();
+                $q->whereIn('retribution_type_id', $typeIds);
+            })
             ->whereBetween('created_at', [$start->startOfDay(), $end->endOfDay()])
             ->count();
 
@@ -241,6 +267,10 @@ class DashboardController extends Controller
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
+            ->when($user->role === 'petugas', function($q) use ($user) {
+                $typeIds = $user->assignments->pluck('retribution_type_id')->unique()->toArray();
+                $q->whereIn('retribution_type_id', $typeIds);
+            })
             ->get()
             ->map(function($obj) {
                 return [
@@ -259,6 +289,10 @@ class DashboardController extends Controller
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
+            ->when($user->role === 'petugas', function($q) use ($user) {
+                $typeIds = $user->assignments->pluck('retribution_type_id')->unique()->toArray();
+                $q->whereIn('retribution_type_id', $typeIds);
+            })
             ->get()
             ->map(function($obj) {
                 // Check if there are any pending bills for this tax object

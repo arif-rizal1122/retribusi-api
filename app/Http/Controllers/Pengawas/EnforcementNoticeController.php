@@ -12,10 +12,16 @@ class EnforcementNoticeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = EnforcementNotice::with(['taxObject.taxpayer', 'creator', 'approver']);
+        $user = $request->user();
+        $query = EnforcementNotice::with(['taxObject.taxpayer', 'creator', 'approver', 'assignedPetugas']);
         
         if ($request->has('status')) {
             $query->where('status', $request->status);
+        }
+
+        // If user is a petugas, only show notices assigned to them
+        if ($user->role === 'petugas') {
+            $query->where('assigned_to', $user->id);
         }
         
         return response()->json($query->paginate(20));
@@ -25,6 +31,7 @@ class EnforcementNoticeController extends Controller
     {
         $validated = $request->validate([
             'tax_object_id' => 'required|exists:tax_objects,id',
+            'assigned_to' => 'nullable|exists:users,id',
             'type' => 'required|in:teguran_1,teguran_2,paksa,penyitaan',
             'number' => 'required|string|unique:enforcement_notices,number',
             'due_date' => 'nullable|date',

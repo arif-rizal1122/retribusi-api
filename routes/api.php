@@ -18,6 +18,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaxObjectController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\PbbClassificationController;
+use App\Http\Controllers\PbbBapendaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -118,6 +119,9 @@ Route::get('/pbb/classifications', [PbbClassificationController::class, 'index']
 Route::get('/pbb/classifications/{type}/{code}', [PbbClassificationController::class, 'showByCode']);
 Route::post('/pbb/lookup-class', [PbbClassificationController::class, 'lookupByValue']);
 Route::post('/pbb/calculate', [PbbClassificationController::class, 'calculate']);
+
+// Public: PBB Bapenda Inquiry (cek tagihan tanpa login)
+Route::post('/pbb/bapenda/inquiry', [PbbBapendaController::class, 'inquiry']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -240,5 +244,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/documents', [\App\Http\Controllers\Api\EregistryController::class, 'index']);
         Route::post('/sign', [\App\Http\Controllers\BillController::class, 'signTTE']);
         Route::get('/verify/{number}', [\App\Http\Controllers\Api\EregistryController::class, 'verify'])->withoutMiddleware('auth:sanctum');
+    });
+
+    // PBB Bapenda Integration
+    Route::prefix('pbb/bapenda')->group(function () {
+        // Citizen: Klaim & kelola NOP
+        Route::post('/link-nop', [PbbBapendaController::class, 'linkNop']);
+        Route::delete('/unlink-nop/{id}', [PbbBapendaController::class, 'unlinkNop']);
+        Route::get('/my-objects', [PbbBapendaController::class, 'myObjects']);
+        Route::get('/my-transactions', [PbbBapendaController::class, 'myTransactions']);
+
+        // Pembayaran PBB (citizen & petugas)
+        Route::post('/pay', [PbbBapendaController::class, 'pay']);
+
+        // Admin: Reversal & monitoring
+        Route::post('/reversal', [PbbBapendaController::class, 'reversal']);
+        Route::get('/transactions', [PbbBapendaController::class, 'transactions']);
+        Route::get('/stats', [PbbBapendaController::class, 'stats']);
     });
 });

@@ -21,6 +21,20 @@ class TaxpayerController extends Controller
         // Admin OPD and Petugas only see their own OPD's taxpayers
         if ($user && in_array($user->role, ['opd', 'petugas'])) {
             $query->where('opd_id', $user->opd_id);
+
+            // If petugas, further filter by assigned retribution types
+            if ($user->role === 'petugas') {
+                $assignments = $user->assignments;
+                if ($assignments->isNotEmpty()) {
+                    $typeIds = $assignments->pluck('retribution_type_id')->unique()->toArray();
+                    $query->whereHas('retributionTypes', function($q) use ($typeIds) {
+                        $q->whereIn('retribution_types.id', $typeIds);
+                    });
+                } else {
+                    // No assignments = no taxpayers
+                    $query->whereRaw('1 = 0');
+                }
+            }
         }
 
         if ($request->has('is_active')) {
