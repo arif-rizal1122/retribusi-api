@@ -41,11 +41,11 @@ function sendApiRequest($method, $url, $token = null, $data = []) {
 try {
     // Siapkan Aktor dan Token
     $wp1 = User::firstOrCreate(['email' => 'budirbac@test.com'], ['name' => 'WP Budi', 'password' => bcrypt('password')]);
-    if(!$wp1->hasRole('wajib_pajak')) $wp1->assignRole('wajib_pajak');
+    if($wp1->role !== 'wajib_pajak') { $wp1->role = 'wajib_pajak'; $wp1->save(); }
     $tokenWP1 = $wp1->createToken('test')->plainTextToken;
 
     $petugas = User::firstOrCreate(['email' => 'petugasrbac@test.com'], ['name' => 'Petugas Patroli', 'password' => bcrypt('password')]);
-    if(!$petugas->hasRole('petugas')) $petugas->assignRole('petugas');
+    if($petugas->role !== 'petugas') { $petugas->role = 'petugas'; $petugas->save(); }
     $tokenPetugas = $petugas->createToken('test')->plainTextToken;
 
     // SKENARIO 1: WP MENGAKSES DASHBOARD ADMIN (HARUS 403)
