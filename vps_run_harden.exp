@@ -1,0 +1,31 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+set h "157.10.252.74"
+set u "sipanda"
+set p "Sipanda123#"
+
+# Upload Script
+spawn scp -o StrictHostKeyChecking=no vps_harden.sh $u@$h:/tmp/
+expect "password:"
+send "$p\r"
+expect eof
+
+# Execute Script
+spawn ssh -o StrictHostKeyChecking=no $u@$h
+expect "password:"
+send "$p\r"
+expect "*\\$ "
+send "chmod +x /tmp/vps_harden.sh && sudo /tmp/vps_harden.sh\r"
+expect {
+    "*assword for sipanda:" {
+        send "$p\r"
+        expect "*\\$ "
+    }
+    "*\\$ " {
+        # proceed
+    }
+}
+
+send "exit\r"
+expect eof
