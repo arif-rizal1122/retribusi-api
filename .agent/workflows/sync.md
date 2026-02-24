@@ -126,6 +126,10 @@ cd /Users/pondokit/Herd/retribusi-mobile && git pull origin main
 | API Prod | https://api.sipanda.online |
 | Admin Prod | https://admin.sipanda.online |
 | Mobile Prod | https://sipanda.online |
+| API Dev | https://api-dev.sipanda.online |
+| Admin Dev | https://admin-dev.sipanda.online |
+| Mobile Dev | https://dev.sipanda.online |
+
 | phpMyAdmin | http://157.10.252.74:8080 |
 
 ## Local URLs
