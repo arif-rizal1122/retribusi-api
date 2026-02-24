@@ -26,11 +26,15 @@ use App\Http\Controllers\PbbBapendaController;
 |--------------------------------------------------------------------------
 */
 
-// Public routes
-Route::post('/opd/register', [OpdController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/citizen/login', [AuthController::class, 'citizenLogin']);
-Route::post('/citizen/register', [AuthController::class, 'registerCitizen']);
+// Public auth routes with explicit throttle
+Route::middleware('throttle:60,1')->group(function () {
+    Route::post('/opd/register', [OpdController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/citizen/login', [AuthController::class, 'citizenLogin']);
+    Route::post('/citizen/register', [AuthController::class, 'registerCitizen']);
+});
+
+// Other public routes
 Route::get('/opds', [OpdController::class, 'index']); // Public access
 Route::get('/citizen/bills', [BillController::class, 'citizenBills']); // Public access for demo
 Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyBill']);
