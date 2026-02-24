@@ -28,6 +28,18 @@ Silakan klik setiap tautan di bawah ini untuk melihat prosedur langkah demi lang
 6. 📡 **[Tahap 6: Pemantauan Hari Pertama (Go-Live Monitoring)](testing/06-Go-Live-Monitoring.md)**  
    *(Instruksi untuk Admin Server via SSH Panel Backend dalam merekam log _Crash/Exception_ dan antisipasi kebocoran _RAM/CPU (Memory Leak)_ pada hari sibuk rilis massal).*
 
+7. 🧮 **[Tahap 7: Pengujian Formula Jenis Pajak & Kalkulator Dinamis](testing/07-Formula-Jenis-Pajak.md)**  
+   *(Verifikasi presisi rumus matematis API PBB-P2, BPHTB, Reklame, MBLB, dsb, serta variabel pengalinya berdasarkan Perwali).*
+
+8. 🔄 **[Tahap 8: Pengujian Lintas Peran E2E Otomatis](testing/results/08_Laporan_E2E_Lintas_Peran.md)**  
+   *(Report hasil penembakan Database Engine langsung menirukan interaksi Admin, WP, dan Petugas di puluhan jenis tagihan).*
+
+9. 🛡️ **[Tahap 9: Pengujian Keamanan Hak Akses (RBAC & Authorization)](testing/09-Keamanan-RBAC.md)**  
+   *(Uji penetrasi API Internal untuk memverifikasi larangan: Wajib Pajak mengambil data Admin, Petugas mendelete tagihan, dsb).*
+
+10.🛑 **[Tahap 10: Pengujian Integritas & Validasi Data (Negative Testing)](testing/10-Validasi-Data.md)**  
+   *(Menembak sistem menggunakan API bernilai Negatif (Minus amount), Tagihan Ganda Double-Pay Kosong untuk menguji benteng Controller).*
+
 ---
 
 > **Catatan Tim QA:**  
