@@ -4,9 +4,13 @@ use App\Http\Controllers\DocumentationController;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->middleware('throttle:60,1');
 
-Route::prefix('docs')->group(function () {
+Route::get('/login', function () {
+    return response()->json(['message' => 'Unauthenticated.'], 401);
+})->name('login');
+
+Route::prefix('docs')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [DocumentationController::class, 'index']);
     Route::get('/assets/{filename}', [DocumentationController::class, 'asset']);
     Route::get('/{page}', [DocumentationController::class, 'show']);
