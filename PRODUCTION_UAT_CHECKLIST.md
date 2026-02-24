@@ -18,45 +18,59 @@ Sebelum mulai menguji fitur, pastikan hal teknis fundamental sudah beres di VPS:
 
 ## 2. Pengujian Infrastruktur & Keamanan (Security Smoke Test)
 Verifikasikan bahwa benteng yang kita pasang di Nginx bekerja:
-- [ ] **Coba Akses File Terlarang**: Buka browser ke `https://api.sipanda.online/.env`. **Harus ditolak (403 Forbidden)**.
-- [ ] **Coba Akses Dokumentasi Internal**: Buka `https://api.sipanda.online/docs` di mode *incognito* / HTTP Request manual tanpa Bearer token. **Harus diblokir (401 Unauthorized)**.
-- [ ] **Coba Banjiri Limit API (Rate Limiting)**: Kirim _request_ berulang kali (> 60x) ke `/login` atau halaman utama API dalam rentang 1 menit menggunakan *Postman*/*Insomnia*. Sistem harus merespons dengan **429 Too Many Requests**.
-- [ ] **Cek Sertifikat & Header**: Buka web frontend (Admin/Petugas), cek kolom *Network* di *Inspect Element*. Pastikan indikator gembok HTTPS menyala hijau dan tidak ada error CSS/JS (*Mixed Content*). Pastikan *Strict-Transport-Security* ada pada *Response Headers*.
+- [ ] **Ujian Akses File Rahasia (`/.env`)**: Buka browser *Incognito*. Ketik alamat `https://api.sipanda.online/.env`. 
+  - **Hasil yang Diharapkan:** Harus muncul halaman kosong dengan tulisan "403 Forbidden". Jika file teks terdownload, SEGERA MATIKAN SERVER.
+- [ ] **Ujian Dokumentasi Terselubung**: Buka `https://api.sipanda.online/docs`.
+  - **Hasil yang Diharapkan:** Halaman harus blank/JSON mengembalikan `{"message": "Unauthenticated."}` dengan status HTTP 401. Ini membuktikan bahwa dokumentasi API internal (struktur endpoint) tidak lagi bocor ke publik.
+- [ ] **Ujian Anti-Spam (Rate Limiting)**: Buka aplikasi *Postman* atau terminal *Curl*, tembakkan URL `https://api.sipanda.online/api/login` sebanyak 65 kali dalam waktu kurang dari 1 menit secara berturut-turut.
+  - **Hasil yang Diharapkan:** Pada _request_ ke-61 dan seterusnya, server harus menolak dengan respons HTTP HTTP `429 Too Many Requests`. Ini membuktikan sistem anti-DDoS/Brute Force aktif.
 
-## 3. Pengujian Alur Utama (End-to-End Business Flow)
+## 3. Pengujian Alur Utama Pajak / Retribusi (End-to-End Business Flow)
 Simulasikan 1 siklus transaksi penuh yang melibatkan ketiga peran utama:
 
-- [ ] **Aktor: Wajib Pajak (Aplikasi Mobile)** 
-    - Lakukan pendaftaran akun baru (Bisa dihapus nanti).
-    - Login sukses.
-    - Beranda, Menu Profil, dan riwayat Pajak tampil normal (meski kosong).
-- [ ] **Aktor: Admin Bapenda (Web Admin - `admin.sipanda.online`)**
-    - Login dengan Role *Admin/Superadmin*.
-    - Buat "Wajib Pajak Baru" dan tautkan ke "Objek Pajak" (misal: Pajak Hotel atau Reklame).
-    - Terbitkan **1 Ketetapan Billing / SKPD (Surat Ketetapan Pajak Daerah)** resmi untuk objek pajak tersebut.
-- [ ] **Aktor: Wajib Pajak (Aplikasi Mobile)**
-    - *Refresh* halaman utama aplikasi mobile.
-    - Pastikan notifikasi/tab tagihan untuk SKPD yang baru dibuat oleh Admin langsung muncul di layar.
-- [ ] **Aktor: Petugas Lapangan (Aplikasi Petugas - `petugas.sipanda.online`)**
-    - Login dengan Role *Petugas/Surveillance*.
-    - Lakukan pencarian nama/NPWPD pengguna tersebut di menu Pembayaran/Cek Tagihan.
-    - Lakukan simulasi **Konfirmasi Bayar** seolah WP membayar secara non-tunai di lapangan atau WP membayar lewat teller (Tandai Lunas).
-- [ ] **Verifikasi Final (Seluruh Pihak)**
-    - [ ] **Web Admin**: Cek *Dashboard Analytics*, grafik pendapatan harian harusnya menunjukkan kenaikan saldo sesuai tagihan lunas di atas.
-    - [ ] **Aplikasi Mobile / Petugas**: Pastikan Struk Pembayaran (SSPD) berhasil di*generate* sebagai PDF dan bisa di-download oleh WP maupun Petugas.
+### A. Aktor 1: Wajib Pajak (Via Aplikasi Mobile `retribusi-mobile`)
+- [ ] Buka Aplikasi Mobile di HP (atau emulator).
+- [ ] Klik **"Daftar"**. Isi data KTP (NIK palsu numerik acak), Nama, Email, dan Password.
+- [ ] Klik **"Login"** menggunakan email & password tadi.
+- [ ] **Hasil yang Diharapkan:** Berhasil masuk ke halaman Beranda Utama (Welcome). Menu profil menampilkan nama Wajib Pajak baru, dan tab "Tagihan Pembayaran" tidak menampilkan pesan *error* (meskipun saat ini daftarnya kosong/Rp0).
 
-## 4. Pengujian Fitur Kritis Tambahan (Edge Cases)
-Uji fungsi spesifik pemerintahan yang sangat penting:
-- [ ] **Modul TTE (Tanda Tangan Elektronik)**: Pergi ke menu pengesahan SKPD/SSPD. Minta salah satu pejabat berwenang mencoba memvalidasi dan menandatangani dokumen. Pastikan file PDF akhir memuat visual *QR Code* /*digital stamp* BSDN yang valid.
-- [ ] **Pemetaan & GIS**: Buka fitur Peta Potensi. Pastikan _pin drop_ / pelengkung kordinat tidak mengalami *Error CORS*, serta gambar foto potensi ruko/papan reklame termuat sempurna.
-- [ ] **Penolakan Retribusi/PBB**: Coba batalkan 1 tagihan atau ajukan "Amnesty / Keringanan". Pastikan perhitungan nominal dan penalti denda terkalkulasi secara wajar.
+### B. Aktor 2: Admin Bapenda (Via Web Dashboard `admin.sipanda.online`)
+- [ ] Buka browser laptop, pergi ke `https://admin.sipanda.online`.
+- [ ] Login menggunakan kredensial akun **Admin Utama (Superadmin/Bapenda)**.
+- [ ] **Pembuatan Wajib Pajak**: Masuk ke menu "Master Data" -> "Wajib Pajak". Klik "Tambah Data" dan cocokkan datanya dengan email/NIK WP yang didaftarkan di HP tadi.
+- [ ] **Penetapan Objek Pajak**: Masuk ke menu "Objek Pajak / Potensi Daerah". Tambahkan Objek Pajak baru (misalnya "Warung Makan xyz" / Pajak Restoran). Tarik nama Pemilik ke akun Wajib Pajak yang baru kita buat.
+- [ ] **Penerbitan Tagihan (SKPD)**: Buka menu "Billing / Penetapan". Pilih Objek Pajak tadi, lalu isi form penetapan pajak (misal Bulan ini nilainya Rp 50.000). Klik **Simpan / Terbitkan**.
+- [ ] **Hasil yang Diharapkan:** Muncul baris data tagihan baru dengan status **"Belum Dibayar"** warna merah/kuning di tabel Web Admin.
 
-## 5. Pengujian Perangkat Real (Cross-Device UAT)
-- [ ] Tes *Web Admin* di laptop menggunakan browser selain Chrome (misal Mozilla Firefox/Safari Edge) untuk mengecek bug CSS Modal / Tabel yang terpotong.
-- [ ] Jalankan *Aplikasi Petugas* dari peramban/browser di minimum 2 jenis Handphone: Layar besar (di atas 6 inch) dan layar kecil (iPhone SE/serupa) untuk memastikan formulir panjang tidak cacat ketika digulir (*scrollable*).
+### C. Aktor 3: Wajib Pajak (Via Aplikasi Mobile Kembali)
+- [ ] Di HP, tarik layar ke bawah untuk *Refresh* halaman utama aplikasi mobile Wajib Pajak.
+- [ ] **Hasil yang Diharapkan:** Di layar HP, nilai tagihan mendadak berubah. Terdapat notifikasi 1 SKPD / Tagihan baru bernilai Rp 50.000 dari "Pajak Restoran".
+- [ ] Klik panel tagihan tersebut untuk melihat rincian tanggal jatuh tempo dan tombol bayar. Keluar dari aplikasinya (anggaplah WP pergi menemui Petugas Loket untuk bayar tunai).
 
-## 6. Pemantauan Hari Pertama (Go-Live Monitoring)
-Jika tahap 1 hingga 5 sukses, persilahkan *End-user* menggunakannya. Pada 24 jam pertama pembukaan kepada Bapenda/khalayak ramai:
-- [ ] Masuk SSH ke VPS `157.10.252.74`
-- [ ] Pantau file error secara _real-time_: `tail -f /home/sipanda/retribusi-api/storage/logs/laravel.log`. Pastikan rentetan *Exception/Fatal Error* beruntun tidak muncul.
-- [ ] Cek *usage* sumber daya server (`htop` atau `free -h`) untuk mewaspadai kebocoran memori (Memory Leak) jika beban akses serentak ke API mendadak terlalu tinggi.
+### D. Aktor 4: Petugas Lapangan/Loket (Via Aplikasi Petugas `petugas.sipanda.online`)
+- [ ] Buka browser laptop/tablet, pergi ke `https://petugas.sipanda.online`.
+- [ ] Login menggunakan kredensial akun **Petugas (Kolektor/Kasir)**.
+- [ ] Pilih menu **"Pembayaran / Loket"** atau gunakan mesin Scanner Kode Bayar.
+- [ ] Ketik NIK atau Nomor Tagihan SKPD milik Wajib Pajak tadi.
+- [ ] Saat datanya muncul di layar Petugas, pastikan nominalnya cocok (Rp 50.000).
+- [ ] Klik tombol **"Tandai Lunas / Verifikasi Pembayaran"**. Konfirmasi pop-up.
+- [ ] **Hasil yang Diharapkan:** Muncul centang Hijau. Sistem menerbitkan resi pembayaran Struk.
+
+### E. Verifikasi Sinkronisasi Final
+- [ ] Buka kembali **Web Admin (`admin.sipanda.online`)**. Lihat menu *Dashboard*.
+- [ ] **Hasil yang Diharapkan:** Angka Grafik Total Realisasi Pendapatan **NAIK** sebesar Rp 50.000. Data SKPD di tabel billing statusnya berubah jadi label hijau **"Lunas"**.
+- [ ] Buka kembali **Aplikasi Mobile WP**. 
+- [ ] **Hasil yang Diharapkan:** Tagihan aktif berubah menjadi Rp 0. Di menu "Riwayat", ada PDF tanda bukti pelunasan **SSPD (Surat Setoran Pajak Daerah)** yang bisa diunduh oleh WP.
+
+## 4. Pengujian Fitur Kritis Edge Cases (Opsional namun Penting)
+- [ ] **Ujian Pengesahan Surat TTE**: Admin Web masuk ke menu "Dokumen TTE". Cari cetakan SKPD dari tes di atas. Minta Kepalo Bapenda/Pejabat melakukan klik "Tandatangani Dokumen". Buka file PDF hasilnya, sorot _QR Code_ BSDN di ujung kertas pakai kamera HP biasa; harus dialihkan ke link verifikasi resmi kominfo/balai sertifikasi.
+- [ ] **Ujian Performa Peta**: Admin Web pindah ke menu "Peta Potensi". Klik ikon layer Peta satelit/jalan. Pastikan tidak diam membeku (Blank map tiles), dan ikon *pin drop* lokasi objek pajak "Warung Makan xyz" muncul dan bila di klik memunculkan rincian + foto tempat usahanya.
+
+## 5. Pemantauan Hari Pertama (Go-Live Monitoring)
+Jika tahap 1 hingga 4 sukses dan disetujui, informasikan tim dinas bahwa server Live. Tugas Tim IT Backend:
+- [ ] Buka Terminal/SSH ke VPS `157.10.252.74` menggunakan kredensial _sipanda_.
+- [ ] Standby menjalankan *command* ini di terminal:
+  ```bash
+  tail -f /home/sipanda/retribusi-api/storage/logs/laravel.log
+  ```
+- [ ] Amati barisan teks log yang muncul selama 6 jam pertama *Go-Live*. Jika tidak ada baris panjang dengan awalan `[stacktrace]` atau `Exception: `, berarti rilis berjalan mulus tanpa cacat sintaks fatal di backend!
