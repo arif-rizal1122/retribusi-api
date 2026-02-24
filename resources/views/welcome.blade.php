@@ -100,7 +100,7 @@
         </div>
         
         <h1>API Service</h1>
-        <p>This is the core API service for the MITRA PAD application ecosystem. Direct web access is restricted.</p>
+        <p><strong>Management Information of Tax, Retribution & Assets</strong><br/>This is the core API service for the MITRA PAD application ecosystem. Direct web access is restricted.</p>
         
         <div class="status">
             <span class="dot"></span>
