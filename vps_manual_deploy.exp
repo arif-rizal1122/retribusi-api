@@ -1,4 +1,10 @@
 #!/usr/bin/expect -f
+# Manual deploy script for DEV environment
+# ──────────────────────────────────────────
+# Before running this script, build with staging mode:
+#   cd retribusi-admin  && npm run build:staging && tar -czf dist.tar.gz -C dist .
+#   cd retribusi-petugas && npm run build:staging && tar -czf dist.tar.gz -C dist .
+# ──────────────────────────────────────────
 set timeout 300
 set password "Sipanda123#"
 set host "sipanda@157.10.252.74"
