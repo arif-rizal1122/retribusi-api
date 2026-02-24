@@ -9,6 +9,7 @@ MySQL DB: retribusi
 [Services]
 API URL PROD: https://api.sipanda.online
 API URL DEV: https://api-dev.sipanda.online
+API URL LOCAL: http://localhost:8000
 phpMyAdmin: http://157.10.252.74:8080
 Nginx Port: 80 (API), 8080 (pMA)
 
