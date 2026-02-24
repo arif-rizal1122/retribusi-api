@@ -27,15 +27,14 @@ DB::beginTransaction();
 try {
     // 2. Setup Aktor Peran
     // Admin Utama
-    $admin = User::role('super_admin')->first() ?? User::first();
+    $admin = User::where('role', 'super_admin')->first() ?? User::where('role', 'admin')->first() ?? User::first();
     // Petugas Lapangan
-    $petugas = User::role('petugas')->first();
+    $petugas = User::where('role', 'petugas')->first();
     if (!$petugas) {
         $petugas = User::firstOrCreate(
             ['email' => 'petugas.test@sipanda.online'],
-            ['name' => 'Petugas Tester UAT', 'password' => bcrypt('password')]
+            ['name' => 'Petugas Tester UAT', 'password' => bcrypt('password'), 'role' => 'petugas']
         );
-        $petugas->assignRole('petugas');
     }
 
     // Wajib Pajak Dummy
