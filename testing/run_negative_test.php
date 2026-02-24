@@ -44,7 +44,7 @@ try {
     if ($dummyBill) {
         $res1 = sendApi('POST', '/api/payments', $tokenPetugas, [
             'bill_id' => $dummyBill->id,
-            'amount_paid' => -5000000,
+            'amount' => -5000000,
             'payment_method' => 'cash'
         ]);
         if($res1['code'] === 422) {
@@ -62,7 +62,7 @@ try {
     if ($paidBill) {
         $res2 = sendApi('POST', '/api/payments', $tokenPetugas, [
             'bill_id' => $paidBill->id,
-            'amount_paid' => $paidBill->amount,
+            'amount' => $paidBill->amount,
             'payment_method' => 'cash'
         ]);
         if(in_array($res2['code'], [400, 422])) {
@@ -76,7 +76,7 @@ try {
 
     // SKENARIO 3: BIKIN USER DENGAN PASSWORD KOSONG (HARUS 422)
     $md .= "### 3. Payload Bolong (Required Validation)\n";
-    $res3 = sendApi('POST', '/api/admin/users', $tokenAdmin, [
+    $res3 = sendApi('POST', '/api/users', $tokenAdmin, [
         'name' => 'Si Bolong',
         'email' => 'bolong@test.com'
         // Password sengaja tidak dikirim
@@ -84,7 +84,7 @@ try {
     if($res3['code'] === 422) {
         $md .= "- ✅ **SUKSES DITOLAK**: Framework membentengi Database, menolak Insert data cacat. HTTP `422 Unprocessable Entity` atas hilangnya parameter fundamental.\n\n";
     } else {
-         $md .= "- ❌ **BUG**: Data kurang field masuk ke Controller logic (HTTP `{$res3['code']}`).\n\n";
+         $md .= "- ❌ **BUG**: Data kurang field lolos ke Controller logic (HTTP `{$res3['code']}`).\n\n";
     }
 
 } catch (\Exception $e) {
