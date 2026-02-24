@@ -58,6 +58,7 @@ try {
         $taxObj = TaxObject::create([
             'opd_id' => $c->opd_id,
             'taxpayer_id' => $wp->id,
+            'retribution_type_id' => $c->retribution_type_id,
             'name' => 'Usaha Dummy Cepat ' . $c->name,
             'address' => 'Jl. Automasi Mesin No.99',
             'latitude' => '-5.485434',
@@ -70,8 +71,23 @@ try {
         $schema = is_string($c->form_schema) ? json_decode($c->form_schema, true) : $c->form_schema;
         if (is_array($schema)) {
             foreach($schema as $field) {
-                if ($field['type'] === 'number') $vars[$field['key']] = 1500000;
-                else $vars[$field['key']] = '080';
+                $key = $field['key'];
+                if ($field['type'] === 'number') {
+                    if ($key === 'luas_tanah') $vars[$key] = 120;
+                    elseif ($key === 'luas_bangunan') $vars[$key] = 60;
+                    elseif ($key === 'volume') $vars[$key] = 50;
+                    elseif ($key === 'ukuran' || $key === 'luas_lantai') $vars[$key] = 100;
+                    elseif ($key === 'omzet' || $key === 'nilai_jual' || $key === 'nsr' || $key === 'tagihan_listrik' || $key === 'npop') $vars[$key] = 5000000;
+                    elseif ($key === 'npoptkp') $vars[$key] = 1000000;
+                    elseif ($key === 'njoptkp') $vars[$key] = 10000000;
+                    elseif ($key === 'harga_patokan' || $key === 'hda') $vars[$key] = 80000;
+                    elseif ($key === 'indeks_lokalitas' || $key === 'indeks_terintegrasi' || $key === 'indeks_bg') $vars[$key] = 1;
+                    elseif ($key === 'shst') $vars[$key] = 5560000;
+                    else $vars[$key] = 15000;
+                } else {
+                    if (str_contains($key, 'kelas')) $vars[$key] = '080';
+                    else $vars[$key] = 'Testing Data';
+                }
             }
         }
         
@@ -86,7 +102,10 @@ try {
         // Create Bill / SKPD
         $billNomor = 'SKPD-TEST-' . time() . '-' . $c->id;
         $bill = Bill::create([
+            'taxpayer_id' => $wp->id,
             'tax_object_id' => $taxObj->id,
+            'retribution_type_id' => $c->retribution_type_id,
+            'opd_id' => $c->opd_id,
             'creator_id' => $admin->id,
             'bill_number' => $billNomor,
             'amount' => $simulatedAmount,
@@ -113,7 +132,7 @@ try {
         $payment = Payment::create([
             'bill_id' => $bill->id,
             'processed_by' => $petugas->id,
-            'amount_paid' => $bill->amount,
+            'amount' => $bill->amount,
             'payment_method' => 'cash',
             'status' => 'success',
             'paid_at' => now(),
