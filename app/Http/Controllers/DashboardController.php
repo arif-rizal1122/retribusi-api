@@ -19,6 +19,9 @@ class DashboardController extends Controller
     public function getStats(Request $request)
     {
         $user = $request->user();
+        if (in_array($user->role, ['citizen', 'wajib_pajak'])) {
+            return response()->json(['message' => 'Unauthorized Access'], 403);
+        }
         $opdId = !$user->isSuperAdmin() ? $user->opd_id : null;
 
         $startDate = $request->query('start_date');
@@ -179,6 +182,9 @@ class DashboardController extends Controller
     public function getRevenueTrend(Request $request)
     {
         $user = $request->user();
+        if (in_array($user->role, ['citizen', 'wajib_pajak'])) {
+            return response()->json(['message' => 'Unauthorized Access'], 403);
+        }
         $opdId = !$user->isSuperAdmin() ? $user->opd_id : null;
 
         $startDate = $request->query('start_date');
@@ -260,6 +266,9 @@ class DashboardController extends Controller
     public function getMapPotentials(Request $request)
     {
         $user = $request->user();
+        if (in_array($user->role, ['citizen', 'wajib_pajak'])) {
+            return response()->json(['message' => 'Unauthorized Access'], 403);
+        }
         $opdId = !$user->isSuperAdmin() ? $user->opd_id : null;
         
         // 1. Get Zones (Potentials)

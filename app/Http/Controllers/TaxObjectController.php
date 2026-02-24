@@ -150,7 +150,9 @@ class TaxObjectController extends Controller
         
         // Authorization: Only owner can delete (if user is a taxpayer)
         // If it's an OPD admin, they might have different rules, but here we focus on Citizen/Taxpayer
-        if ($user->role === 'citizen') {
+        if (in_array($user->role, ['petugas', 'pengawas', 'kabid_pengawas', 'kasubid_pengawas'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        } elseif ($user->role === 'citizen' || $user->role === 'wajib_pajak') {
             if ($taxObject->taxpayer_id !== $user->id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
