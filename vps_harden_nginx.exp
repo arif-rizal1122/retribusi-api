@@ -1,0 +1,68 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set h "157.10.252.74"
+set u "sipanda"
+set p "Sipanda123#"
+
+spawn ssh -o StrictHostKeyChecking=no $u@$h
+expect {
+    "password:" {
+        send "$p\r"
+        exp_continue
+    }
+    "*\\$ " {
+        # Logged in
+    }
+}
+
+# 1. Hide Nginx Version
+send "sudo sed -i 's/# server_tokens off;/server_tokens off;/' /etc/nginx/nginx.conf\r"
+expect {
+    "*assword for sipanda:" {
+        send "$p\r"
+        expect "*\\$ "
+    }
+    "*\\$ " {
+        # Proceeded without password
+    }
+}
+
+# 2. Add Security Headers to api.sipanda.online config
+send "sudo cat << 'EOF' > /tmp/add_headers.sh
+#!/bin/bash
+CONFIG_FILE=\"/etc/nginx/sites-available/api.sipanda.online\"
+if grep -q \"Strict-Transport-Security\" \\\$CONFIG_FILE; then
+    echo \"Headers already exist.\"
+else
+    sudo sed -i '/ssl_certificate_key/a \\
+    \\n    # Security Headers\\\
+    add_header Strict-Transport-Security \"max-age=31536000; includeSubDomains\" always;\\\
+    add_header X-Content-Type-Options \"nosniff\" always;\\\
+    add_header X-Frame-Options \"SAMEORIGIN\" always;\\\
+    add_header X-XSS-Protection \"1; mode=block\" always;\\\
+    add_header Referrer-Policy \"strict-origin-when-cross-origin\" always;' \\\$CONFIG_FILE
+fi
+EOF\r"
+expect "*\\$ "
+
+send "chmod +x /tmp/add_headers.sh && sudo /tmp/add_headers.sh\r"
+expect {
+    "*assword for sipanda:" {
+        send "$p\r"
+        expect "*\\$ "
+    }
+    "*\\$ " {
+        # Proceeded without password
+    }
+}
+
+# Test and reload Nginx
+send "sudo nginx -t\r"
+expect "*\\$ "
+
+send "sudo systemctl reload nginx\r"
+expect "*\\$ "
+
+send "exit\r"
+expect eof
