@@ -30,11 +30,11 @@ function sendApi($method, $url, $token, $data) {
 
 try {
     $admin = User::firstOrCreate(['email' => 'admin.negatif@test.com'], ['name' => 'Admin Negatif', 'password' => bcrypt('password')]);
-    if(!$admin->hasRole('super_admin')) $admin->assignRole('super_admin');
+    if($admin->role !== 'super_admin') { $admin->role = 'super_admin'; $admin->save(); }
     $tokenAdmin = $admin->createToken('test')->plainTextToken;
 
     $petugas = User::firstOrCreate(['email' => 'petugas.negatif@test.com'], ['name' => 'Petugas Negatif', 'password' => bcrypt('password')]);
-    if(!$petugas->hasRole('petugas')) $petugas->assignRole('petugas');
+    if($petugas->role !== 'petugas') { $petugas->role = 'petugas'; $petugas->save(); }
     $tokenPetugas = $petugas->createToken('test')->plainTextToken;
 
     // SKENARIO 1: PEMBAYARAN KOSONG/MINUS (HARUS 422)
