@@ -50,7 +50,7 @@ try {
 
     // SKENARIO 1: WP MENGAKSES DASHBOARD ADMIN (HARUS 403)
     $md .= "### 1. Wajib Pajak Mengakses Endpoint Admin\n";
-    $res1 = sendApiRequest('GET', '/api/admin/dashboard', $tokenWP1);
+    $res1 = sendApiRequest('GET', '/api/dashboard/stats', $tokenWP1);
     if($res1['code'] === 403 || $res1['code'] === 401) {
         $md .= "- ✅ **SUKSES DIBLOKIR**: Server mengembalikan status HTTP `{$res1['code']}`. Wajib pajak tidak bisa masuk dapur admin.\n\n";
     } else {
@@ -66,14 +66,18 @@ try {
         $md .= "- ❌ **KEBOCORAN**: Endpoint bocor, HTTP `{$res2['code']}`.\n\n";
     }
 
-    // SKENARIO 3: PETUGAS MENGHAPUS OBJEK PAJAK (HARUS 403)
+    // SKENARIO 3: PETUGAS MENGHAPUS OBJEK PAJAK (HARUS 403 / 401)
     $md .= "### 3. Petugas Lapangan Melakukan Aksi Destruktif (DELETE Tagihan/Objek)\n";
-    $res3 = sendApiRequest('DELETE', '/api/tax-objects/9999', $tokenPetugas);
-    // Even if it's 404, we prefer 403 to trigger first. Usually FormRequest/Policies return 403 before 404 ModelNotFound.
-    if(in_array($res3['code'], [403, 401, 405])) {
-        $md .= "- ✅ **SUKSES DIBLOKIR**: Petugas dilarang menghapus. Server menolak keras dengan blokade Otorisasi.\n\n";
+    $dummyObj = \App\Models\TaxObject::first();
+    if($dummyObj) {
+        $res3 = sendApiRequest('DELETE', '/api/tax-objects/' . $dummyObj->id, $tokenPetugas);
+        if(in_array($res3['code'], [403, 401, 405])) {
+            $md .= "- ✅ **SUKSES DIBLOKIR**: Petugas dilarang menghapus. Server menolak keras dengan blokade Otorisasi (HTTP `{$res3['code']}`).\n\n";
+        } else {
+            $md .= "- ❌ **KEBOCORAN**: Sistem membiarkan aksi selain 403 (HTTP {$res3['code']}).\n\n";
+        }
     } else {
-        $md .= "- ❌ **KEBOCORAN**: Sistem membiarkan aksi selain 403 (HTTP {$res3['code']}).\n\n";
+        $md .= "*(Skip: Belum ada data TaxObjekt untuk dihapus)*\n\n";
     }
 
 } catch (\Exception $e) {
