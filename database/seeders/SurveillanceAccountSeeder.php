@@ -13,6 +13,10 @@ class SurveillanceAccountSeeder extends Seeder
      */
     public function run(): void
     {
+        // Temukan ID BAPENDA secara dinamis
+        $bapenda = \App\Models\Opd::where('name', 'like', '%Badan Pendapatan Daerah%')->first();
+        $opdId = $bapenda ? $bapenda->id : null;
+
         // 1. Akun Kabid Pengawas (Approval & Penindakan)
         User::updateOrCreate(
             ['email' => 'kabid@retribusi.id'],
@@ -22,7 +26,7 @@ class SurveillanceAccountSeeder extends Seeder
                 'password' => Hash::make('password123'),
                 'role' => 'kabid_pengawas',
                 'status' => 'active',
-                'opd_id' => 64, // BAPENDA
+                'opd_id' => $opdId,
             ]
         );
 
@@ -35,11 +39,16 @@ class SurveillanceAccountSeeder extends Seeder
                 'password' => Hash::make('password123'),
                 'role' => 'kasubid_pengawas',
                 'status' => 'active',
-                'opd_id' => 64, // BAPENDA
+                'opd_id' => $opdId,
             ]
         );
 
         $this->command->info('Surveillance accounts created/updated successfully!');
+        if ($opdId) {
+            $this->command->info("Linked to OPD: {$bapenda->name} (ID: {$opdId})");
+        } else {
+            $this->command->warn('BAPENDA OPD not found, linked to null OPD.');
+        }
         $this->command->info('Kabid: kabid@retribusi.id / password123');
         $this->command->info('Kasubid: kasubid@retribusi.id / password123');
     }
