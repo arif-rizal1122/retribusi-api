@@ -277,8 +277,21 @@ class DashboardController extends Controller
             ->whereNotNull('longitude')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->when($user->role === 'petugas', function($q) use ($user) {
-                $typeIds = $user->assignments->pluck('retribution_type_id')->unique()->toArray();
-                $q->whereIn('retribution_type_id', $typeIds);
+                $assignments = $user->assignments;
+                if ($assignments->isNotEmpty()) {
+                    $q->where(function($query) use ($assignments) {
+                        foreach ($assignments as $assignment) {
+                            $query->orWhere(function($sq) use ($assignment) {
+                                $sq->where('retribution_type_id', $assignment->retribution_type_id);
+                                if ($assignment->retribution_classification_id) {
+                                    $sq->where('retribution_classification_id', $assignment->retribution_classification_id);
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
             })
             ->get()
             ->map(function($obj) {
@@ -299,8 +312,21 @@ class DashboardController extends Controller
             ->whereNotNull('longitude')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->when($user->role === 'petugas', function($q) use ($user) {
-                $typeIds = $user->assignments->pluck('retribution_type_id')->unique()->toArray();
-                $q->whereIn('retribution_type_id', $typeIds);
+                $assignments = $user->assignments;
+                if ($assignments->isNotEmpty()) {
+                    $q->where(function($query) use ($assignments) {
+                        foreach ($assignments as $assignment) {
+                            $query->orWhere(function($sq) use ($assignment) {
+                                $sq->where('retribution_type_id', $assignment->retribution_type_id);
+                                if ($assignment->retribution_classification_id) {
+                                    $sq->where('retribution_classification_id', $assignment->retribution_classification_id);
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
             })
             ->get()
             ->map(function($obj) {
