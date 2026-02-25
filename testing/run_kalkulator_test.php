@@ -4,7 +4,17 @@
  * Dijalankan via CLI untuk menembak endpoint lokal /api/simulate-tax
  */
 
-$apiUrl = "http://localhost:8000/api/tax-formulas";
+// Handle environment argument
+$env = $argv[1] ?? 'local';
+if ($env === 'dev') {
+    $baseUrl = "https://api-dev.sipanda.online";
+} elseif ($env === 'prod') {
+    $baseUrl = "https://api.sipanda.online";
+} else {
+    $baseUrl = "http://localhost:8000";
+}
+
+$apiUrl = "$baseUrl/api/tax-formulas";
 $ch = curl_init($apiUrl);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 $response = curl_exec($ch);
@@ -57,7 +67,7 @@ foreach ($formulas as $f) {
         'variables' => $vars
     ]);
     
-    $ch2 = curl_init("http://localhost:8000/api/simulate-tax");
+    $ch2 = curl_init("$baseUrl/api/simulate-tax");
     curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch2, CURLOPT_POST, true);
     curl_setopt($ch2, CURLOPT_POSTFIELDS, $postData);
