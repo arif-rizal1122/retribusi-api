@@ -28,14 +28,6 @@ use App\Http\Controllers\PbbBapendaController;
 
 // Public auth routes with explicit throttle
 Route::middleware('throttle:60,1')->group(function () {
-    Route::options('/test-cors', function() {
-        return response()->json([], 204);
-    })->withoutMiddleware('auth:sanctum');
-    
-    Route::get('/test-cors', function() {
-        return response()->json(['status' => 'ok']);
-    })->withoutMiddleware('auth:sanctum');
-
     Route::post('/opd/register', [OpdController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/citizen/login', [AuthController::class, 'citizenLogin']);
@@ -137,24 +129,18 @@ Route::post('/pbb/bapenda/inquiry', [PbbBapendaController::class, 'inquiry']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/analytics/realization', [AnalyticsController::class, 'getRealization']);
-    Route::get('/analytics/heatmap', [AnalyticsController::class, 'getHeatmapData']);
-    
-    // Auth
+    // ------------------------------------------------------------------------
+    // Shared Routes (Admin, Petugas, Citizen)
+    // ------------------------------------------------------------------------
     Route::post('/logout', [AuthController::class, 'logout']);
-    // Auth Profile & Password
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
     Route::post('/user/password', [AuthController::class, 'changePassword']);
-
-    // General File Upload (Cloudinary)
     Route::post('/upload', [\App\Http\Controllers\UploadController::class, 'uploadImage']);
-
-    // Me / Self Profile (New for Mobile & better control)
     Route::get('/me', [\App\Http\Controllers\MeController::class, 'show']);
     Route::post('/me/update', [\App\Http\Controllers\MeController::class, 'update']);
     
-    // Citizen Service Registration
+    // Citizen Service Registration (Shared, but usually for citizens)
     Route::prefix('citizen/services')->group(function () {
         Route::get('/', [\App\Http\Controllers\CitizenServiceController::class, 'index']);
         Route::get('/pending-periods', [\App\Http\Controllers\CitizenServiceController::class, 'getPendingPeriods']);
@@ -162,83 +148,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/register', [\App\Http\Controllers\CitizenServiceController::class, 'register']);
         Route::get('/{id}/bills', [\App\Http\Controllers\CitizenServiceController::class, 'bills']);
     });
-    
-    // Retribution Types (OPD-scoped)
-    Route::apiResource('retribution-types', RetributionTypeController::class);
-    
-    // Taxpayer Search (New)
-    Route::get('/taxpayers/search/{nik}', [\App\Http\Controllers\TaxpayerSearchController::class, 'searchByNik']);
 
-    // Taxpayers (OPD-scoped)
-    Route::apiResource('taxpayers', TaxpayerController::class);
-
-    // Tax Objects (OPD-scoped)
-    Route::apiResource('tax-objects', TaxObjectController::class);
-
-    // Payments & Dynamic Billing (Virtual Ledger)
-    Route::apiResource('bills', BillController::class)->only(['index', 'show', 'store']);
-    Route::get('/tax-objects/{taxObject}/pending-periods', [PaymentController::class, 'getPendingPeriods']);
-    Route::post('/payments', [PaymentController::class, 'store']);
-    Route::post('/bills/{bill}/pay', [PaymentController::class, 'store']); // Backward compatibility
+    // Share Routes for Bills & TTE
+    Route::get('/bills/{bill}', [BillController::class, 'show']);
     Route::get('/bills/{bill}/skrd', [BillController::class, 'exportSKRD']);
     Route::get('/bills/{bill}/sspd', [BillController::class, 'exportSSPD']);
     Route::get('/bills/{bill}/sppt', [BillController::class, 'exportSPPT']);
-    
-    // Verifications
-    Route::put('/verifications/{verification}/status', [VerificationController::class, 'updateStatus']);
-    Route::apiResource('verifications', VerificationController::class)->only(['index', 'show', 'store']);
-
-    // Zones
-    Route::apiResource('zones', ZoneController::class);
-
-    // Retribution Classifications
-    Route::apiResource('retribution-classifications', RetributionClassificationController::class);
-
-    // Retribution Rates
-    Route::apiResource('retribution-rates', RetributionRateController::class);
-
-    // OPD Management (super_admin only in controller)
-    Route::apiResource('opds', OpdController::class)->except(['create', 'edit', 'index']);
-
-    // User Management
-    Route::apiResource('users', UserController::class);
-
-    // Dashboard Analytics
-    Route::prefix('dashboard')->group(function () {
-        Route::get('/stats', [DashboardController::class, 'getStats']);
-        Route::get('/revenue-trend', [DashboardController::class, 'getRevenueTrend']);
-        Route::get('/map-potentials', [DashboardController::class, 'getMapPotentials']);
-    });
-
-    // Pengawas / Surveillance Routes
-    Route::prefix('pengawas')->group(function () {
-        Route::get('/audit-logs', [\App\Http\Controllers\Pengawas\AuditLogController::class, 'index']);
-        Route::get('/anomalies', [\App\Http\Controllers\Pengawas\SurveillanceController::class, 'getAnomalies']);
-        Route::get('/compliance-stats', [\App\Http\Controllers\Pengawas\SurveillanceController::class, 'getComplianceStats']);
-        
-        // Enforcement
-        Route::get('/enforcements', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'index']);
-        Route::post('/enforcements', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'store']);
-        Route::post('/enforcements/{id}', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'update']);
-        Route::post('/enforcements/{id}/approve', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'approve']);
-        Route::get('/enforcements/history/{tax_object_id}', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'getHistory']);
-        Route::get('/enforcements/{id}/pdf', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'generatePDF']);
-        
-        // Penindakan (SOP 02)
-        Route::get('/penindakan', [\App\Http\Controllers\Pengawas\PenindakanController::class, 'index']);
-        Route::post('/penindakan/issue-skpdkb', [\App\Http\Controllers\Pengawas\PenindakanController::class, 'generateSKPDKB']);
-    });
-
-    // Reporting
-    Route::prefix('reports')->group(function () {
-        Route::get('/summary', [ReportController::class, 'getSummary']);
-        Route::get('/recent', [ReportController::class, 'getRecent']);
-        Route::get('/petugas-performance', [ReportController::class, 'getPetugasPerformance']);
-        
-        // Monthly Turnover Reports (SPTPD)
-        Route::get('/monthly', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
-        Route::put('/monthly/{report}/validate', [\App\Http\Controllers\MonthlyReportController::class, 'validateReport']);
-    });
+    Route::get('/tte/verify/{number}', [\App\Http\Controllers\Api\EregistryController::class, 'verify'])->withoutMiddleware('auth:sanctum');
 
     // Citizen Specific Actions
     Route::prefix('citizen')->group(function () {
@@ -246,35 +162,81 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
     });
 
-    // Penalty Waivers (Tax Amnesty)
-    Route::prefix('amnesty')->group(function () {
-        Route::get('/', [\App\Http\Controllers\PenaltyWaiverController::class, 'index']);
-        Route::post('/', [\App\Http\Controllers\PenaltyWaiverController::class, 'store']);
-        Route::post('/{id}/approve', [\App\Http\Controllers\PenaltyWaiverController::class, 'approve']);
-        Route::post('/{id}/reject', [\App\Http\Controllers\PenaltyWaiverController::class, 'reject']);
-    });
-
-    // E-Registry & TTE
-    Route::prefix('tte')->group(function () {
-        Route::get('/documents', [\App\Http\Controllers\Api\EregistryController::class, 'index']);
-        Route::post('/sign', [\App\Http\Controllers\BillController::class, 'signTTE']);
-        Route::get('/verify/{number}', [\App\Http\Controllers\Api\EregistryController::class, 'verify'])->withoutMiddleware('auth:sanctum');
-    });
-
-    // PBB Bapenda Integration
+    // PBB Bapenda Citizen Actions
     Route::prefix('pbb/bapenda')->group(function () {
-        // Citizen: Klaim & kelola NOP
         Route::post('/link-nop', [PbbBapendaController::class, 'linkNop']);
         Route::delete('/unlink-nop/{id}', [PbbBapendaController::class, 'unlinkNop']);
         Route::get('/my-objects', [PbbBapendaController::class, 'myObjects']);
         Route::get('/my-transactions', [PbbBapendaController::class, 'myTransactions']);
-
-        // Pembayaran PBB (citizen & petugas)
         Route::post('/pay', [PbbBapendaController::class, 'pay']);
+    });
 
-        // Admin: Reversal & monitoring
-        Route::post('/reversal', [PbbBapendaController::class, 'reversal']);
-        Route::get('/transactions', [PbbBapendaController::class, 'transactions']);
-        Route::get('/stats', [PbbBapendaController::class, 'stats']);
+    // ------------------------------------------------------------------------
+    // Admin & Petugas ONLY (Restricted by EnsureAdmin middleware)
+    // ------------------------------------------------------------------------
+    Route::middleware('admin')->group(function () {
+        Route::get('/analytics/realization', [AnalyticsController::class, 'getRealization']);
+        Route::get('/analytics/heatmap', [AnalyticsController::class, 'getHeatmapData']);
+        Route::apiResource('retribution-types', RetributionTypeController::class);
+        Route::get('/taxpayers/search/{nik}', [\App\Http\Controllers\TaxpayerSearchController::class, 'searchByNik']);
+        Route::apiResource('taxpayers', TaxpayerController::class);
+        Route::apiResource('tax-objects', TaxObjectController::class);
+        Route::apiResource('bills', BillController::class)->only(['index', 'store']);
+        Route::get('/tax-objects/{taxObject}/pending-periods', [PaymentController::class, 'getPendingPeriods']);
+        Route::post('/payments', [PaymentController::class, 'store']);
+        Route::post('/bills/{bill}/pay', [PaymentController::class, 'store']);
+        Route::put('/verifications/{verification}/status', [VerificationController::class, 'updateStatus']);
+        Route::apiResource('verifications', VerificationController::class)->only(['index', 'show', 'store']);
+        Route::apiResource('zones', ZoneController::class);
+        Route::apiResource('retribution-classifications', RetributionClassificationController::class);
+        Route::apiResource('retribution-rates', RetributionRateController::class);
+        Route::apiResource('opds', OpdController::class)->except(['create', 'edit', 'index']);
+        Route::apiResource('users', UserController::class);
+
+        Route::prefix('dashboard')->group(function () {
+            Route::get('/stats', [DashboardController::class, 'getStats']);
+            Route::get('/revenue-trend', [DashboardController::class, 'getRevenueTrend']);
+            Route::get('/map-potentials', [DashboardController::class, 'getMapPotentials']);
+        });
+
+        Route::prefix('pengawas')->group(function () {
+            Route::get('/audit-logs', [\App\Http\Controllers\Pengawas\AuditLogController::class, 'index']);
+            Route::get('/anomalies', [\App\Http\Controllers\Pengawas\SurveillanceController::class, 'getAnomalies']);
+            Route::get('/compliance-stats', [\App\Http\Controllers\Pengawas\SurveillanceController::class, 'getComplianceStats']);
+            Route::get('/enforcements', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'index']);
+            Route::post('/enforcements', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'store']);
+            Route::post('/enforcements/{id}', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'update']);
+            Route::post('/enforcements/{id}/approve', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'approve']);
+            Route::get('/enforcements/history/{tax_object_id}', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'getHistory']);
+            Route::get('/enforcements/{id}/pdf', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'generatePDF']);
+            Route::get('/penindakan', [\App\Http\Controllers\Pengawas\PenindakanController::class, 'index']);
+            Route::post('/penindakan/issue-skpdkb', [\App\Http\Controllers\Pengawas\PenindakanController::class, 'generateSKPDKB']);
+        });
+
+        Route::prefix('reports')->group(function () {
+            Route::get('/summary', [ReportController::class, 'getSummary']);
+            Route::get('/recent', [ReportController::class, 'getRecent']);
+            Route::get('/petugas-performance', [ReportController::class, 'getPetugasPerformance']);
+            Route::get('/monthly', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
+            Route::put('/monthly/{report}/validate', [\App\Http\Controllers\MonthlyReportController::class, 'validateReport']);
+        });
+
+        Route::prefix('amnesty')->group(function () {
+            Route::get('/', [\App\Http\Controllers\PenaltyWaiverController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\PenaltyWaiverController::class, 'store']);
+            Route::post('/{id}/approve', [\App\Http\Controllers\PenaltyWaiverController::class, 'approve']);
+            Route::post('/{id}/reject', [\App\Http\Controllers\PenaltyWaiverController::class, 'reject']);
+        });
+
+        Route::prefix('tte')->group(function () {
+            Route::get('/documents', [\App\Http\Controllers\Api\EregistryController::class, 'index']);
+            Route::post('/sign', [\App\Http\Controllers\BillController::class, 'signTTE']);
+        });
+
+        Route::prefix('pbb/bapenda')->group(function () {
+            Route::post('/reversal', [PbbBapendaController::class, 'reversal']);
+            Route::get('/transactions', [PbbBapendaController::class, 'transactions']);
+            Route::get('/stats', [PbbBapendaController::class, 'stats']);
+        });
     });
 });

@@ -201,8 +201,17 @@ class BillController extends Controller
     {
         $user = $request->user();
         
-        if (!$user->isSuperAdmin() && $bill->opd_id !== $user->opd_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        // Ownership / Authorization check
+        if ($user instanceof \App\Models\User) {
+            // Admin/Petugas: restrict by OPD if not super admin
+            if (!$user->isSuperAdmin() && $bill->opd_id !== $user->opd_id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+        } else if ($user instanceof \App\Models\Taxpayer) {
+            // Citizen: restrict by their own record
+            if ($bill->taxpayer_id !== $user->id) {
+                return response()->json(['message' => 'Forbidden: This is not your bill.'], 403);
+            }
         }
 
         return response()->json([
@@ -234,8 +243,13 @@ class BillController extends Controller
     /**
      * Export/Preview SKRD
      */
-    public function exportSKRD(Bill $bill, \App\Services\OfficialDocumentService $docService)
+    public function exportSKRD(Request $request, Bill $bill, \App\Services\OfficialDocumentService $docService)
     {
+        $user = $request->user();
+        if ($user instanceof \App\Models\Taxpayer && $bill->taxpayer_id !== $user->id) {
+            return abort(403, 'Unauthorized access to this document.');
+        }
+
         $data = $docService->generateSKRD($bill->load(['retributionType', 'taxpayer']));
         
         return view('pdf.skrd', $data);
@@ -244,8 +258,13 @@ class BillController extends Controller
     /**
      * Export/Preview SSPD
      */
-    public function exportSSPD(Bill $bill, \App\Services\OfficialDocumentService $docService)
+    public function exportSSPD(Request $request, Bill $bill, \App\Services\OfficialDocumentService $docService)
     {
+        $user = $request->user();
+        if ($user instanceof \App\Models\Taxpayer && $bill->taxpayer_id !== $user->id) {
+            return abort(403, 'Unauthorized access to this document.');
+        }
+
         try {
             $data = $docService->generateSSPD($bill->load(['retributionType', 'taxpayer', 'payments']));
             return view('pdf.sspd', $data);
@@ -257,8 +276,13 @@ class BillController extends Controller
     /**
      * Export/Preview SPPT (PBB)
      */
-    public function exportSPPT(Bill $bill, \App\Services\OfficialDocumentService $docService)
+    public function exportSPPT(Request $request, Bill $bill, \App\Services\OfficialDocumentService $docService)
     {
+        $user = $request->user();
+        if ($user instanceof \App\Models\Taxpayer && $bill->taxpayer_id !== $user->id) {
+            return abort(403, 'Unauthorized access to this document.');
+        }
+
         try {
             // Verify if this is actually a PBB bill
             $name = strtolower($bill->retributionType->name ?? '');
