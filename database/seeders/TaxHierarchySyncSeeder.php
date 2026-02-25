@@ -80,6 +80,10 @@ class TaxHierarchySyncSeeder extends Seeder
             'code' => 'PBB-UMUM', 
             'icon' => self::ICON_PAJAK, 
             'formula' => '(njop - 10000000) * (njkp_percent / 100) * (tariff / 100)',
+            'bank_accounts' => [
+                ['bank' => 'QRIS BANK BNI', 'account_number' => '1999555460'],
+                ['bank' => 'BANK SULTRA', 'account_number' => '004.01.05.001057 - 4'],
+            ],
             'schema' => [
                 ['key' => 'luas_tanah', 'label' => 'Luas Tanah (m2)', 'type' => 'number', 'required' => true],
                 ['key' => 'kelas_bumi', 'label' => 'Kelas NJOP Bumi', 'type' => 'select', 'options' => $bumiClasses, 'required' => true],
@@ -96,6 +100,9 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w1, 'BPHTB', [
             'code' => 'BPHTB', 'icon' => self::ICON_BPHTB, 'formula' => '(npop - npoptkp) * 0.05',
+            'bank_accounts' => [
+                ['bank' => 'BANK SULTRA', 'account_number' => '004.01.05.001420 - 8'],
+            ],
             'schema' => [
                 ['key' => 'npop', 'label' => 'NPOP (Nilai Perolehan Objek Pajak)', 'type' => 'number', 'required' => true],
                 ['key' => 'npoptkp', 'label' => 'NPOPTKP (Nilai Tidak Kena Pajak)', 'type' => 'number', 'required' => true],
@@ -105,6 +112,10 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w1, 'Pajak Reklame', [
             'code' => 'REKLAME', 'icon' => self::ICON_REKLAME, 'formula' => 'nsr * 0.25',
+            'bank_accounts' => [
+                ['bank' => 'QRIS BANK BNI', 'account_number' => '1990404076'],
+                ['bank' => 'BANK SULTRA', 'account_number' => '264 01.05.000006 - 2'],
+            ],
             'schema' => [
                 ['key' => 'nsr', 'label' => 'NSR (Nilai Sewa Reklame)', 'type' => 'number', 'required' => true],
                 ['key' => 'ukuran', 'label' => 'Ukuran (m2)', 'type' => 'number', 'required' => true],
@@ -115,6 +126,9 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w1, 'Pajak Sarang Burung Walet', [
             'code' => 'WALET', 'icon' => self::ICON_WALET, 'formula' => 'nilai_jual * 0.10',
+            'bank_accounts' => [
+                ['bank' => 'BANK SULTRA', 'account_number' => '264 01.05.000010 - 4'],
+            ],
             'schema' => [
                 ['key' => 'nilai_jual', 'label' => 'Nilai Jual Sarang (Rp)', 'type' => 'number', 'required' => true],
                 ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'google_map', 'required' => true],
@@ -124,6 +138,9 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w1, 'Pajak MBLB', [
             'code' => 'MBLB', 'icon' => self::ICON_MBLB, 'formula' => '(volume * harga_patokan) * 0.15',
+            'bank_accounts' => [
+                ['bank' => 'BANK SULTRA', 'account_number' => '264 01.05.000011 - 6'],
+            ],
             'schema' => [
                 ['key' => 'volume', 'label' => 'Volume (m3 / Ton)', 'type' => 'number', 'required' => true],
                 ['key' => 'harga_patokan', 'label' => 'Harga Patokan', 'type' => 'number', 'required' => true],
@@ -134,12 +151,18 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w1, 'Opsen PKB', [
             'code' => 'OPS-PKB', 'icon' => self::ICON_PAJAK, 'formula' => 'pkb_pokok * 0.66',
+            'bank_accounts' => [
+                ['bank' => 'BANK SULTRA', 'account_number' => '264 01.05.000012 - 8'],
+            ],
             'schema' => [['key' => 'pkb_pokok', 'label' => 'PKB Pokok (dari Provinsi)', 'type' => 'number', 'required' => true]],
             'rates' => [['name' => 'Tarif Opsen PKB 66%', 'amount' => 66, 'unit' => '%', 'formula' => 'pkb_pokok * 0.66']],
         ]);
 
         $this->syncClassification($bapenda, $w1, 'Opsen BBNKB', [
             'code' => 'OPS-BBN', 'icon' => self::ICON_PAJAK, 'formula' => 'bbnkb_pokok * 0.66',
+            'bank_accounts' => [
+                ['bank' => 'BANK SULTRA', 'account_number' => '264 01.05.000013 - 1'],
+            ],
             'schema' => [['key' => 'bbnkb_pokok', 'label' => 'BBNKB Pokok (dari Provinsi)', 'type' => 'number', 'required' => true]],
             'rates' => [['name' => 'Tarif Opsen BBNKB 66%', 'amount' => 66, 'unit' => '%', 'formula' => 'bbnkb_pokok * 0.66']],
         ]);
@@ -149,6 +172,10 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w2, 'PBJT - Makan dan Minum', [
             'code' => 'PBJT-MNM', 'icon' => self::ICON_PAJAK, 'formula' => 'omzet * 0.10',
+            'bank_accounts' => [
+                ['bank' => 'QRIS BANK BNI', 'account_number' => '1990202558'],
+                ['bank' => 'BANK SULTRA', 'account_number' => '264 01.05.000005 - 1'],
+            ],
             'schema' => [
                 ['key' => 'omzet', 'label' => 'Omzet Penjualan (Rata-rata/Bulan)', 'type' => 'number', 'required' => true],
                 ['key' => 'keterangan_usaha', 'label' => 'Keterangan Usaha', 'type' => 'select', 'options' => ['Aktif', 'Tidak Aktif'], 'required' => true],
@@ -159,6 +186,10 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w2, 'PBJT - Jasa Catering', [
             'code' => 'PBJT-CAT', 'icon' => self::ICON_PAJAK, 'formula' => 'omzet * 0.10',
+            'bank_accounts' => [
+                ['bank' => 'QRIS BANK BNI', 'account_number' => '1990202558'],
+                ['bank' => 'BANK SULTRA', 'account_number' => '264 01.05.000005 - 1'],
+            ],
             'schema' => [
                 ['key' => 'omzet', 'label' => 'Omzet Penjualan (Rata-rata/Bulan)', 'type' => 'number', 'required' => true],
                 ['key' => 'nama_perusahaan', 'label' => 'Nama Perusahan/Catering', 'type' => 'text', 'required' => true],
@@ -169,6 +200,10 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w2, 'PBJT - Jasa Event/Hiburan Lainnya', [
             'code' => 'PBJT-EVT', 'icon' => self::ICON_PAJAK, 'formula' => 'omzet * 0.10',
+            'bank_accounts' => [
+                ['bank' => 'QRIS BANK BNI', 'account_number' => '1990303555'],
+                ['bank' => 'BANK SULTRA', 'account_number' => '264 01.05.000007 - 4'],
+            ],
             'schema' => [
                 ['key' => 'omzet', 'label' => 'Omzet Penjualan Event', 'type' => 'number', 'required' => true],
                 ['key' => 'nama_event', 'label' => 'Nama Event/Kegiatan', 'type' => 'text', 'required' => true],
@@ -179,6 +214,9 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w2, 'PBJT - Tenaga Listrik', [
             'code' => 'PBJT-LIS', 'icon' => self::ICON_PAJAK, 'formula' => 'tagihan_listrik * tariff',
+            'bank_accounts' => [
+                ['bank' => 'BANK SULTRA', 'account_number' => '004.01.05.000415 - 1'],
+            ],
             'schema' => [
                 ['key' => 'tagihan_listrik', 'label' => 'Tagihan Listrik / Bulan', 'type' => 'number', 'required' => true],
                 ['key' => 'keterangan_usaha', 'label' => 'Keterangan Usaha', 'type' => 'select', 'options' => ['Aktif', 'Tidak Aktif'], 'required' => true],
@@ -193,6 +231,10 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w2, 'PBJT - Jasa Perhotelan', [
             'code' => 'PBJT-HTL', 'icon' => self::ICON_PAJAK, 'formula' => 'omzet * 0.10',
+            'bank_accounts' => [
+                ['bank' => 'QRIS BANK BNI', 'account_number' => '1990255501'],
+                ['bank' => 'BANK SULTRA', 'account_number' => '264 01.05.000002 - 5'],
+            ],
             'schema' => [
                 ['key' => 'omzet', 'label' => 'Omzet / Pendapatan Kamar (Rata-rata/Bulan)', 'type' => 'number', 'required' => true],
                 ['key' => 'keterangan_usaha', 'label' => 'Keterangan Usaha', 'type' => 'select', 'options' => ['Aktif', 'Tidak Aktif'], 'required' => true],
@@ -203,6 +245,9 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w2, 'PBJT - Jasa Parkir', [
             'code' => 'PBJT-PRK', 'icon' => self::ICON_PAJAK, 'formula' => 'omzet * 0.10',
+            'bank_accounts' => [
+                ['bank' => 'BANK SULTRA', 'account_number' => '264 01.05.000004 - 9'],
+            ],
             'schema' => [
                 ['key' => 'omzet', 'label' => 'Pendapatan Parkir (Rata-rata/Bulan)', 'type' => 'number', 'required' => true],
                 ['key' => 'keterangan_usaha', 'label' => 'Keterangan Usaha', 'type' => 'select', 'options' => ['Aktif', 'Tidak Aktif'], 'required' => true],
@@ -213,6 +258,10 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w2, 'PBJT - Jasa Kesenian dan Hiburan', [
             'code' => 'PBJT-HBR', 'icon' => self::ICON_PAJAK, 'formula' => 'omzet * tariff',
+            'bank_accounts' => [
+                ['bank' => 'QRIS BANK BNI', 'account_number' => '1990303555'],
+                ['bank' => 'BANK SULTRA', 'account_number' => '264 01.05.000007 - 4'],
+            ],
             'schema' => [
                 ['key' => 'omzet', 'label' => 'Omzet Penjualan (Rata-rata/Bulan)', 'type' => 'number', 'required' => true],
                 ['key' => 'keterangan_usaha', 'label' => 'Keterangan Usaha', 'type' => 'select', 'options' => ['Aktif', 'Tidak Aktif'], 'required' => true],
@@ -226,6 +275,9 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w2, 'Pajak Air Tanah', [
             'code' => 'PAT', 'icon' => self::ICON_PAJAK, 'formula' => '(volume * hda) * 0.20',
+            'bank_accounts' => [
+                ['bank' => 'BANK SULTRA', 'account_number' => '264 01.05.000009 - 8'],
+            ],
             'schema' => [
                 ['key' => 'volume', 'label' => 'Volume Pengambilan (m3)', 'type' => 'number', 'required' => true],
                 ['key' => 'hda', 'label' => 'HDA (Harga Dasar Air)', 'type' => 'number', 'required' => true],
@@ -235,6 +287,9 @@ class TaxHierarchySyncSeeder extends Seeder
 
         $this->syncClassification($bapenda, $w2, 'Penyediaan Tempat Kegiatan Usaha', [
             'code' => 'PTKU', 'icon' => self::ICON_RETRIB, 'formula' => 'amount',
+            'bank_accounts' => [
+                ['bank' => 'BANK SULTRA', 'account_number' => '264 01.05.000003 - 7'],
+            ],
             'schema' => [
                 ['key' => 'jenis_usaha', 'label' => 'Jenis Usaha', 'type' => 'text', 'required' => true],
                 ['key' => 'lokasi_google_maps', 'label' => 'Link Lokasi Google Maps', 'type' => 'google_map', 'required' => true],
@@ -316,6 +371,7 @@ class TaxHierarchySyncSeeder extends Seeder
                 'calculation_formula' => $config['formula'],
                 'form_schema' => $config['schema'],
                 'requirements' => $this->commonReqs,
+                'bank_accounts' => $config['bank_accounts'] ?? null,
             ]
         );
 

@@ -1,6 +1,6 @@
 # 🧮 Laporan Hasil Uji Otomatis API Kalkulator Pajak
 
-**Waktu Eksekusi**: 2026-02-24 12:55:08
+**Waktu Eksekusi**: 2026-02-25 09:07:56
 Pengujian dieksekusi secara otomatis menembak server `Localhost:8000` via endpoint POST `/api/simulate-tax` untuk masing-masing klasifikasi.
 
 ### PBB-P2 (`PBB-UMUM`)
@@ -32,6 +32,18 @@ Pengujian dieksekusi secara otomatis menembak server `Localhost:8000` via endpoi
 - **Dummy Set Variabel**: `{"volume":50,"harga_patokan":80000,"jenis_mineral":"Testing Data"}`
 - **Status Pengujian**: ✅ **LULUS**
 - **Hasil Parsing Kalkulator**: **Rp 600.000**
+
+### Opsen PKB (`OPS-PKB`)
+- **Formula Server**: `pkb_pokok * 0.66`
+- **Dummy Set Variabel**: `{"pkb_pokok":15000}`
+- **Status Pengujian**: ✅ **LULUS**
+- **Hasil Parsing Kalkulator**: **Rp 9.900**
+
+### Opsen BBNKB (`OPS-BBN`)
+- **Formula Server**: `bbnkb_pokok * 0.66`
+- **Dummy Set Variabel**: `{"bbnkb_pokok":15000}`
+- **Status Pengujian**: ✅ **LULUS**
+- **Hasil Parsing Kalkulator**: **Rp 9.900**
 
 ### PBJT - Makan dan Minum (`PBJT-MNM`)
 - **Formula Server**: `omzet * 0.10`
@@ -104,16 +116,4 @@ Pengujian dieksekusi secara otomatis menembak server `Localhost:8000` via endpoi
 - **Dummy Set Variabel**: `{"luas_lantai":100,"indeks_lokalitas":1,"shst":5560000,"indeks_terintegrasi":1,"indeks_bg":1}`
 - **Status Pengujian**: ✅ **LULUS**
 - **Hasil Parsing Kalkulator**: **Rp 556.000.000**
-
-### Opsen PKB (`OPS-PKB`)
-- **Formula Server**: `pkb_pokok * 0.66`
-- **Dummy Set Variabel**: `{"pkb_pokok":15000}`
-- **Status Pengujian**: ✅ **LULUS**
-- **Hasil Parsing Kalkulator**: **Rp 9.900**
-
-### Opsen BBNKB (`OPS-BBN`)
-- **Formula Server**: `bbnkb_pokok * 0.66`
-- **Dummy Set Variabel**: `{"bbnkb_pokok":15000}`
-- **Status Pengujian**: ✅ **LULUS**
-- **Hasil Parsing Kalkulator**: **Rp 9.900**
 

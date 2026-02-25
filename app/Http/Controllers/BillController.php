@@ -219,7 +219,7 @@ class BillController extends Controller
             'nik' => 'required|string',
         ]);
 
-        $bills = Bill::with(['retributionType', 'opd', 'taxObject'])
+        $bills = Bill::with(['retributionType', 'opd', 'taxObject', 'classification'])
             ->whereHas('taxpayer', function($q) use ($request) {
                 $q->where('nik', $request->nik);
             })
