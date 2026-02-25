@@ -32,7 +32,7 @@ class TaxpayerController extends Controller
                                 $query->orWhere(function($sq) use ($assignment) {
                                     $sq->where('retribution_types.id', $assignment->retribution_type_id);
                                     if ($assignment->retribution_classification_id) {
-                                        $sq->where('retribution_taxpayer.retribution_classification_id', $assignment->retribution_classification_id);
+                                        $sq->where('taxpayer_retribution_type.retribution_classification_id', $assignment->retribution_classification_id);
                                     }
                                 });
                             }
