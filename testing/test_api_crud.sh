@@ -213,8 +213,9 @@ if [ -n "$ADMIN_TOKEN" ]; then
   
   # CREATE
   log_subsection "CREATE"
+  ZONE_CODE="Z$(date +%s | tail -c 9)"
   CREATE_RESP=$(test_json POST "$API/zones" \
-    "{\"name\":\"$ZONE_NAME\",\"code\":\"TZ$(date +%s)\",\"description\":\"Auto-test zone\",\"opd_id\":5,\"retribution_type_id\":22}" "$ADMIN_TOKEN")
+    "{\"name\":\"$ZONE_NAME\",\"code\":\"$ZONE_CODE\",\"description\":\"Auto-test zone\",\"opd_id\":5,\"retribution_type_id\":22}" "$ADMIN_TOKEN")
   ZONE_ID=$(echo "$CREATE_RESP" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
   
   if [ -n "$ZONE_ID" ]; then
