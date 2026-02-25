@@ -32,6 +32,8 @@ Seluruh informasi arsitektur, panduan infrastruktur, dan hasil pengujian tersedi
 
 - [**System Overview**](./docs/SYSTEM_OVERVIEW.md): Arsitektur, Git-Flow, dan Alur Data.
 - [**Infrastructure Notes**](./docs/INFRASTRUCTURE_NOTES.md): Detail VPS, Path Server, dan Panduan Maintenance.
+- [**Mitigation Guide**](./docs/MITIGATION_GUIDE.md): Solusi eror masa lalu (500, CORS, Permission) & Log Keputusan.
+- [**AI Navigator**](./docs/AI_CONTEXT.md): Panduan efisiensi token dan konteks cepat untuk AI Agent.
 - [**Testing Reports**](./docs/testing-reports/): Hasil audit keamanan dan validasi CRUD terbaru.
 
 ## 👥 Contributors
