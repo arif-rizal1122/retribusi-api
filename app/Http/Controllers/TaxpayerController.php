@@ -26,9 +26,17 @@ class TaxpayerController extends Controller
             if ($user->role === 'petugas') {
                 $assignments = $user->assignments;
                 if ($assignments->isNotEmpty()) {
-                    $typeIds = $assignments->pluck('retribution_type_id')->unique()->toArray();
-                    $query->whereHas('retributionTypes', function($q) use ($typeIds) {
-                        $q->whereIn('retribution_types.id', $typeIds);
+                    $query->whereHas('retributionTypes', function($q) use ($assignments) {
+                        $q->where(function($query) use ($assignments) {
+                            foreach ($assignments as $assignment) {
+                                $query->orWhere(function($sq) use ($assignment) {
+                                    $sq->where('retribution_types.id', $assignment->retribution_type_id);
+                                    if ($assignment->retribution_classification_id) {
+                                        $sq->where('retribution_taxpayer.retribution_classification_id', $assignment->retribution_classification_id);
+                                    }
+                                });
+                            }
+                        });
                     });
                 } else {
                     // No assignments = no taxpayers

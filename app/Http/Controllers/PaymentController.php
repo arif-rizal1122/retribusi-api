@@ -54,6 +54,19 @@ class PaymentController extends Controller
             if ($taxObject->opd_id !== $user->opd_id) {
                 return response()->json(['message' => 'Unauthorized OPD'], 403);
             }
+            if ($user->role === 'petugas') {
+                $hasAssignment = $user->assignments()->where(function($q) use ($taxObject) {
+                    $q->where('retribution_type_id', $taxObject->retribution_type_id);
+                    $q->where(function($sq) use ($taxObject) {
+                        $sq->whereNull('retribution_classification_id')
+                           ->orWhere('retribution_classification_id', $taxObject->retribution_classification_id);
+                    });
+                })->exists();
+
+                if (!$hasAssignment) {
+                    return response()->json(['message' => 'Anda tidak ditugaskan untuk mengelola klasifikasi objek pajak ini'], 403);
+                }
+            }
         }
 
         // Check if already paid
