@@ -35,7 +35,7 @@ Seluruh informasi arsitektur, panduan infrastruktur, dan hasil pengujian tersedi
 - [**Mitigation Guide**](./docs/MITIGATION_GUIDE.md): Solusi eror masa lalu & Log Keputusan.
 - [**Testing Guide**](./docs/TESTING_GUIDE.md): Acuan akun demo, script, dan cara pengujian.
 - [**Credentials Map**](./docs/CREDENTIALS_GUIDE.md): Lokasi penyimpanan rahasia & panduan keamanan.
-- [**AI Navigator**](./docs/AI_CONTEXT.md): Panduan efisiensi untuk AI Agent.
+- [**AI Context & Anatomy**](./docs/AI_CONTEXT.md): Panduan efisiensi dan Skema Anatomi Prompt untuk AI Agent.
 
 ## 👥 Contributors
 - [muhdanfyan](https://github.com/muhdanfyan)
