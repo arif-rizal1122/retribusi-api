@@ -39,7 +39,7 @@ class PaymentController extends Controller
         $request->validate([
             'tax_object_id' => 'required|exists:tax_objects,id',
             'billing_period' => 'required|string|max:255',
-            'payment_method' => 'required|string|in:cash,qris,va',
+            'payment_method' => 'required|string|in:cash,qris,va,transfer',
             'amount' => 'required|numeric|min:0',
             'proof_url' => 'nullable|string',
         ]);

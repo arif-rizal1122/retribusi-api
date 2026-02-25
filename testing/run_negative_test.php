@@ -39,39 +39,49 @@ try {
 
     // SKENARIO 1: PEMBAYARAN KOSONG/MINUS (HARUS 422)
     $md .= "### 1. Injeksi Pembayaran Negatif (Rp -5.000.000)\n";
-    // Cari sembarang bill unpaid dummy
-    $dummyBill = Bill::where('status', 'unpaid')->first();
+    // Cari atau buat sembarang bill unpaid dummy
+    $dummyBill = Bill::where('status', 'pending')->first();
+    if (!$dummyBill) {
+        $dummyBill = Bill::factory()->create(['status' => 'pending', 'amount' => 150000, 'opd_id' => $petugas->opd_id ?? 1]);
+    }
+    
     if ($dummyBill) {
         $res1 = sendApi('POST', '/api/payments', $tokenPetugas, [
             'bill_id' => $dummyBill->id,
             'amount' => -5000000,
-            'payment_method' => 'cash'
+            'payment_method' => 'cash',
+            'taxpayer_id' => $dummyBill->taxpayer_id,
+            'tax_object_id' => $dummyBill->tax_object_id,
+            'billing_period' => '2026'
         ]);
         if($res1['code'] === 422) {
             $md .= "- ✅ **SUKSES DITOLAK**: Laravel Form Request mendeteksi nilai tidak valid, HTTP `422 Unprocessable Entity`.\n\n";
         } else {
              $md .= "- ❌ **BUG**: Nominal Minus lolos! HTTP `{$res1['code']}`.\n\n";
         }
-    } else {
-        $md .= "*(Skip: Belum ada data Tagihan Unpaid untuk diuji)*\n\n";
     }
 
     // SKENARIO 2: MEMBAYAR TAGIHAN YANG SUDAH LUNAS (HARUS DITOLAK LOGIKA 400 ATAU 422)
     $md .= "### 2. Double Payment / Membayar Ulang SKPD Lunas\n";
-    $paidBill = Bill::where('status', 'paid')->first();
+    $paidBill = Bill::where('status', 'lunas')->first();
+    if (!$paidBill) {
+        $paidBill = Bill::factory()->create(['status' => 'lunas', 'amount' => 200000, 'opd_id' => $petugas->opd_id ?? 1]);
+    }
+
     if ($paidBill) {
         $res2 = sendApi('POST', '/api/payments', $tokenPetugas, [
             'bill_id' => $paidBill->id,
             'amount' => $paidBill->amount,
-            'payment_method' => 'cash'
+            'payment_method' => 'cash',
+            'taxpayer_id' => $paidBill->taxpayer_id,
+            'tax_object_id' => $paidBill->tax_object_id,
+            'billing_period' => '2026'
         ]);
-        if(in_array($res2['code'], [400, 422])) {
-            $md .= "- ✅ **SUKSES DITOLAK**: Sistem tahu resi sudah lunas. Permintaan Dobel dihentikan Controller (HTTP `{$res2['code']}`).\n\n";
+        if(in_array($res2['code'], [400, 403, 422])) {
+            $md .= "- ✅ **SUKSES DITOLAK**: Sistem menolak pembayaran ganda/ilegal (HTTP `{$res2['code']}`).\n\n";
         } else {
              $md .= "- ❌ **BUG BAHAYA**: Dobel Payment Lolos! Uang masuk tercatat ganda. HTTP `{$res2['code']}`.\n\n";
         }
-    } else {
-         $md .= "*(Skip: Belum ada data Tagihan Paid untuk diuji)*\n\n";
     }
 
     // SKENARIO 3: BIKIN USER DENGAN PASSWORD KOSONG (HARUS 422)

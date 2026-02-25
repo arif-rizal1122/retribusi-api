@@ -1,0 +1,190 @@
+
+   PASS  Tests\Unit\ExampleTest
+  ✓ that true is true                                                    0.01s  
+
+   PASS  Tests\Feature\BankAccountIntegrationTest
+  ✓ classification stores and casts bank accounts                        3.52s  
+  ✓ citizen bills api exposes bank accounts                              0.27s  
+
+   PASS  Tests\Feature\ExampleTest
+  ✓ the application returns a successful response                        0.19s  
+
+   FAIL  Tests\Feature\HeatmapApiTest
+  ⨯ get heatmap data returns correct structure                           0.24s  
+
+   PASS  Tests\Feature\PbbCalculationTest
+  ✓ pbb njop lookup                                                      0.02s  
+  ✓ pbb total calculation                                                0.03s  
+  ✓ pbb billing integration                                              0.03s  
+
+   FAIL  Tests\Feature\PetugasPaymentTest
+  ⨯ petugas can fetch bills with bank accounts                           0.19s  
+  ⨯ petugas can store transfer payment                                   0.21s  
+
+   PASS  Tests\Feature\SurveillanceRoleTest
+  ✓ kabid can approve enforcement notice                                 0.20s  
+  ✓ kasubid cannot approve enforcement notice                            0.20s  
+  ✓ kabid can issue skpdkb                                               0.29s  
+  ✓ kasubid cannot issue skpdkb                                          0.19s  
+
+   PASS  Tests\Feature\TTEIntegrationTest
+  ✓ kadis can sign bill electronically                                   0.22s  
+  ✓ petugas cannot sign bill                                             0.20s  
+  ✓ public can verify signed document                                    0.20s  
+
+   FAIL  Tests\Feature\TaxCalculationTest
+  ⨯ pbjt makanan minuman calculation
+  ⨯ reklame formula calculation
+  ⨯ pbg complex formula calculation
+  ⨯ penalty stpd calculation
+  ⨯ penalty skpdkb calculation
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\HeatmapApiTest > get heatmap data returns correct s…   
+  Failed asserting that an array has the key 'object_count'.
+
+  at tests/Feature/HeatmapApiTest.php:26
+     22▕ 
+     23▕         $response = $this->actingAs($user)->getJson('/api/analytics/heatmap');
+     24▕ 
+     25▕         $response->assertStatus(200)
+  ➜  26▕             ->assertJsonStructure([
+     27▕                 'data' => [
+     28▕                     '*' => [
+     29▕                         'latitude',
+     30▕                         'longitude',
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PetugasPaymentTest > petugas can fetch bills with b…   
+  Failed asserting that null is identical to 2.
+
+  at tests/Feature/PetugasPaymentTest.php:74
+     70▕ 
+     71▕         $response = $this->actingAs($petugas)->getJson('/api/bills');
+     72▕ 
+     73▕         $response->assertStatus(200);
+  ➜  74▕         $response->assertJsonPath('data.0.id', $bill->id);
+     75▕         $response->assertJsonPath('data.0.classification.id', $classification->id);
+     76▕         $response->assertJsonPath('data.0.classification.bank_accounts.0.bank_name', 'Bank Sultra');
+     77▕         $response->assertJsonPath('data.0.classification.bank_accounts.0.qr_image_url', 'https://res.cloudinary.com/dummy/image/upload/v123/qris-petugas.png');
+     78▕     }
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PetugasPaymentTest > petugas can store transfer pay…   
+  Expected response status code [201] but received 403.
+Failed asserting that 403 is identical to 201.
+
+  at tests/Feature/PetugasPaymentTest.php:106
+    102▕             'tax_object_id' => $bill->tax_object_id,
+    103▕             'billing_period' => '2026-02-25',
+    104▕         ]);
+    105▕ 
+  ➜ 106▕         $response->assertStatus(201);
+    107▕         $this->assertDatabaseHas('payments', [
+    108▕             'bill_id' => $bill->id,
+    109▕             'payment_method' => 'transfer',
+    110▕             'amount' => 50000,
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\TaxCalculationTest > pbjt makanan m…  ErrorException   
+  Attempt to read property "id" on null
+
+  at database/seeders/TestingScenarioSeeder.php:66
+     62▕         $parkirObject = TaxObject::updateOrCreate(
+     63▕             ['nop' => 'PRK-74-001'],
+     64▕             [
+     65▕                 'taxpayer_id' => $budi->id,
+  ➜  66▕                 'retribution_type_id' => $parkirType->id,
+     67▕                 'opd_id' => $dishub->id,
+     68▕                 'name' => 'Lahan Parkir Toko Budi',
+     69▕                 'address' => 'Jl. Merdeka No. 5',
+     70▕                 'latitude' => -5.463300,
+
+      [2m+8 vendor frames [22m
+  9   database/seeders/DatabaseSeeder.php:211
+      [2m+23 vendor frames [22m
+  33  tests/Feature/TaxCalculationTest.php:26
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\TaxCalculationTest > reklame formul…  ErrorException   
+  Attempt to read property "id" on null
+
+  at database/seeders/TestingScenarioSeeder.php:66
+     62▕         $parkirObject = TaxObject::updateOrCreate(
+     63▕             ['nop' => 'PRK-74-001'],
+     64▕             [
+     65▕                 'taxpayer_id' => $budi->id,
+  ➜  66▕                 'retribution_type_id' => $parkirType->id,
+     67▕                 'opd_id' => $dishub->id,
+     68▕                 'name' => 'Lahan Parkir Toko Budi',
+     69▕                 'address' => 'Jl. Merdeka No. 5',
+     70▕                 'latitude' => -5.463300,
+
+      [2m+8 vendor frames [22m
+  9   database/seeders/DatabaseSeeder.php:211
+      [2m+23 vendor frames [22m
+  33  tests/Feature/TaxCalculationTest.php:26
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\TaxCalculationTest > pbg complex fo…  ErrorException   
+  Attempt to read property "id" on null
+
+  at database/seeders/TestingScenarioSeeder.php:66
+     62▕         $parkirObject = TaxObject::updateOrCreate(
+     63▕             ['nop' => 'PRK-74-001'],
+     64▕             [
+     65▕                 'taxpayer_id' => $budi->id,
+  ➜  66▕                 'retribution_type_id' => $parkirType->id,
+     67▕                 'opd_id' => $dishub->id,
+     68▕                 'name' => 'Lahan Parkir Toko Budi',
+     69▕                 'address' => 'Jl. Merdeka No. 5',
+     70▕                 'latitude' => -5.463300,
+
+      [2m+8 vendor frames [22m
+  9   database/seeders/DatabaseSeeder.php:211
+      [2m+23 vendor frames [22m
+  33  tests/Feature/TaxCalculationTest.php:26
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\TaxCalculationTest > penalty stpd c…  ErrorException   
+  Attempt to read property "id" on null
+
+  at database/seeders/TestingScenarioSeeder.php:66
+     62▕         $parkirObject = TaxObject::updateOrCreate(
+     63▕             ['nop' => 'PRK-74-001'],
+     64▕             [
+     65▕                 'taxpayer_id' => $budi->id,
+  ➜  66▕                 'retribution_type_id' => $parkirType->id,
+     67▕                 'opd_id' => $dishub->id,
+     68▕                 'name' => 'Lahan Parkir Toko Budi',
+     69▕                 'address' => 'Jl. Merdeka No. 5',
+     70▕                 'latitude' => -5.463300,
+
+      [2m+8 vendor frames [22m
+  9   database/seeders/DatabaseSeeder.php:211
+      [2m+23 vendor frames [22m
+  33  tests/Feature/TaxCalculationTest.php:26
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\TaxCalculationTest > penalty skpdkb…  ErrorException   
+  Attempt to read property "id" on null
+
+  at database/seeders/TestingScenarioSeeder.php:66
+     62▕         $parkirObject = TaxObject::updateOrCreate(
+     63▕             ['nop' => 'PRK-74-001'],
+     64▕             [
+     65▕                 'taxpayer_id' => $budi->id,
+  ➜  66▕                 'retribution_type_id' => $parkirType->id,
+     67▕                 'opd_id' => $dishub->id,
+     68▕                 'name' => 'Lahan Parkir Toko Budi',
+     69▕                 'address' => 'Jl. Merdeka No. 5',
+     70▕                 'latitude' => -5.463300,
+
+      [2m+8 vendor frames [22m
+  9   database/seeders/DatabaseSeeder.php:211
+      [2m+23 vendor frames [22m
+  33  tests/Feature/TaxCalculationTest.php:26
+
+
+  Tests:    8 failed, 14 passed (42 assertions)
+  Duration: 7.38s
+
