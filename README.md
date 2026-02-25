@@ -27,10 +27,12 @@ cd testing
 ./test_production_ready.sh
 ```
 
-## 📦 Deployment
-Sinkronisasi otomatis melalui GitHub Actions ke VPS:
-- **Production**: Push ke branch `main` → `api.sipanda.online`
-- **Development**: Push ke branch `dev` → `api-dev.sipanda.online`
+## 📚 Dokumentasi & Konteks Sistem
+Seluruh informasi arsitektur, panduan infrastruktur, dan hasil pengujian tersedia di folder [**docs/**](./docs/):
+
+- [**System Overview**](./docs/SYSTEM_OVERVIEW.md): Arsitektur, Git-Flow, dan Alur Data.
+- [**Infrastructure Notes**](./docs/INFRASTRUCTURE_NOTES.md): Detail VPS, Path Server, dan Panduan Maintenance.
+- [**Testing Reports**](./docs/testing-reports/): Hasil audit keamanan dan validasi CRUD terbaru.
 
 ## 👥 Contributors
 - [muhdanfyan](https://github.com/muhdanfyan)
