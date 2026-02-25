@@ -21,12 +21,14 @@ class RetributionClassification extends Model
         'form_schema',
         'requirements',
         'calculation_formula',
+        'bank_accounts',
     ];
 
     protected $casts = [
         'is_self_assessment' => 'boolean',
         'form_schema' => 'array',
         'requirements' => 'array',
+        'bank_accounts' => 'array',
     ];
 
 

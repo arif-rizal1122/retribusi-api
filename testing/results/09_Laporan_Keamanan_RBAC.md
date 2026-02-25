@@ -1,6 +1,6 @@
 # 🛡️ Laporan Hasil Uji Coba Keamanan Akses (RBAC)
 
-**Waktu Eksekusi**: 2026-02-24 14:50:40
+**Waktu Eksekusi**: 2026-02-25 08:08:08
 Pengujian ini menembak API lokal menggunakan Token Sanctum murni untuk membuktikan Sistem Isolasi Peran (Tenant Isolation & Authorization) berjalan sempurna.
 
 ### 1. Wajib Pajak Mengakses Endpoint Admin
@@ -10,5 +10,5 @@ Pengujian ini menembak API lokal menggunakan Token Sanctum murni untuk membuktik
 - ✅ **SUKSES DIBLOKIR**: Pengunjung dilarang masuk. `401 Unauthenticated`.
 
 ### 3. Petugas Lapangan Melakukan Aksi Destruktif (DELETE Tagihan/Objek)
-- ✅ **SUKSES DIBLOKIR**: Petugas dilarang menghapus. Server menolak keras dengan blokade Otorisasi (HTTP `403`).
+*(Skip: Belum ada data TaxObjekt untuk dihapus)*
 

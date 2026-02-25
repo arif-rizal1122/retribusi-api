@@ -26,11 +26,14 @@ class HeatmapApiTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'lat',
-                        'lng',
+                        'id',
+                        'name',
+                        'latitude',
+                        'longitude',
+                        'icon',
                         'total_revenue',
-                        'object_count',
-                        'objects'
+                        'status',
+                        'is_paid'
                     ]
                 ]
             ]);

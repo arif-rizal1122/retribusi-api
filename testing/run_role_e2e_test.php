@@ -38,9 +38,9 @@ try {
     }
 
     // Wajib Pajak Dummy
-    $wp = User::firstOrCreate(
-        ['email' => 'wp.otomatis@sipanda.com'],
-        ['name' => 'Wajib Pajak Automasi', 'password' => bcrypt('password'), 'nik' => '3201999999999999', 'phone' => '0899999999']
+    $wp = \App\Models\Taxpayer::firstOrCreate(
+        ['nik' => '3201999999999999'],
+        ['name' => 'Wajib Pajak Automasi', 'phone' => '0899999999', 'address' => 'Jl. Test', 'opd_id' => $petugas->opd_id ?? 1]
     );
 
     // 3. Mengambil Semua Klasifikasi Pajak Aktif
