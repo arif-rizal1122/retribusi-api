@@ -2,6 +2,9 @@
 
 Gunakan checklist ini untuk memverifikasi seluruh perubahan fitur dan rebranding yang telah diimplementasikan.
 
+> **Standar Skema Pengujian:**
+> Seluruh poin pengujian di bawah ini (serta di seluruh dokumentasi folder `testing/`) wajib mematuhi standar validitas *No Screenshot* dengan mengeksekusi 5 lapisan: **Unit Testing, Feature Testing, API Testing, CRUD Testing, dan UI Testing**. Rujuk panduan metodologi lengkap pada berkas: [`testing/00-Panduan-Standar-Pengujian.md`](file:///Users/pondokit/Herd/retribusi-api/testing/00-Panduan-Standar-Pengujian.md).
+
 ## 1. Rebranding MITRA (Visual & Identity)
 - [ ] **Admin App**: Pastikan title bar browser bertuliskan "MITRA Admin" dan logo di halaman Login adalah "MITRA".
 - [ ] **Mobile App**: Pastikan onboarding slide pertama menyebutkan "MITRA" dan tagline baru.
