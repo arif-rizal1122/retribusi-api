@@ -32,9 +32,10 @@ Seluruh informasi arsitektur, panduan infrastruktur, dan hasil pengujian tersedi
 
 - [**System Overview**](./docs/SYSTEM_OVERVIEW.md): Arsitektur, Git-Flow, dan Alur Data.
 - [**Infrastructure Notes**](./docs/INFRASTRUCTURE_NOTES.md): Detail VPS, Path Server, dan Panduan Maintenance.
-- [**Mitigation Guide**](./docs/MITIGATION_GUIDE.md): Solusi eror masa lalu (500, CORS, Permission) & Log Keputusan.
-- [**AI Navigator**](./docs/AI_CONTEXT.md): Panduan efisiensi token dan konteks cepat untuk AI Agent.
-- [**Testing Reports**](./docs/testing-reports/): Hasil audit keamanan dan validasi CRUD terbaru.
+- [**Mitigation Guide**](./docs/MITIGATION_GUIDE.md): Solusi eror masa lalu & Log Keputusan.
+- [**Testing Guide**](./docs/TESTING_GUIDE.md): Acuan akun demo, script, dan cara pengujian.
+- [**Credentials Map**](./docs/CREDENTIALS_GUIDE.md): Lokasi penyimpanan rahasia & panduan keamanan.
+- [**AI Navigator**](./docs/AI_CONTEXT.md): Panduan efisiensi untuk AI Agent.
 
 ## 👥 Contributors
 - [muhdanfyan](https://github.com/muhdanfyan)
