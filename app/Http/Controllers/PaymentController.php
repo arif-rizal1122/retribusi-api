@@ -75,11 +75,30 @@ class PaymentController extends Controller
             ->where('status', 'success')
             ->first();
 
+        // Sync bill if found (whether existing or new)
+        $bill = null;
+        if ($request->route('bill')) {
+            $bill = Bill::find($request->route('bill'));
+        }
+
+        if (!$bill) {
+            $bill = Bill::where('tax_object_id', $taxObject->id)
+                ->where('period', $request->billing_period)
+                ->first();
+        }
+
         if ($existing) {
+            if ($bill && $bill->status !== 'lunas') {
+                $bill->update(['status' => 'lunas']);
+                if (!$existing->bill_id) {
+                    $existing->update(['bill_id' => $bill->id]);
+                }
+            }
             return response()->json(['message' => 'Periode ini sudah lunas'], 422);
         }
 
         $payment = Payment::create([
+            'bill_id' => $bill ? $bill->id : null,
             'tax_object_id' => $taxObject->id,
             'taxpayer_id' => $taxObject->taxpayer_id,
             'transaction_id' => 'PAY-' . date('Ymd') . '-' . strtoupper(Str::random(8)),
@@ -91,6 +110,10 @@ class PaymentController extends Controller
             'approved_by' => $user->id,
             'proof_url' => $request->proof_url,
         ]);
+
+        if ($bill && $bill->status !== 'lunas') {
+            $bill->update(['status' => 'lunas']);
+        }
 
         return response()->json([
             'message' => 'Pembayaran periode ' . $request->billing_period . ' berhasil dicatat',
