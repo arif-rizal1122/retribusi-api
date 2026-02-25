@@ -139,6 +139,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
     Route::post('/user/password', [AuthController::class, 'changePassword']);
 
+    // General File Upload (Cloudinary)
+    Route::post('/upload', [\App\Http\Controllers\UploadController::class, 'uploadImage']);
+
     // Me / Self Profile (New for Mobile & better control)
     Route::get('/me', [\App\Http\Controllers\MeController::class, 'show']);
     Route::post('/me/update', [\App\Http\Controllers\MeController::class, 'update']);
