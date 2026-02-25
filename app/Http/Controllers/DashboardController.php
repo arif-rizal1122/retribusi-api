@@ -362,6 +362,7 @@ class DashboardController extends Controller
 
                 return [
                     'position' => [(float)$obj->latitude, (float)$obj->longitude],
+                    'tax_object_id' => $obj->id,
                     'name' => $obj->taxpayer->name . ' - ' . $obj->name,
                     'agency' => $obj->opd->name ?? 'N/A',
                     'address' => $obj->address,
@@ -372,6 +373,7 @@ class DashboardController extends Controller
                     'taxpayer_photo' => $obj->taxpayer->metadata['foto_lokasi_open_kamera'] ?? null,
                     'icon' => null, // We will use user icon in frontend
                     'retribution_type_id' => $obj->retribution_type_id,
+                    'retribution_classification_id' => $obj->retribution_classification_id,
                 ];
             });
 
