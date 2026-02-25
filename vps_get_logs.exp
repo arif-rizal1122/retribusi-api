@@ -1,0 +1,6 @@
+#!/usr/bin/expect -f
+set timeout 30
+spawn ssh sipanda@157.10.252.74 "grep -C 5 '500' /home/sipanda/retribusi-api/storage/logs/laravel.log | tail -n 100"
+expect "password:"
+send "Sipanda123#\r"
+expect eof
