@@ -29,7 +29,17 @@ class FormulaParserService
             $formula = str_ireplace($key, (string)($value ?? 0), $formula);
         }
 
-        // 2. Add support for IF(cond, true, false) by converting to ternary
+        // 2. Default remaining word-based variables to 0 to avoid syntax errors
+        // This finds words that are not part of functions (like IF) or scientific notation
+        $formula = preg_replace_callback('/(?<![0-9a-zA-Z_])[a-zA-Z_][a-zA-Z0-9_]*(?![0-9a-zA-Z_])/', function($m) {
+            $word = strtoupper($m[0]);
+            if (in_array($word, ['IF', 'AND', 'OR', 'NOT', 'TRUE', 'FALSE'])) {
+                return $m[0];
+            }
+            return '0';
+        }, $formula);
+
+        // 3. Add support for IF(cond, true, false) by converting to ternary
         // Pattern: IF(condition, true_val, false_val) -> (condition ? true_val : false_val)
         // This is a simple regex for basic IF nesting
         $formula = preg_replace_callback('/IF\s*\(([^,]+),([^,]+),([^)]+)\)/i', function($m) {

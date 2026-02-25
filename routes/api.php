@@ -60,13 +60,20 @@ Route::post('/simulate-tax', function (Request $request) {
         
         $typeName = strtolower($classification->retributionType->name ?? '');
         $catName = strtolower($classification->retributionType->category ?? '');
-        if (str_contains($typeName, 'pbb') || str_contains($catName, 'pajak bumi')) {
+        $className = strtolower($classification->name ?? '');
+        $classCode = strtolower($classification->code ?? '');
+
+        if (str_contains($typeName, 'pbb') || str_contains($catName, 'pajak bumi') || 
+            str_contains($className, 'pbb') || str_contains($classCode, 'pbb')) {
             $isPbb = true;
         }
     } elseif ($request->type_id) {
         $type = \App\Models\RetributionType::findOrFail($request->type_id);
         $name = $type->name;
-        if (str_contains(strtolower($type->name), 'pbb') || str_contains(strtolower($type->category ?? ''), 'pajak bumi')) {
+        $typeName = strtolower($type->name ?? '');
+        $catName = strtolower($type->category ?? '');
+
+        if (str_contains($typeName, 'pbb') || str_contains($catName, 'pajak bumi')) {
             $isPbb = true;
         }
     }
