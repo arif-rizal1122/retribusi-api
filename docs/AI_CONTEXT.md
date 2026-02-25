@@ -1,35 +1,58 @@
-# 🤖 AI Context & Prompt Anatomy Guide
+# 🧠 MASTER AI GUIDE & PROMPT ANATOMY
 
-Dokumen ini adalah acuan utama bagi AI Agent untuk bekerja secara efisien di proyek M-PAD.
-
-## 1. Anatomi Prompt (Prompt Anatomy Schema)
-Setiap kali AI Agent memulai tugas baru atau memberikan solusi, gunakan skema berikut sebagai acuan pengerjaan:
-
-| Segment | Deskripsi / Constraint |
-| :--- | :--- |
-| **Objective** | Fokus pada stabilitas lintas 8 domain (Prod/Dev) dan kepatuhan branding M-PAD. |
-| **Context Aware** | Selalu periksa `SYSTEM_OVERVIEW.md` untuk alur Git-Flow dan `MITIGATION_GUIDE.md` untuk riwayat bug (CORS/500). |
-| **Tool Choice** | Prioritaskan `curl -I` untuk validasi status dan `git pull` manual di VPS jika GitHub Actions gagal. |
-| **Action Rule** | Gunakan **Positional Arguments** pada Laravel Middleware (kompatibilitas PHP VPS). |
-| **Verification** | Wajib menjalankan script di folder `testing/` sebelum menandai tugas selesai. |
-
-## 2. Peta Jalan Konteks (Shortcut)
-- **`docs/SYSTEM_OVERVIEW.md`**: Arsitektur, Domain, dan Alur Kerja.
-- **`docs/INFRASTRUCTURE_NOTES.md`**: Detail VPS dan Maintenance.
-- **`docs/MITIGATION_GUIDE.md`**: Solusi eror masa lalu (Wajib Baca).
-- **`docs/TESTING_GUIDE.md`**: Akun demo dan prosedur pengujian.
-
-## 3. Fakta Cepat (Zero-Research Facts)
-- **Framework:** Laravel 11 (API), React Vite (Frontend).
-- **Environment:** 2 Env (Prod & Dev), 8 Domain Total pada IP `157.10.252.74`.
-- **Autentikasi:** Laravel Sanctum (Bearer Token).
-- **Branding:** Nama resmi: **M-PAD** (Manajemen Integrasi Tax, Retribusi, dan Aset Daerah).
-- **CORS Rule:** Nginx menangani `OPTIONS`, Laravel menangani request utama.
-
-## 4. Efisiensi Token
-1. **Paham Struktur:** Dokumentasi terpusat di `/docs`. Jangan lakukan `find` berulang pada direktori yang sama.
-2. **Minimalisir Read:** Jangan membaca kembali file yang sudah pernah di-view dalam satu percakapan jika isinya tidak berubah.
-3. **Verifikasi Ringan:** Gunakan endpoint `/up` untuk cek kesehatan sistem secara berkala.
+Dokumen ini adalah **titik masuk tunggal** bagi setiap AI Agent. Ikuti protokol ini agar pengerjaan efisien, hemat token, dan konsisten dengan arsitektur M-PAD.
 
 ---
-*Anatomy v1.0. Terakhir diperbarui: 26 Februari 2026.*
+
+## 🧭 1. Protokol Pembacaan Kondisional (Context Routing)
+AI Agent **TIDAK BOLEH** melakukan riset buta. Gunakan tabel ini untuk menentukan apa yang harus dibaca:
+
+| Kondisi / Tugas | File yang WAJIB Dibaca | Alasan |
+| :--- | :--- | :--- |
+| **Awal Percakapan** | `docs/SYSTEM_OVERVIEW.md` | Untuk paham Arsitektur, Git-Flow, & Domain. |
+| **Terjadi Error 500/CORS** | `docs/MITIGATION_GUIDE.md` | Daftar bug historis & fix yang sudah ada. |
+| **Akses VPS / Maintenance** | `docs/INFRASTRUCTURE_NOTES.md`| Detail IP, Paths, & Password hints. |
+| **Testing / Verifikasi** | `docs/TESTING_GUIDE.md` | Daftar akun demo & cara interpretasi hasil. |
+| **Update Security** | `docs/testing-reports/VULNERABILITY_ANALYSIS.md` | Memahami audit keamanan terakhir & audit IDOR. |
+
+---
+
+## 🧬 2. Enhanced Prompt Anatomy (Skema Acuan)
+Gunakan skema ini dalam setiap perencanaan/implementasi untuk menghindari pengulangan instruksi:
+
+### A. Context Injection (Input)
+AI harus selalu mengasumsikan variabel berikut:
+- **Project Name:** M-PAD (Mitra PAD).
+- **Environment:** 8 Domain (Prod: `*.sipanda.online`, Dev: `*-dev.sipanda.online`).
+- **Tech Stack:** Laravel 11 (API), React Vite (Frontend), GitHub Actions (CI/CD).
+- **Owner:** `www-data` di VPS (Jangan gunakan `sipanda` untuk `artisan optimize`).
+
+### B. Execution Schema (Logic)
+Gunakan format ini saat memberikan solusi atau kode:
+1. **Constraint Check:** Apakah solusi ini kompatibel dengan PHP VPS? (Gunakan *Positional Arguments*).
+2. **Contextual Continuity:** Apakah rute/logic ini sudah ada di `routes/api.php`?
+3. **Atomic Changes:** Edit hanya blok kode yang relevan (Minimalisir `replace_file_content`).
+4. **Zero-Waste Verif:** Gunakan `curl -I` untuk sanity check.
+
+---
+
+## 🛠️ 3. Task Dispatcher (Pembagi Tugas)
+Jika user memberikan tugas kompleks, AI harus membagi ke dalam kategori:
+
+1. **Infrastruktur:** Masuk ke `docs/INFRASTRUCTURE_NOTES.md`.
+2. **Logika API:** Masuk ke `routes/api.php` & `app/Http/Controllers/`.
+3. **Frontend Branding:** Masuk ke `retribusi-mobile/src/` (Nama: M-PAD).
+4. **Security Audit:** Jalankan `testing/test_penetration.sh`.
+
+---
+
+## 🚫 4. Aturan Keselamatan (The Never-Do's)
+- **DILARANG** meng-hardcode password/secrets di dokumentasi atau kode.
+- **DILARANG** merubah CORS pada Nginx tanpa mendaftarkan domain secara eksplisit.
+- **DILARANG** mengosongkan folder `storage` atau `bootstrap/cache` di server.
+
+---
+> [!IMPORTANT]
+> **TOKEN SAVER:** Jika Anda sudah membaca file dalam sesi ini, **Gunakan Ingatan Anda**. Jangan panggil `view_file` berulang kali untuk file dokumen yang sama kecuali ada perubahan fisik pada file tersebut.
+
+*Protocol Version: 2.0 (High Efficiency). Terakhir diperbarui: 26 Februari 2026.*
