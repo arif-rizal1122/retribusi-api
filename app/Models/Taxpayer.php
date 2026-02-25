@@ -91,4 +91,12 @@ class Taxpayer extends Authenticatable
     {
         return $query->where('is_active', true);
     }
+
+    /**
+     * Citizen is never a super admin
+     */
+    public function isSuperAdmin()
+    {
+        return false;
+    }
 }
