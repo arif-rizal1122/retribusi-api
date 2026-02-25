@@ -191,11 +191,11 @@ class AuthController extends Controller
         ]);
 
         $taxpayer = \App\Models\Taxpayer::create([
-            'nik' => $request->nik,
-            'name' => $request->name,
+            'nik' => strip_tags($request->nik),
+            'name' => strip_tags($request->name),
             'opd_id' => $request->opd_id, // Will be null if not provided
-            'address' => $request->address,
-            'phone' => $request->phone,
+            'address' => strip_tags($request->address),
+            'phone' => strip_tags($request->phone),
             'password' => Hash::make($request->password),
             'is_active' => true,
         ]);
