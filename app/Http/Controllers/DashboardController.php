@@ -99,8 +99,21 @@ class DashboardController extends Controller
                 ->join('retribution_types', 'bills.retribution_type_id', '=', 'retribution_types.id')
                 ->when($opdId, fn($q) => $q->where('bills.opd_id', $opdId))
                 ->when($user->role === 'petugas', function($q) use ($user) {
-                    $typeIds = $user->assignments->pluck('retribution_type_id')->unique()->toArray();
-                    $q->whereIn('bills.retribution_type_id', $typeIds);
+                    $assignments = $user->assignments;
+                    if ($assignments->isNotEmpty()) {
+                        $q->where(function($query) use ($assignments) {
+                            foreach ($assignments as $assignment) {
+                                $query->orWhere(function($sq) use ($assignment) {
+                                    $sq->where('bills.retribution_type_id', $assignment->retribution_type_id);
+                                    if ($assignment->retribution_classification_id) {
+                                        $sq->where('bills.retribution_classification_id', $assignment->retribution_classification_id);
+                                    }
+                                });
+                            }
+                        });
+                    } else {
+                        $q->whereRaw('1 = 0');
+                    }
                 })
                 ->whereBetween('payments.paid_at', [$start->startOfDay(), $end->endOfDay()])
                 ->select('retribution_types.name', DB::raw('SUM(payments.amount) as total'))
@@ -121,14 +134,26 @@ class DashboardController extends Controller
                 });
             })
             ->when(auth()->user()->role === 'petugas', function ($query) {
-                $user = auth()->user();
-                $typeIds = $user->assignments->pluck('retribution_type_id')->unique()->toArray();
-                $query->whereExists(function ($sub) use ($typeIds) {
-                    $sub->select(DB::raw(1))
-                        ->from('bills')
-                        ->whereColumn('bills.id', 'payments.bill_id')
-                        ->whereIn('bills.retribution_type_id', $typeIds);
-                });
+                $assignments = auth()->user()->assignments;
+                if ($assignments->isNotEmpty()) {
+                    $query->whereExists(function ($sub) use ($assignments) {
+                        $sub->select(DB::raw(1))
+                            ->from('bills')
+                            ->whereColumn('bills.id', 'payments.bill_id')
+                            ->where(function($q) use ($assignments) {
+                                foreach ($assignments as $assignment) {
+                                    $q->orWhere(function($sq) use ($assignment) {
+                                        $sq->where('bills.retribution_type_id', $assignment->retribution_type_id);
+                                        if ($assignment->retribution_classification_id) {
+                                            $sq->where('bills.retribution_classification_id', $assignment->retribution_classification_id);
+                                        }
+                                    });
+                                }
+                            });
+                    });
+                } else {
+                    $query->whereRaw('1 = 0');
+                }
             })
             ->whereBetween('paid_at', [$start->startOfDay(), $end->endOfDay()])
             ->sum('amount');
@@ -277,8 +302,21 @@ class DashboardController extends Controller
             ->whereNotNull('longitude')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->when($user->role === 'petugas', function($q) use ($user) {
-                $typeIds = $user->assignments->pluck('retribution_type_id')->unique()->toArray();
-                $q->whereIn('retribution_type_id', $typeIds);
+                $assignments = $user->assignments;
+                if ($assignments->isNotEmpty()) {
+                    $q->where(function($query) use ($assignments) {
+                        foreach ($assignments as $assignment) {
+                            $query->orWhere(function($sq) use ($assignment) {
+                                $sq->where('retribution_type_id', $assignment->retribution_type_id);
+                                if ($assignment->retribution_classification_id) {
+                                    $sq->where('retribution_classification_id', $assignment->retribution_classification_id);
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
             })
             ->get()
             ->map(function($obj) {
@@ -299,8 +337,21 @@ class DashboardController extends Controller
             ->whereNotNull('longitude')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->when($user->role === 'petugas', function($q) use ($user) {
-                $typeIds = $user->assignments->pluck('retribution_type_id')->unique()->toArray();
-                $q->whereIn('retribution_type_id', $typeIds);
+                $assignments = $user->assignments;
+                if ($assignments->isNotEmpty()) {
+                    $q->where(function($query) use ($assignments) {
+                        foreach ($assignments as $assignment) {
+                            $query->orWhere(function($sq) use ($assignment) {
+                                $sq->where('retribution_type_id', $assignment->retribution_type_id);
+                                if ($assignment->retribution_classification_id) {
+                                    $sq->where('retribution_classification_id', $assignment->retribution_classification_id);
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
             })
             ->get()
             ->map(function($obj) {
@@ -311,6 +362,7 @@ class DashboardController extends Controller
 
                 return [
                     'position' => [(float)$obj->latitude, (float)$obj->longitude],
+                    'tax_object_id' => $obj->id,
                     'name' => $obj->taxpayer->name . ' - ' . $obj->name,
                     'agency' => $obj->opd->name ?? 'N/A',
                     'address' => $obj->address,
@@ -321,6 +373,7 @@ class DashboardController extends Controller
                     'taxpayer_photo' => $obj->taxpayer->metadata['foto_lokasi_open_kamera'] ?? null,
                     'icon' => null, // We will use user icon in frontend
                     'retribution_type_id' => $obj->retribution_type_id,
+                    'retribution_classification_id' => $obj->retribution_classification_id,
                 ];
             });
 
