@@ -26,6 +26,7 @@ return [
         'http://localhost:3003',
         'https://admin.sipanda.online',
         'https://petugas.sipanda.online',
+        'https://sipanda.online',
         'https://adminwiyasa.site',
         env('FRONTEND_URL', 'http://localhost:3000'),
     ],
