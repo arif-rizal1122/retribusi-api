@@ -28,6 +28,14 @@ use App\Http\Controllers\PbbBapendaController;
 
 // Public auth routes with explicit throttle
 Route::middleware('throttle:60,1')->group(function () {
+    Route::options('/test-cors', function() {
+        return response()->json([], 204);
+    })->withoutMiddleware('auth:sanctum');
+    
+    Route::get('/test-cors', function() {
+        return response()->json(['status' => 'ok']);
+    })->withoutMiddleware('auth:sanctum');
+
     Route::post('/opd/register', [OpdController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/citizen/login', [AuthController::class, 'citizenLogin']);
