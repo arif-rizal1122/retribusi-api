@@ -6,9 +6,22 @@
 # Run: chmod +x test_api_crud.sh && ./test_api_crud.sh
 # ============================================================================
 
+# Default to Production
 API="https://api.sipanda.online/api"
 ORIGIN="https://sipanda.online"
-RESULTS_FILE="results/14_API_CRUD_Test_$(date +%Y%m%d_%H%M%S).md"
+
+# Handle environment argument
+if [ "$1" == "dev" ]; then
+  echo -e "${YELLOW}Mode: DEVELOPMENT (VPS)${NC}"
+  API="https://api-dev.sipanda.online/api"
+  ORIGIN="https://dev.sipanda.online"
+elif [ "$1" == "local" ]; then
+  echo -e "${YELLOW}Mode: LOCALHOST${NC}"
+  API="http://localhost:8000/api"
+  ORIGIN="http://localhost:3000"
+fi
+
+RESULTS_FILE="results/14_API_CRUD_Test_${1:-prod}_$(date +%Y%m%d_%H%M%S).md"
 
 PASS=0; FAIL=0; WARN=0; SKIP=0
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'

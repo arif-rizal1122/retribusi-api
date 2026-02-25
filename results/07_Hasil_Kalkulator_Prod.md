@@ -1,6 +1,6 @@
 # 🧮 Laporan Hasil Uji Otomatis API Kalkulator Pajak
 
-**Waktu Eksekusi**: 2026-02-25 09:07:56
+**Waktu Eksekusi**: 2026-02-25 21:09:30
 Pengujian dieksekusi secara otomatis menembak server `Localhost:8000` via endpoint POST `/api/simulate-tax` untuk masing-masing klasifikasi.
 
 ### PBB-P2 (`PBB-UMUM`)
@@ -48,18 +48,6 @@ Pengujian dieksekusi secara otomatis menembak server `Localhost:8000` via endpoi
 ### PBJT - Makan dan Minum (`PBJT-MNM`)
 - **Formula Server**: `omzet * 0.10`
 - **Dummy Set Variabel**: `{"omzet":5000000,"keterangan_usaha":"Testing Data","lokasi_google_maps":"Testing Data"}`
-- **Status Pengujian**: ✅ **LULUS**
-- **Hasil Parsing Kalkulator**: **Rp 500.000**
-
-### PBJT - Jasa Catering (`PBJT-CAT`)
-- **Formula Server**: `omzet * 0.10`
-- **Dummy Set Variabel**: `{"omzet":5000000,"nama_perusahaan":"Testing Data","lokasi_google_maps":"Testing Data"}`
-- **Status Pengujian**: ✅ **LULUS**
-- **Hasil Parsing Kalkulator**: **Rp 500.000**
-
-### PBJT - Jasa Event/Hiburan Lainnya (`PBJT-EVT`)
-- **Formula Server**: `omzet * 0.10`
-- **Dummy Set Variabel**: `{"omzet":5000000,"nama_event":"Testing Data","lokasi_google_maps":"Testing Data"}`
 - **Status Pengujian**: ✅ **LULUS**
 - **Hasil Parsing Kalkulator**: **Rp 500.000**
 
@@ -116,4 +104,16 @@ Pengujian dieksekusi secara otomatis menembak server `Localhost:8000` via endpoi
 - **Dummy Set Variabel**: `{"luas_lantai":100,"indeks_lokalitas":1,"shst":5560000,"indeks_terintegrasi":1,"indeks_bg":1}`
 - **Status Pengujian**: ✅ **LULUS**
 - **Hasil Parsing Kalkulator**: **Rp 556.000.000**
+
+### PBJT - Jasa Catering (`PBJT-CAT`)
+- **Formula Server**: `omzet * 0.10`
+- **Dummy Set Variabel**: `{"omzet":5000000,"nama_perusahaan":"Testing Data","lokasi_google_maps":"Testing Data"}`
+- **Status Pengujian**: ✅ **LULUS**
+- **Hasil Parsing Kalkulator**: **Rp 500.000**
+
+### PBJT - Jasa Event/Hiburan Lainnya (`PBJT-EVT`)
+- **Formula Server**: `omzet * 0.10`
+- **Dummy Set Variabel**: `{"omzet":5000000,"nama_event":"Testing Data","lokasi_google_maps":"Testing Data"}`
+- **Status Pengujian**: ✅ **LULUS**
+- **Hasil Parsing Kalkulator**: **Rp 500.000**
 
