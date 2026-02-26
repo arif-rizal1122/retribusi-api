@@ -33,6 +33,8 @@ class User extends Authenticatable
         'opd_id',
         'status',
         'metadata',
+        'latitude',
+        'longitude',
     ];
  
     /**
