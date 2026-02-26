@@ -10,6 +10,8 @@ $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
 use App\Models\User;
+use App\Models\Bill;
+use App\Models\Payment;
 // Handle environment argument
 $env = $argv[1] ?? 'local';
 if ($env === 'dev') {
