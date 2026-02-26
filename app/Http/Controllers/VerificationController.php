@@ -24,39 +24,55 @@ class VerificationController extends Controller
      */
     public function store(Request $request)
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $request->validate([
-            'opd_id' => 'required|exists:opds,id',
-            'taxpayer_name' => 'required|string|max:255',
-            'type' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'proof_file' => 'required|file|image|max:5120', // Max 5MB image
-        ]);
+            $request->validate([
+                'opd_id' => 'required|exists:opds,id',
+                'taxpayer_name' => 'required|string|max:255',
+                'type' => 'required|string|max:255',
+                'amount' => 'required|numeric|min:0',
+                'proof_file' => 'required|file|image|max:5120', // Max 5MB image
+            ]);
 
-        $proofFileUrl = $this->cloudinary->upload($request->file('proof_file'), 'verifications');
+            $proofFileUrl = $this->cloudinary->upload($request->file('proof_file'), 'verifications');
 
-        $opdId = $request->opd_id;
-        if (!$user->isSuperAdmin()) {
-            $opdId = $user->opd_id;
+            $opdId = $request->opd_id;
+            if (!$user->isSuperAdmin()) {
+                $opdId = $user->opd_id;
+            }
+
+            $verification = Verification::create([
+                'opd_id' => $opdId,
+                'user_id' => $user->id,
+                'document_number' => 'VRC-' . strtoupper(uniqid()),
+                'taxpayer_name' => $request->taxpayer_name,
+                'type' => $request->type,
+                'amount' => $request->amount,
+                'proof_file_url' => $proofFileUrl,
+                'status' => 'pending',
+                'submitted_at' => Carbon::now(),
+            ]);
+
+            return response()->json([
+                'message' => 'Permintaan verifikasi berhasil dikirim',
+                'data' => $verification->load(['opd', 'submitter'])
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            \Log::error('Verification Store Failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Gagal mengirim verifikasi: ' . $e->getMessage(),
+                'error_detail' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
         }
-
-        $verification = Verification::create([
-            'opd_id' => $opdId,
-            'user_id' => $user->id,
-            'document_number' => 'VRC-' . strtoupper(uniqid()),
-            'taxpayer_name' => $request->taxpayer_name,
-            'type' => $request->type,
-            'amount' => $request->amount,
-            'proof_file_url' => $proofFileUrl,
-            'status' => 'pending',
-            'submitted_at' => Carbon::now(),
-        ]);
-
-        return response()->json([
-            'message' => 'Permintaan verifikasi berhasil dikirim',
-            'data' => $verification->load(['opd', 'submitter'])
-        ], 201);
     }
 
     /**
@@ -93,62 +109,78 @@ class VerificationController extends Controller
      */
     public function updateStatus(Request $request, Verification $verification)
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        // Authority check
-        if (!$user->isSuperAdmin() && $verification->opd_id !== $user->opd_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $request->validate([
-            'status' => 'required|in:approved,rejected,in_review',
-            'notes' => 'nullable|string',
-        ]);
-
-        $verification->update([
-            'status' => $request->status,
-            'notes' => $request->notes,
-            'verifier_id' => $user->id,
-            'verified_at' => in_array($request->status, ['approved', 'rejected']) ? Carbon::now() : null,
-        ]);
-
-        // If this is an object registration and it's approved, activate the object
-        if ($request->status === 'approved' && $verification->tax_object_id) {
-            $taxObject = TaxObject::with('retributionType')->find($verification->tax_object_id);
-            if ($taxObject) {
-                $taxObject->update([
-                    'status' => 'active',
-                    'approved_at' => Carbon::now(),
-                ]);
-
-                // Create initial bill automatically
-                Bill::create([
-                    'user_id' => $user->id,
-                    'taxpayer_id' => $taxObject->taxpayer_id,
-                    'tax_object_id' => $taxObject->id,
-                    'opd_id' => $taxObject->opd_id,
-                    'retribution_type_id' => $taxObject->retribution_type_id,
-                    'retribution_classification_id' => $taxObject->retribution_classification_id,
-                    'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
-                    'amount' => $taxObject->retributionType->base_amount ?? 0,
-                    'status' => 'pending',
-                    'period' => Carbon::now()->isoFormat('MMMM YYYY'),
-                    'due_date' => Carbon::now()->addDays(30),
-                ]);
+            // Authority check
+            if (!$user->isSuperAdmin() && $verification->opd_id !== $user->opd_id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
             }
-        }
 
-        if ($request->status === 'rejected' && $verification->tax_object_id) {
-            $taxObject = TaxObject::find($verification->tax_object_id);
-            if ($taxObject) {
-                $taxObject->update(['status' => 'rejected']);
+            $request->validate([
+                'status' => 'required|in:approved,rejected,in_review',
+                'notes' => 'nullable|string',
+            ]);
+
+            $verification->update([
+                'status' => $request->status,
+                'notes' => $request->notes,
+                'verifier_id' => $user->id,
+                'verified_at' => in_array($request->status, ['approved', 'rejected']) ? Carbon::now() : null,
+            ]);
+
+            // If this is an object registration and it's approved, activate the object
+            if ($request->status === 'approved' && $verification->tax_object_id) {
+                $taxObject = TaxObject::with('retributionType')->find($verification->tax_object_id);
+                if ($taxObject) {
+                    $taxObject->update([
+                        'status' => 'active',
+                        'approved_at' => Carbon::now(),
+                    ]);
+
+                    // Create initial bill automatically
+                    Bill::create([
+                        'user_id' => $user->id,
+                        'taxpayer_id' => $taxObject->taxpayer_id,
+                        'tax_object_id' => $taxObject->id,
+                        'opd_id' => $taxObject->opd_id,
+                        'retribution_type_id' => $taxObject->retribution_type_id,
+                        'retribution_classification_id' => $taxObject->retribution_classification_id,
+                        'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
+                        'amount' => $taxObject->retributionType->base_amount ?? 0,
+                        'status' => 'pending',
+                        'period' => Carbon::now()->isoFormat('MMMM YYYY'),
+                        'due_date' => Carbon::now()->addDays(30),
+                    ]);
+                }
             }
-        }
 
-        return response()->json([
-            'message' => "Dokumen berhasil di-{$request->status}",
-            'data' => $verification->load(['opd', 'submitter', 'verifier', 'taxObject'])
-        ]);
+            if ($request->status === 'rejected' && $verification->tax_object_id) {
+                $taxObject = TaxObject::find($verification->tax_object_id);
+                if ($taxObject) {
+                    $taxObject->update(['status' => 'rejected']);
+                }
+            }
+
+            return response()->json([
+                'message' => "Dokumen berhasil di-{$request->status}",
+                'data' => $verification->load(['opd', 'submitter', 'verifier', 'taxObject'])
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            \Log::error('Verification Status Update Failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Gagal update status verifikasi: ' . $e->getMessage(),
+                'error_detail' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
+        }
     }
 
     /**

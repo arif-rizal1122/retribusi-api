@@ -26,34 +26,50 @@ class PenaltyWaiverController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'bill_id' => 'required|exists:bills,id',
-            'reason' => 'required|string',
-            'reduction_type' => 'required|in:percentage,fixed_amount',
-            'reduction_value' => 'required|numeric|min:0',
-        ]);
+        try {
+            $validated = $request->validate([
+                'bill_id' => 'required|exists:bills,id',
+                'reason' => 'required|string',
+                'reduction_type' => 'required|in:percentage,fixed_amount',
+                'reduction_value' => 'required|numeric|min:0',
+            ]);
 
-        $bill = Bill::findOrFail($validated['bill_id']);
-        
-        // Check if there is already a pending waiver for this bill
-        $existing = PenaltyWaiver::where('bill_id', $bill->id)
-            ->where('status', 'pending')
-            ->first();
+            $bill = Bill::findOrFail($validated['bill_id']);
 
-        if ($existing) {
-            return response()->json(['message' => 'A pending waiver request already exists for this bill.'], 422);
+            // Check if there is already a pending waiver for this bill
+            $existing = PenaltyWaiver::where('bill_id', $bill->id)
+                ->where('status', 'pending')
+                ->first();
+
+            if ($existing) {
+                return response()->json(['message' => 'A pending waiver request already exists for this bill.'], 422);
+            }
+
+            $waiver = PenaltyWaiver::create([
+                'bill_id' => $bill->id,
+                'requested_by' => Auth::id(),
+                'reason' => $validated['reason'],
+                'reduction_type' => $validated['reduction_type'],
+                'reduction_value' => $validated['reduction_value'],
+                'status' => 'pending',
+            ]);
+
+            return response()->json($waiver, 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            \Log::error('Penalty Waiver Store Failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Gagal mengajukan dispensasi denda: ' . $e->getMessage(),
+                'error_detail' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
         }
-
-        $waiver = PenaltyWaiver::create([
-            'bill_id' => $bill->id,
-            'requested_by' => Auth::id(),
-            'reason' => $validated['reason'],
-            'reduction_type' => $validated['reduction_type'],
-            'reduction_value' => $validated['reduction_value'],
-            'status' => 'pending',
-        ]);
-
-        return response()->json($waiver, 201);
     }
 
     /**
