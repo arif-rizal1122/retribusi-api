@@ -18,7 +18,7 @@ $md .= "Pengujian ini menembak API lokal menggunakan Token Sanctum murni untuk m
 
 // Function untuk cURL Request
 function sendApiRequest($method, $url, $token = null, $data = []) {
-    $ch = curl_init("http://localhost:8000" . $url);
+    $ch = curl_init("https://api.sipanda.online" . $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
     

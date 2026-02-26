@@ -17,7 +17,7 @@ $md .= "**Waktu Eksekusi**: " . date('Y-m-d H:i:s') . "\n";
 $md .= "Pengujian ini sengaja merusak input API untuk memastikan Controller menolak transaksi berakibat fatal ke Database.\n\n";
 
 function sendApi($method, $url, $token, $data) {
-    $ch = curl_init("http://localhost:8000" . $url);
+    $ch = curl_init("https://api.sipanda.online" . $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json', 'Content-Type: application/json', "Authorization: Bearer $token"]);
@@ -40,10 +40,8 @@ try {
     // SKENARIO 1: PEMBAYARAN KOSONG/MINUS (HARUS 422)
     $md .= "### 1. Injeksi Pembayaran Negatif (Rp -5.000.000)\n";
     // Cari atau buat sembarang bill unpaid dummy
-    $dummyBill = Bill::where('status', 'pending')->first();
-    if (!$dummyBill) {
-        $dummyBill = Bill::factory()->create(['status' => 'pending', 'amount' => 150000, 'opd_id' => $petugas->opd_id ?? 1]);
-    }
+    $dummyBill = Bill::where('status', 'unpaid')->first() ?? Bill::where('status', 'pending')->first();
+    // In production, we assume some bills exist or we create one manually if needed without factory
     
     if ($dummyBill) {
         $res1 = sendApi('POST', '/api/payments', $tokenPetugas, [
@@ -63,10 +61,7 @@ try {
 
     // SKENARIO 2: MEMBAYAR TAGIHAN YANG SUDAH LUNAS (HARUS DITOLAK LOGIKA 400 ATAU 422)
     $md .= "### 2. Double Payment / Membayar Ulang SKPD Lunas\n";
-    $paidBill = Bill::where('status', 'lunas')->first();
-    if (!$paidBill) {
-        $paidBill = Bill::factory()->create(['status' => 'lunas', 'amount' => 200000, 'opd_id' => $petugas->opd_id ?? 1]);
-    }
+    $paidBill = Bill::where('status', 'paid')->first() ?? Bill::where('status', 'lunas')->first();
 
     if ($paidBill) {
         $res2 = sendApi('POST', '/api/payments', $tokenPetugas, [
