@@ -36,26 +36,42 @@ class RetributionRateController extends Controller
 
         $opdId = in_array($user->role, ['opd', 'petugas']) ? $user->opd_id : $request->opd_id;
         
+        // Infer opd_id from retribution type if not provided (Super Admin)
         if (!$opdId && $user->role === 'super_admin') {
-            $request->validate(['opd_id' => 'required|exists:opds,id']);
-            $opdId = $request->opd_id;
+            $retributionType = \App\Models\RetributionType::find($request->retribution_type_id);
+            if ($retributionType) {
+                $opdId = $retributionType->opd_id;
+            } else {
+                $request->validate(['opd_id' => 'required|exists:opds,id']);
+                $opdId = $request->opd_id;
+            }
         }
 
-        $rate = RetributionRate::create([
-            'opd_id' => $opdId,
-            'retribution_type_id' => $request->retribution_type_id,
-            'retribution_classification_id' => $request->retribution_classification_id,
-            'zone_id' => $request->zone_id,
-            'name' => $request->name,
-            'amount' => $request->amount,
-            'unit' => $request->unit,
-            'is_active' => $request->boolean('is_active', true),
-        ]);
+        try {
+            $rate = RetributionRate::create([
+                'opd_id' => $opdId,
+                'retribution_type_id' => $request->retribution_type_id,
+                'retribution_classification_id' => $request->retribution_classification_id,
+                'zone_id' => $request->zone_id,
+                'name' => $request->name,
+                'amount' => $request->amount,
+                'unit' => $request->unit,
+                'is_active' => $request->boolean('is_active', true),
+            ]);
 
-        return response()->json([
-            'message' => 'Tarif berhasil ditambahkan',
-            'data' => $rate->load(['opd', 'retributionType', 'classification', 'zone'])
-        ], 201);
+            return response()->json([
+                'message' => 'Tarif berhasil ditambahkan',
+                'data' => $rate->load(['opd', 'retributionType', 'classification', 'zone'])
+            ], 201);
+        } catch (\Exception $e) {
+            \Log::error('Rate Creation Failed: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Gagal membuat tarif: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function show(RetributionRate $retributionRate)
@@ -80,12 +96,22 @@ class RetributionRateController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $retributionRate->update($request->all());
+        try {
+            $retributionRate->update($request->all());
 
-        return response()->json([
-            'message' => 'Tarif berhasil diupdate',
-            'data' => $retributionRate->load(['opd', 'retributionType', 'classification', 'zone'])
-        ]);
+            return response()->json([
+                'message' => 'Tarif berhasil diupdate',
+                'data' => $retributionRate->load(['opd', 'retributionType', 'classification', 'zone'])
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Rate Update Failed: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Gagal memperbarui tarif: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function destroy(RetributionRate $retributionRate)
