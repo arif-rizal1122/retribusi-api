@@ -143,6 +143,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
     Route::post('/user/password', [AuthController::class, 'changePassword']);
+    Route::put('/user/location', [AuthController::class, 'updateLocation']);
     Route::post('/upload', [\App\Http\Controllers\UploadController::class, 'uploadImage']);
     Route::get('/me', [\App\Http\Controllers\MeController::class, 'show']);
     Route::post('/me/update', [\App\Http\Controllers\MeController::class, 'update']);

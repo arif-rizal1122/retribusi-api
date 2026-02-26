@@ -143,6 +143,33 @@ class AuthController extends Controller
     }
 
     /**
+     * Update user real-time location
+     */
+    public function updateLocation(Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        $user = $request->user();
+        if (!($user instanceof \App\Models\User)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $user->update([
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+        ]);
+
+        return response()->json([
+            'message' => 'Lokasi diperbarui',
+            'latitude' => $user->latitude,
+            'longitude' => $user->longitude,
+        ]);
+    }
+
+    /**
      * Login citizen (taxpayer) using NIK and Password
      */
     public function citizenLogin(Request $request)

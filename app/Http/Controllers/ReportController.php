@@ -70,8 +70,29 @@ class ReportController extends Controller
         $opdId = !$user->isSuperAdmin() ? $user->opd_id : $request->query('opd_id');
 
         $payments = Payment::with(['bill.retributionType', 'bill.taxpayer'])
-            ->whereHas('bill', function($q) use ($opdId) {
+            ->whereHas('bill', function($q) use ($opdId, $user) {
                 if ($opdId) $q->where('opd_id', $opdId);
+                
+                // If petugas, filter by their assignments if they exist
+                if ($user->role === 'petugas') {
+                    $assignments = $user->assignments;
+                    if ($assignments->isNotEmpty()) {
+                        $q->where(function($query) use ($assignments) {
+                            foreach ($assignments as $assignment) {
+                                $query->orWhere(function($sq) use ($assignment) {
+                                    $sq->where('retribution_type_id', $assignment->retribution_type_id);
+                                    if ($assignment->retribution_classification_id) {
+                                        $sq->where('retribution_classification_id', $assignment->retribution_classification_id);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+            })
+            ->when($user->role === 'petugas', function($q) use ($user) {
+                // Also show payments they personally approved even if outside assignment somehow
+                $q->orWhere('approved_by', $user->id);
             })
             ->orderBy('paid_at', 'desc')
             ->limit(10)
@@ -84,7 +105,7 @@ class ReportController extends Controller
                     'amount' => $p->amount,
                     'date' => $p->paid_at->toDateTimeString(),
                     'method' => $p->payment_method ?? 'CASH',
-                    'status' => 'Verified' // Since it's already in payments table
+                    'status' => 'Verified' 
                 ];
             });
 
