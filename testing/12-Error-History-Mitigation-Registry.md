@@ -23,6 +23,8 @@ Dokumen ini mencatat daftar kesalahan (error) kritis yang pernah terjadi selama 
 | **Delete Rate 500** | Crash saat hapus Tarif | Method `destroy()` pakai `$request` tapi param tidak dideklarasi. | Tambahkan `Request $request` pada parameter semua method Controller. |
 | **Formula Parser 500**| Gagal hitung tagihan | Variabel rumus tidak ditemukan atau pembagian nol. | Tambahkan `try-catch (\Throwable)` di service parser + default value `0`. |
 | **Logout 401** | Gagal logout | Token sudah dihapus atau mismatch. | Tambahkan pengecekan `if ($request->user())` sebelum delete token. |
+| **Duplicate NOP 500** | Crash saat update WP | `updateOrCreate` di `syncTaxObject` pakai matching criteria berbeda dari unique constraint `nop`. | Ganti dengan 3-step lookup (by combo → by NOP → create new) + fallback. |
+| **ValidationException→500** | Error 422 jadi 500 | `try-catch(\Throwable)` menangkap `ValidationException`. | Tambahkan rethrow `ValidationException` dan `ModelNotFoundException` sebelum catch `\Throwable`. |
 
 ---
 
