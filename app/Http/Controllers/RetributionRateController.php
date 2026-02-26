@@ -114,14 +114,24 @@ class RetributionRateController extends Controller
         }
     }
 
-    public function destroy(RetributionRate $retributionRate)
+    public function destroy(Request $request, RetributionRate $retributionRate)
     {
-        $user = $request->user();
-        if ($user->role !== 'super_admin' && $retributionRate->opd_id !== $user->opd_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+        try {
+            $user = $request->user();
+            if ($user->role !== 'super_admin' && $retributionRate->opd_id !== $user->opd_id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
 
-        $retributionRate->delete();
-        return response()->json(['message' => 'Tarif berhasil dihapus']);
+            $retributionRate->delete();
+            return response()->json(['message' => 'Tarif berhasil dihapus']);
+        } catch (\Throwable $e) {
+            \Log::error('Rate Delete Failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Gagal menghapus tarif: ' . $e->getMessage(),
+                'error_detail' => $e->getMessage()
+            ], 500);
+        }
     }
 }
