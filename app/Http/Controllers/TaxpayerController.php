@@ -375,7 +375,9 @@ class TaxpayerController extends Controller
                 'latitude' => $taxpayer->latitude,
                 'longitude' => $taxpayer->longitude,
                 'status' => 'active',
-                'nop' => ($taxpayer->npwpd ? $taxpayer->npwpd . '-' . $typeId : ('NOP-' . str_pad($taxpayer->id, 4, '0', STR_PAD_LEFT) . '-' . str_pad($typeId, 3, '0', STR_PAD_LEFT)))
+                'nop' => ($taxpayer->npwpd 
+                    ? $taxpayer->npwpd . '-' . $typeId . ($classificationId ? '-' . $classificationId : '')
+                    : ('NOP-' . str_pad($taxpayer->id, 4, '0', STR_PAD_LEFT) . '-' . str_pad($typeId, 3, '0', STR_PAD_LEFT) . ($classificationId ? '-' . $classificationId : '')))
             ]
         );
     }

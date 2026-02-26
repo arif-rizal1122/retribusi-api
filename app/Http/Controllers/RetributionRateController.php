@@ -124,6 +124,10 @@ class RetributionRateController extends Controller
 
             $retributionRate->delete();
             return response()->json(['message' => 'Tarif berhasil dihapus']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            throw $e;
         } catch (\Throwable $e) {
             \Log::error('Rate Delete Failed: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()

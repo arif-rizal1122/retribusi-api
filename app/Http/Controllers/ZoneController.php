@@ -90,6 +90,10 @@ class ZoneController extends Controller
             $zone = Zone::create($data);
 
             return response()->json($zone->load(['opd', 'retributionType', 'classification']), 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            throw $e;
         } catch (\Throwable $e) {
             \Log::error('Zone Creation Failed: ' . $e->getMessage(), [
                 'request' => $request->all(),
