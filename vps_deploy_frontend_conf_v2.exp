@@ -1,0 +1,29 @@
+#!/usr/bin/expect -f
+set timeout 60
+set password "[REDACTED]"
+set host "157.10.252.74"
+set user "sipanda"
+
+# Read local file content
+set fp [open "/Users/pondokit/Herd/retribusi-api/retribusi-frontend-prod.conf" r]
+set file_data [read $fp]
+close $fp
+
+spawn ssh $user@$host "cat > /home/sipanda/retribusi-frontend-prod.conf"
+expect "password:"
+send "$password\r"
+# Wait for the shell or the process to be ready for input
+sleep 2
+send "$file_data"
+# Send Ctrl+D
+send "\x04"
+expect eof
+
+spawn ssh $user@$host "sudo mv /home/sipanda/retribusi-frontend-prod.conf /etc/nginx/sites-available/retribusi-frontend-prod && sudo ln -sf /etc/nginx/sites-available/retribusi-frontend-prod /etc/nginx/sites-enabled/retribusi-frontend-prod && sudo nginx -t && sudo systemctl reload nginx"
+expect "password:"
+send "$password\r"
+expect {
+    "sudo" { send "$password\r"; exp_continue }
+    "sipanda:" { send "$password\r"; exp_continue }
+    eof
+}

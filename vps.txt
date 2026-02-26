@@ -1,9 +1,9 @@
 [VPS Credentials]
 IP Address: 157.10.252.74
 SSH User: sipanda
-SSH Pass: Sipanda123#
+SSH Pass: [REDACTED]
 MySQL User: sipanda
-MySQL Pass: Sipanda123#
+MySQL Pass: [REDACTED]
 MySQL DB: retribusi
 
 [Services]
@@ -51,5 +51,5 @@ Key Name Root | Root
 Date CreatedJan 29, 2026
 
 API Key 684916711959441
-API Secret J8OsO7AxNTFG1jbSFk1t1RZ2t0s
+API Secret [REDACTED]
 Status Active

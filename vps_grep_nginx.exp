@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+set timeout 30
+set password "[REDACTED]"
+set host "157.10.252.74"
+set user "sipanda"
+
+spawn ssh $user@$host "sudo grep -r 'admin.sipanda.online' /etc/nginx/sites-enabled/"
+expect "password:"
+send "$password\r"
+expect eof

@@ -1,0 +1,13 @@
+#!/usr/bin/expect -f
+set timeout 30
+set password "[REDACTED]"
+set host "157.10.252.74"
+set user "sipanda"
+
+spawn ssh $user@$host "sudo tail -n 20 /var/log/nginx/error.log && sudo certbot certificates"
+expect "password:"
+send "$password\r"
+expect {
+    "password:" { send "$password\r"; exp_continue }
+    eof
+}
