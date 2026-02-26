@@ -40,7 +40,7 @@ try {
     // Wajib Pajak Dummy
     $wp = \App\Models\Taxpayer::firstOrCreate(
         ['nik' => '3201999999999999'],
-        ['name' => 'Wajib Pajak Automasi', 'phone' => '0899999999', 'address' => 'Jl. Test', 'opd_id' => $petugas->opd_id ?? 1]
+        ['name' => 'Wajib Pajak Automasi', 'phone' => '0899999999', 'address' => 'Jl. Test', 'opd_id' => $petugas->opd_id ?? \App\Models\Opd::first()->id]
     );
 
     // 3. Mengambil Semua Klasifikasi Pajak Aktif
@@ -136,7 +136,8 @@ try {
             'payment_method' => 'cash',
             'status' => 'success',
             'paid_at' => now(),
-            'notes' => 'Pembayaran Simulasi UAT Otomatis'
+            'notes' => 'Pembayaran Simulasi UAT Otomatis',
+            'billing_period' => $bill->month . '-' . $bill->year
         ]);
         
         // Trigger model observer/sync logic -> marking status paid
