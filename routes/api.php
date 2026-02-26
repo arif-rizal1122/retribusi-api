@@ -78,7 +78,7 @@ Route::post('/simulate-tax', function (Request $request) {
         }
     }
 
-    if ($isPbb) {
+    if ($isPbb && !$request->calculation_formula) {
         $pbbService = app(\App\Services\PbbCalculationService::class);
         $vars = $request->variables;
         $resultData = $pbbService->calculate(

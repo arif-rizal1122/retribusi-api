@@ -72,20 +72,30 @@ class RetributionTypeController extends Controller
             ? $this->cloudinary->upload($request->file('icon'), 'retribusi/icons')
             : $request->icon;
 
-        $type = RetributionType::create([
-            'opd_id' => $opdId,
-            'name' => $request->name,
-            'category' => $request->category,
-            'icon' => $iconUrl,
-            'base_amount' => $request->base_amount,
-            'unit' => $request->unit,
-            'is_active' => $request->boolean('is_active', true),
-        ]);
+        try {
+            $type = RetributionType::create([
+                'opd_id' => $opdId,
+                'name' => $request->name,
+                'category' => $request->category,
+                'icon' => $iconUrl,
+                'base_amount' => $request->base_amount,
+                'unit' => $request->unit,
+                'is_active' => $request->boolean('is_active', true),
+            ]);
 
-        return response()->json([
-            'message' => 'Jenis retribusi berhasil ditambahkan',
-            'data' => $type->load('opd')
-        ], 201);
+            return response()->json([
+                'message' => 'Jenis retribusi berhasil ditambahkan',
+                'data' => $type->load('opd')
+            ], 201);
+        } catch (\Exception $e) {
+            \Log::error('Retribution Type Creation Failed: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Gagal membuat jenis retribusi: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -131,12 +141,22 @@ class RetributionTypeController extends Controller
             $data['icon'] = $request->icon;
         }
 
-        $retributionType->update($data);
+        try {
+            $retributionType->update($data);
 
-        return response()->json([
-            'message' => 'Jenis retribusi berhasil diupdate',
-            'data' => $retributionType->fresh()->load('opd')
-        ]);
+            return response()->json([
+                'message' => 'Jenis retribusi berhasil diupdate',
+                'data' => $retributionType->fresh()->load('opd')
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Retribution Type Update Failed: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Gagal memperbarui jenis retribusi: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

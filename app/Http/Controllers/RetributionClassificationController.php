@@ -59,9 +59,15 @@ class RetributionClassificationController extends Controller
 
         $opdId = in_array($user->role, ['opd', 'petugas']) ? $user->opd_id : $request->opd_id;
         
+        // Infer opd_id from retribution type if not provided (Super Admin)
         if (!$opdId && $user->role === 'super_admin') {
-            $request->validate(['opd_id' => 'required|exists:opds,id']);
-            $opdId = $request->opd_id;
+            $retributionType = \App\Models\RetributionType::find($request->retribution_type_id);
+            if ($retributionType) {
+                $opdId = $retributionType->opd_id;
+            } else {
+                $request->validate(['opd_id' => 'required|exists:opds,id']);
+                $opdId = $request->opd_id;
+            }
         }
 
         $form_schema = $request->form_schema;
@@ -74,21 +80,31 @@ class RetributionClassificationController extends Controller
             $requirements = json_decode($requirements, true);
         }
 
-        $classification = RetributionClassification::create([
-            'opd_id' => $opdId,
-            'retribution_type_id' => $request->retribution_type_id,
-            'name' => $request->name,
-            'code' => $request->code,
-            'icon' => $iconPath,
-            'description' => $request->description,
-            'form_schema' => $form_schema,
-            'requirements' => $requirements,
-        ]);
+        try {
+            $classification = RetributionClassification::create([
+                'opd_id' => $opdId,
+                'retribution_type_id' => $request->retribution_type_id,
+                'name' => $request->name,
+                'code' => $request->code,
+                'icon' => $iconPath,
+                'description' => $request->description,
+                'form_schema' => $form_schema,
+                'requirements' => $requirements,
+            ]);
 
-        return response()->json([
-            'message' => 'Klasifikasi berhasil ditambahkan',
-            'data' => $classification->load(['opd', 'retributionType'])
-        ], 201);
+            return response()->json([
+                'message' => 'Klasifikasi berhasil ditambahkan',
+                'data' => $classification->load(['opd', 'retributionType'])
+            ], 201);
+        } catch (\Exception $e) {
+            \Log::error('Classification Creation Failed: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Gagal membuat klasifikasi: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function show(RetributionClassification $retributionClassification)
@@ -136,12 +152,22 @@ class RetributionClassificationController extends Controller
             $data['requirements'] = is_string($request->requirements) ? json_decode($request->requirements, true) : $request->requirements;
         }
 
-        $retributionClassification->update($data);
+        try {
+            $retributionClassification->update($data);
 
-        return response()->json([
-            'message' => 'Klasifikasi berhasil diupdate',
-            'data' => $retributionClassification->load(['opd', 'retributionType'])
-        ]);
+            return response()->json([
+                'message' => 'Klasifikasi berhasil diupdate',
+                'data' => $retributionClassification->load(['opd', 'retributionType'])
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Classification Update Failed: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Gagal memperbarui klasifikasi: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function destroy(Request $request, RetributionClassification $retributionClassification)

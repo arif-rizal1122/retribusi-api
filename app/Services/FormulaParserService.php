@@ -26,12 +26,16 @@ class FormulaParserService
         });
 
         foreach ($variables as $key => $value) {
-            $formula = str_ireplace($key, (string)($value ?? 0), $formula);
+            $numericValue = is_numeric($value) ? (float)$value : 0;
+            // Use number_format to avoid scientific notation during replacement
+            $formattedValue = number_format($numericValue, 10, '.', '');
+            $formattedValue = rtrim(rtrim($formattedValue, '0'), '.');
+            $formula = str_ireplace($key, $formattedValue, $formula);
         }
 
         // 2. Default remaining word-based variables to 0 to avoid syntax errors
         // This finds words that are not part of functions (like IF) or scientific notation
-        $formula = preg_replace_callback('/(?<![0-9a-zA-Z_])[a-zA-Z_][a-zA-Z0-9_]*(?![0-9a-zA-Z_])/', function($m) {
+        $formula = preg_replace_callback('/(?<![0-9a-zA-Z_eE])[a-zA-Z_][a-zA-Z0-9_]*(?![0-9a-zA-Z_eE])/', function($m) {
             $word = strtoupper($m[0]);
             if (in_array($word, ['IF', 'AND', 'OR', 'NOT', 'TRUE', 'FALSE'])) {
                 return $m[0];
@@ -48,7 +52,8 @@ class FormulaParserService
 
         // 3. Sanitize: Allow numbers, math operators, dots, parentheses, and logical operators
         // Added: > < = ? : ! & | (for logical comparisons and ternary)
-        $sanitizedFormula = preg_replace('/[^-+*.\/()0-9 ><=? :!&|]/', '', $formula);
+        // Added: e E (for scientific notation in numbers)
+        $sanitizedFormula = preg_replace('/[^-+*.\/()0-9 ><=? :!&|eE]/', '', $formula);
 
         // 4. Basic validity check
         if (trim($sanitizedFormula) === '') {
