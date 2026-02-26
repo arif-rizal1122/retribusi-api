@@ -10,14 +10,22 @@ $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
 use App\Models\User;
-use App\Models\Bill;
+// Handle environment argument
+$env = $argv[1] ?? 'local';
+if ($env === 'dev') {
+    $baseUrl = "https://api-dev.sipanda.online";
+} elseif ($env === 'prod') {
+    $baseUrl = "https://api.sipanda.online";
+} else {
+    $baseUrl = "http://localhost:8000";
+}
 
 $md = "# 🛑 Laporan Hasil Uji Coba Input Invalid (Negative Testing)\n\n";
 $md .= "**Waktu Eksekusi**: " . date('Y-m-d H:i:s') . "\n";
 $md .= "Pengujian ini sengaja merusak input API untuk memastikan Controller menolak transaksi berakibat fatal ke Database.\n\n";
 
-function sendApi($method, $url, $token, $data) {
-    $ch = curl_init("https://api.sipanda.online" . $url);
+function sendApi($method, $url, $baseUrl, $token, $data) {
+    $ch = curl_init($baseUrl . $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json', 'Content-Type: application/json', "Authorization: Bearer $token"]);
@@ -44,7 +52,7 @@ try {
     // In production, we assume some bills exist or we create one manually if needed without factory
     
     if ($dummyBill) {
-        $res1 = sendApi('POST', '/api/payments', $tokenPetugas, [
+        $res1 = sendApi('POST', '/api/payments', $baseUrl, $tokenPetugas, [
             'bill_id' => $dummyBill->id,
             'amount' => -5000000,
             'payment_method' => 'cash',
@@ -64,7 +72,7 @@ try {
     $paidBill = Bill::where('status', 'paid')->first() ?? Bill::where('status', 'lunas')->first();
 
     if ($paidBill) {
-        $res2 = sendApi('POST', '/api/payments', $tokenPetugas, [
+        $res2 = sendApi('POST', '/api/payments', $baseUrl, $tokenPetugas, [
             'bill_id' => $paidBill->id,
             'amount' => $paidBill->amount,
             'payment_method' => 'cash',
@@ -81,7 +89,7 @@ try {
 
     // SKENARIO 3: BIKIN USER DENGAN PASSWORD KOSONG (HARUS 422)
     $md .= "### 3. Payload Bolong (Required Validation)\n";
-    $res3 = sendApi('POST', '/api/users', $tokenAdmin, [
+    $res3 = sendApi('POST', '/api/users', $baseUrl, $tokenAdmin, [
         'name' => 'Si Bolong',
         'email' => 'bolong@test.com'
         // Password sengaja tidak dikirim
