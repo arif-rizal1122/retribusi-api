@@ -1,0 +1,25 @@
+#!/usr/bin/expect -f
+set timeout 60
+set password "[REDACTED]"
+set host "157.10.252.74"
+set user "sipanda"
+set local_file "/Users/pondokit/Herd/retribusi-api/retribusi-frontend-prod.conf"
+set remote_path "/home/sipanda/retribusi-frontend-prod.conf"
+
+spawn scp $local_file $user@$host:$remote_path
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}
+
+spawn ssh $user@$host "sudo mv $remote_path /etc/nginx/sites-available/retribusi-frontend-prod && sudo ln -sf /etc/nginx/sites-available/retribusi-frontend-prod /etc/nginx/sites-enabled/retribusi-frontend-prod && sudo nginx -t && sudo systemctl reload nginx"
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}
