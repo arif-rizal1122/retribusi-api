@@ -9,6 +9,9 @@ $app = require_once __DIR__.'/../bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
+use App\Models\User;
+use App\Models\TaxObject;
+
 // Handle environment argument
 $env = $argv[1] ?? 'local';
 if ($env === 'dev') {
