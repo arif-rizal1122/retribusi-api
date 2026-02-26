@@ -486,4 +486,121 @@ class HistoricalErrorRegressionTest extends TestCase
 
         $response->assertStatus(422); // Validation error on exists rule
     }
+
+    // ========================================================================
+    // ERROR #15: Duplicate NOP 500 - updateOrCreate di syncTaxObject crash
+    // Akar Masalah: updateOrCreate pakai matching criteria (taxpayer_id +
+    //              type_id + classification_id) yang berbeda dari unique
+    //              constraint di kolom 'nop'. Saat combo berubah, INSERT baru
+    //              tapi NOP sama → Integrity Constraint Violation.
+    // Mitigasi: 3-step lookup (by combo → by NOP → create new) + fallback.
+    // ========================================================================
+
+    /** @test */
+    public function error_taxpayer_update_does_not_crash_with_500()
+    {
+        $taxpayer = Taxpayer::create([
+            'opd_id' => $this->opd->id,
+            'nik' => '7405012345678901',
+            'name' => 'WP NOP Test',
+            'npwpd' => 'NOP-TEST-001',
+            'object_name' => 'Kios Test',
+            'object_address' => 'JL. Test',
+            'is_active' => true,
+            'created_by' => $this->superAdmin->id,
+        ]);
+
+        // First update with classification
+        $response = $this->actingAs($this->superAdmin)
+            ->putJson("/api/taxpayers/{$taxpayer->id}", [
+                'name' => 'WP NOP Test Updated',
+                'retribution_type_ids' => [$this->retributionType->id],
+                'retribution_classification_ids' => [$this->classification->id],
+                'object_name' => 'Kios Test Updated',
+                'object_address' => 'JL. Test Updated',
+            ]);
+
+        $this->assertNotEquals(500, $response->getStatusCode(),
+            'Taxpayer update returned 500! The syncTaxObject may have regressed.');
+        $response->assertSuccessful();
+    }
+
+    /** @test */
+    public function error_taxpayer_duplicate_nop_on_re_update_does_not_crash()
+    {
+        $taxpayer = Taxpayer::create([
+            'opd_id' => $this->opd->id,
+            'nik' => '7405012345670002',
+            'name' => 'WP Duplicate NOP',
+            'npwpd' => 'DUPNOP-002',
+            'object_name' => 'Kios DupNOP',
+            'object_address' => 'JL. DupNOP',
+            'is_active' => true,
+            'created_by' => $this->superAdmin->id,
+        ]);
+
+        // Update #1: creates TaxObject with NOP
+        $this->actingAs($this->superAdmin)
+            ->putJson("/api/taxpayers/{$taxpayer->id}", [
+                'name' => 'WP Duplicate NOP v1',
+                'retribution_type_ids' => [$this->retributionType->id],
+                'retribution_classification_ids' => [$this->classification->id],
+                'object_name' => 'Kios DupNOP v1',
+            ]);
+
+        // Update #2: SAME data — must NOT crash with duplicate NOP
+        $response = $this->actingAs($this->superAdmin)
+            ->putJson("/api/taxpayers/{$taxpayer->id}", [
+                'name' => 'WP Duplicate NOP v2',
+                'retribution_type_ids' => [$this->retributionType->id],
+                'retribution_classification_ids' => [$this->classification->id],
+                'object_name' => 'Kios DupNOP v2',
+            ]);
+
+        $this->assertNotEquals(500, $response->getStatusCode(),
+            'Second taxpayer update crashed with duplicate NOP! syncTaxObject fix may have regressed.');
+        $response->assertSuccessful();
+    }
+
+    /** @test */
+    public function error_taxpayer_update_returns_422_for_invalid_data()
+    {
+        $taxpayer = Taxpayer::create([
+            'opd_id' => $this->opd->id,
+            'nik' => '7405012345670003',
+            'name' => 'WP Validation Test',
+            'is_active' => true,
+            'created_by' => $this->superAdmin->id,
+        ]);
+
+        $response = $this->actingAs($this->superAdmin)
+            ->putJson("/api/taxpayers/{$taxpayer->id}", [
+                'retribution_type_ids' => [99999], // Non-existent type
+            ]);
+
+        $response->assertStatus(422); // Validation error, NOT 500
+    }
+
+    // ========================================================================
+    // ERROR #16: TaxpayerController hardening - try-catch(Throwable) wrapper
+    // Mitigasi: Wrapped update() in try-catch to prevent unhandled exceptions.
+    // ========================================================================
+
+    /** @test */
+    public function error_taxpayer_migration_has_required_columns()
+    {
+        $this->assertTrue(
+            \Schema::hasColumns('taxpayers', ['nik', 'name', 'opd_id', 'is_active', 'npwpd']),
+            'Tabel taxpayers kehilangan kolom kritis!'
+        );
+    }
+
+    /** @test */
+    public function error_tax_objects_has_nop_column()
+    {
+        $this->assertTrue(
+            \Schema::hasColumns('tax_objects', ['nop', 'taxpayer_id', 'retribution_type_id']),
+            'Tabel tax_objects kehilangan kolom NOP atau FK kritis!'
+        );
+    }
 }
