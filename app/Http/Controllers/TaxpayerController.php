@@ -177,13 +177,13 @@ class TaxpayerController extends Controller
                 ->toArray();
 
             if (empty($typeClassifications)) {
-                $taxpayer->retributionTypes()->attach($typeId, ['retribution_classification_id' => null]);
+                $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => null]]);
                 
                 // Also create/update TaxObject
                 $this->syncTaxObject($taxpayer, $typeId, null);
             } else {
                 foreach ($typeClassifications as $cId) {
-                    $taxpayer->retributionTypes()->attach($typeId, ['retribution_classification_id' => $cId]);
+                    $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => $cId]]);
                     
                     // Also create/update TaxObject
                     $this->syncTaxObject($taxpayer, $typeId, $cId);
@@ -319,11 +319,11 @@ class TaxpayerController extends Controller
                     ->toArray();
 
                 if (empty($typeClassifications)) {
-                    $taxpayer->retributionTypes()->attach($typeId, ['retribution_classification_id' => null]);
+                    $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => null]]);
                     $this->syncTaxObject($taxpayer, $typeId, null);
                 } else {
                     foreach ($typeClassifications as $cId) {
-                        $taxpayer->retributionTypes()->attach($typeId, ['retribution_classification_id' => $cId]);
+                        $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => $cId]]);
                         $this->syncTaxObject($taxpayer, $typeId, $cId);
                     }
                 }
