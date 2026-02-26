@@ -290,50 +290,64 @@ class TaxpayerController extends Controller
         }
 
         $data['metadata'] = $metadata;
-        $taxpayer->update($data);
 
-        // Update retribution types if provided
-        if ($request->has('retribution_type_ids')) {
-            $opdId = $taxpayer->opd_id;
-            $typeIds = (array)$request->retribution_type_ids;
-            
-            // Validate that retribution types belong to the same OPD
-            $validTypes = RetributionType::where('opd_id', $opdId)
-                ->whereIn('id', $typeIds)
-                ->count();
-            
-            if ($validTypes !== count($typeIds)) {
-                return response()->json([
-                    'message' => 'Jenis retribusi harus milik OPD yang sama'
-                ], 422);
-            }
+        try {
+            $taxpayer->update($data);
 
-            $taxpayer->retributionTypes()->detach();
-            
-            $classificationIds = (array)$request->input('retribution_classification_ids', []);
+            // Update retribution types if provided
+            if ($request->has('retribution_type_ids')) {
+                $opdId = $taxpayer->opd_id;
+                $typeIds = (array)$request->retribution_type_ids;
+                
+                // Validate that retribution types belong to the same OPD
+                $validTypes = RetributionType::where('opd_id', $opdId)
+                    ->whereIn('id', $typeIds)
+                    ->count();
+                
+                if ($validTypes !== count($typeIds)) {
+                    return response()->json([
+                        'message' => 'Jenis retribusi harus milik OPD yang sama'
+                    ], 422);
+                }
 
-            foreach ($typeIds as $typeId) {
-                $typeClassifications = RetributionClassification::where('retribution_type_id', $typeId)
-                    ->whereIn('id', $classificationIds)
-                    ->pluck('id')
-                    ->toArray();
+                $taxpayer->retributionTypes()->detach();
+                
+                $classificationIds = (array)$request->input('retribution_classification_ids', []);
 
-                if (empty($typeClassifications)) {
-                    $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => null]]);
-                    $this->syncTaxObject($taxpayer, $typeId, null);
-                } else {
-                    foreach ($typeClassifications as $cId) {
-                        $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => $cId]]);
-                        $this->syncTaxObject($taxpayer, $typeId, $cId);
+                foreach ($typeIds as $typeId) {
+                    $typeClassifications = RetributionClassification::where('retribution_type_id', $typeId)
+                        ->whereIn('id', $classificationIds)
+                        ->pluck('id')
+                        ->toArray();
+
+                    if (empty($typeClassifications)) {
+                        $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => null]]);
+                        $this->syncTaxObject($taxpayer, $typeId, null);
+                    } else {
+                        foreach ($typeClassifications as $cId) {
+                            $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => $cId]]);
+                            $this->syncTaxObject($taxpayer, $typeId, $cId);
+                        }
                     }
                 }
             }
-        }
 
-        return response()->json([
-            'message' => 'Wajib pajak berhasil diupdate',
-            'data' => $taxpayer->fresh()->load(['opd', 'retributionTypes', 'retributionClassifications', 'creator'])
-        ]);
+            return response()->json([
+                'message' => 'Wajib pajak berhasil diupdate',
+                'data' => $taxpayer->fresh()->load(['opd', 'retributionTypes', 'retributionClassifications', 'creator'])
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Taxpayer Update Failed: ' . $e->getMessage(), [
+                'taxpayer_id' => $taxpayer->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Gagal mengupdate wajib pajak: ' . $e->getMessage(),
+                'error_detail' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
+        }
     }
 
     /**
@@ -362,23 +376,74 @@ class TaxpayerController extends Controller
     {
         if (!$taxpayer->object_name) return;
 
-        $targetObj = TaxObject::updateOrCreate(
-            [
+        // Generate NOP
+        $nop = $taxpayer->npwpd 
+            ? $taxpayer->npwpd . '-' . $typeId . ($classificationId ? '-' . $classificationId : '')
+            : ('NOP-' . str_pad($taxpayer->id, 4, '0', STR_PAD_LEFT) . '-' . str_pad($typeId, 3, '0', STR_PAD_LEFT) . ($classificationId ? '-' . $classificationId : ''));
+
+        $data = [
+            'opd_id' => $taxpayer->opd_id,
+            'name' => $taxpayer->object_name,
+            'address' => $taxpayer->object_address ?: $taxpayer->address,
+            'latitude' => $taxpayer->latitude,
+            'longitude' => $taxpayer->longitude,
+            'status' => 'active',
+            'nop' => $nop,
+        ];
+
+        try {
+            // First, try to find by taxpayer+type+classification combo
+            $existing = TaxObject::where('taxpayer_id', $taxpayer->id)
+                ->where('retribution_type_id', $typeId)
+                ->where(function ($q) use ($classificationId) {
+                    if ($classificationId) {
+                        $q->where('retribution_classification_id', $classificationId);
+                    } else {
+                        $q->whereNull('retribution_classification_id');
+                    }
+                })
+                ->first();
+
+            if ($existing) {
+                // Update existing — but don't change NOP if it would cause duplicate
+                $dataWithoutNop = $data;
+                unset($dataWithoutNop['nop']);
+                $existing->update($dataWithoutNop);
+                return $existing;
+            }
+
+            // Also check if NOP already exists (from a previous different combo)
+            $existingByNop = TaxObject::where('nop', $nop)->first();
+            if ($existingByNop) {
+                // NOP exists — update that record instead of creating a new one
+                $existingByNop->update(array_merge($data, [
+                    'taxpayer_id' => $taxpayer->id,
+                    'retribution_type_id' => $typeId,
+                    'retribution_classification_id' => $classificationId,
+                ]));
+                return $existingByNop;
+            }
+
+            // Create new
+            return TaxObject::create(array_merge($data, [
                 'taxpayer_id' => $taxpayer->id,
                 'retribution_type_id' => $typeId,
                 'retribution_classification_id' => $classificationId,
-            ],
-            [
-                'opd_id' => $taxpayer->opd_id,
-                'name' => $taxpayer->object_name,
-                'address' => $taxpayer->object_address ?: $taxpayer->address,
-                'latitude' => $taxpayer->latitude,
-                'longitude' => $taxpayer->longitude,
-                'status' => 'active',
-                'nop' => ($taxpayer->npwpd 
-                    ? $taxpayer->npwpd . '-' . $typeId . ($classificationId ? '-' . $classificationId : '')
-                    : ('NOP-' . str_pad($taxpayer->id, 4, '0', STR_PAD_LEFT) . '-' . str_pad($typeId, 3, '0', STR_PAD_LEFT) . ($classificationId ? '-' . $classificationId : '')))
-            ]
-        );
+            ]));
+        } catch (\Throwable $e) {
+            \Log::warning('syncTaxObject duplicate handled: ' . $e->getMessage(), [
+                'taxpayer_id' => $taxpayer->id,
+                'type_id' => $typeId,
+                'classification_id' => $classificationId,
+                'nop' => $nop,
+            ]);
+
+            // Fallback: try to update by NOP
+            $fallback = TaxObject::where('nop', $nop)->first();
+            if ($fallback) {
+                $fallback->update($data);
+                return $fallback;
+            }
+        }
     }
 }
