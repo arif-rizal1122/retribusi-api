@@ -208,12 +208,12 @@ class DatabaseSeeder extends Seeder
 
         // Run BAPENDA Master Data Seeder
         $this->call(BapendaMasterDataSeeder::class);
-        $this->call(TestingScenarioSeeder::class);
+        $this->call(BapendaTestingSeeder::class);
         $this->call(SurveillanceAccountSeeder::class);
 
         $this->command->info('Database seeded successfully!');
-        $this->command->info('Super Admin: superadmin@sipanda.online / password');
-        $this->command->info('OPD Bapenda: admin@bapenda.go.id / password123');
+        $this->command->info('Super Admin: superadmin@sipanda.online / Sipanda123#');
+        $this->command->info('OPD Bapenda: bapenda@baubaukota.go.id / password123');
         $this->command->info('OPD Dishub: dishub@retribusi.id / password123');
         $this->command->info('OPD Disperindag: disperindag@retribusi.id / password123');
         $this->command->info('OPD DLH: dlh@retribusi.id / password123');
