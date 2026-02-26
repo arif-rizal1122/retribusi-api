@@ -302,7 +302,7 @@ class DashboardController extends Controller
             ->whereNotNull('longitude')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->when($user->role === 'petugas', function($q) use ($user) {
-                $assignments = $user->assignments;
+                $assignments = $user->assignments ?? collect();
                 if ($assignments->isNotEmpty()) {
                     $q->where(function($query) use ($assignments) {
                         foreach ($assignments as $assignment) {
@@ -314,9 +314,8 @@ class DashboardController extends Controller
                             });
                         }
                     });
-                } else {
-                    $q->whereRaw('1 = 0');
                 }
+                // If no assignments, show all OPD data (no extra filter)
             })
             ->get()
             ->map(function($obj) {
@@ -337,7 +336,7 @@ class DashboardController extends Controller
             ->whereNotNull('longitude')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->when($user->role === 'petugas', function($q) use ($user) {
-                $assignments = $user->assignments;
+                $assignments = $user->assignments ?? collect();
                 if ($assignments->isNotEmpty()) {
                     $q->where(function($query) use ($assignments) {
                         foreach ($assignments as $assignment) {
@@ -349,15 +348,14 @@ class DashboardController extends Controller
                             });
                         }
                     });
-                } else {
-                    $q->whereRaw('1 = 0');
                 }
+                // If no assignments, show all OPD data (no extra filter)
             })
             ->get()
             ->map(function($obj) {
-                // Check if there are any pending bills for this tax object
+                // Check if there are any unpaid bills for this tax object
                 $hasUnpaidBills = \App\Models\Bill::where('tax_object_id', $obj->id)
-                    ->where('status', 'pending')
+                    ->whereNotIn('status', ['paid', 'lunas'])
                     ->exists();
 
                 return [

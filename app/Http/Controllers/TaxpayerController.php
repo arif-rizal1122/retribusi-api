@@ -22,8 +22,9 @@ class TaxpayerController extends Controller
         if ($user && in_array($user->role, ['opd', 'petugas'])) {
             $query->where('opd_id', $user->opd_id);
 
-            // If petugas, further filter by assigned retribution types
+            // If petugas, further filter by assigned retribution types and created_by
             if ($user->role === 'petugas') {
+                $query->where('created_by', $user->id); // Hanya tampilkan yang didata oleh petugas ini
                 $assignments = $user->assignments;
                 if ($assignments->isNotEmpty()) {
                     $query->whereHas('retributionTypes', function($q) use ($assignments) {

@@ -1,0 +1,144 @@
+diff --git a/app/Http/Controllers/DashboardController.php b/app/Http/Controllers/DashboardController.php
+index ac1409f..1b4cb94 100644
+--- a/app/Http/Controllers/DashboardController.php
++++ b/app/Http/Controllers/DashboardController.php
+@@ -302,7 +302,7 @@ public function getMapPotentials(Request $request)
+             ->whereNotNull('longitude')
+             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
+             ->when($user->role === 'petugas', function($q) use ($user) {
+-                $assignments = $user->assignments;
++                $assignments = $user->assignments ?? collect();
+                 if ($assignments->isNotEmpty()) {
+                     $q->where(function($query) use ($assignments) {
+                         foreach ($assignments as $assignment) {
+@@ -314,9 +314,8 @@ public function getMapPotentials(Request $request)
+                             });
+                         }
+                     });
+-                } else {
+-                    $q->whereRaw('1 = 0');
+                 }
++                // If no assignments, show all OPD data (no extra filter)
+             })
+             ->get()
+             ->map(function($obj) {
+@@ -337,7 +336,7 @@ public function getMapPotentials(Request $request)
+             ->whereNotNull('longitude')
+             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
+             ->when($user->role === 'petugas', function($q) use ($user) {
+-                $assignments = $user->assignments;
++                $assignments = $user->assignments ?? collect();
+                 if ($assignments->isNotEmpty()) {
+                     $q->where(function($query) use ($assignments) {
+                         foreach ($assignments as $assignment) {
+@@ -349,15 +348,14 @@ public function getMapPotentials(Request $request)
+                             });
+                         }
+                     });
+-                } else {
+-                    $q->whereRaw('1 = 0');
+                 }
++                // If no assignments, show all OPD data (no extra filter)
+             })
+             ->get()
+             ->map(function($obj) {
+-                // Check if there are any pending bills for this tax object
++                // Check if there are any unpaid bills for this tax object
+                 $hasUnpaidBills = \App\Models\Bill::where('tax_object_id', $obj->id)
+-                    ->where('status', 'pending')
++                    ->whereNotIn('status', ['paid', 'lunas'])
+                     ->exists();
+ 
+                 return [
+diff --git a/app/Http/Controllers/TaxObjectController.php b/app/Http/Controllers/TaxObjectController.php
+index 52fe884..7ba1db8 100644
+--- a/app/Http/Controllers/TaxObjectController.php
++++ b/app/Http/Controllers/TaxObjectController.php
+@@ -20,6 +20,11 @@ public function index(Request $request)
+         } elseif ($user && $user->role === 'petugas') {
+             $query->where('opd_id', $user->opd_id);
+             
++            // Filter sub-objects created by this Petugas (via Taxpayer relation or object relation)
++            $query->whereHas('taxpayer', function($q) use ($user) {
++                $q->where('created_by', $user->id);
++            });
++
+             $assignments = $user->assignments;
+             if ($assignments) {
+                 $query->where(function($q) use ($assignments) {
+@@ -63,6 +68,60 @@ public function index(Request $request)
+         return response()->json($objects);
+     }
+ 
++    /**
++     * Manually store a new tax object (useful for testing or direct Petugas API)
++     */
++    public function store(Request $request)
++    {
++        $user = $request->user();
++        
++        // Authorization: Only OPD admins or Petugas can create tax objects directly here.
++        if (!in_array($user->role, ['opd', 'petugas'])) {
++            return response()->json(['message' => 'Unauthorized'], 403);
++        }
++
++        $request->validate([
++            'taxpayer_id' => 'required|exists:taxpayers,id',
++            'retribution_type_id' => 'required|exists:retribution_types,id',
++            'retribution_classification_id' => 'nullable|exists:retribution_classifications,id',
++            'name' => 'required|string|max:255',
++            'address' => 'required|string|max:255',
++            'latitude' => 'nullable|numeric',
++            'longitude' => 'nullable|numeric',
++            'nop' => 'nullable|string|max:50',
++        ]);
++
++        // Ensure the retribution type belongs to the user's OPD
++        $type = \App\Models\RetributionType::where('id', $request->retribution_type_id)
++            ->where('opd_id', $user->opd_id)
++            ->firstOrFail();
++
++        // Ensure taxpayer belongs to OPD
++        $taxpayer = \App\Models\Taxpayer::where('id', $request->taxpayer_id)
++            ->where('opd_id', $user->opd_id)
++            ->firstOrFail();
++
++        $taxObject = TaxObject::create([
++            'opd_id' => $user->opd_id,
++            'taxpayer_id' => $taxpayer->id,
++            'retribution_type_id' => $type->id,
++            'retribution_classification_id' => $request->retribution_classification_id,
++            'name' => $request->name,
++            'address' => $request->address,
++            'latitude' => $request->latitude,
++            'longitude' => $request->longitude,
++            'nop' => $request->nop,
++            'status' => 'approved', // Manual creation -> assume approved for testing
++            'is_active' => true,
++            'metadata' => [],
++        ]);
++
++        return response()->json([
++            'message' => 'Objek pajak berhasil ditambahkan.',
++            'data' => $taxObject
++        ], 201);
++    }
++
+     /**
+      * Update a pending tax object
+      */
+diff --git a/app/Http/Controllers/TaxpayerController.php b/app/Http/Controllers/TaxpayerController.php
+index 1ace166..c8e107a 100644
+--- a/app/Http/Controllers/TaxpayerController.php
++++ b/app/Http/Controllers/TaxpayerController.php
+@@ -22,8 +22,9 @@ public function index(Request $request)
+         if ($user && in_array($user->role, ['opd', 'petugas'])) {
+             $query->where('opd_id', $user->opd_id);
+ 
+-            // If petugas, further filter by assigned retribution types
++            // If petugas, further filter by assigned retribution types and created_by
+             if ($user->role === 'petugas') {
++                $query->where('created_by', $user->id); // Hanya tampilkan yang didata oleh petugas ini
+                 $assignments = $user->assignments;
+                 if ($assignments->isNotEmpty()) {
+                     $query->whereHas('retributionTypes', function($q) use ($assignments) {

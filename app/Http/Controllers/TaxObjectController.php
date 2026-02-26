@@ -20,6 +20,11 @@ class TaxObjectController extends Controller
         } elseif ($user && $user->role === 'petugas') {
             $query->where('opd_id', $user->opd_id);
             
+            // Filter sub-objects created by this Petugas (via Taxpayer relation or object relation)
+            $query->whereHas('taxpayer', function($q) use ($user) {
+                $q->where('created_by', $user->id);
+            });
+
             $assignments = $user->assignments;
             if ($assignments) {
                 $query->where(function($q) use ($assignments) {
@@ -61,6 +66,60 @@ class TaxObjectController extends Controller
         $objects = $query->latest()->paginate($request->get('per_page', 50));
 
         return response()->json($objects);
+    }
+
+    /**
+     * Manually store a new tax object (useful for testing or direct Petugas API)
+     */
+    public function store(Request $request)
+    {
+        $user = $request->user();
+        
+        // Authorization: Only OPD admins or Petugas can create tax objects directly here.
+        if (!in_array($user->role, ['opd', 'petugas'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'taxpayer_id' => 'required|exists:taxpayers,id',
+            'retribution_type_id' => 'required|exists:retribution_types,id',
+            'retribution_classification_id' => 'nullable|exists:retribution_classifications,id',
+            'name' => 'required|string|max:255',
+            'address' => 'required|string|max:255',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'nop' => 'nullable|string|max:50',
+        ]);
+
+        // Ensure the retribution type belongs to the user's OPD
+        $type = \App\Models\RetributionType::where('id', $request->retribution_type_id)
+            ->where('opd_id', $user->opd_id)
+            ->firstOrFail();
+
+        // Ensure taxpayer belongs to OPD
+        $taxpayer = \App\Models\Taxpayer::where('id', $request->taxpayer_id)
+            ->where('opd_id', $user->opd_id)
+            ->firstOrFail();
+
+        $taxObject = TaxObject::create([
+            'opd_id' => $user->opd_id,
+            'taxpayer_id' => $taxpayer->id,
+            'retribution_type_id' => $type->id,
+            'retribution_classification_id' => $request->retribution_classification_id,
+            'name' => $request->name,
+            'address' => $request->address,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'nop' => $request->nop,
+            'status' => 'approved', // Manual creation -> assume approved for testing
+            'is_active' => true,
+            'metadata' => [],
+        ]);
+
+        return response()->json([
+            'message' => 'Objek pajak berhasil ditambahkan.',
+            'data' => $taxObject
+        ], 201);
     }
 
     /**
