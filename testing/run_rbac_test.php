@@ -9,16 +9,23 @@ $app = require_once __DIR__.'/../bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
-use App\Models\User;
-use Illuminate\Support\Str;
+// Handle environment argument
+$env = $argv[1] ?? 'local';
+if ($env === 'dev') {
+    $baseUrl = "https://api-dev.sipanda.online";
+} elseif ($env === 'prod') {
+    $baseUrl = "https://api.sipanda.online";
+} else {
+    $baseUrl = "http://localhost:8000";
+}
 
 $md = "# 🛡️ Laporan Hasil Uji Coba Keamanan Akses (RBAC)\n\n";
 $md .= "**Waktu Eksekusi**: " . date('Y-m-d H:i:s') . "\n";
 $md .= "Pengujian ini menembak API lokal menggunakan Token Sanctum murni untuk membuktikan Sistem Isolasi Peran (Tenant Isolation & Authorization) berjalan sempurna.\n\n";
 
 // Function untuk cURL Request
-function sendApiRequest($method, $url, $token = null, $data = []) {
-    $ch = curl_init("https://api.sipanda.online" . $url);
+function sendApiRequest($method, $url, $baseUrl, $token = null, $data = []) {
+    $ch = curl_init($baseUrl . $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
     
@@ -50,7 +57,7 @@ try {
 
     // SKENARIO 1: WP MENGAKSES DASHBOARD ADMIN (HARUS 403)
     $md .= "### 1. Wajib Pajak Mengakses Endpoint Admin\n";
-    $res1 = sendApiRequest('GET', '/api/dashboard/stats', $tokenWP1);
+    $res1 = sendApiRequest('GET', '/api/dashboard/stats', $baseUrl, $tokenWP1);
     if($res1['code'] === 403 || $res1['code'] === 401) {
         $md .= "- ✅ **SUKSES DIBLOKIR**: Server mengembalikan status HTTP `{$res1['code']}`. Wajib pajak tidak bisa masuk dapur admin.\n\n";
     } else {
@@ -59,7 +66,7 @@ try {
 
     // SKENARIO 2: TAMU (UNAUTHENTICATED) MENGAKSES PROFILE (HARUS 401)
     $md .= "### 2. Tamu (Tanpa Token) Mengakses Endpoint Terkunci\n";
-    $res2 = sendApiRequest('GET', '/api/user');
+    $res2 = sendApiRequest('GET', '/api/user', $baseUrl);
     if($res2['code'] === 401) {
         $md .= "- ✅ **SUKSES DIBLOKIR**: Pengunjung dilarang masuk. `401 Unauthenticated`.\n\n";
     } else {
@@ -70,7 +77,7 @@ try {
     $md .= "### 3. Petugas Lapangan Melakukan Aksi Destruktif (DELETE Tagihan/Objek)\n";
     $dummyObj = \App\Models\TaxObject::first();
     if($dummyObj) {
-        $res3 = sendApiRequest('DELETE', '/api/tax-objects/' . $dummyObj->id, $tokenPetugas);
+        $res3 = sendApiRequest('DELETE', '/api/tax-objects/' . $dummyObj->id, $baseUrl, $tokenPetugas);
         if(in_array($res3['code'], [403, 401, 405])) {
             $md .= "- ✅ **SUKSES DIBLOKIR**: Petugas dilarang menghapus. Server menolak keras dengan blokade Otorisasi (HTTP `{$res3['code']}`).\n\n";
         } else {
