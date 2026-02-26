@@ -103,7 +103,6 @@ fi
 # ============================================================================
 log_section "1. Public Endpoints (No Auth)"
 
-test_endpoint GET "$API/test-cors" "" "" "200" "/test-cors" > /dev/null
 test_endpoint GET "$API/opds" "" "" "200" "/opds (list OPDs)" > /dev/null
 test_endpoint GET "$API/tax-formulas" "" "" "200" "/tax-formulas" > /dev/null
 test_endpoint GET "$API/pbb/classifications" "" "" "200" "/pbb/classifications" > /dev/null
