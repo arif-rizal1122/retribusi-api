@@ -82,6 +82,13 @@ ADMIN_TOKEN=$(echo "$ADMIN_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 if [ -n "$ADMIN_TOKEN" ]; then
   ADMIN_ROLE=$(echo "$ADMIN_RESP" | grep -o '"role":"[^"]*"' | cut -d'"' -f4)
   log_pass "Admin login → token received (role: $ADMIN_ROLE)"
+
+  # Dynamically fetch a valid retribution_type_id and opd_id for CRUD tests
+  RT_LIST=$(test_json GET "$API/retribution-types" "" "$ADMIN_TOKEN")
+  VALID_RT_ID=$(echo "$RT_LIST" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
+  VALID_OPD_ID=$(echo "$ADMIN_RESP" | grep -o '"opd_id":[0-9]*' | head -1 | cut -d':' -f2)
+  [ -z "$VALID_RT_ID" ] && VALID_RT_ID=16
+  [ -z "$VALID_OPD_ID" ] && VALID_OPD_ID=5
 else
   log_warn "Admin login failed — some tests will be skipped. Response: $(echo $ADMIN_RESP | head -c 100)"
 fi
@@ -225,9 +232,9 @@ if [ -n "$ADMIN_TOKEN" ]; then
   
   # CREATE
   log_subsection "CREATE"
-  ZONE_CODE="Z$(date +%s | tail -c 9)"
+  ZONE_CODE="Z$(date +%s | tail -c 8 | tr -d '\n')"
   CREATE_RESP=$(test_json POST "$API/zones" \
-    "{\"name\":\"$ZONE_NAME\",\"code\":\"$ZONE_CODE\",\"description\":\"Auto-test zone\",\"opd_id\":5,\"retribution_type_id\":22}" "$ADMIN_TOKEN")
+    "{\"name\":\"$ZONE_NAME\",\"code\":\"$ZONE_CODE\",\"description\":\"Auto-test zone\",\"opd_id\":$VALID_OPD_ID,\"retribution_type_id\":$VALID_RT_ID}" "$ADMIN_TOKEN")
   ZONE_ID=$(echo "$CREATE_RESP" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
   
   if [ -n "$ZONE_ID" ]; then
@@ -305,7 +312,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
   # CREATE
   log_subsection "CREATE"
   TP_CREATE=$(test_json POST "$API/taxpayers" \
-    "{\"nik\":\"$TP_NIK\",\"name\":\"Test Wajib Pajak\",\"address\":\"Jl. Test No. 1\",\"phone\":\"081234567890\",\"retribution_type_ids\":[22]}" "$ADMIN_TOKEN")
+    "{\"nik\":\"$TP_NIK\",\"name\":\"Test Wajib Pajak\",\"address\":\"Jl. Test No. 1\",\"phone\":\"081234567890\",\"retribution_type_ids\":[$VALID_RT_ID]}" "$ADMIN_TOKEN")
   TP_ID=$(echo "$TP_CREATE" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
   
   if [ -n "$TP_ID" ]; then

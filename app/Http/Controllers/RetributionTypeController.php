@@ -3,8 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\RetributionType;
+use App\Models\RetributionClassification;
+use App\Models\Taxpayer;
+use App\Models\TaxObject;
+use App\Models\UserRetributionAssignment;
+use App\Models\Payment;
+use App\Models\Verification;
+use App\Models\Bill;
+use App\Models\SurveillanceAccount;
 use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class RetributionTypeController extends Controller
 {
@@ -28,10 +38,15 @@ class RetributionTypeController extends Controller
             $query->where('opd_id', $user->opd_id);
         } elseif ($user && $user->role === 'petugas') {
             $query->where('opd_id', $user->opd_id);
-            // Filter by assigned types if any exist
+            // Filter by assigned types only if petugas has active assignments
             $assignedTypeIds = $user->assignments->pluck('retribution_type_id')->filter()->unique()->toArray();
             if (!empty($assignedTypeIds)) {
-                $query->whereIn('id', $assignedTypeIds);
+                // Check if any assigned types are actually active
+                $activeAssignedCount = RetributionType::whereIn('id', $assignedTypeIds)->where('is_active', true)->count();
+                if ($activeAssignedCount > 0) {
+                    $query->whereIn('id', $assignedTypeIds);
+                }
+                // If all assigned types are inactive, fall back to showing all OPD types
             }
         }
 
@@ -171,10 +186,44 @@ class RetributionTypeController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $retributionType->delete();
+        try {
+            DB::beginTransaction();
 
-        return response()->json([
-            'message' => 'Jenis retribusi berhasil dihapus'
-        ]);
+            // 1. Delete assignments for this retribution type
+            UserRetributionAssignment::where('retribution_type_id', $retributionType->id)->delete();
+
+            // 2. Detach taxpayers
+            $retributionType->taxpayers()->detach();
+
+            // 3. Delete Tax Objects (which will cascade to Bills, Verifications, and Payments)
+            $taxObjects = TaxObject::where('retribution_type_id', $retributionType->id)->get();
+            foreach ($taxObjects as $taxObject) {
+                // Delete related verification explicitly built for the object's payments
+                $paymentIds = Payment::where('tax_object_id', $taxObject->id)->pluck('id');
+                Verification::whereIn('payment_id', $paymentIds)->delete();
+
+                Payment::where('tax_object_id', $taxObject->id)->delete();
+                Bill::where('tax_object_id', $taxObject->id)->delete();
+                SurveillanceAccount::where('tax_object_id', $taxObject->id)->delete();
+                $taxObject->delete();
+            }
+
+            // 4. Delete classifications
+            $retributionType->classifications()->delete();
+
+            // 5. Finally, delete the Retribution Type
+            $retributionType->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Jenis retribusi dan seluruh data historisnya berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat menghapus jenis retribusi: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
