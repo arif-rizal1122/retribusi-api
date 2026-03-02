@@ -13,7 +13,9 @@ AI Agent **TIDAK BOLEH** melakukan riset buta. Gunakan tabel ini untuk menentuka
 | **Terjadi Error 500/CORS** | `docs/MITIGATION_GUIDE.md` | Daftar bug historis & fix yang sudah ada. |
 | **Akses VPS / Maintenance** | `docs/INFRASTRUCTURE_NOTES.md`| Detail IP, Paths, & Password hints. |
 | **Testing / Verifikasi** | `docs/TESTING_GUIDE.md` | Daftar akun demo & cara interpretasi hasil. |
+| **Baseline Stabilitas** | `docs/STABLE_BASELINE.md` | ID Commit GitHub yang sudah diverifikasi aman. |
 | **Update Security** | `docs/testing-reports/VULNERABILITY_ANALYSIS.md` | Memahami audit keamanan terakhir & audit IDOR. |
+
 
 ---
 
