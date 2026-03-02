@@ -36,7 +36,7 @@ RESULTS+="**Methodology**: OWASP Top 10 + Custom Vectors\n\n"
 # Get a valid token for authenticated tests
 TOKEN=$(curl -s "$API_URL/api/citizen/login" -X POST \
   -H "Content-Type: application/json" \
-  -d '{"nik":"1234567890123456","password":"password123"}' | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+  -d '{"nik":"1234567890123456","password":"password"}' | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 
 # ============================================================================
 # 1. SENSITIVE FILE EXPOSURE (A01:2021 - Broken Access Control)

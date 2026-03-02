@@ -18,6 +18,12 @@ class BillingService
     public function getPendingPeriods(TaxObject $taxObject): Collection
     {
         $type = $taxObject->retributionType;
+
+        // Guard: skip if retributionType relation is null (orphaned tax object)
+        if (!$type) {
+            return collect();
+        }
+
         $cycle = $type->billing_cycle ?? 'monthly';
         
         $startDate = $taxObject->created_at->startOf($this->getCarbonUnit($cycle));
@@ -138,8 +144,13 @@ class BillingService
 
         $type = $taxObject->retributionType;
 
+        // Guard: return 0 if retributionType is null
+        if (!$type) {
+            return 0;
+        }
+
         // 0. Handle PBB-P2 Special Calculation
-        if (str_contains(strtolower($type->name), 'pbb') || str_contains(strtolower($type->category), 'pajak bumi')) {
+        if (str_contains(strtolower($type->name), 'pbb') || str_contains(strtolower($type->category ?? ''), 'pajak bumi')) {
             $pbbService = app(\App\Services\PbbCalculationService::class);
             $metadata = $taxObject->metadata ?? [];
             

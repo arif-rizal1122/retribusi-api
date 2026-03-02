@@ -92,6 +92,7 @@ Sebelum fitur dianggap "Selesai", wajib lolos test ini:
 3.  **OPD Admin Test**: Coba simpan data (pastikan `opd_id` tersaring benar).
 4.  **Deployment Trace**: Setelah deploy ke VPS, jalankan `curl` test ke API Produksi untuk memastikan kode benar-benar sudah ter-update di server.
 5.  **Audit `destroy()`**: Pastikan setiap method `destroy` di Controller menerima parameter `Request $request`.
+6.  **PWA Accessibility**: Pastikan rute `/unduh` tersedia di Mobile & Petugas dengan tombol CTA yang responsif.
 
 ### Audit Keamanan & Hardening
 Semua controller berikut telah di-harden dengan `try-catch (\Throwable)` dan diagnostik detail:

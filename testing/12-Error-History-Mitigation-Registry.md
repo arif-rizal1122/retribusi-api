@@ -9,6 +9,9 @@ Dokumen ini mencatat daftar kesalahan (error) kritis yang pernah terjadi selama 
 | Error | Gejala | Akar Masalah | Mitigasi / Solusi |
 |:---|:---|:---|:---|
 | **CORS Blocked** | Status 500 / Blocked di browser | Domain `sipanda.online` belum diizinkan oleh `api.sipanda.online` | Update `cors.php` untuk mengizinkan wildcard `*` atau domain spesifik prod. |
+| **New Subdomains CORS** | Akses dari `mpad`, `adminmpad`, `petugasmpad` diblokir | Domain baru tidak masuk `allowed_origins` di API CORS. | Menambahkan `https://mpad.baubaukota.go.id`, `https://adminmpad.baubaukota.go.id`, & `https://petugasmpad.baubaukota.go.id` ke `cors.php`. |
+| **SSL/HTTPS Warning** | "Your connection is not private" | Domain baru menggunakan IP langsung atau sertifikat yang tidak valid / tidak sesuai. | Men-generate dan mengaktifkan sertifikat SSL Let's Encrypt via `certbot --nginx` untuk ketiga domain M-PAD. |
+| **Nginx Routing Error** | Salah memuat aplikasi Frontend | Nginx server blocks belum dikonfigurasi untuk sub-domain yang baru. | Membuat file `mpad-frontend` di `/etc/nginx/sites-available` yang memetakan masing-masing domain ke `/dist` Mobile, Admin, dan Petugas. |
 | **Bapenda API Fail** | "Login Failed" di PBB | Credential API PBB di `.env` VPS salah/kadaluarsa. | Update `.env` VPS dengan kredensial resmi. Gunakan `php artisan config:cache`. |
 | **Migration Mismatch** | `Column not found` di Prod | Kolom baru di lokal belum ada di VPS. | Jalankan `php artisan migrate --force` di VPS setiap kali `git pull`. |
 | **Local Login 401**| Gagal login di localhost | Akun demo di frontend tidak ada di database seeder. | Gunakan `TestingScenarioSeeder` yang lengkap atau buat user manual via Tinker. |

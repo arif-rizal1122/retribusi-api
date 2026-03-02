@@ -4,9 +4,10 @@ Skenario pengujian ini dirancang untuk memastikan bahwa integrasi fitur Pendafta
 
 ## Prasyarat Lingkungan Pendukung (Prerequisites)
 1. **Server API aktif** (Lokal `localhost:8000` atau VPS Production `api.sipanda.online`).
-2. **Akun Super Admin** BAPENDA.
-3. **Akun Petugas** BAPENDA (contoh: `petugas@bapenda.go.id`).
-4. Komando script E2E khusus: `php artisan test:production-e2e`.
+2. **Setup Subdomain Frontend** (Mobile: `mpad.baubaukota.go.id`, Admin: `adminmpad.baubaukota.go.id`, Petugas: `petugasmpad.baubaukota.go.id`) dengan HTTPS dan CORS yang dizinkan.
+3. **Akun Super Admin** BAPENDA (admin yang sudah didaftarkan: `admin@bapenda.go.id` dsb).
+4. **Akun Petugas** BAPENDA (petugas yang sudah didaftarkan: `petugas@bapenda.go.id`).
+5. Komando script E2E khusus: `php artisan test:production-e2e`.
 
 ---
 
@@ -42,6 +43,13 @@ Proses pengujian utama dilakukan melalui *command-line interface* (CLI) artisan,
 ### 7. Pengecekan Verifikasi Admin (Admin Verification Checklist)
 - **Aksi:** Admin mengakses menu daftar `GET /api/verifications`.
 - **Ekspektasi:** Tidak ada status API yang *crash* (500). Verifikasi pembayaran Petugas akan disetujui secara tidak langsung, daftar ini dipastikan tidak melontarkan error.
+
+---
+
+### 8. Uji Aksesibilitas & Distribusi (Public Aliases & PWA)
+- **Aksi:** Memasuki rute `/unduh` pada aplikasi *Mobile* dan *Petugas*.
+- **Ekspektasi:** Laman merespons dengan HTTP 200. Tombol "Pasang Aplikasi Sekarang" atau "Lihat Panduan Pasang" muncul dengan bayangan premium (`shadow-blue-900/40`) dan label dinamis sesuai state `isInstallable`.
+- **Validasi No-Screenshot:** Pastikan rute tidak melempar `404 Not Found` dan elemen `id="install-guide"` terdeteksi di DOM.
 
 ---
 

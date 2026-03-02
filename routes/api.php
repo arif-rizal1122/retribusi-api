@@ -40,6 +40,22 @@ Route::get('/citizen/bills', [BillController::class, 'citizenBills']); // Public
 Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyBill']);
 Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
 
+// Public Registration Endpoints
+Route::prefix('public')->group(function () {
+    Route::get('/retribution-types', [\App\Http\Controllers\PublicRegistrationController::class, 'getTypes']);
+    Route::get('/retribution-classifications', [\App\Http\Controllers\PublicRegistrationController::class, 'getClassifications']);
+    Route::get('/opds', [\App\Http\Controllers\PublicRegistrationController::class, 'getOpds']);
+    Route::get('/taxpayers/check-nik/{nik}', [\App\Http\Controllers\PublicRegistrationController::class, 'checkNik']);
+    Route::post('/register-taxpayer', [\App\Http\Controllers\PublicRegistrationController::class, 'register']);
+    
+    // PDF Generation
+    Route::get('/pdf/npwpd/{taxpayer_id}', [PdfController::class, 'generateNpwpd']);
+    Route::get('/pdf/nopd/{tax_object_id}', [PdfController::class, 'generateNopd']);
+    Route::get('/pdf/skpd/{billing_id}', [PdfController::class, 'generateSkpd']);
+    Route::get('/pdf/skrd/{billing_id}', [PdfController::class, 'generateSkrd']);
+    Route::get('/pdf/surat-teguran/{id}', [PdfController::class, 'generateSuratTeguran']);
+});
+
 // Tax Simulation (public, no auth needed)
 Route::post('/simulate-tax', function (Request $request) {
     $request->validate([
@@ -200,13 +216,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('retribution-rates', RetributionRateController::class);
         Route::apiResource('opds', OpdController::class)->except(['create', 'edit', 'index']);
         Route::apiResource('users', UserController::class);
+        Route::apiResource('petugas-tasks', \App\Http\Controllers\PetugasTaskController::class);
+        Route::post('/sptpd', [\App\Http\Controllers\SptpdController::class, 'store']);
 
         Route::prefix('dashboard')->group(function () {
             Route::get('/stats', [DashboardController::class, 'getStats']);
             Route::get('/revenue-trend', [DashboardController::class, 'getRevenueTrend']);
             Route::get('/map-potentials', [DashboardController::class, 'getMapPotentials']);
+            // Payment Gateway Integration
+            Route::post('/payment/generate', [\App\Http\Controllers\PaymentGatewayController::class, 'generatePayment']);
         });
+    });
+});
 
+// Non-authenticated Webhook
+Route::post('/webhook/payment', [\App\Http\Controllers\PaymentGatewayController::class, 'webhook']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware('admin')->group(function () {
         Route::prefix('pengawas')->group(function () {
             Route::get('/audit-logs', [\App\Http\Controllers\Pengawas\AuditLogController::class, 'index']);
             Route::get('/anomalies', [\App\Http\Controllers\Pengawas\SurveillanceController::class, 'getAnomalies']);

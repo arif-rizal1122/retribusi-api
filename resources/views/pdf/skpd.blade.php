@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Surat Ketetapan Retribusi Daerah (SKRD)</title>
+    <title>Surat Ketetapan Pajak Daerah (SKPD)</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 12px; margin: 0; padding: 20px; }
         .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
@@ -32,22 +32,22 @@
         </div>
     </div>
 
-    <div class="title">SURAT KETETAPAN RETRIBUSI DAERAH (SKRD)</div>
+    <div class="title">SURAT KETETAPAN PAJAK DAERAH (SKPD)</div>
 
     <table class="table-info">
         <tr>
-            <td width="20%">No. Urut</td>
+            <td width="20%">No. Kohir</td>
             <td width="2%">:</td>
             <td>{{ str_pad($billing->id, 8, '0', STR_PAD_LEFT) }}</td>
-            <td width="20%">Masa Retribusi</td>
+            <td width="20%">Masa Pajak</td>
             <td width="2%">:</td>
             <td>{{ \Carbon\Carbon::parse($billing->due_date)->format('M Y') }}</td>
         </tr>
         <tr>
-            <td>Nama WR</td>
+            <td>Nama WP</td>
             <td>:</td>
             <td><strong>{{ $billing->taxObject->taxpayer->name }}</strong></td>
-            <td>NPWRD</td>
+            <td>NPWPD</td>
             <td>:</td>
             <td>{{ $billing->taxObject->taxpayer->npwpd ?? '-' }}</td>
         </tr>
@@ -57,7 +57,7 @@
             <td colspan="4">{{ $billing->taxObject->taxpayer->address }}</td>
         </tr>
         <tr>
-            <td>Objek Retribusi</td>
+            <td>Objek Pajak</td>
             <td>:</td>
             <td colspan="4">{{ $billing->taxObject->name }} ({{ $billing->taxObject->address }})</td>
         </tr>
@@ -67,47 +67,50 @@
         <thead>
             <tr>
                 <th width="5%">No</th>
-                <th width="45%">Jenis Retribusi</th>
-                <th width="20%">Tarif Retribusi</th>
+                <th width="45%">Uraian Pajak</th>
+                <th width="20%">Tarif Pokok</th>
                 <th width="30%">Jumlah Ketetapan</th>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <td style="text-align: center;">1</td>
-                <td>{{ $billing->taxObject->retributionType->name ?? 'Retribusi Daerah' }}<br>
+                <td>{{ $billing->taxObject->retributionType->name ?? 'Pajak Daerah' }}<br>
                     <small>Klasifikasi: {{ $billing->taxObject->retributionClassification->name ?? '-' }}</small>
                 </td>
                 <td>Rp {{ number_format($billing->amount, 0, ',', '.') }}</td>
                 <td>Rp {{ number_format($billing->amount, 0, ',', '.') }}</td>
             </tr>
             <tr class="total-row">
-                <td colspan="3" style="text-align: right;">Total Retribusi :</td>
+                <td colspan="3" style="text-align: right;">Total Pajak Terutang :</td>
                 <td>Rp {{ number_format($billing->amount, 0, ',', '.') }}</td>
             </tr>
         </tbody>
     </table>
 
+    <p style="text-transform: capitalize;"><strong>Perhatian:</strong> Simpan tanda bukti pembayaran ini.</p>
+
     <div style="margin-top: 20px;">
         <p><strong>Perhatian:</strong></p>
         <ol style="margin-top: 5px; padding-left: 20px;">
-            <li>Harap melakukan pelunasan sebelum tanggal: <strong>{{ \Carbon\Carbon::parse($billing->due_date)->format('d F Y') }}</strong></li>
-            <li>Penyetoran dapat dilakukan melalui Kas Daerah / Teller Bank Sultra / QRIS.</li>
+            <li>Jatuh tempo pembayaran tanggal: <strong>{{ \Carbon\Carbon::parse($billing->due_date)->format('d F Y') }}</strong></li>
+            <li>Keterlambatan pembayaran akan dikenakan sanksi denda administrasi sesuai ketentuan peraturan daerah.</li>
         </ol>
     </div>
 
     <div class="signature-section">
         <p>Baubau, {{ date('d F Y') }}</p>
-        <p><strong>Kepala Bidang Pendapatan Bapenda</strong></p>
+        <p><strong>Kepala Bapenda Kota Baubau</strong></p>
         <div class="signature-space">
+            <img src="{{ public_path('images/ttd_bapenda_dummy.png') }}" style="height: 60px; display: none;" alt="TTD">
             <!-- Signature image would go here -->
         </div>
-        <p style="text-decoration: underline; font-weight: bold;">Nama Pejabat Retribusi, S.E, M.Si</p>
-        <p>NIP. 19800101 200503 1 002</p>
+        <p style="text-decoration: underline; font-weight: bold;">Muh. Nama Pejabat, S.Sos., M.Si</p>
+        <p>NIP. 19700101 199503 1 001</p>
     </div>
 
     <div class="footer">
-        Dokumen INI SAH / VALID dicetak melalui Sistem PDRD Bapenda Baubau pada {{ date('d-m-Y H:i:s') }}
+        Dicetak melalui Sistem Informasi Manajemen PDRD Bapenda Baubau pada {{ date('d-m-Y H:i:s') }}
     </div>
 
 </body>

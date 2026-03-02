@@ -25,6 +25,8 @@ class SurveillanceController extends Controller
         
         $anomalies = TaxObject::with(['taxpayer', 'retributionType', 'classification'])
             ->where('status', 'active')
+            ->whereHas('retributionType')
+            ->whereHas('taxpayer')
             ->get()
             ->map(function ($obj) use ($threshold) {
                 // Simplified anomaly logic for demo
@@ -56,7 +58,7 @@ class SurveillanceController extends Controller
                     return [
                         'tax_object_id' => $obj->id,
                         'name' => $obj->name,
-                        'taxpayer' => $obj->taxpayer->name,
+                        'taxpayer' => $obj->taxpayer->name ?? 'N/A',
                         'expected_revenue' => $totalExpected,
                         'reason' => $reason,
                         'is_anomaly' => true

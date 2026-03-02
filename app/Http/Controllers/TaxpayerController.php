@@ -67,7 +67,7 @@ class TaxpayerController extends Controller
     /**
      * Store new taxpayer with retribution types
      */
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\IdentityValidationService $validationService)
     {
         \Log::info('Taxpayer store request', $request->all());
         $user = $request->user();
@@ -101,6 +101,20 @@ class TaxpayerController extends Controller
             $opdId = $request->opd_id;
         } else {
             $opdId = $user->opd_id;
+        }
+
+        if ($request->nik) {
+            $nikCheck = $validationService->validateNik($request->nik);
+            if (!$nikCheck['valid']) {
+                return response()->json(['message' => $nikCheck['message']], 422);
+            }
+        }
+
+        if ($request->npwpd) {
+            $npwpCheck = $validationService->validateNpwp($request->npwpd);
+            if (!$npwpCheck['valid']) {
+                return response()->json(['message' => $npwpCheck['message']], 422);
+            }
         }
 
         // Validate that retribution types belong to the same OPD
@@ -227,7 +241,7 @@ class TaxpayerController extends Controller
     /**
      * Update taxpayer
      */
-    public function update(Request $request, Taxpayer $taxpayer)
+    public function update(Request $request, Taxpayer $taxpayer, \App\Services\IdentityValidationService $validationService)
     {
         \Log::info('Taxpayer update request for ID: ' . $taxpayer->id, $request->all());
         $user = $request->user();
@@ -275,6 +289,20 @@ class TaxpayerController extends Controller
             'nik', 'name', 'address', 'district', 'sub_district', 'phone', 'npwpd', 
             'object_name', 'object_address', 'latitude', 'longitude', 'is_active'
         ]);
+
+        if (!empty($data['nik'])) {
+            $nikCheck = $validationService->validateNik($data['nik']);
+            if (!$nikCheck['valid']) {
+                return response()->json(['message' => $nikCheck['message'], 'errors' => ['nik' => [$nikCheck['message']]]], 422);
+            }
+        }
+
+        if (!empty($data['npwpd'])) {
+            $npwpCheck = $validationService->validateNpwp($data['npwpd']);
+            if (!$npwpCheck['valid']) {
+                return response()->json(['message' => $npwpCheck['message'], 'errors' => ['npwpd' => [$npwpCheck['message']]]], 422);
+            }
+        }
 
         // Handle Metadata & Files
         $metadata = $request->input('metadata', $taxpayer->metadata ?: []);
