@@ -28,6 +28,9 @@ return [
         'https://petugas.sipanda.online',
         'https://sipanda.online',
         'https://adminwiyasa.site',
+        'https://mpad.baubaukota.go.id',
+        'https://petugasmpad.baubaukota.go.id',
+        'https://adminmpad.baubaukota.go.id',
         env('FRONTEND_URL', 'http://localhost:3000'),
     ],
 

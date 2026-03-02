@@ -7,8 +7,8 @@
 # ============================================================================
 
 API_URL="https://api.sipanda.online"
-FRONTEND_ORIGIN="https://sipanda.online"
-ADMIN_ORIGIN="https://admin.sipanda.online"
+FRONTEND_ORIGIN="https://mpad.baubaukota.go.id"
+ADMIN_ORIGIN="https://adminmpad.baubaukota.go.id"
 RESULTS_FILE="results/12_Production_Readiness_$(date +%Y%m%d_%H%M%S).md"
 
 PASS=0
@@ -126,7 +126,7 @@ LOGIN_RESPONSE=$(curl -s "$API_URL/api/citizen/login" \
   -H "Origin: $FRONTEND_ORIGIN" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
-  -d '{"nik":"1234567890123456","password":"password123"}')
+  -d '{"nik":"1234567890123456","password":"password"}')
 
 if echo "$LOGIN_RESPONSE" | grep -q '"token"'; then
   TOKEN=$(echo "$LOGIN_RESPONSE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
@@ -161,7 +161,7 @@ LOGIN_HEADERS=$(curl -sv "$API_URL/api/citizen/login" \
   -H "Origin: $FRONTEND_ORIGIN" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
-  -d '{"nik":"1234567890123456","password":"password123"}' 2>&1)
+  -d '{"nik":"1234567890123456","password":"password"}' 2>&1)
 
 LOGIN_ACAO_COUNT=$(echo "$LOGIN_HEADERS" | grep -c "< Access-Control-Allow-Origin:")
 if [ "$LOGIN_ACAO_COUNT" -eq 1 ]; then
@@ -229,7 +229,7 @@ fi
 # ============================================================================
 # 5. CROSS-ORIGIN TESTS (Admin Origin)
 # ============================================================================
-log_section "5. Cross-Origin (admin.sipanda.online)"
+log_section "5. Cross-Origin (adminmpad.baubaukota.go.id)"
 
 ADMIN_PREFLIGHT=$(curl -sI -X OPTIONS "$API_URL/api/me" \
   -H "Origin: $ADMIN_ORIGIN" \
@@ -237,15 +237,15 @@ ADMIN_PREFLIGHT=$(curl -sI -X OPTIONS "$API_URL/api/me" \
 
 ADMIN_CODE=$(echo "$ADMIN_PREFLIGHT" | grep "HTTP/" | awk '{print $2}')
 if [ "$ADMIN_CODE" = "204" ]; then
-  log_pass "OPTIONS from admin.sipanda.online → 204"
+  log_pass "OPTIONS from adminmpad.baubaukota.go.id → 204"
 else
-  log_fail "OPTIONS from admin.sipanda.online → $ADMIN_CODE"
+  log_fail "OPTIONS from adminmpad.baubaukota.go.id → $ADMIN_CODE"
 fi
 
 if echo "$ADMIN_PREFLIGHT" | grep -qi "Access-Control-Allow-Origin.*$ADMIN_ORIGIN"; then
-  log_pass "CORS allows admin.sipanda.online"
+  log_pass "CORS allows adminmpad.baubaukota.go.id"
 else
-  log_warn "CORS header for admin.sipanda.online may be missing"
+  log_warn "CORS header for adminmpad.baubaukota.go.id may be missing"
 fi
 
 # ============================================================================
@@ -278,11 +278,11 @@ fi
 # ============================================================================
 log_section "7. Frontend & PWA"
 
-PWA_CHECK=$(curl -s "https://sipanda.online" -o /dev/null -w "%{http_code}")
+PWA_CHECK=$(curl -s "https://mpad.baubaukota.go.id" -o /dev/null -w "%{http_code}")
 if [ "$PWA_CHECK" = "200" ]; then
-  log_pass "Frontend sipanda.online → 200 OK"
+  log_pass "Frontend mpad.baubaukota.go.id → 200 OK"
 else
-  log_fail "Frontend sipanda.online → $PWA_CHECK"
+  log_fail "Frontend mpad.baubaukota.go.id → $PWA_CHECK"
 fi
 
 # ============================================================================

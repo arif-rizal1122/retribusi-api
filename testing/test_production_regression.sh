@@ -114,7 +114,7 @@ check "404 Delete Nonexistent" "404" "$STATUS"
 # --- 5. FRONTEND ---
 echo ""
 echo "[5] Frontend Apps"
-for url in "https://admin.sipanda.online" "https://sipanda.online" "https://petugas.sipanda.online"; do
+for url in "https://adminmpad.baubaukota.go.id" "https://mpad.baubaukota.go.id" "https://petugasmpad.baubaukota.go.id"; do
   STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$url/")
   check "$url" "200" "$STATUS"
 done

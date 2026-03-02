@@ -13,9 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class TaxCalculationTest extends TestCase
 {
-    // Use RefreshDatabase to avoid dirtying the development database
-    // Note: DatabaseSeeder and TaxHierarchySyncSeeder must be run for this test to work if not using RefreshDatabase
-    // But for verification on current state, we'll avoid RefreshDatabase and run manually
+    use RefreshDatabase;
     
     protected $formulaParser;
 
@@ -27,13 +25,23 @@ class TaxCalculationTest extends TestCase
 
     public function test_pbjt_makanan_minuman_calculation()
     {
-        $type = RetributionType::where('name', 'PBJT')->first();
-        $cls = RetributionClassification::where('retribution_type_id', $type->id)
-            ->where('name', 'Makanan & Minuman')->first();
-        $rate = RetributionRate::where('retribution_classification_id', $cls->id)->first();
+        $opd = Opd::factory()->create();
+        $type = RetributionType::factory()->create([
+            'opd_id' => $opd->id,
+            'name' => 'PBJT'
+        ]);
+        $cls = RetributionClassification::factory()->create([
+            'opd_id' => $opd->id,
+            'retribution_type_id' => $type->id,
+            'name' => 'Makanan & Minuman'
+        ]);
+        $rate = RetributionRate::factory()->create([
+            'opd_id' => $opd->id,
+            'retribution_classification_id' => $cls->id,
+            'amount' => 10 // 10%
+        ]);
 
         $variables = ['omzet' => 1000000, 'tariff' => $rate->amount / 100];
-        // PBJT normally just uses amount if no formula
         $result = $variables['omzet'] * $variables['tariff'];
         
         $this->assertEquals(100000, $result);
@@ -41,20 +49,31 @@ class TaxCalculationTest extends TestCase
 
     public function test_reklame_formula_calculation()
     {
-        $cls = RetributionClassification::where('code', 'REKLAME')->first();
-        $formula = $cls->calculation_formula; // nsr * 0.25
+        $opd = Opd::factory()->create();
+        $type = RetributionType::factory()->create(['opd_id' => $opd->id]);
+        $cls = RetributionClassification::factory()->create([
+            'opd_id' => $opd->id,
+            'retribution_type_id' => $type->id,
+            'code' => 'REKLAME',
+            'calculation_formula' => 'nsr * 0.25'
+        ]);
         
         $variables = ['nsr' => 2000000];
-        $result = $this->formulaParser->calculate($formula, $variables);
+        $result = $this->formulaParser->calculate($cls->calculation_formula, $variables);
         
         $this->assertEquals(500000, $result);
     }
 
     public function test_pbg_complex_formula_calculation()
     {
-        $cls = RetributionClassification::where('code', 'PBG')->first();
-        $formula = $cls->calculation_formula; 
-        // luas_lantai * (indeks_lokalitas * shst) * indeks_terintegrasi * indeks_bg
+        $opd = Opd::factory()->create();
+        $type = RetributionType::factory()->create(['opd_id' => $opd->id]);
+        $cls = RetributionClassification::factory()->create([
+            'opd_id' => $opd->id,
+            'retribution_type_id' => $type->id,
+            'code' => 'PBG',
+            'calculation_formula' => 'luas_lantai * (indeks_lokalitas * shst) * indeks_terintegrasi * indeks_bg'
+        ]);
         
         $variables = [
             'luas_lantai' => 100,
@@ -64,8 +83,7 @@ class TaxCalculationTest extends TestCase
             'indeks_bg' => 1.0
         ];
         
-        $result = $this->formulaParser->calculate($formula, $variables);
-        // 100 * (0.005 * 5000000) * 1.2 * 1.0 = 100 * 25000 * 1.2 = 3000000
+        $result = $this->formulaParser->calculate($cls->calculation_formula, $variables);
         
         $this->assertEquals(3000000, $result);
     }

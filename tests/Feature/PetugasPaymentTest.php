@@ -108,12 +108,21 @@ class PetugasPaymentTest extends TestCase
             'opd_id' => $opd->id
         ]);
 
+        $taxObject = TaxObject::factory()->create([
+            'opd_id' => $opd->id,
+            'retribution_type_id' => $type->id,
+            'retribution_classification_id' => $classification->id,
+        ]);
+
         $bill = Bill::factory()->create([
+            'taxpayer_id' => $taxObject->taxpayer_id,
+            'tax_object_id' => $taxObject->id,
             'opd_id' => $opd->id,
             'retribution_type_id' => $type->id,
             'retribution_classification_id' => $classification->id,
             'amount' => 50000,
-            'status' => 'pending'
+            'status' => 'pending',
+            'period' => '2026-02-25'
         ]);
 
         $response = $this->actingAs($petugas)->postJson('/api/payments', [

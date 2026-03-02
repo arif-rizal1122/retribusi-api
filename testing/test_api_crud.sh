@@ -94,7 +94,7 @@ else
 fi
 
 # Citizen login
-CITIZEN_RESP=$(test_json POST "$API/citizen/login" '{"nik":"1234567890123456","password":"password123"}')
+CITIZEN_RESP=$(test_json POST "$API/citizen/login" '{"nik":"1234567890123456","password":"password"}')
 CITIZEN_TOKEN=$(echo "$CITIZEN_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 if [ -n "$CITIZEN_TOKEN" ]; then
   log_pass "Citizen login → token received"
@@ -116,7 +116,8 @@ test_endpoint GET "$API/pbb/classifications" "" "" "200" "/pbb/classifications" 
 test_endpoint GET "$API/citizen/bills?nik=$CITIZEN_NIK" "" "" "200" "/citizen/bills?nik=..." > /dev/null
 
 # Health check
-test_endpoint GET "https://api.sipanda.online/up" "" "" "200" "/up (health)" > /dev/null
+BASE_URL=$(echo "$API" | sed 's|/api||')
+test_endpoint GET "$BASE_URL/up" "" "" "200" "/up (health)" > /dev/null
 
 # ============================================================================
 # 2. AUTH-REQUIRED ENDPOINTS (Citizen)
