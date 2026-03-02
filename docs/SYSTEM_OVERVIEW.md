@@ -71,6 +71,8 @@ Menggunakan **Laravel Sanctum**. User (Masyarakat/Admin/Petugas) login menggunak
 | 25 Feb | **Optimalisasi CORS** | Pemisahan header CORS: Nginx menangani `OPTIONS`, Laravel menangani request utama. |
 | 26 Feb | **Unified Sync** | Sinkronisasi penuh 8 domain (Production & Dev) dari Local -> GitHub -> VPS. Semua environment kini menggunakan owner `www-data`. |
 | 26 Feb | **Audit Keamanan** | Menjalankan `test_penetration.sh`, mengamankan akses file `.env`, dan memverifikasi proteksi IDOR. |
+| 02 Mar | **Stable Baseline** | Penetapan ID Commit stabil untuk semua repo (`retribusi-api`: `7b7388c`). Lihat [STABLE_BASELINE.md](file:///Users/pondokit/Herd/retribusi-api/docs/STABLE_BASELINE.md). |
+
 
 ---
 *Dokumen ini adalah sumber kebenaran (Source of Truth) untuk konteks proyek M-PAD. Terakhir diperbarui: 26 Februari 2026.*
