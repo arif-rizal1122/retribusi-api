@@ -78,6 +78,7 @@ class User extends Authenticatable
     const ROLE_KABID_PENGAWAS = 'kabid_pengawas';
     const ROLE_KASUBID_PENGAWAS = 'kasubid_pengawas';
     const ROLE_PETUGAS = 'petugas';
+    const ROLE_WALIKOTA = 'walikota';
 
     /**
      * Check if user is super admin
@@ -121,6 +122,14 @@ class User extends Authenticatable
     public function isKasubid(): bool
     {
         return $this->role === self::ROLE_KASUBID_PENGAWAS;
+    }
+
+    /**
+     * Check if user is Walikota
+     */
+    public function isWalikota(): bool
+    {
+        return $this->role === self::ROLE_WALIKOTA;
     }
 
     /**

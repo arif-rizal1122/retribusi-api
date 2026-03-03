@@ -212,15 +212,23 @@ class TaxpayerController extends Controller
 
         $relatedAssets = [];
         if ($taxpayer->nik) {
-            $relatedAssets = Taxpayer::where('nik', $taxpayer->nik)
-                ->where('id', '!=', $taxpayer->id)
-                ->with(['opd', 'retributionTypes', 'retributionClassifications'])
-                ->get();
+            $relatedAssets = \App\Models\TaxObject::whereHas('taxpayer', function($q) use ($taxpayer) {
+                $q->where('nik', $taxpayer->nik);
+            })
+            ->where('taxpayer_id', '!=', $taxpayer->id)
+            ->with(['retributionType', 'classification'])
+            ->get();
         }
+
+        $paymentHistory = \App\Models\Payment::where('taxpayer_id', $taxpayer->id)
+            ->with(['bill', 'taxObject'])
+            ->orderBy('paid_at', 'desc')
+            ->get();
 
         return response()->json([
             'data' => $taxpayer->load(['opd', 'retributionTypes', 'retributionClassifications', 'creator']),
-            'related_assets' => $relatedAssets
+            'related_assets' => $relatedAssets,
+            'payment_history' => $paymentHistory
         ]);
     }
 

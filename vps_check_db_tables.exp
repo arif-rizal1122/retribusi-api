@@ -1,0 +1,13 @@
+#!/usr/bin/expect -f
+set timeout 10
+spawn ssh sipanda@157.10.252.74 "sudo mysql -u root -e 'SHOW TABLES IN retribusi_dev;'"
+expect "password:"
+send "Sipanda123#\r"
+
+expect {
+    "password for sipanda:" {
+        send "Sipanda123#\r"
+        exp_continue
+    }
+    eof
+}
