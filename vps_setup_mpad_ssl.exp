@@ -1,0 +1,62 @@
+#!/usr/bin/expect -f
+set timeout 10
+spawn ssh sipanda@157.10.252.74 -t "sudo bash -c 'cat >> /etc/nginx/sites-available/mpad-dev <<EOF
+server {
+    listen 443 ssl;
+    server_name mpad.online admin.mpad.online;
+    root /home/sipanda/retribusi-admin-dev/dist;
+    index index.html;
+
+    ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+    ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+
+    location / {
+        try_files \\\$uri \\\$uri/ /index.html;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name petugas.mpad.online;
+    root /home/sipanda/retribusi-petugas-dev/dist;
+    index index.html;
+
+    ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+    ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+
+    location / {
+        try_files \\\$uri \\\$uri/ /index.html;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name api.mpad.online;
+    root /home/sipanda/retribusi-api-dev/public;
+    index index.php index.html;
+
+    ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+    ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+
+    location / {
+        try_files \\\$uri \\\$uri/ /index.php?\\\$query_string;
+    }
+
+    location ~ \\\.php\\\$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+    }
+}
+EOF
+systemctl reload nginx
+'"
+expect "password:"
+send "Sipanda123#\r"
+
+expect {
+    "password for sipanda:" {
+        send "Sipanda123#\r"
+        exp_continue
+    }
+    eof
+}

@@ -1,0 +1,18 @@
+#!/usr/bin/expect -f
+set timeout -1
+spawn scp retribusi_local.sql sipanda@157.10.252.74:/home/sipanda/
+expect "password:"
+send "Sipanda123#\r"
+expect eof
+
+spawn ssh sipanda@157.10.252.74 "sudo mysql -u root retribusi_dev < /home/sipanda/retribusi_local.sql"
+expect "password:"
+send "Sipanda123#\r"
+
+expect {
+    "password for sipanda:" {
+        send "Sipanda123#\r"
+        exp_continue
+    }
+    eof
+}

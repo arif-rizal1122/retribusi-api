@@ -118,6 +118,30 @@ class DashboardController extends Controller
                 ->whereBetween('payments.paid_at', [$start->startOfDay(), $end->endOfDay()])
                 ->select('retribution_types.name', DB::raw('SUM(payments.amount) as total'))
                 ->groupBy('retribution_types.name')
+                ->get(),
+            'revenue_by_classification' => Payment::join('bills', 'payments.bill_id', '=', 'bills.id')
+                ->join('retribution_classifications', 'bills.retribution_classification_id', '=', 'retribution_classifications.id')
+                ->when($opdId, fn($q) => $q->where('bills.opd_id', $opdId))
+                ->when($user->role === 'petugas', function($q) use ($user) {
+                    $assignments = $user->assignments;
+                    if ($assignments->isNotEmpty()) {
+                        $q->where(function($query) use ($assignments) {
+                            foreach ($assignments as $assignment) {
+                                $query->orWhere(function($sq) use ($assignment) {
+                                    $sq->where('bills.retribution_type_id', $assignment->retribution_type_id);
+                                    if ($assignment->retribution_classification_id) {
+                                        $sq->where('bills.retribution_classification_id', $assignment->retribution_classification_id);
+                                    }
+                                });
+                            }
+                        });
+                    } else {
+                        $q->whereRaw('1 = 0');
+                    }
+                })
+                ->whereBetween('payments.paid_at', [$start->startOfDay(), $end->endOfDay()])
+                ->select('retribution_classifications.name', DB::raw('SUM(payments.amount) as total'))
+                ->groupBy('retribution_classifications.name')
                 ->get()
         ]);
     }
