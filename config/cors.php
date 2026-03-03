@@ -28,6 +28,10 @@ return [
         'https://petugas.sipanda.online',
         'https://sipanda.online',
         'https://adminwiyasa.site',
+        'https://admin.mpad.online',
+        'https://petugas.mpad.online',
+        'https://launch.mpad.online',
+        'https://mpad.online',
         env('FRONTEND_URL', 'http://localhost:3000'),
     ],
 
