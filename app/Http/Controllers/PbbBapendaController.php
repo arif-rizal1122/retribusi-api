@@ -262,7 +262,13 @@ class PbbBapendaController extends Controller
             }
 
             // Proses pembayaran ke Bapenda
-            $payResult = $this->bapendaService->payment($request->nop, $request->tahun);
+            $totalTagihan = (float) ($inquiry['data']['total_harus_dibayar'] ?? 0);
+            $payResult = $this->bapendaService->payment(
+                $request->nop, 
+                $request->tahun, 
+                $totalTagihan,
+                'Pembayaran PBB via Mobile'
+            );
 
             $paymentStatus = ($payResult['status'] ?? 0) === 200 ? 'success' : 'failed';
 
