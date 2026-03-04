@@ -15,10 +15,10 @@ class PbbBapendaService
 
     public function __construct()
     {
-        $this->baseUrl  = config('services.pbb_bapenda.base_url', 'http://103.182.72.241:8000/pospbb/Api_pos');
+        $this->baseUrl  = config('services.pbb_bapenda.base_url', 'http://103.182.72.241:8000/pospbb/Api_service');
         $this->username = config('services.pbb_bapenda.username', '');
         $this->password = config('services.pbb_bapenda.password', '');
-        $this->outlet   = config('services.pbb_bapenda.outlet', 'ptpos');
+        $this->outlet   = config('services.pbb_bapenda.outlet', 'm-PAD');
     }
 
     /**

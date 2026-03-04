@@ -35,20 +35,23 @@ class PbbBapendaController extends Controller
             $result = $this->bapendaService->inquiry($request->nop, $request->tahun);
 
             if (($result['status'] ?? 0) === 200) {
+                // Skema 2026 mengembalikan data di dalam key 'data'
+                $data = $result['data'] ?? [];
+                
                 return response()->json([
                     'status'  => 'success',
                     'message' => 'Data tagihan ditemukan',
                     'data'    => [
                         'nop'                 => $request->nop,
-                        'tahun'               => $result['tahun'] ?? $request->tahun,
-                        'nama_wp'             => $result['nama_wp'] ?? '-',
-                        'alamat_wp'           => $result['alamat_wp'] ?? '-',
-                        'kelurahan'           => $result['kelurahan'] ?? '-',
-                        'kota'                => $result['kota'] ?? '-',
-                        'pbb_pokok'           => (float) ($result['pbb_pokok'] ?? 0),
-                        'denda'               => (float) ($result['denda'] ?? 0),
-                        'total_harus_dibayar' => (float) ($result['total_harus_dibayar'] ?? 0),
-                        'status_bayar'        => $result['status_bayar'] ?? '-',
+                        'tahun'               => $data['tahun'] ?? $result['tahun'] ?? $request->tahun,
+                        'nama_wp'             => $data['nama_wp'] ?? '-',
+                        'alamat_wp'           => $data['alamat_wp'] ?? '-',
+                        'kelurahan'           => $data['kelurahan'] ?? '-',
+                        'kota'                => $data['kota'] ?? '-',
+                        'pbb_pokok'           => (float) ($data['pbb_pokok'] ?? 0),
+                        'denda'               => (float) ($data['denda'] ?? 0),
+                        'total_harus_dibayar' => (float) ($data['total_harus_dibayar'] ?? 0),
+                        'status_bayar'        => $data['status_bayar'] ?? '-',
                     ],
                 ]);
             }
