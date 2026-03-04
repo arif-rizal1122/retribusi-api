@@ -13,7 +13,7 @@ This document defines the 2026 implementation of the PBB POS (Pajak Bumi dan Ban
 
 - **Base URL**: `http://103.182.72.241:8000/pospbb/Api_service`
 - **Method**: `POST` (All endpoints)
-- **Header**: `Content-Type: application/json` or `application/x-www-form-urlencoded`
+- **Header**: `Content-Type: multipart/form-data` (Recommended) or `application/x-www-form-urlencoded`
 - **Authentication**: Bearer Token (obtained via Login)
 
 ## 3. Endpoints
@@ -21,8 +21,9 @@ This document defines the 2026 implementation of the PBB POS (Pajak Bumi dan Ban
 ### Login
 - **URL**: `{{BASE_URL}}/login`
 - **Input**:
-    - `USERNAME`: string
-    - `PASSWORD`: string
+    - `username`: string
+    - `password`: string
+    - `outlet`: string (e.g., "m-PAD") [MANDATORY]
 - **Success Response (200)**:
     ```json
     {
@@ -35,8 +36,8 @@ This document defines the 2026 implementation of the PBB POS (Pajak Bumi dan Ban
 - **URL**: `{{BASE_URL}}/inquiry`
 - **Header**: `Authorization: Bearer {{TOKEN}}`
 - **Input**:
-    - `NOP`: string (18 digits)
-    - `TAHUN`: string (4 digits)
+    - `nop`: string (18 digits)
+    - `tahun`: string (4 digits)
 - **Success Response (200)**:
     ```json
     {
@@ -59,8 +60,10 @@ This document defines the 2026 implementation of the PBB POS (Pajak Bumi dan Ban
 - **URL**: `{{BASE_URL}}/payment`
 - **Header**: `Authorization: Bearer {{TOKEN}}`
 - **Input**:
-    - `NOP`: string
-    - `TAHUN`: string
+    - `nop`: string
+    - `tahun`: string
+    - `tagihan`: number (Full amount from Inquiry) [MANDATORY]
+    - `keterangan`: string (Optional description)
 - **Success Response (200)**:
     ```json
     {
@@ -81,9 +84,9 @@ This document defines the 2026 implementation of the PBB POS (Pajak Bumi dan Ban
 - **URL**: `{{BASE_URL}}/reversal`
 - **Header**: `Authorization: Bearer {{TOKEN}}`
 - **Input**:
-    - `NOP`: string
-    - `TAHUN`: string
-    - `KETERANGAN`: string
+    - `nop`: string
+    - `tahun`: string
+    - `keterangan`: string
 - **Success Response (200)**:
     ```json
     {
