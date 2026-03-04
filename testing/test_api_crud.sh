@@ -77,16 +77,16 @@ echo -e "${DIM}Target: $API${NC}\n"
 log_section "0. Authentication Setup"
 
 # Admin login
-ADMIN_RESP=$(test_json POST "$API/login" '{"email":"bapenda@baubaukota.go.id","password":"password123"}')
+ADMIN_RESP=$(test_json POST "$API/login" '{"email":"superadmin@sipanda.online","password":"Sipanda123#"}')
 ADMIN_TOKEN=$(echo "$ADMIN_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 if [ -n "$ADMIN_TOKEN" ]; then
   ADMIN_ROLE=$(echo "$ADMIN_RESP" | grep -o '"role":"[^"]*"' | cut -d'"' -f4)
   log_pass "Admin login → token received (role: $ADMIN_ROLE)"
 
-  # Dynamically fetch a valid retribution_type_id and opd_id for CRUD tests
+  # Dynamically fetch a valid retribution_type_id and matching opd_id for CRUD tests
   RT_LIST=$(test_json GET "$API/retribution-types" "" "$ADMIN_TOKEN")
   VALID_RT_ID=$(echo "$RT_LIST" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
-  VALID_OPD_ID=$(echo "$ADMIN_RESP" | grep -o '"opd_id":[0-9]*' | head -1 | cut -d':' -f2)
+  VALID_OPD_ID=$(echo "$RT_LIST" | grep -o '"opd_id":[0-9]*' | head -1 | cut -d':' -f2)
   [ -z "$VALID_RT_ID" ] && VALID_RT_ID=16
   [ -z "$VALID_OPD_ID" ] && VALID_OPD_ID=5
 else
@@ -94,7 +94,7 @@ else
 fi
 
 # Citizen login
-CITIZEN_RESP=$(test_json POST "$API/citizen/login" '{"nik":"1234567890123456","password":"password123"}')
+CITIZEN_RESP=$(test_json POST "$API/citizen/login" '{"nik":"3201234567890001","password":"password123"}')
 CITIZEN_TOKEN=$(echo "$CITIZEN_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 if [ -n "$CITIZEN_TOKEN" ]; then
   log_pass "Citizen login → token received"
@@ -312,7 +312,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
   # CREATE
   log_subsection "CREATE"
   TP_CREATE=$(test_json POST "$API/taxpayers" \
-    "{\"nik\":\"$TP_NIK\",\"name\":\"Test Wajib Pajak\",\"address\":\"Jl. Test No. 1\",\"phone\":\"081234567890\",\"retribution_type_ids\":[$VALID_RT_ID]}" "$ADMIN_TOKEN")
+    "{\"nik\":\"$TP_NIK\",\"name\":\"Test Wajib Pajak\",\"address\":\"Jl. Test No. 1\",\"phone\":\"081234567890\",\"retribution_type_ids\":[$VALID_RT_ID],\"opd_id\":$VALID_OPD_ID}" "$ADMIN_TOKEN")
   TP_ID=$(echo "$TP_CREATE" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
   
   if [ -n "$TP_ID" ]; then
@@ -369,7 +369,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
   # CREATE
   log_subsection "CREATE"
   RT_CREATE=$(test_json POST "$API/retribution-types" \
-    "{\"name\":\"Test Retribusi $RT_CODE_VAL\",\"code\":\"$RT_CODE_VAL\",\"category\":\"retribusi_jasa_umum\",\"base_amount\":10000,\"unit\":\"orang\"}" "$ADMIN_TOKEN")
+    "{\"name\":\"Test Retribusi $RT_CODE_VAL\",\"code\":\"$RT_CODE_VAL\",\"category\":\"retribusi_jasa_umum\",\"base_amount\":10000,\"unit\":\"orang\",\"opd_id\":$VALID_OPD_ID}" "$ADMIN_TOKEN")
   RT_ID=$(echo "$RT_CREATE" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
   
   if [ -n "$RT_ID" ]; then

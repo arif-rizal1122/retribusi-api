@@ -126,7 +126,7 @@ LOGIN_RESPONSE=$(curl -s "$API_URL/api/citizen/login" \
   -H "Origin: $FRONTEND_ORIGIN" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
-  -d '{"nik":"1234567890123456","password":"password123"}')
+  -d '{"nik":"3201234567890001","password":"password123"}')
 
 if echo "$LOGIN_RESPONSE" | grep -q '"token"'; then
   TOKEN=$(echo "$LOGIN_RESPONSE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
@@ -161,7 +161,7 @@ LOGIN_HEADERS=$(curl -sv "$API_URL/api/citizen/login" \
   -H "Origin: $FRONTEND_ORIGIN" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
-  -d '{"nik":"1234567890123456","password":"password123"}' 2>&1)
+  -d '{"nik":"3201234567890001","password":"password123"}' 2>&1)
 
 LOGIN_ACAO_COUNT=$(echo "$LOGIN_HEADERS" | grep -c "< Access-Control-Allow-Origin:")
 if [ "$LOGIN_ACAO_COUNT" -eq 1 ]; then

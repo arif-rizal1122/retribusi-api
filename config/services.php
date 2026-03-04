@@ -40,10 +40,10 @@ return [
     ],
 
     'pbb_bapenda' => [
-        'base_url' => env('PBB_BAPENDA_BASE_URL', 'http://103.182.72.241:8000/pospbb/Api_pos'),
+        'base_url' => env('PBB_BAPENDA_BASE_URL', 'http://103.182.72.241:8000/pospbb/Api_service'),
         'username' => env('PBB_BAPENDA_USERNAME', ''),
         'password' => env('PBB_BAPENDA_PASSWORD', ''),
-        'outlet'   => env('PBB_BAPENDA_OUTLET', 'ptpos'),
+        'outlet'   => env('PBB_BAPENDA_OUTLET', 'm-PAD'),
     ],
 
 ];
