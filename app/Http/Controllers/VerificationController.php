@@ -119,7 +119,7 @@ class VerificationController extends Controller
 
             $request->validate([
                 'status' => 'required|in:approved,rejected,in_review',
-                'notes' => 'nullable|string',
+                'notes' => 'required_if:status,approved,rejected|nullable|string',
             ]);
 
             $verification->update([
