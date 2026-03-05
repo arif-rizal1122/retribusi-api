@@ -41,7 +41,7 @@ RESULTS+="**Target**: $API\n\n"
 # Helper: test endpoint, returns HTTP code
 test_endpoint() {
   local METHOD=$1 URL=$2 DATA=$3 AUTH=$4 EXPECTED=$5 DESC=$6
-  local ARGS=(-s -o /tmp/api_body.txt -w "%{http_code}" -X "$METHOD" "$URL"
+  local ARGS=(--retry 10 --retry-delay 1 --retry-all-errors -s -o /tmp/api_body.txt -w "%{http_code}" -X "$METHOD" "$URL"
     -H "Accept: application/json" -H "Origin: $ORIGIN")
   [ -n "$AUTH" ] && ARGS+=(-H "Authorization: Bearer $AUTH")
   [ -n "$DATA" ] && ARGS+=(-H "Content-Type: application/json" -d "$DATA")
@@ -62,7 +62,7 @@ test_endpoint() {
 # Helper: test endpoint and get JSON body
 test_json() {
   local METHOD=$1 URL=$2 DATA=$3 AUTH=$4
-  local ARGS=(-s -X "$METHOD" "$URL" -H "Accept: application/json" -H "Origin: $ORIGIN")
+  local ARGS=(--retry 10 --retry-delay 1 --retry-all-errors -s -X "$METHOD" "$URL" -H "Accept: application/json" -H "Origin: $ORIGIN")
   [ -n "$AUTH" ] && ARGS+=(-H "Authorization: Bearer $AUTH")
   [ -n "$DATA" ] && ARGS+=(-H "Content-Type: application/json" -d "$DATA")
   curl "${ARGS[@]}"
@@ -77,7 +77,7 @@ echo -e "${DIM}Target: $API${NC}\n"
 log_section "0. Authentication Setup"
 
 # Admin login
-ADMIN_RESP=$(test_json POST "$API/login" '{"email":"superadmin@sipanda.online","password":"Bapenda2026!"}')
+ADMIN_RESP=$(test_json POST "$API/login" '{"email":"admin@retribusi.id","password":"password123"}')
 ADMIN_TOKEN=$(echo "$ADMIN_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 if [ -n "$ADMIN_TOKEN" ]; then
   ADMIN_ROLE=$(echo "$ADMIN_RESP" | grep -o '"role":"[^"]*"' | cut -d'"' -f4)
@@ -129,7 +129,7 @@ if [ -n "$CITIZEN_TOKEN" ]; then
   # Citizen Services
   log_subsection "Citizen Services"
   SVC_RESP=$(test_json GET "$API/citizen/services" "" "$CITIZEN_TOKEN")
-  SVC_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API/citizen/services" -H "Authorization: Bearer $CITIZEN_TOKEN" -H "Accept: application/json")
+  SVC_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API/citizen/services" -H "Authorization: Bearer $CITIZEN_TOKEN" -H "Accept: application/json")
   if [ "$SVC_CODE" = "200" ]; then
     log_pass "GET /citizen/services → 200"
     # Extract a service ID for detail test
@@ -242,7 +242,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
     
     # READ
     log_subsection "READ"
-    READ_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API/zones/$ZONE_ID" \
+    READ_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API/zones/$ZONE_ID" \
       -H "Authorization: Bearer $ADMIN_TOKEN" -H "Accept: application/json")
     if [ "$READ_CODE" = "200" ]; then
       log_pass "READ zone/$ZONE_ID → 200"
@@ -252,7 +252,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
     
     # UPDATE
     log_subsection "UPDATE"
-    UPDATE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API/zones/$ZONE_ID" \
+    UPDATE_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API/zones/$ZONE_ID" \
       -X PUT \
       -H "Authorization: Bearer $ADMIN_TOKEN" \
       -H "Accept: application/json" \
@@ -274,7 +274,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
     
     # DELETE
     log_subsection "DELETE"
-    DELETE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API/zones/$ZONE_ID" \
+    DELETE_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API/zones/$ZONE_ID" \
       -X DELETE \
       -H "Authorization: Bearer $ADMIN_TOKEN" \
       -H "Accept: application/json")
@@ -285,7 +285,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
     fi
     
     # Verify deletion
-    GONE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API/zones/$ZONE_ID" \
+    GONE_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API/zones/$ZONE_ID" \
       -H "Authorization: Bearer $ADMIN_TOKEN" -H "Accept: application/json")
     if [ "$GONE_CODE" = "404" ]; then
       log_pass "VERIFY delete → 404 (gone)"
@@ -328,7 +328,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
     
     # UPDATE
     log_subsection "UPDATE"
-    UP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API/taxpayers/$TP_ID" \
+    UP_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API/taxpayers/$TP_ID" \
       -X PUT \
       -H "Authorization: Bearer $ADMIN_TOKEN" \
       -H "Accept: application/json" \
@@ -342,7 +342,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
     
     # DELETE
     log_subsection "DELETE"
-    DEL_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API/taxpayers/$TP_ID" \
+    DEL_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API/taxpayers/$TP_ID" \
       -X DELETE \
       -H "Authorization: Bearer $ADMIN_TOKEN" \
       -H "Accept: application/json")
@@ -381,7 +381,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
     
     # UPDATE
     log_subsection "UPDATE"
-    RT_UP=$(curl -s -o /dev/null -w "%{http_code}" "$API/retribution-types/$RT_ID" \
+    RT_UP=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API/retribution-types/$RT_ID" \
       -X PUT \
       -H "Authorization: Bearer $ADMIN_TOKEN" \
       -H "Accept: application/json" \
@@ -395,7 +395,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
     
     # DELETE
     log_subsection "DELETE"
-    RT_DEL=$(curl -s -o /dev/null -w "%{http_code}" "$API/retribution-types/$RT_ID" \
+    RT_DEL=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API/retribution-types/$RT_ID" \
       -X DELETE \
       -H "Authorization: Bearer $ADMIN_TOKEN" \
       -H "Accept: application/json")
@@ -440,7 +440,7 @@ PBB_RESP=$(test_json POST "$API/pbb/calculate" \
 if echo "$PBB_RESP" | grep -qi "pbb_terhutang\|result\|pajak"; then
   log_pass "PBB calculation → result received"
 else
-  PBB_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API/pbb/calculate" -X POST \
+  PBB_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API/pbb/calculate" -X POST \
     -H "Content-Type: application/json" \
     -d '{"luas_bumi":200,"kelas_bumi":"A1","luas_bangunan":100,"kelas_bangunan":"A1"}')
   if [ "$PBB_CODE" = "200" ]; then
@@ -471,7 +471,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
   fi
 
   # Check JSON content-type
-  CT=$(curl -sI "$API/bills" -H "Authorization: Bearer $ADMIN_TOKEN" -H "Accept: application/json" | grep -i "Content-Type:" | tr -d '\r')
+  CT=$(curl --retry 10 --retry-delay 1 --retry-all-errors -sI "$API/bills" -H "Authorization: Bearer $ADMIN_TOKEN" -H "Accept: application/json" | grep -i "Content-Type:" | tr -d '\r')
   if echo "$CT" | grep -qi "application/json"; then
     log_pass "Content-Type is application/json"
   else
@@ -504,7 +504,7 @@ fi
 
 # 404 format
 NOT_FOUND=$(test_json GET "$API/nonexistent-route-xyz" "" "$ADMIN_TOKEN")
-NF_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API/nonexistent-route-xyz" \
+NF_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API/nonexistent-route-xyz" \
   -H "Authorization: Bearer $ADMIN_TOKEN" -H "Accept: application/json")
 if [ "$NF_CODE" = "404" ]; then
   log_pass "Unknown route → 404"
@@ -534,7 +534,7 @@ if [ -n "$CITIZEN_TOKEN" ]; then
   # Update
   UP_RESP=$(test_json POST "$API/me/update" \
     "{\"name\":\"$CURRENT_NAME\",\"address\":\"Jl. Merdeka No. 1, Bau-Bau\"}" "$CITIZEN_TOKEN")
-  UP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API/me/update" -X POST \
+  UP_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API/me/update" -X POST \
     -H "Authorization: Bearer $CITIZEN_TOKEN" \
     -H "Accept: application/json" \
     -H "Content-Type: application/json" \
