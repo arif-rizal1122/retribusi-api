@@ -25,3 +25,8 @@ yarn-error.log
 /gemini-cli
 .gemini_keys
 dist.tar.gz
+
+# Deployment Scripts and Credentials
+*.exp
+vps.txt
+vps_taxpayers.sql
