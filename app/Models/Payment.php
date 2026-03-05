@@ -19,10 +19,12 @@ class Payment extends Model
         'paid_at',
         'approved_by',
         'proof_url',
+        'metadata',
     ];
 
     protected $casts = [
         'paid_at' => 'datetime',
+        'metadata' => 'array',
     ];
 
     public function bill(): BelongsTo
@@ -40,7 +42,7 @@ class Payment extends Model
         return $this->belongsTo(TaxObject::class);
     }
 
-    public function approver(): BelongsTo
+    public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
