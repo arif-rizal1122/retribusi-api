@@ -26,7 +26,13 @@ Script berada di folder `testing/` pada repo `retribusi-api`:
   - *Fungsi:* Audit keamanan.
   - *Cakupan:* Injeksi SQL, XSS, IDOR, dan kebocoran file sensitif.
 
-## 3. Cara Menjalankan & Membaca Hasil
+## 3. Aturan /noss (No Screenshot)
+Sesuai dengan ketentuan testing terbaru, semua pengujian harus **sepenuhnya terotomatisasi dan diverifikasi melalui script atau terminal** (`/noss`).
+- **Dilarang** mengandalkan verifikasi visual (screenshot) untuk membuktikan fitur berjalan.
+- Gunakan perintah Curl, `assert`, `grep`, atau script CLI (bash/PHP) test untuk memvalidasi perubahan DB dan Response Body.
+- Lihat workflow `/noss` untuk panduan verifikasi tanpa screenshot.
+
+## 4. Cara Menjalankan & Membaca Hasil
 ```bash
 cd testing
 chmod +x *.sh
@@ -41,5 +47,11 @@ chmod +x *.sh
 - **Error 422:** Validasi field kurang lengkap, cek `TargetContent` pada script.
 - **Error 500:** Masalah permission atau syntax server (cek `MITIGATION_GUIDE.md`).
 
+## 5. Referensi Lengkap
+- **Pemetaan Endpoint → Test Coverage:** Lihat [routes-and-components.md](file:///Users/pondokit/Herd/retribusi-api/docs/routes-and-components.md#5-testing--retribusi-apitesting) → *Bagian 5: TESTING*.
+- **System Knowledge (Models, Services, Commands):** Lihat [system-knowledge.md](file:///Users/pondokit/Herd/retribusi-api/docs/system-knowledge.md).
+- **Audit Dokumen BAPENDA:** Lihat [todo-list.md](file:///Users/pondokit/Herd/retribusi-api/docs/todo-list.md).
+
 ---
-*Acuan Pengujian Terintegrasi. Terakhir diperbarui: 26 Februari 2026.*
+*Acuan Pengujian Terintegrasi. Terakhir diperbarui: 5 Maret 2026.*
+
