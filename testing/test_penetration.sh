@@ -34,7 +34,7 @@ RESULTS+="**Target**: $API_URL\n"
 RESULTS+="**Methodology**: OWASP Top 10 + Custom Vectors\n\n"
 
 # Get a valid token for authenticated tests
-TOKEN=$(curl -s "$API_URL/api/citizen/login" -X POST \
+TOKEN=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL/api/citizen/login" -X POST \
   -H "Content-Type: application/json" \
   -d '{"nik":"1234567890123456","password":"password123"}' | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 
@@ -44,7 +44,7 @@ TOKEN=$(curl -s "$API_URL/api/citizen/login" -X POST \
 log_section "1. Sensitive File Exposure"
 
 # .env file
-ENV_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/.env")
+ENV_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/.env")
 if [ "$ENV_CODE" = "403" ] || [ "$ENV_CODE" = "404" ]; then
   log_pass ".env file blocked ($ENV_CODE)"
 else
@@ -52,7 +52,7 @@ else
 fi
 
 # .git directory
-GIT_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/.git/config")
+GIT_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/.git/config")
 if [ "$GIT_CODE" = "403" ] || [ "$GIT_CODE" = "404" ]; then
   log_pass ".git directory blocked ($GIT_CODE)"
 else
@@ -60,7 +60,7 @@ else
 fi
 
 # .htaccess
-HT_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/.htaccess")
+HT_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/.htaccess")
 if [ "$HT_CODE" = "403" ] || [ "$HT_CODE" = "404" ]; then
   log_pass ".htaccess blocked ($HT_CODE)"
 else
@@ -68,7 +68,7 @@ else
 fi
 
 # composer.json
-COMPOSER_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/composer.json")
+COMPOSER_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/composer.json")
 if [ "$COMPOSER_CODE" = "404" ] || [ "$COMPOSER_CODE" = "403" ]; then
   log_pass "composer.json not exposed ($COMPOSER_CODE)"
 else
@@ -76,7 +76,7 @@ else
 fi
 
 # storage/logs
-LOG_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/storage/logs/laravel.log")
+LOG_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/storage/logs/laravel.log")
 if [ "$LOG_CODE" = "404" ] || [ "$LOG_CODE" = "403" ]; then
   log_pass "Laravel logs not exposed ($LOG_CODE)"
 else
@@ -84,7 +84,7 @@ else
 fi
 
 # phpinfo
-PHPINFO_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/phpinfo.php")
+PHPINFO_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/phpinfo.php")
 if [ "$PHPINFO_CODE" = "404" ]; then
   log_pass "phpinfo.php not exposed ($PHPINFO_CODE)"
 else
@@ -97,7 +97,7 @@ fi
 log_section "2. SQL Injection"
 
 # Login with SQL injection
-SQLI_LOGIN=$(curl -s "$API_URL/api/citizen/login" -X POST \
+SQLI_LOGIN=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL/api/citizen/login" -X POST \
   -H "Content-Type: application/json" \
   -d '{"nik":"1'\'' OR 1=1--","password":"test"}')
 
@@ -108,7 +108,7 @@ else
 fi
 
 # UNION injection in search
-SQLI_UNION=$(curl -s "$API_URL/api/citizen/bills?nik=1' UNION SELECT * FROM users--" \
+SQLI_UNION=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL/api/citizen/bills?nik=1' UNION SELECT * FROM users--" \
   -H "Accept: application/json" 2>&1)
 
 if echo "$SQLI_UNION" | grep -qi "SQLSTATE\|syntax error\|mysql"; then
@@ -119,7 +119,7 @@ fi
 
 # Blind SQLi with time delay
 SQLI_TIME_START=$(date +%s)
-curl -s "$API_URL/api/citizen/login" -X POST \
+curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL/api/citizen/login" -X POST \
   -H "Content-Type: application/json" \
   -d '{"nik":"1'\'' AND SLEEP(5)--","password":"test"}' > /dev/null
 SQLI_TIME_END=$(date +%s)
@@ -137,7 +137,7 @@ fi
 log_section "3. Cross-Site Scripting (XSS)"
 
 # Stored XSS via registration
-XSS_REG=$(curl -s "$API_URL/api/citizen/register" -X POST \
+XSS_REG=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL/api/citizen/register" -X POST \
   -H "Content-Type: application/json" \
   -d '{"nik":"9999999999999999","name":"<script>alert(1)</script>","password":"test123","password_confirmation":"test123","address":"<img src=x onerror=alert(1)>"}')
 
@@ -148,7 +148,7 @@ else
 fi
 
 # XSS via query parameters
-XSS_QUERY=$(curl -s "$API_URL/api/citizen/bills?nik=<script>alert(1)</script>" \
+XSS_QUERY=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL/api/citizen/bills?nik=<script>alert(1)</script>" \
   -H "Accept: application/json")
 
 if echo "$XSS_QUERY" | grep -q "<script>"; then
@@ -163,7 +163,7 @@ fi
 log_section "4. Broken Authentication"
 
 # Access protected endpoint without token
-NO_AUTH=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/api/me" \
+NO_AUTH=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/api/me" \
   -H "Accept: application/json")
 if [ "$NO_AUTH" = "401" ]; then
   log_pass "/api/me returns 401 without token"
@@ -172,7 +172,7 @@ else
 fi
 
 # Access with fabricated token
-FAKE_TOKEN=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/api/me" \
+FAKE_TOKEN=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/api/me" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer fake_token_12345_should_not_work")
 if [ "$FAKE_TOKEN" = "401" ]; then
@@ -182,7 +182,7 @@ else
 fi
 
 # Access admin endpoint with citizen token
-ADMIN_ACCESS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/api/users" \
+ADMIN_ACCESS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/api/users" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer $TOKEN")
 if [ "$ADMIN_ACCESS" = "401" ] || [ "$ADMIN_ACCESS" = "403" ] || [ "$ADMIN_ACCESS" = "404" ]; then
@@ -197,14 +197,14 @@ fi
 log_section "5. IDOR (Insecure Direct Object Reference)"
 
 # Try to access another user's data
-IDOR_USER=$(curl -s "$API_URL/api/taxpayers/1" \
+IDOR_USER=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL/api/taxpayers/1" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer $TOKEN")
 
 if echo "$IDOR_USER" | grep -qi "forbidden\|unauthorized\|403\|not found"; then
   log_pass "IDOR blocked for /api/taxpayers/1"
 else
-  IDOR_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/api/taxpayers/1" \
+  IDOR_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/api/taxpayers/1" \
     -H "Accept: application/json" \
     -H "Authorization: Bearer $TOKEN")
   if [ "$IDOR_CODE" = "200" ]; then
@@ -215,7 +215,7 @@ else
 fi
 
 # Try to access another user's bills
-IDOR_BILLS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/api/bills/1" \
+IDOR_BILLS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/api/bills/1" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer $TOKEN")
 if [ "$IDOR_BILLS" = "403" ] || [ "$IDOR_BILLS" = "404" ] || [ "$IDOR_BILLS" = "401" ]; then
@@ -229,10 +229,10 @@ fi
 # ============================================================================
 log_section "6. Path Traversal"
 
-TRAVERSAL1=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/../../etc/passwd")
+TRAVERSAL1=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/../../etc/passwd")
 if [ "$TRAVERSAL1" = "400" ] || [ "$TRAVERSAL1" = "403" ] || [ "$TRAVERSAL1" = "404" ] || [ "$TRAVERSAL1" = "200" ]; then
   # Check if actual /etc/passwd content leaked
-  TRAVERSAL_BODY=$(curl -s "$API_URL/../../etc/passwd")
+  TRAVERSAL_BODY=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL/../../etc/passwd")
   if echo "$TRAVERSAL_BODY" | grep -q "root:"; then
     log_critical "Path traversal exposes /etc/passwd!"
   else
@@ -240,8 +240,8 @@ if [ "$TRAVERSAL1" = "400" ] || [ "$TRAVERSAL1" = "403" ] || [ "$TRAVERSAL1" = "
   fi
 fi
 
-TRAVERSAL2=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/..%2F..%2Fetc%2Fpasswd")
-TRAVERSAL_BODY2=$(curl -s "$API_URL/..%2F..%2Fetc%2Fpasswd")
+TRAVERSAL2=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/..%2F..%2Fetc%2Fpasswd")
+TRAVERSAL_BODY2=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL/..%2F..%2Fetc%2Fpasswd")
 if echo "$TRAVERSAL_BODY2" | grep -q "root:"; then
   log_critical "Encoded path traversal exposes /etc/passwd!"
 else
@@ -253,7 +253,7 @@ fi
 # ============================================================================
 log_section "7. Security Headers"
 
-HEADERS=$(curl -sI "$API_URL/api/me" -H "Accept: application/json" 2>&1)
+HEADERS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -sI "$API_URL/api/me" -H "Accept: application/json" 2>&1)
 
 # HSTS
 if echo "$HEADERS" | grep -qi "Strict-Transport-Security"; then
@@ -307,7 +307,7 @@ log_section "8. Rate Limiting / Brute Force Protection"
 echo -e "${YELLOW}  Testing rate limit (sending 65 rapid requests)...${NC}"
 RATE_LIMITED=false
 for i in $(seq 1 65); do
-  RATE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/api/citizen/login" \
+  RATE_CODE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/api/citizen/login" \
     -X POST \
     -H "Content-Type: application/json" \
     -d '{"nik":"0000000000000000","password":"wrong"}')
@@ -327,7 +327,7 @@ fi
 # ============================================================================
 log_section "9. Mass Assignment"
 
-MASS_ASSIGN=$(curl -s "$API_URL/api/me/update" -X POST \
+MASS_ASSIGN=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL/api/me/update" -X POST \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer $TOKEN" \
@@ -345,7 +345,7 @@ fi
 log_section "10. CORS Misconfiguration"
 
 # Test with evil origin
-EVIL_CORS=$(curl -sI -X OPTIONS "$API_URL/api/me" \
+EVIL_CORS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -sI -X OPTIONS "$API_URL/api/me" \
   -H "Origin: https://evil-hacker.com" \
   -H "Access-Control-Request-Method: GET" 2>&1)
 
@@ -357,7 +357,7 @@ else
 fi
 
 # Test null origin
-NULL_CORS=$(curl -sI -X OPTIONS "$API_URL/api/me" \
+NULL_CORS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -sI -X OPTIONS "$API_URL/api/me" \
   -H "Origin: null" \
   -H "Access-Control-Request-Method: GET" 2>&1)
 
@@ -374,7 +374,7 @@ fi
 log_section "11. HTTP Method Tampering"
 
 # PUT on login
-PUT_LOGIN=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/api/citizen/login" \
+PUT_LOGIN=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/api/citizen/login" \
   -X PUT \
   -H "Content-Type: application/json" \
   -d '{"nik":"test","password":"test"}')
@@ -385,7 +385,7 @@ else
 fi
 
 # DELETE on user data
-DELETE_USER=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/api/me" \
+DELETE_USER=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/api/me" \
   -X DELETE \
   -H "Authorization: Bearer $TOKEN" \
   -H "Accept: application/json")

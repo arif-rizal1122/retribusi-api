@@ -6,6 +6,9 @@ Setiap fitur yang dirilis, termasuk namun tidak terbatas pada Alur Utama E2E, Ke
 
 > **CATATAN KRITIKAL (/noss):** 
 > Seluruh proses pengetesan pada skema ini dan modul-modul turunannya dideklarasikan **TIDAK MENGGUNAKAN SCREENSHOT** ataupun tangkapan layar. Validasi keberhasilan harus murni dibuktikan dari pembacaan CLI/Terminal, JSON Response dari Postman/Insomnia, Assertions Kode, dan data Database secara real-time.
+> 
+> **PENYIMPANAN HASIL (RESULTS FOLDER):**
+> Seluruh output pengujian dari skrip otomatis (Bash/PHP) **wajib** dilampirkan atau disalurkan ke dalam folder `testing/results/`. Hasil testing harus disimpan dalam bentuk file `.md` atau `.txt` dengan menyertakan _timestamp_ eksekusi (contoh: `testing/results/14_API_CRUD_Test_prod_20260305_100000.md`) agar jejak audit pelaporan tersimpan rapi tanpa perlu bukti gambar.
 
 ---
 
