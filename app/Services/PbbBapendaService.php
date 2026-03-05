@@ -15,10 +15,10 @@ class PbbBapendaService
 
     public function __construct()
     {
-        $this->baseUrl  = config('services.pbb_bapenda.base_url', 'http://103.182.72.241:8000/pospbb/Api_pos');
+        $this->baseUrl  = config('services.pbb_bapenda.base_url', 'http://103.182.72.241:8000/pospbb/Api_service');
         $this->username = config('services.pbb_bapenda.username', '');
         $this->password = config('services.pbb_bapenda.password', '');
-        $this->outlet   = config('services.pbb_bapenda.outlet', 'ptpos');
+        $this->outlet   = config('services.pbb_bapenda.outlet', 'm-PAD');
     }
 
     /**
@@ -30,8 +30,9 @@ class PbbBapendaService
         return Cache::remember('pbb_bapenda_token', 23 * 60 * 60, function () {
             $response = Http::asForm()->timeout(30)
                 ->post("{$this->baseUrl}/login", [
-                    'USERNAME' => $this->username,
-                    'PASSWORD' => $this->password,
+                    'username' => $this->username,
+                    'password' => $this->password,
+                    'outlet'   => $this->outlet,
                 ]);
 
             $data = $response->json();
@@ -62,19 +63,21 @@ class PbbBapendaService
     public function inquiry(string $nop, string $tahun): array
     {
         return $this->authenticatedRequest('inquiry', [
-            'NOP'   => $nop,
-            'TAHUN' => $tahun,
+            'nop'   => $nop,
+            'tahun' => $tahun,
         ]);
     }
 
     /**
      * Melakukan pembayaran PBB.
      */
-    public function payment(string $nop, string $tahun): array
+    public function payment(string $nop, string $tahun, float $tagihan, ?string $keterangan = null): array
     {
         return $this->authenticatedRequest('payment', [
-            'NOP'   => $nop,
-            'TAHUN' => $tahun,
+            'nop'        => $nop,
+            'tahun'      => $tahun,
+            'tagihan'    => $tagihan,
+            'keterangan' => $keterangan ?? 'Pembayaran PBB m-PAD',
         ]);
     }
 
@@ -84,9 +87,9 @@ class PbbBapendaService
     public function reversal(string $nop, string $tahun, string $keterangan): array
     {
         return $this->authenticatedRequest('reversal', [
-            'NOP'        => $nop,
-            'TAHUN'      => $tahun,
-            'KETERANGAN' => $keterangan,
+            'nop'        => $nop,
+            'tahun'      => $tahun,
+            'keterangan' => $keterangan,
         ]);
     }
 

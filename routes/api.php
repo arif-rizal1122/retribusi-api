@@ -207,8 +207,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('tax-objects', TaxObjectController::class);
         Route::apiResource('bills', BillController::class)->only(['index', 'store']);
         Route::get('/tax-objects/{taxObject}/pending-periods', [PaymentController::class, 'getPendingPeriods']);
+        Route::get('/payments', [PaymentController::class, 'index']);
         Route::post('/payments', [PaymentController::class, 'store']);
         Route::post('/bills/{bill}/pay', [PaymentController::class, 'store']);
+        Route::put('/payments/{payment}/status', [PaymentController::class, 'updateStatus']);
         Route::put('/verifications/{verification}/status', [VerificationController::class, 'updateStatus']);
         Route::apiResource('verifications', VerificationController::class)->only(['index', 'show', 'store']);
         Route::apiResource('zones', ZoneController::class);
@@ -238,6 +240,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/audit-logs', [\App\Http\Controllers\Pengawas\AuditLogController::class, 'index']);
             Route::get('/anomalies', [\App\Http\Controllers\Pengawas\SurveillanceController::class, 'getAnomalies']);
             Route::get('/compliance-stats', [\App\Http\Controllers\Pengawas\SurveillanceController::class, 'getComplianceStats']);
+            Route::get('/petugas-locations', [\App\Http\Controllers\Pengawas\SurveillanceController::class, 'getPetugasLocations']);
             Route::get('/enforcements', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'index']);
             Route::post('/enforcements', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'store']);
             Route::post('/enforcements/{id}', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'update']);
@@ -254,6 +257,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/petugas-performance', [ReportController::class, 'getPetugasPerformance']);
             Route::get('/monthly', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
             Route::put('/monthly/{report}/validate', [\App\Http\Controllers\MonthlyReportController::class, 'validateReport']);
+            Route::get('/bpk', [ReportController::class, 'getMonthlyReport']);
         });
 
         Route::prefix('amnesty')->group(function () {
@@ -261,6 +265,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/', [\App\Http\Controllers\PenaltyWaiverController::class, 'store']);
             Route::post('/{id}/approve', [\App\Http\Controllers\PenaltyWaiverController::class, 'approve']);
             Route::post('/{id}/reject', [\App\Http\Controllers\PenaltyWaiverController::class, 'reject']);
+            Route::get('/{id}/document', [\App\Http\Controllers\PenaltyWaiverController::class, 'generateDocument']);
         });
 
         Route::prefix('tte')->group(function () {
@@ -272,6 +277,25 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/reversal', [PbbBapendaController::class, 'reversal']);
             Route::get('/transactions', [PbbBapendaController::class, 'transactions']);
             Route::get('/stats', [PbbBapendaController::class, 'stats']);
+        });
+
+        // Official BAPENDA Documents
+        Route::prefix('documents')->group(function () {
+            // Pendaftaran
+            Route::get('/skt/{taxpayerId}', [\App\Http\Controllers\DocumentController::class, 'skt']);
+            // Pendataan
+            Route::get('/lkok/{taxObjectId}', [\App\Http\Controllers\DocumentController::class, 'lkok']);
+            // Penetapan
+            Route::get('/skrd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skrd']);
+            Route::get('/sppt/{billId}', [\App\Http\Controllers\DocumentController::class, 'sppt']);
+            Route::post('/skpdkbt/{billId}', [\App\Http\Controllers\DocumentController::class, 'skpdkbt']);
+            Route::post('/skpdn/{billId}', [\App\Http\Controllers\DocumentController::class, 'skpdn']);
+            // Penagihan
+            Route::get('/sspd/{billId}', [\App\Http\Controllers\DocumentController::class, 'sspd']);
+            Route::get('/ssrd/{billId}', [\App\Http\Controllers\DocumentController::class, 'ssrd']);
+            Route::get('/strd/{billId}', [\App\Http\Controllers\DocumentController::class, 'strd']);
+            Route::get('/spp/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'spp']);
+            Route::get('/spmp/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'spmp']);
         });
     });
 });

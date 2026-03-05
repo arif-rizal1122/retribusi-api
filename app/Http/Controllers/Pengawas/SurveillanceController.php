@@ -90,4 +90,30 @@ class SurveillanceController extends Controller
             'non_compliant_count' => $totalObjects - $compliantObjects,
         ]);
     }
+
+    /**
+     * Get last known locations of all petugas for supervisor map
+     */
+    public function getPetugasLocations(Request $request)
+    {
+        $user = $request->user();
+        $opdId = (!$user->isSuperAdmin() && !$user->isPengawas()) ? $user->opd_id : $request->query('opd_id');
+
+        $petugas = \App\Models\User::where('role', 'petugas')
+            ->where('status', 'active')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
+            ->with('opd:id,name')
+            ->get(['id', 'name', 'latitude', 'longitude', 'opd_id', 'updated_at']);
+
+        return response()->json($petugas->map(fn($p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'latitude' => (float) $p->latitude,
+            'longitude' => (float) $p->longitude,
+            'opd' => $p->opd->name ?? 'N/A',
+            'updated_at' => $p->updated_at->diffForHumans(),
+        ]));
+    }
 }

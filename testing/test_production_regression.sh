@@ -8,7 +8,7 @@
 
 BASE_URL="${1:-https://api.sipanda.online}"
 EMAIL="${2:-superadmin@sipanda.online}"
-PASS="${3:-Sipanda123#}"
+PASS="${3:-Bapenda2026!}"
 
 PASS_COUNT=0
 FAIL_COUNT=0

@@ -213,7 +213,7 @@ class DatabaseSeeder extends Seeder
         $this->call(TestingScenarioSeeder::class);
 
         $this->command->info('Database seeded successfully!');
-        $this->command->info('Super Admin: superadmin@sipanda.online / Sipanda123#');
+        $this->command->info('Super Admin: superadmin@sipanda.online / Bapenda2026!');
         $this->command->info('OPD Bapenda: bapenda@baubaukota.go.id / password123');
         $this->command->info('OPD Dishub: dishub@retribusi.id / password123');
         $this->command->info('OPD Disperindag: disperindag@retribusi.id / password123');

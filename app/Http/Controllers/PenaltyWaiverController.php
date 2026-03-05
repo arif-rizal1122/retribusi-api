@@ -135,4 +135,26 @@ class PenaltyWaiverController extends Controller
 
         return response()->json($waiver);
     }
+
+    /**
+     * Generate SK Penghapusan Denda document data (for PDF rendering)
+     */
+    public function generateDocument($id)
+    {
+        $waiver = PenaltyWaiver::findOrFail($id);
+
+        if ($waiver->status !== 'approved') {
+            return response()->json([
+                'message' => 'Hanya waiver yang sudah disetujui yang bisa dicetak SK-nya.'
+            ], 422);
+        }
+
+        $docService = app(\App\Services\OfficialDocumentService::class);
+        $document = $docService->generateSKPenghapusanDenda($waiver);
+
+        return response()->json([
+            'message' => 'SK Penghapusan Denda berhasil dibuat',
+            'data' => $document,
+        ]);
+    }
 }
