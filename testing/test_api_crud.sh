@@ -77,7 +77,7 @@ echo -e "${DIM}Target: $API${NC}\n"
 log_section "0. Authentication Setup"
 
 # Admin login
-ADMIN_RESP=$(test_json POST "$API/login" '{"email":"superadmin@sipanda.online","password":"Sipanda123#"}')
+ADMIN_RESP=$(test_json POST "$API/login" '{"email":"superadmin@sipanda.online","password":"Bapenda2026!"}')
 ADMIN_TOKEN=$(echo "$ADMIN_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 if [ -n "$ADMIN_TOKEN" ]; then
   ADMIN_ROLE=$(echo "$ADMIN_RESP" | grep -o '"role":"[^"]*"' | cut -d'"' -f4)
