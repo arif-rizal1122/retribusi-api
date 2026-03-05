@@ -13,15 +13,16 @@ class EnforcementNoticeController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        
+        // Only Pengawas roles (and super admin) can view enforcement notices
+        if (!in_array($user->role, ['pengawas', 'kabid_pengawas', 'kasubid_pengawas', 'super_admin'])) {
+            return response()->json(['message' => 'Unauthorized. Only Supervisor roles can view enforcement notices.'], 403);
+        }
+
         $query = EnforcementNotice::with(['taxObject.taxpayer', 'creator', 'approver', 'assignedPetugas']);
         
         if ($request->has('status')) {
             $query->where('status', $request->status);
-        }
-
-        // If user is a petugas, only show notices assigned to them
-        if ($user->role === 'petugas') {
-            $query->where('assigned_to', $user->id);
         }
         
         return response()->json($query->paginate(20));
@@ -29,6 +30,13 @@ class EnforcementNoticeController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user();
+        
+        // Only Pengawas roles (and super admin) can create enforcement notices
+        if (!in_array($user->role, ['pengawas', 'kabid_pengawas', 'kasubid_pengawas', 'super_admin'])) {
+            return response()->json(['message' => 'Unauthorized. Only Supervisor roles can create enforcement notices.'], 403);
+        }
+
         $validated = $request->validate([
             'tax_object_id' => 'required|exists:tax_objects,id',
             'assigned_to' => 'nullable|exists:users,id',
