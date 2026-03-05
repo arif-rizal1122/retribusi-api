@@ -1,6 +1,0 @@
-#!/usr/bin/expect -f
-set timeout 10
-spawn ssh sipanda@157.10.252.74 "ls -la /home/sipanda/retribusi-admin-dev/dist /home/sipanda/retribusi-petugas-dev/dist /home/sipanda/retribusi-api-dev/public 2>/dev/null; cat /home/sipanda/retribusi-admin-dev/dist/index.html 2>/dev/null | head -n 5; cat /home/sipanda/retribusi-petugas-dev/dist/index.html 2>/dev/null | head -n 5; cat /home/sipanda/retribusi-api-dev/public/index.php 2>/dev/null | head -n 5"
-expect "password:"
-send "Sipanda123#\r"
-expect eof
