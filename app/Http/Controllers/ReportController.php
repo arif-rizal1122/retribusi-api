@@ -142,4 +142,87 @@ class ReportController extends Controller
 
         return response()->json($performance);
     }
+
+    /**
+     * BPK-format monthly report: Revenue breakdown by type with realization vs target
+     * Endpoint: GET /api/reports/monthly
+     */
+    public function getMonthlyReport(Request $request)
+    {
+        $user = $request->user();
+        $opdId = !$user->isSuperAdmin() ? $user->opd_id : $request->query('opd_id');
+        $year = $request->query('year', Carbon::now()->year);
+
+        // Monthly breakdown per retribution type
+        $monthlyData = Payment::join('bills', 'payments.bill_id', '=', 'bills.id')
+            ->join('retribution_types', 'bills.retribution_type_id', '=', 'retribution_types.id')
+            ->when($opdId, fn($q) => $q->where('bills.opd_id', $opdId))
+            ->whereYear('payments.paid_at', $year)
+            ->select(
+                'retribution_types.id as type_id',
+                'retribution_types.name as type_name',
+                'retribution_types.category',
+                DB::raw('MONTH(payments.paid_at) as month'),
+                DB::raw('SUM(payments.amount) as realization'),
+                DB::raw('COUNT(payments.id) as tx_count')
+            )
+            ->groupBy('retribution_types.id', 'retribution_types.name', 'retribution_types.category', DB::raw('MONTH(payments.paid_at)'))
+            ->get();
+
+        // Aggregate target from bills (annual)
+        $targets = Bill::join('retribution_types', 'bills.retribution_type_id', '=', 'retribution_types.id')
+            ->when($opdId, fn($q) => $q->where('bills.opd_id', $opdId))
+            ->whereYear('bills.created_at', $year)
+            ->select(
+                'retribution_types.id as type_id',
+                DB::raw('SUM(bills.amount) as annual_target')
+            )
+            ->groupBy('retribution_types.id')
+            ->pluck('annual_target', 'type_id');
+
+        // Build structured report
+        $report = [];
+        foreach ($monthlyData->groupBy('type_id') as $typeId => $entries) {
+            $first = $entries->first();
+            $months = [];
+            $ytdRealization = 0;
+
+            for ($m = 1; $m <= 12; $m++) {
+                $entry = $entries->firstWhere('month', $m);
+                $realization = $entry ? (float) $entry->realization : 0;
+                $ytdRealization += $realization;
+                $months[] = [
+                    'month' => $m,
+                    'realization' => $realization,
+                    'tx_count' => $entry ? (int) $entry->tx_count : 0,
+                ];
+            }
+
+            $annualTarget = (float) ($targets[$typeId] ?? 0);
+            $report[] = [
+                'type_id' => $typeId,
+                'type_name' => $first->type_name,
+                'category' => $first->category,
+                'annual_target' => $annualTarget,
+                'ytd_realization' => $ytdRealization,
+                'achievement_pct' => $annualTarget > 0 ? round(($ytdRealization / $annualTarget) * 100, 2) : 0,
+                'months' => $months,
+            ];
+        }
+
+        // Grand totals
+        $grandTarget = $targets->sum();
+        $grandRealization = collect($report)->sum('ytd_realization');
+
+        return response()->json([
+            'year' => (int) $year,
+            'opd_id' => $opdId,
+            'report' => $report,
+            'grand_total' => [
+                'target' => $grandTarget,
+                'realization' => $grandRealization,
+                'achievement_pct' => $grandTarget > 0 ? round(($grandRealization / $grandTarget) * 100, 2) : 0,
+            ],
+        ]);
+    }
 }

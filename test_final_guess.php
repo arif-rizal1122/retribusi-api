@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Http;
 \$app->singleton('http', function() { return new \Illuminate\Http\Client\Factory(); });
 \$base_url = 'http://103.182.72.241:8000/pospbb/Api_pos';
 \$usernames = ['BAPENDA', 'admin', 'user', 'ptpos', 'pos', 'SIPANDA', 'BAUBAU'];
-\$passwords = ['password123', 'Sipanda123#', '123456', 'admin', 'bapenda', 'baubau'];
+\$passwords = ['password123', 'Bapenda2026!', '123456', 'admin', 'bapenda', 'baubau'];
 foreach (\$usernames as \$u) {
     foreach (\$passwords as \$p) {
         try {
