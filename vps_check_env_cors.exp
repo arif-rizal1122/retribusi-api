@@ -1,6 +1,0 @@
-#!/usr/bin/expect -f
-set timeout 30
-spawn ssh sipanda@157.10.252.74 "grep -E 'FRONTEND_URL|CORS' /home/sipanda/retribusi-api/.env"
-expect "password:"
-send "Sipanda123#\r"
-expect eof
