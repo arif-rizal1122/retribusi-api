@@ -37,7 +37,7 @@ echo ""
 
 # --- 1. LOGIN ---
 echo "[1] Authentication"
-TOKEN=$(curl -s -X POST "$BASE_URL/api/login" \
+TOKEN=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -X POST "$BASE_URL/api/login" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\"}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token','FAIL'))" 2>/dev/null)
@@ -72,7 +72,7 @@ ENDPOINTS=(
 )
 
 for ep in "${ENDPOINTS[@]}"; do
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/$ep" \
+  STATUS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/$ep" \
     -H "Authorization: Bearer $TOKEN" -H "Accept: application/json")
   check "$ep" "200" "$STATUS"
 done
@@ -82,7 +82,7 @@ echo ""
 echo "[3] Public Endpoints (no auth → 200)"
 PUBLIC_ENDPOINTS=("opds" "tax-formulas")
 for ep in "${PUBLIC_ENDPOINTS[@]}"; do
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/$ep" -H "Accept: application/json")
+  STATUS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/$ep" -H "Accept: application/json")
   check "$ep (public)" "200" "$STATUS"
 done
 
@@ -91,23 +91,23 @@ echo ""
 echo "[4] Error Handling"
 
 # 401 - Bad token
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/zones" \
+STATUS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/zones" \
   -H "Authorization: Bearer invalid" -H "Accept: application/json")
 check "401 Bad Token" "401" "$STATUS"
 
 # 422 - Validation error
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/zones" \
+STATUS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/zones" \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -H "Accept: application/json" \
   -d '{"name":"test-no-type"}')
 check "422 Validation" "422" "$STATUS"
 
 # 404 - Not found
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/zones/99999" \
+STATUS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/zones/99999" \
   -H "Authorization: Bearer $TOKEN" -H "Accept: application/json")
 check "404 Not Found" "404" "$STATUS"
 
 # 404 - Delete nonexistent
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/retribution-rates/99999" \
+STATUS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/retribution-rates/99999" \
   -H "Authorization: Bearer $TOKEN" -H "Accept: application/json")
 check "404 Delete Nonexistent" "404" "$STATUS"
 
@@ -115,18 +115,18 @@ check "404 Delete Nonexistent" "404" "$STATUS"
 echo ""
 echo "[5] Frontend Apps"
 for url in "https://admin.sipanda.online" "https://sipanda.online" "https://petugas.sipanda.online"; do
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$url/")
+  STATUS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$url/")
   check "$url" "200" "$STATUS"
 done
 
 # --- 6. LOGOUT ---
 echo ""
 echo "[6] Logout & Post-Logout"
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/logout" \
+STATUS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/logout" \
   -H "Authorization: Bearer $TOKEN" -H "Accept: application/json")
 check "Logout" "200" "$STATUS"
 
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/zones" \
+STATUS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/zones" \
   -H "Authorization: Bearer $TOKEN" -H "Accept: application/json")
 check "After Logout (401)" "401" "$STATUS"
 

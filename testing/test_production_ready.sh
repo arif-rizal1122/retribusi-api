@@ -39,7 +39,7 @@ RESULTS+="**Frontend**: $FRONTEND_ORIGIN\n\n"
 log_section "1. CORS Preflight (OPTIONS)"
 
 # Test OPTIONS from sipanda.online
-RESPONSE=$(curl -sI -X OPTIONS "$API_URL/api/me" \
+RESPONSE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -sI -X OPTIONS "$API_URL/api/me" \
   -H "Origin: $FRONTEND_ORIGIN" \
   -H "Access-Control-Request-Method: GET" \
   -H "Access-Control-Request-Headers: Content-Type, Authorization" 2>&1)
@@ -83,7 +83,7 @@ fi
 log_section "2. CORS on Actual Responses"
 
 # GET without auth (should return 401 with CORS headers)
-RESPONSE=$(curl -sv "$API_URL/api/me" \
+RESPONSE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -sv "$API_URL/api/me" \
   -H "Origin: $FRONTEND_ORIGIN" \
   -H "Accept: application/json" 2>&1)
 
@@ -121,7 +121,7 @@ fi
 log_section "3. Citizen Login"
 
 # Login with demo credentials
-LOGIN_RESPONSE=$(curl -s "$API_URL/api/citizen/login" \
+LOGIN_RESPONSE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL/api/citizen/login" \
   -X POST \
   -H "Origin: $FRONTEND_ORIGIN" \
   -H "Accept: application/json" \
@@ -142,7 +142,7 @@ else
 fi
 
 # Login with wrong credentials
-BAD_LOGIN=$(curl -s "$API_URL/api/citizen/login" \
+BAD_LOGIN=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL/api/citizen/login" \
   -X POST \
   -H "Origin: $FRONTEND_ORIGIN" \
   -H "Accept: application/json" \
@@ -156,7 +156,7 @@ else
 fi
 
 # CORS headers on login response
-LOGIN_HEADERS=$(curl -sv "$API_URL/api/citizen/login" \
+LOGIN_HEADERS=$(curl --retry 10 --retry-delay 1 --retry-all-errors -sv "$API_URL/api/citizen/login" \
   -X POST \
   -H "Origin: $FRONTEND_ORIGIN" \
   -H "Accept: application/json" \
@@ -177,7 +177,7 @@ log_section "4. Authenticated API Endpoints"
 
 if [ -n "$TOKEN" ]; then
   # /api/me
-  ME_RESPONSE=$(curl -sv "$API_URL/api/me" \
+  ME_RESPONSE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -sv "$API_URL/api/me" \
     -H "Origin: $FRONTEND_ORIGIN" \
     -H "Accept: application/json" \
     -H "Authorization: Bearer $TOKEN" 2>&1)
@@ -198,7 +198,7 @@ if [ -n "$TOKEN" ]; then
   fi
 
   # /api/citizen/services
-  SVC_RESPONSE=$(curl -sv "$API_URL/api/citizen/services" \
+  SVC_RESPONSE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -sv "$API_URL/api/citizen/services" \
     -H "Origin: $FRONTEND_ORIGIN" \
     -H "Accept: application/json" \
     -H "Authorization: Bearer $TOKEN" 2>&1)
@@ -211,7 +211,7 @@ if [ -n "$TOKEN" ]; then
   fi
 
   # /api/citizen/bills
-  BILLS_RESPONSE=$(curl -sv "$API_URL/api/citizen/bills?nik=1234567890123456" \
+  BILLS_RESPONSE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -sv "$API_URL/api/citizen/bills?nik=1234567890123456" \
     -H "Origin: $FRONTEND_ORIGIN" \
     -H "Accept: application/json" \
     -H "Authorization: Bearer $TOKEN" 2>&1)
@@ -231,7 +231,7 @@ fi
 # ============================================================================
 log_section "5. Cross-Origin (admin.sipanda.online)"
 
-ADMIN_PREFLIGHT=$(curl -sI -X OPTIONS "$API_URL/api/me" \
+ADMIN_PREFLIGHT=$(curl --retry 10 --retry-delay 1 --retry-all-errors -sI -X OPTIONS "$API_URL/api/me" \
   -H "Origin: $ADMIN_ORIGIN" \
   -H "Access-Control-Request-Method: GET" 2>&1)
 
@@ -254,7 +254,7 @@ fi
 log_section "6. Error Handling (No 500s)"
 
 # Test 404 endpoint
-ERR_RESPONSE=$(curl -sv "$API_URL/api/nonexistent-endpoint-xyz" \
+ERR_RESPONSE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -sv "$API_URL/api/nonexistent-endpoint-xyz" \
   -H "Origin: $FRONTEND_ORIGIN" \
   -H "Accept: application/json" 2>&1)
 
@@ -266,7 +266,7 @@ else
 fi
 
 # Health check
-HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/up")
+HEALTH=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s -o /dev/null -w "%{http_code}" "$API_URL/up")
 if [ "$HEALTH" = "200" ]; then
   log_pass "Health endpoint /up → 200 OK"
 else
@@ -278,7 +278,7 @@ fi
 # ============================================================================
 log_section "7. Frontend & PWA"
 
-PWA_CHECK=$(curl -s "https://sipanda.online" -o /dev/null -w "%{http_code}")
+PWA_CHECK=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "https://sipanda.online" -o /dev/null -w "%{http_code}")
 if [ "$PWA_CHECK" = "200" ]; then
   log_pass "Frontend sipanda.online → 200 OK"
 else
