@@ -60,7 +60,31 @@
 
 ---
 
-## 📄 Audit Dokumen Resmi BAPENDA
+## � 7. Skema Pembayaran & Verifikasi Digital
+**Repo Terkait**: `retribusi-api`, `retribusi-mobile`, `retribusi-petugas`
+
+### Alur 1: Pembayaran Mandiri (Citizen Claim)
+1. **Mobile**: Warga membayar via Transfer/VA/QRIS → Unggah bukti bayar → `POST /api/payments`.
+2. **API**: Mencatat pembayaran dengan `status = pending`. Bill tetap `pending`.
+3. **Petugas**: Melihat notifikasi/antrean verifikasi → Review bukti bayar.
+4. **Petugas**: Klik "Setujui" → API panggil `PUT /api/payments/{id}/status` (success).
+5. **API**: Otomatis update `bills.status = lunas`.
+
+### Alur 2: Pembayaran Lapangan (QR Discan Petugas)
+1. **Mobile**: Warga menunjukkan QR khusus (berisi Bill IDs).
+2. **Petugas**: Scan QR warga → API fetch data tagihan terkait.
+3. **Petugas**: Terima uang tunai → Klik "Bayar Tunai" → `POST /api/payments`.
+4. **API**: Karena diinput petugas, status langsung `success` & bill `lunas`.
+5. **Petugas**: Cetak resi via Thermal Printer.
+
+### Status Pembayaran (Payments Table)
+- `pending`: Menunggu verifikasi petugas (khusus input dari warga).
+- `success`: Pembayaran valid & tagihan lunas.
+- `failed`: Bukti bayar ditolak petugas.
+
+---
+
+## �📄 Audit Dokumen Resmi BAPENDA
 
 ### Tahap 1: Pendaftaran
 

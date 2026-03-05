@@ -191,8 +191,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('tax-objects', TaxObjectController::class);
         Route::apiResource('bills', BillController::class)->only(['index', 'store']);
         Route::get('/tax-objects/{taxObject}/pending-periods', [PaymentController::class, 'getPendingPeriods']);
+        Route::get('/payments', [PaymentController::class, 'index']);
         Route::post('/payments', [PaymentController::class, 'store']);
         Route::post('/bills/{bill}/pay', [PaymentController::class, 'store']);
+        Route::put('/payments/{payment}/status', [PaymentController::class, 'updateStatus']);
         Route::put('/verifications/{verification}/status', [VerificationController::class, 'updateStatus']);
         Route::apiResource('verifications', VerificationController::class)->only(['index', 'show', 'store']);
         Route::apiResource('zones', ZoneController::class);
