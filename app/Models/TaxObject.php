@@ -13,6 +13,11 @@ class TaxObject extends Model
 {
     use HasFactory, Auditable;
 
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+    }
+
     protected $fillable = [
         'nop',
         'taxpayer_id',

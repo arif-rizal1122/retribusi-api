@@ -26,4 +26,19 @@ Folder ini berisi banyak file berektensi `.exp` yang merupakan skrip **Expect**.
 - `change_vps_pass.exp` (di /tmp/): Skrip sementara yang digunakan pada 5 Maret 2026 untuk mengamankan dan merotasi password yang bocor di history Git lama.
 
 ---
+
+## ⚠️ Aturan Deployment Frontend (KRITIKAL)
+
+> **Semua proses `npm run build` untuk aplikasi frontend (`retribusi-admin`, `retribusi-mobile`, `retribusi-petugas`) wajib dilakukan langsung di server VPS, BUKAN di komputer lokal.**
+
+Alur deployment frontend yang benar:
+1. Push kode ke `main` di GitHub dari lokal.
+2. SSH ke VPS → masuk ke direktori frontend.
+3. `git pull origin main` untuk mendapatkan kode terbaru.
+4. `npm install && npm run build` dilakukan di VPS.
+5. Nginx otomatis melayani file dari folder `dist/`.
+
+**Tidak diperkenankan** menjalankan `npm run build` lokal dan mengirim `dist/` via SCP.
+
+---
 Semua file ini (dan kredensial di `vps.txt`) sepenuhnya aman berada di komputer lokal Anda, namun telah diblokir dari version control. Gunakan `./<nama_file.exp>` untuk mengeksekusinya.

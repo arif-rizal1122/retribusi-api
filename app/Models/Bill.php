@@ -10,6 +10,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Bill extends Model
 {
     use HasFactory;
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+    }
+
     protected $fillable = [
         'taxpayer_id',
         'tax_object_id',

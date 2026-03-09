@@ -131,6 +131,9 @@
 | `POST` | `/api/pengawas/enforcements/{id}/approve` | `EnforcementNoticeController::approve` | Approve penindakan |
 | `GET` | `/api/pengawas/enforcements/history/{tax_object_id}` | `EnforcementNoticeController::getHistory` | Riwayat penindakan |
 | `GET` | `/api/pengawas/enforcements/{id}/pdf` | `EnforcementNoticeController::generatePDF` | Cetak PDF |
+| `GET/POST` | `/api/spot-checks` | `SpotCheckController` | CRUD Uji Petik |
+| `PATCH` | `/api/spot-checks/{id}/status` | `SpotCheckController::updateStatus` | Approve Uji Petik |
+| `GET` | `/api/spot-checks/tax-object/{id}/estimation` | `SpotCheckController::getEstimatedRevenue` | Kalkulasi Estimasi Spot Check |
 | `GET` | `/api/pengawas/penindakan` | `PenindakanController::index` | List penindakan |
 | `POST` | `/api/pengawas/penindakan/issue-skpdkb` | `PenindakanController::generateSKPDKB` | Generate SKPDKB |
 | `GET` | `/api/reports/summary` | `ReportController::getSummary` | Ringkasan laporan |
@@ -178,6 +181,8 @@
 | 7 | `/dashboard` | `Dashboard` | `Dashboard.tsx` | super_admin, opd, verifikator, petugas, viewer, pengawas, kabid/kasubid, walikota |
 | 8 | `/surveillance` | `Dashboard` | `Dashboard.tsx` | super_admin, pengawas, kabid/kasubid |
 | 9 | `/pengawas/dashboard` | `PengawasDashboard` | `PengawasDashboard.tsx` | super_admin, pengawas, kabid/kasubid |
+| 10 | `/spot-checks` | `SpotCheckList` | `SpotCheckList.tsx` | super_admin, pengawas, kabid/kasubid |
+| 11 | `/spot-checks/create` | `SpotCheckForm` | `SpotCheckForm.tsx` | super_admin, pengawas, kabid/kasubid |
 | 17 | `/billing` | `Billing` | `Billing.tsx` | super_admin, opd, petugas |
 | 18 | `/verification` | `Verification` | `Verification.tsx` | super_admin, opd, verifikator |
 | 19 | `/reporting` | `Reporting` | `Reporting.tsx` | super_admin, opd, viewer |

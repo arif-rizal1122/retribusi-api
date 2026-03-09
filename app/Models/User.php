@@ -35,6 +35,7 @@ class User extends Authenticatable
         'metadata',
         'latitude',
         'longitude',
+        'retribution_type_id',
     ];
  
     /**
@@ -67,6 +68,16 @@ class User extends Authenticatable
     public function opd(): BelongsTo
     {
         return $this->belongsTo(Opd::class);
+    }
+
+    public function retributionType(): BelongsTo
+    {
+        return $this->belongsTo(RetributionType::class);
+    }
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
     }
 
     /**

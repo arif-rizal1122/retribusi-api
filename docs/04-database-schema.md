@@ -277,6 +277,37 @@ CREATE TABLE payments (
 );
 ```
 
+### 8. spot_checks & spot_check_items (Uji Petik)
+```sql
+CREATE TABLE spot_checks (
+    id BIGINT PRIMARY KEY,
+    taxpayer_id BIGINT REFERENCES taxpayers(id),
+    tax_object_id UUID REFERENCES tax_objects(id),
+    inspector_id UUID REFERENCES users(id),
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP NOT NULL,
+    is_weekend BOOLEAN DEFAULT FALSE,
+    taxpayer_representative VARCHAR(255),
+    supervisor_id UUID REFERENCES users(id),
+    status ENUM('draft', 'submitted', 'approved') DEFAULT 'draft',
+    remarks TEXT,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+CREATE TABLE spot_check_items (
+    id BIGINT PRIMARY KEY,
+    spot_check_id BIGINT REFERENCES spot_checks(id) ON DELETE CASCADE,
+    observation_time TIME NOT NULL,
+    visitor_count INT DEFAULT 0,
+    transaction_count INT DEFAULT 0,
+    estimated_value DECIMAL(15,2) DEFAULT 0,
+    details JSON,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
 ---
 
 ## Contoh object_data per Jenis Pajak
