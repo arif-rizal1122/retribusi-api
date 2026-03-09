@@ -15,6 +15,11 @@ class Taxpayer extends Authenticatable
 {
     use HasFactory, HasApiTokens;
 
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+    }
+
     protected $fillable = [
         'opd_id',
         'nik',

@@ -183,6 +183,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin & Petugas ONLY (Restricted by EnsureAdmin middleware)
     // ------------------------------------------------------------------------
     Route::middleware('admin')->group(function () {
+        Route::apiResource('petugas-tasks', \App\Http\Controllers\PetugasTaskController::class);
+        Route::apiResource('spot-checks', \App\Http\Controllers\SpotCheckController::class);
+        Route::patch('spot-checks/{id}/status', [\App\Http\Controllers\SpotCheckController::class, 'updateStatus']);
+        Route::get('spot-checks/tax-object/{id}/estimation', [\App\Http\Controllers\SpotCheckController::class, 'getEstimatedRevenue']);
+        
         Route::get('/analytics/realization', [AnalyticsController::class, 'getRealization']);
         Route::get('/analytics/heatmap', [AnalyticsController::class, 'getHeatmapData']);
         Route::apiResource('retribution-types', RetributionTypeController::class);
