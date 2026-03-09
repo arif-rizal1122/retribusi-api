@@ -15,8 +15,8 @@ class EnsureAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Only allow users that are authenticated and are instances of the User model (Admin/Petugas)
-        if (!auth()->check() || !(auth()->user() instanceof \App\Models\User)) {
+        // Restrict access to admin/staff roles only. Petugas should not access admin routes.
+        if (!auth()->check() || !(auth()->user() instanceof \App\Models\User) || auth()->user()->role === \App\Models\User::ROLE_PETUGAS) {
             return response()->json([
                 'message' => 'Forbidden: Admin access required.'
             ], 403);
