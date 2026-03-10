@@ -19,7 +19,10 @@ Pastikan prinsip *Least Privilege* terjaga. Uji skenario bypass:
 
 ### 2. Akurasi Formula & Kalkulasi (Ref: 07-Formula-Jenis-Pajak.md)
 Validasi hasil matematis pada kalkulator API:
-- **PBB-P2:** NJOPTKP (default 10jt) harus terhitung.
+- **PBB-P2 2026**: 
+  - NJOPTKP (default 10jt) harus terhitung.
+  - **NOP Inquiry**: Response Bapenda harus ter-render real-time.
+  - **NTPD Persistence**: Pastikan NTPD tersimpan di DB lokal setelah bayar sukses.
 - **BPHTB:** `(NPOP - NPOPTKP) * 5%`.
 - **Self-Assessment:** PBJT Restoran/Hotel (10%), Hiburan Malam (40%).
 - **Retribusi:** Pastikan tarif flat (Parkir/Sampah) tidak menghasilkan nilai percentage.

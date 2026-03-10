@@ -44,10 +44,28 @@ class SpotCheckService
 
         $dailyWeekendAvg = $countWeekendChecks > 0 ? $avgWeekend / $countWeekendChecks : 0;
 
-        // Asumsi standar sebulan: 22 Hari Biasa, 8 Hari Akhir Pekan
-        $estimatedMonthly = ($dailyWeekdayAvg * 22) + ($dailyWeekendAvg * 8);
+        // Dynamic calendar split: Calculate actual weekdays and weekends in current month
+        $now = now();
+        $daysInMonth = $now->daysInMonth;
+        $weekdays = 0;
+        $weekends = 0;
+
+        for ($i = 1; $i <= $daysInMonth; $i++) {
+            $date = $now->copy()->day($i);
+            if ($date->isWeekend()) {
+                $weekends++;
+            } else {
+                $weekdays++;
+            }
+        }
+
+        $estimatedMonthly = ($dailyWeekdayAvg * $weekdays) + ($dailyWeekendAvg * $weekends);
 
         return [
+            'month' => $now->format('F Y'),
+            'calendar_days' => $daysInMonth,
+            'weekdays_count' => $weekdays,
+            'weekends_count' => $weekends,
             'daily_weekday_average' => $dailyWeekdayAvg,
             'daily_weekend_average' => $dailyWeekendAvg,
             'total_weekday_check_days' => $countWeekdayChecks,

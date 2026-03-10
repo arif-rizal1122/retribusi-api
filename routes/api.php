@@ -255,6 +255,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/reversal', [PbbBapendaController::class, 'reversal']);
             Route::get('/transactions', [PbbBapendaController::class, 'transactions']);
             Route::get('/stats', [PbbBapendaController::class, 'stats']);
+            Route::post('/sync-all', [PbbBapendaController::class, 'syncAllObjects']);
         });
 
         // Official BAPENDA Documents

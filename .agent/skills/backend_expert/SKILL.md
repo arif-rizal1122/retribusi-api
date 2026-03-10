@@ -47,3 +47,14 @@ Jika jumlah Petugas Penagih di lapangan berkembang hingga ratusan atau ribuan di
 - **JANGAN** menggunakan MySQL/PostgreSQL langsung untuk menyimpan _real-time streaming coordinates_.
 - **MIGRASI** aliran lokasi ini menggunakan *In-Memory Data Store* seperti **Redis** (dengan *TTL/Expiration* agar data usang terhapus otomatis) atau memanfaatkan *WebSockets* (Pusher/Laravel Reverb) ketimbang *HTTP Polling*.
 - Untuk penerapan di Kota Baubau dengan puluhan petugas, implementasi tabel MySQL dengan *Throttling Jarak & Waktu* saat ini sudah **ideal dan sangat aman**.
+
+## 🔄 Manajemen Sinkronisasi Massal (PBB Sync-All)
+
+Fitur `Sync All Data PBB` di Admin memicu pengambilan data (Inquiry) untuk ribuan NOP sekaligus. Hal ini dapat menyebabkan:
+1.  **Timeout API Bapenda:** Backend Bapenda mungkin tidak kuat menerima ribuan request sekuensial dalam waktu singkat.
+2.  **Long-Running Process:** Request HTTP Admin akan menggantung jika backend memproses sekuensial tanpa antrean.
+
+**Strategi Delegasi & Optimasi:**
+- **Batching:** Bagi ribuan NOP menjadi kelompok kecil (misal: 50 NOP per batch) dengan jeda (sleep) 100-200ms antar batch.
+- **Background Jobs:** Sebaiknya gunakan Laravel **Queue** (`Queue::push`) untuk memproses sinkronisasi ini di latar belakang, sehingga UI Admin segera mendapatkan response "Sync Started".
+- **Rate Limiting:** Hormati batas rate limit yang ditentukan oleh `API_PBB_BAUBAU_2026.md`.

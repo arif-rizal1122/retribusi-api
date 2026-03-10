@@ -10,6 +10,8 @@ Skill ini memberikan Anda "Mata Dewa" untuk membaca, memahami, dan menguji selur
 **Satu Aturan Mutlak:** 
 Setiap kali Anda menggunakan skill ini, Anda **WAJIB** membaca `docs/routes-and-components.md` di dalam `/Users/pondokit/Herd/retribusi-api/` terlebih dahulu untuk mendapatkan gambaran real-time struktur tabel, API, dan komponen React lintas repositori.
 
+**Tips**: Rujuk skill **Documentation Context** (`docs_context`) untuk melihat daftar lengkap 11 skill spesialisasi sistem ini.
+
 ## 📂 Pemahaman Ekosistem Workspace
 
 Workspace terbagi menjadi 4 repositori, yang setiap route dan komponennya melayani peran spesifik:
@@ -60,6 +62,16 @@ Menguji flow *Assignment* di lapangan.
 - **Tahap 2 (Assignment Sukses):** `admin` meng-assign tugas secara sah.
 - **Tahap 3 (Aplikasi Petugas):** Petugas buka `retribusi-petugas`, memukul `/api/petugas-tasks`. Tandai `completed`.
 - **Validasi Kritis 2:** Perubahan tercermin di UI Task Board milik Pengawas/Admin.
+
+### TEST SKENARIO 5: Integrasi PBB Real-time (Bapenda 2026)
+Menguji keselarasan data PBB pihak ketiga (Bapenda) dengan ekosistem lokal.
+- **Tahap 1 (Admin/SuperAdmin):** Di `retribusi-admin` (PbbManagement), jalankan "Sync All Data PBB".
+- **Validasi Kritis 1:** Database `taxpayer_pbb_objects` harus terupdate dengan data tagihan terbaru dari API Bapenda.
+- **Tahap 2 (Petugas/Mobile):** Lakukan Inquiry NOP tertentu dan selesaikan Pembayaran (Pay).
+- **Tahap 3 (Verifikasi & Cetak):** 
+  - Petugas: Cetak Struk Bluetooth. Pastikan **NTPD** tercetak.
+  - Mobile: Buka Tab "Riwayat". Pastikan transaksi muncul dengan status `success`.
+- **Validasi Kritis 2:** NTPD harus tersimpan di tabel `transaction_pbb` dan sinkron dengan response API Bapenda.
 
 ---
 

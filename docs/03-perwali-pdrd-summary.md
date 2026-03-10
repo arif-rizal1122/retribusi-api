@@ -200,8 +200,4 @@ Termasuk dalam kategori Retribusi Jasa Usaha:
 
 ---
 
-> **TODO**: Dokumen ini harus dilengkapi dengan detail spesifik dari file PDF "Perwali Tata Cara Pemungutan PDRD un Sil.pdf"
-
----
-
-*Dokumen terakhir diperbarui: Januari 2026*
+*Dokumen terakhir diperbarui: Maret 2026 (Final)*

@@ -217,6 +217,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
   log_subsection "PBB Bapenda Admin"
   test_endpoint GET "$API/pbb/bapenda/transactions" "" "$ADMIN_TOKEN" "200" "/pbb/bapenda/transactions" > /dev/null
   test_endpoint GET "$API/pbb/bapenda/stats" "" "$ADMIN_TOKEN" "200" "/pbb/bapenda/stats" > /dev/null
+  test_endpoint POST "$API/pbb/bapenda/inquiry" "{\"nop\":\"320101010101010101\",\"tahun\":\"$(date +%Y)\"}" "" "404" "/pbb/bapenda/inquiry (Public - Expect 404)" > /dev/null
 
 else
   log_skip "Admin endpoints skipped (no token)"

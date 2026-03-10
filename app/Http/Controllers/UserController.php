@@ -22,6 +22,10 @@ class UserController extends Controller
             $query->where('opd_id', $user->opd_id);
         }
 
+        if ($request->has('role')) {
+            $query->where('role', $request->role);
+        }
+
         $users = $query->with(['opd', 'assignments.retributionType', 'assignments.retributionClassification'])
             ->orderBy('name')
             ->get()

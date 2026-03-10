@@ -41,4 +41,9 @@ class SpotCheck extends Model
     {
         return $this->hasMany(SpotCheckItem::class);
     }
+
+    public function bills()
+    {
+        return $this->hasMany(Bill::class);
+    }
 }

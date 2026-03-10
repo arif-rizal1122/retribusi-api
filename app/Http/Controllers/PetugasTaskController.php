@@ -19,6 +19,11 @@ class PetugasTaskController extends Controller
         // Jika dia role petugas, hanya lihat tugasnya sendiri
         if ($user->role === 'petugas') {
             $query->where('user_id', $user->id);
+        } elseif (!$user->isSuperAdmin()) {
+            // Jika bukan super_admin/admin, hanya lihat tugas di OPD-nya
+            $query->whereHas('user', function($q) use ($user) {
+                $q->where('opd_id', $user->opd_id);
+            });
         }
 
         // Filter status all, pending, completed
@@ -38,7 +43,7 @@ class PetugasTaskController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-        if (!in_array($user->role, ['admin', 'super_admin'])) {
+        if (!$user->isSuperAdmin() && !$user->isPengawas() && $user->role !== 'opd') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -54,6 +59,11 @@ class PetugasTaskController extends Controller
 
         if (!$targetUser) {
             return response()->json(['message' => 'Petugas tidak ditemukan di dalam sistem.'], 404);
+        }
+
+        // Enforce OPD scoping for non-super-admins
+        if (!$user->isSuperAdmin() && $targetUser->opd_id !== $user->opd_id) {
+            return response()->json(['message' => 'Akses Ditolak: Anda hanya bisa menugaskan petugas pada OPD Anda sendiri.'], 403);
         }
 
         if ($user->role === 'admin' && $user->retribution_type_id && $targetUser->retribution_type_id !== $user->retribution_type_id) {
@@ -92,12 +102,18 @@ class PetugasTaskController extends Controller
         $validated = $request->validate([
             'status' => 'required|in:pending,completed',
             'notes' => 'nullable|string',
+            'photo' => 'nullable|image|max:2048',
         ]);
 
         if ($validated['status'] === 'completed' && $task->status === 'pending') {
             $validated['completed_at'] = now();
+            if ($request->hasFile('photo')) {
+                $path = $request->file('photo')->store('tasks/photos', 'public');
+                $validated['completion_photo_path'] = $path;
+            }
         } elseif ($validated['status'] === 'pending') {
             $validated['completed_at'] = null;
+            $validated['completion_photo_path'] = null;
         }
 
         $task->update($validated);
@@ -120,8 +136,13 @@ class PetugasTaskController extends Controller
          }
 
          $user = Auth::user();
-         if (!in_array($user->role, ['admin', 'super_admin'])) {
+         if (!$user->isSuperAdmin() && !$user->isPengawas() && $user->role !== 'opd') {
              return response()->json(['message' => 'Unauthorized deletion'], 403);
+         }
+
+         // Enforce OPD scoping for non-super-admins
+         if (!$user->isSuperAdmin() && $task->user->opd_id !== $user->opd_id) {
+             return response()->json(['message' => 'Unauthorized deletion of other OPD tasks'], 403);
          }
 
          $task->delete();
