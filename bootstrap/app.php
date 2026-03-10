@@ -14,9 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
         $middleware->prepend(\App\Http\Middleware\SecurityHeaders::class);
+        $middleware->prepend(\App\Http\Middleware\QueryStringToken::class);
         
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
+            'query_token' => \App\Http\Middleware\QueryStringToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
