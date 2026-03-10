@@ -45,7 +45,7 @@ Sistem MPAD menggunakan algoritma **Throttling Berlapis** yang wajib dipertahank
 ## 💡 Best Practice & Future Scaling
 Jika jumlah Petugas Penagih di lapangan berkembang hingga ratusan atau ribuan di masa depan:
 - **JANGAN** menggunakan MySQL/PostgreSQL langsung untuk menyimpan _real-time streaming coordinates_.
-- **MIGRASI** aliran lokasi ini menggunakan *In-Memory Data Store* seperti **Redis** (dengan *TTL/Expiration* agar data usang terhapus otomatis) atau memanfaatkan *WebSockets* (Pusher/Laravel Reverb) ketimbang *HTTP Polling*.
+- **MIGRASI** aliran lokasi ini menggunakan *In-Memory Data Store* seperti **Redis** (dengan *TTL/Expiration* agar data usang terhapus otomatis) atau memanfaatkan *WebSockets* (Pusher/Laravel Reverb) ketimbang *HTTP Polling`.
 - Untuk penerapan di Kota Baubau dengan puluhan petugas, implementasi tabel MySQL dengan *Throttling Jarak & Waktu* saat ini sudah **ideal dan sangat aman**.
 
 ## 🔄 Manajemen Sinkronisasi Massal (PBB Sync-All)
@@ -57,4 +57,12 @@ Fitur `Sync All Data PBB` di Admin memicu pengambilan data (Inquiry) untuk ribua
 **Strategi Delegasi & Optimasi:**
 - **Batching:** Bagi ribuan NOP menjadi kelompok kecil (misal: 50 NOP per batch) dengan jeda (sleep) 100-200ms antar batch.
 - **Background Jobs:** Sebaiknya gunakan Laravel **Queue** (`Queue::push`) untuk memproses sinkronisasi ini di latar belakang, sehingga UI Admin segera mendapatkan response "Sync Started".
-- **Rate Limiting:** Hormati batas rate limit yang ditentukan oleh `API_PBB_BAUBAU_2026.md`.
+- **Rate Limiting**: Hormati batas rate limit yang ditentukan oleh `API_PBB_BAUBAU_2026.md`.
+
+## 📊 4. Dashboard Data Mocking (AchievementSeeder)
+Saat menyiapkan demo atau dashboard baru, gunakan `AchievementSeeder` untuk mengisi data agar grafik tidak kosong.
+- **Pattern**: 
+  - Gunakan `updateOrCreate` agar seeder bersifat idompoten.
+  - Tambahkan variasi `baseAmount` per `retribution_classification` untuk visualisasi chart yang bermakna.
+  - Selalu sertakan data historis (misal: Q1 2026) untuk pengujian filter periode.
+- **Kritikal**: Pastikan `nik`, `npwpd`, dan `nop` dibuat secara konsisten agar relasi antar tabel (`Taxpayer` -> `TaxObject` -> `Bill` -> `Payment`) tetap valid.

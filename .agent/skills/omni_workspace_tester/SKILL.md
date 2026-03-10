@@ -73,6 +73,14 @@ Menguji keselarasan data PBB pihak ketiga (Bapenda) dengan ekosistem lokal.
   - Mobile: Buka Tab "Riwayat". Pastikan transaksi muncul dengan status `success`.
 - **Validasi Kritis 2:** NTPD harus tersimpan di tabel `transaction_pbb` dan sinkron dengan response API Bapenda.
 
+### TEST SKENARIO 6: Rekonsiliasi Kas (Settlement Flow)
+Menguji siklus hulu-ke-hilir dana tunai dari Petugas ke Admin.
+- **Tahap 1 (Aplikasi Petugas):** Lakukan pembayaran tagihan menggunakan metode `cash`.
+- **Validasi Kritis 1:** Dashboard Petugas harus menampilkan kenaikan pada nilai "Pending Setoran".
+- **Tahap 2 (Dashboard Admin):** Admin membuka menu Pelaporan, mencari nama Petugas tersebut, dan klik "Settle".
+- **Tahap 3 (Verifikasi Akhir):** Cek kembali Dashboard Petugas.
+- **Validasi Kritis 2:** Nilai "Pending Setoran" harus kembali ke `0` (atau berkurang sejumlah nilai yang di-settle) dan status di riwayat berubah menjadi "Sudah Disetor".
+
 ---
 
 ## 🛠 Panduan Eksekusi (How to Test)
