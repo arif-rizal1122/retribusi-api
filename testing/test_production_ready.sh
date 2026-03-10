@@ -141,7 +141,7 @@ LOGIN_RESPONSE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL
   -H "Origin: $FRONTEND_ORIGIN" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
-  -d '{"nik":"3201234567890001","password":"password123"}')
+  -d '{"nik":"1234567890123456","password":"password"}')
 
 if echo "$LOGIN_RESPONSE" | grep -q '"token"'; then
   TOKEN=$(echo "$LOGIN_RESPONSE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
