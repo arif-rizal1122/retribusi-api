@@ -6,8 +6,21 @@
 # Run: chmod +x test_penetration.sh && ./test_penetration.sh
 # ============================================================================
 
+# Default values
 API_URL="https://api.sipanda.online"
 FRONTEND="https://sipanda.online"
+
+# Environment selection
+if [ "$1" == "staging" ]; then
+  echo -e "${YELLOW}Mode: STAGING (mpad.online)${NC}"
+  API_URL="https://api.mpad.online"
+  FRONTEND="https://mpad.online"
+elif [ "$1" == "dev" ]; then
+  echo -e "${YELLOW}Mode: DEVELOPMENT (sipanda.online)${NC}"
+  API_URL="https://api-dev.sipanda.online"
+  FRONTEND="https://dev.sipanda.online"
+fi
+
 RESULTS_FILE="results/13_Penetration_Test_$(date +%Y%m%d_%H%M%S).md"
 
 PASS=0
