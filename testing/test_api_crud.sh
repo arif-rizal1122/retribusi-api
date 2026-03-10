@@ -15,6 +15,10 @@ if [ "$1" == "dev" ]; then
   echo -e "${YELLOW}Mode: DEVELOPMENT (VPS)${NC}"
   API="https://api-dev.sipanda.online/api"
   ORIGIN="https://dev.sipanda.online"
+elif [ "$1" == "staging" ]; then
+  echo -e "${YELLOW}Mode: STAGING (mpad.online)${NC}"
+  API="https://api.mpad.online/api"
+  ORIGIN="https://mpad.online"
 elif [ "$1" == "local" ]; then
   echo -e "${YELLOW}Mode: LOCALHOST${NC}"
   API="http://localhost:8000/api"
@@ -116,7 +120,7 @@ test_endpoint GET "$API/pbb/classifications" "" "" "200" "/pbb/classifications" 
 test_endpoint GET "$API/citizen/bills?nik=$CITIZEN_NIK" "" "" "200" "/citizen/bills?nik=..." > /dev/null
 
 # Health check
-test_endpoint GET "https://api.sipanda.online/up" "" "" "200" "/up (health)" > /dev/null
+test_endpoint GET "https://api.mpad.online/up" "" "" "200" "/up (health)" > /dev/null
 
 # ============================================================================
 # 2. AUTH-REQUIRED ENDPOINTS (Citizen)

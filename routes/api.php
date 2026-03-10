@@ -40,6 +40,14 @@ Route::get('/citizen/bills', [BillController::class, 'citizenBills']); // Public
 Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyBill']);
 Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
 
+// Public: Documents (PDF)
+Route::prefix('public/pdf')->group(function () {
+    Route::get('/skpd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skrd']);
+    Route::get('/skrd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skrd']);
+    Route::get('/sspd/{billId}', [\App\Http\Controllers\DocumentController::class, 'sspd']);
+    Route::get('/sppt/{billId}', [\App\Http\Controllers\DocumentController::class, 'sppt']);
+});
+
 // Tax Simulation (public, no auth needed)
 Route::post('/simulate-tax', function (Request $request) {
     $request->validate([

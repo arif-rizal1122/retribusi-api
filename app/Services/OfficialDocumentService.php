@@ -15,6 +15,15 @@ class OfficialDocumentService
     {
         $this->tteService = $tteService;
     }
+
+    /**
+     * Render data to PDF
+     */
+    public function renderPDF(string $viewPath, array $data, string $filename = 'document.pdf')
+    {
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($viewPath, $data);
+        return $pdf->stream($filename);
+    }
     /**
      * Generate SPP (Surat Perintah Pemeriksaan)
      */

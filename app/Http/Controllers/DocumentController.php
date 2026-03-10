@@ -37,11 +37,9 @@ class DocumentController extends Controller
      */
     public function skrd($billId)
     {
-        $bill = Bill::findOrFail($billId);
-        return response()->json([
-            'message' => 'SKRD berhasil dibuat',
-            'data' => $this->docService->generateSKRD($bill),
-        ]);
+        $bill = Bill::with(['taxpayer', 'retributionType'])->findOrFail($billId);
+        $data = $this->docService->generateSKRD($bill);
+        return $this->docService->renderPDF('pdf.skrd', $data, "SKRD-{$bill->bill_number}.pdf");
     }
 
     /**
@@ -50,11 +48,9 @@ class DocumentController extends Controller
      */
     public function sspd($billId)
     {
-        $bill = Bill::with('payments')->findOrFail($billId);
-        return response()->json([
-            'message' => 'SSPD berhasil dibuat',
-            'data' => $this->docService->generateSSPD($bill),
-        ]);
+        $bill = Bill::with(['taxpayer', 'retributionType', 'payments'])->findOrFail($billId);
+        $data = $this->docService->generateSSPD($bill);
+        return $this->docService->renderPDF('pdf.sspd', $data, "SSPD-{$bill->bill_number}.pdf");
     }
 
     /**
@@ -77,10 +73,8 @@ class DocumentController extends Controller
     public function sppt($billId)
     {
         $bill = Bill::findOrFail($billId);
-        return response()->json([
-            'message' => 'SPPT berhasil dibuat',
-            'data' => $this->docService->generateSPPT($bill),
-        ]);
+        $data = $this->docService->generateSPPT($bill);
+        return $this->docService->renderPDF('pdf.sppt', $data, "SPPT-{$data['nop']}-{$data['year']}.pdf");
     }
 
     /**
