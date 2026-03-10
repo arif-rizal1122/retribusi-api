@@ -6,9 +6,24 @@
 # Run: chmod +x test_production_ready.sh && ./test_production_ready.sh
 # ============================================================================
 
+# Default values
 API_URL="https://api.sipanda.online"
 FRONTEND_ORIGIN="https://sipanda.online"
 ADMIN_ORIGIN="https://admin.sipanda.online"
+
+# Environment selection
+if [ "$1" == "staging" ]; then
+  echo -e "${YELLOW}Mode: STAGING (mpad.online)${NC}"
+  API_URL="https://api.mpad.online"
+  FRONTEND_ORIGIN="https://mpad.online"
+  ADMIN_ORIGIN="https://admin.mpad.online"
+elif [ "$1" == "dev" ]; then
+  echo -e "${YELLOW}Mode: DEVELOPMENT (sipanda.online)${NC}"
+  API_URL="https://api-dev.sipanda.online"
+  FRONTEND_ORIGIN="https://dev.sipanda.online"
+  ADMIN_ORIGIN="https://admin-dev.sipanda.online"
+fi
+
 RESULTS_FILE="results/12_Production_Readiness_$(date +%Y%m%d_%H%M%S).md"
 
 PASS=0
