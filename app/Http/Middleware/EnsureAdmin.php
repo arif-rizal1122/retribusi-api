@@ -15,10 +15,11 @@ class EnsureAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Restrict access to admin/staff roles only. Petugas should not access admin routes.
-        if (!auth()->check() || !(auth()->user() instanceof \App\Models\User) || auth()->user()->role === \App\Models\User::ROLE_PETUGAS) {
+        // Allow all internal staff roles (Admin, OPD, Pengawas, Petugas, Walikota)
+        // Only block unauthenticated users or those without a valid role.
+        if (!auth()->check() || !(auth()->user() instanceof \App\Models\User)) {
             return response()->json([
-                'message' => 'Forbidden: Admin access required.'
+                'message' => 'Forbidden: Internal access required.'
             ], 403);
         }
 

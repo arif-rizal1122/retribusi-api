@@ -20,7 +20,7 @@ class RetributionTypeScope implements Scope
     public function apply(Builder $builder, Model $model): void
     {
         // Check if user is logged in, is an admin, and has a retribution_type_id restriction
-        if (Auth::check() && Auth::user()->role === 'admin' && Auth::user()->retribution_type_id) {
+        if (Auth::check() && in_array(Auth::user()->role, ['admin', 'pengawas']) && Auth::user()->retribution_type_id) {
             
             $typeId = Auth::user()->retribution_type_id;
 

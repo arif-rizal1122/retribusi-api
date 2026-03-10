@@ -18,37 +18,66 @@ class PenindakanController extends Controller
     public function generateSKPDKB(Request $request)
     {
         $request->validate([
-            'enforcement_notice_id' => 'required|exists:enforcement_notices,id',
-            'deficit_amount' => 'required|numeric|min:1',
+            'enforcement_notice_id' => 'nullable|exists:enforcement_notices,id',
+            'spot_check_id' => 'nullable|exists:spot_checks,id',
+            'deficit_amount' => 'required_without:spot_check_id|numeric|min:0',
             'notes' => 'nullable|string',
         ]);
-
-        $notice = EnforcementNotice::findOrFail($request->enforcement_notice_id);
 
         if (!Auth::user()->isKabid() && !Auth::user()->isSuperAdmin()) {
             return response()->json(['message' => 'Unauthorized. Only Kabid can issue SKPDKB.'], 403);
         }
 
-        return DB::transaction(function () use ($request, $notice) {
+        return DB::transaction(function () use ($request) {
+            $taxpayerId = null;
+            $taxObjectId = null;
+            $retributionTypeId = null;
+            $notes = $request->notes;
+            $amount = $request->deficit_amount;
+            $period = 'Manual Audit Deficit';
+
+            if ($request->enforcement_notice_id) {
+                $notice = EnforcementNotice::findOrFail($request->enforcement_notice_id);
+                $taxpayerId = $notice->taxObject->taxpayer_id;
+                $taxObjectId = $notice->tax_object_id;
+                $retributionTypeId = $notice->taxObject->retribution_type_id;
+                $notes = 'Penindakan SKPDKB berdasarkan audit nomor ' . $notice->number . '. ' . $notes;
+                $period = $notice->created_at->format('F Y') . ' (Audit Deficit)';
+            } elseif ($request->spot_check_id) {
+                $spotCheck = \App\Models\SpotCheck::with('taxObject')->findOrFail($request->spot_check_id);
+                $taxpayerId = $spotCheck->taxpayer_id;
+                $taxObjectId = $spotCheck->tax_object_id;
+                $retributionTypeId = $spotCheck->taxObject->retribution_type_id;
+                
+                $service = new \App\Services\SpotCheckService();
+                $estimation = $service->calculateEstimatedMonthlyRevenue($taxObjectId);
+                $amount = $estimation['estimated_monthly_revenue'];
+                
+                $notes = 'Penindakan SKPDKB berdasarkan hasil Uji Petik nomor #' . $spotCheck->id . '. ' . $notes;
+                $period = $spotCheck->created_at->format('F Y') . ' (Uji Petik Estimation)';
+            }
+
             // Create a new bill specifically for the underpayment
             $bill = Bill::create([
-                'taxpayer_id' => $notice->taxObject->taxpayer_id,
-                'tax_object_id' => $notice->tax_object_id,
-                'retribution_type_id' => $notice->taxObject->retribution_type_id,
+                'taxpayer_id' => $taxpayerId,
+                'tax_object_id' => $taxObjectId,
+                'spot_check_id' => $request->spot_check_id,
+                'retribution_type_id' => $retributionTypeId,
                 'bill_number' => 'SKPDKB-' . strtoupper(uniqid()),
-                'amount' => $request->deficit_amount,
-                'period' => $notice->created_at->format('F Y') . ' (Audit Deficit)',
+                'amount' => $amount,
+                'period' => $period,
                 'due_date' => now()->addDays(30),
                 'status' => 'pending',
-                'notes' => 'Penindakan SKPDKB berdasarkan audit nomor ' . $notice->number . '. ' . $request->notes,
+                'notes' => $notes,
                 'created_by' => Auth::id(),
             ]);
 
-            // Update notice status and link to the new bill
-            $notice->update([
-                'status' => 'penindakan_issued',
-                'notes' => $notice->notes . "\n[SKPDKB Issued: " . $bill->bill_number . "]",
-            ]);
+            if ($request->enforcement_notice_id) {
+                $notice->update([
+                    'status' => 'penindakan_issued',
+                    'notes' => $notice->notes . "\n[SKPDKB Issued: " . $bill->bill_number . "]",
+                ]);
+            }
 
             return response()->json([
                 'message' => 'SKPDKB berhasil diterbitkan.',

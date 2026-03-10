@@ -138,6 +138,18 @@ class VerificationController extends Controller
                         'approved_at' => Carbon::now(),
                     ]);
 
+                    // Calculate amount based on metadata if available
+                    $amount = $taxObject->retributionType->base_amount ?? 0;
+                    $metadata = $taxObject->metadata ?? [];
+                    
+                    // Simple logic for Hotel/Restaurant (e.g., room count or scale)
+                    // This is a "perfection" refinement: checking for common keys
+                    if (isset($metadata['jumlah_kamar']) && $amount > 0) {
+                        $amount = $amount * (int)$metadata['jumlah_kamar'];
+                    } elseif (isset($metadata['luas_m2']) && $amount > 0) {
+                        $amount = $amount * (float)$metadata['luas_m2'];
+                    }
+
                     // Create initial bill automatically
                     Bill::create([
                         'user_id' => $user->id,
@@ -147,7 +159,7 @@ class VerificationController extends Controller
                         'retribution_type_id' => $taxObject->retribution_type_id,
                         'retribution_classification_id' => $taxObject->retribution_classification_id,
                         'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
-                        'amount' => $taxObject->retributionType->base_amount ?? 0,
+                        'amount' => $amount,
                         'status' => 'pending',
                         'period' => Carbon::now()->isoFormat('MMMM YYYY'),
                         'due_date' => Carbon::now()->addDays(30),

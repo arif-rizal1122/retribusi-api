@@ -19,6 +19,7 @@ class Bill extends Model
     protected $fillable = [
         'taxpayer_id',
         'tax_object_id',
+        'spot_check_id',
         'opd_id',
         'retribution_type_id',
         'retribution_classification_id',
@@ -105,6 +106,11 @@ class Bill extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function spotCheck(): BelongsTo
+    {
+        return $this->belongsTo(SpotCheck::class);
     }
 
     public function waivers(): HasMany

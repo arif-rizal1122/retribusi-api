@@ -12,6 +12,7 @@ Setiap kali Anda diminta untuk melakukan pengujian (testing) atau memvalidasi fi
 3. Selalu rujuk ke `docs/TESTING_GUIDE.md` untuk informasi kredensial akun demo dan panduan testing yang ada.
 4. Laporan hasil testing dari bash script biasanya tercatat di folder `testing/results/`.
 5. Jika membuat skenario test via PHP PHPUnit, tempatkan di folder `tests/Unit` atau `tests/Feature` dan pastikan mematuhi best practices (Gunakan `RefreshDatabase` atau hindari merusak database production).
+6. **Validasi Khusus PBB:** Setiap pengujian fitur pembayaran PBB WAJIB memverifikasi keberadaan dan format **NTPD** (Nomor Transaksi Penerimaan Daerah) pada response API dan layout struk (thermal text).
 
 ## Eksekusi Script Testing
 Terdapat script shell yang sudah disiapkan di folder `testing/`:

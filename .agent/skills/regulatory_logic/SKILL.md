@@ -27,8 +27,13 @@ Pastikan konstanta tarif di kode program sesuai dengan ketentuan:
 - **Sanksi Keterlambatan:** Bunga 2% per bulan (Maksimal 24 bulan).
 
 ## 🧮 Aturan PBB (Pajak Bumi & Bangunan)
+- **Dasar Hukum:** `API_PBB_BAUBAU_2026.md` (Integrasi Bapenda 2026).
 - **NJOPTKP:** Default Rp 10.000.000 sebagai pengurang dasar pengenaan.
 - **Inquiry:** Selalu validasi status bayar ("BLM BAYAR" vs "LUNAS") berdasarkan response JSON body, bukan hanya HTTP status code.
+- **Bukti Pembayaran (Receipt):** 
+  - Wajib mencantumkan **NTPD** (Nomor Transaksi Penerimaan Daerah) sebagai bukti sah dari Bapenda.
+  - Receipt Thermal (Petugas) harus mencakup: NOP, Tahun, Nama WP, NTPD, Pokok, Denda, dan Total.
+- **SPOP/LSPOP Sync:** Data objek pajak (NOP) di sistem MPAD harus disinkronkan secara berkala/massal dari Admin untuk menjaga akurasi status piutang.
 
 ## 🛡️ Aturan Modifikasi Kode
 1. **Dilarang keras** mengubah formula kalkulasi di `app/Services/` tanpa memverifikasi ulang angka-angka di atas.

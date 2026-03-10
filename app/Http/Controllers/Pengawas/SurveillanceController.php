@@ -17,15 +17,17 @@ class SurveillanceController extends Controller
      */
     public function getAnomalies(Request $request)
     {
+        $user = $request->user();
         $threshold = $request->get('threshold', 0.2); // 20% diff
         
-        // This is a simulation source. In real implementation, this would query
-        // Tapping Box data or POS Integration tables.
-        // For now, we compare against expected revenue from BillingService.
-        
-        $anomalies = TaxObject::with(['taxpayer', 'retributionType', 'classification'])
-            ->where('status', 'active')
-            ->get()
+        $query = TaxObject::with(['taxpayer', 'retributionType', 'classification'])
+            ->where('status', 'active');
+
+        if (!$user->isSuperAdmin()) {
+            $query->where('opd_id', $user->opd_id);
+        }
+
+        $anomalies = $query->get()
             ->map(function ($obj) use ($threshold) {
                 // Simplified anomaly logic for demo
                 // If the latest payment is significantly lower than average or zero for long time
@@ -71,12 +73,19 @@ class SurveillanceController extends Controller
         return response()->json(['data' => $anomalies]);
     }
 
-    public function getComplianceStats()
+    public function getComplianceStats(Request $request)
     {
-        $totalObjects = TaxObject::where('status', 'active')->count();
+        $user = $request->user();
+        $query = TaxObject::where('status', 'active');
+        
+        if (!$user->isSuperAdmin()) {
+            $query->where('opd_id', $user->opd_id);
+        }
+
+        $totalObjects = $query->count();
         
         // Compliant = Has at least one payment in the last 30 days
-        $compliantObjects = TaxObject::where('status', 'active')
+        $compliantObjects = (clone $query)
             ->whereHas('payments', function($q) {
                 $q->where('created_at', '>=', Carbon::now()->subDays(30));
             })->count();
@@ -95,14 +104,23 @@ class SurveillanceController extends Controller
     public function getPetugasLocations(Request $request)
     {
         $user = $request->user();
-        $opdId = (!$user->isSuperAdmin() && !$user->isPengawas()) ? $user->opd_id : $request->query('opd_id');
+        $opdId = $user->opd_id;
 
-        $petugas = \App\Models\User::where('role', 'petugas')
+        // Only Super Admin can override opd_id filter
+        if ($user->isSuperAdmin() && $request->has('opd_id')) {
+            $opdId = $request->query('opd_id');
+        }
+
+        $query = \App\Models\User::where('role', 'petugas')
             ->where('status', 'active')
             ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
-            ->with('opd:id,name')
+            ->whereNotNull('longitude');
+
+        if ($opdId) {
+            $query->where('opd_id', $opdId);
+        }
+
+        $petugas = $query->with('opd:id,name')
             ->get(['id', 'name', 'latitude', 'longitude', 'opd_id', 'updated_at']);
 
         return response()->json($petugas->map(fn($p) => [

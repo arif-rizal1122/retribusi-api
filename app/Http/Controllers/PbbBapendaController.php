@@ -455,4 +455,37 @@ class PbbBapendaController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Bulk Sync all NOPs from Bapenda (Admin Only)
+     */
+    public function syncAllObjects(Request $request)
+    {
+        $objects = TaxpayerPbbObject::all();
+        $count = 0;
+        $errors = 0;
+
+        foreach ($objects as $obj) {
+            try {
+                $inquiry = $this->bapendaService->inquiry($obj->nop, date('Y'));
+                if (($inquiry['status'] ?? 0) === 200) {
+                    $obj->update([
+                        'name_on_sppt'    => $inquiry['nama_wp'] ?? $obj->name_on_sppt,
+                        'address_on_sppt' => $inquiry['alamat_wp'] ?? $obj->address_on_sppt,
+                        'kelurahan'       => $inquiry['kelurahan'] ?? $obj->kelurahan,
+                        'kota'            => $inquiry['kota'] ?? $obj->kota,
+                    ]);
+                    $count++;
+                }
+            } catch (\Exception $e) {
+                $errors++;
+                Log::error('Sync PBB Error', ['nop' => $obj->nop, 'msg' => $e->getMessage()]);
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Berhasil menyinkronkan $count data NOP. ($errors gagal)",
+        ]);
+    }
 }

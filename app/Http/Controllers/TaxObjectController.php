@@ -15,18 +15,18 @@ class TaxObjectController extends Controller
         $user = $request->user();
         $query = TaxObject::with(['taxpayer', 'retributionType', 'opd', 'classification']);
 
-        if ($user && $user->role === 'opd') {
+        if ($user && ($user->role === 'opd' || $user->role === 'kabid_pengawas' || $user->role === 'kasubid_pengawas' || $user->role === 'admin' || $user->role === 'pengawas')) {
             $query->where('opd_id', $user->opd_id);
         } elseif ($user && $user->role === 'petugas') {
             $query->where('opd_id', $user->opd_id);
             
-            // Filter sub-objects created by this Petugas (via Taxpayer relation or object relation)
+            // Filter objects created by this Petugas (via Taxpayer relation or object relation)
             $query->whereHas('taxpayer', function($q) use ($user) {
                 $q->where('created_by', $user->id);
             });
 
             $assignments = $user->assignments;
-            if ($assignments) {
+            if ($assignments && $assignments->count() > 0) {
                 $query->where(function($q) use ($assignments) {
                     foreach ($assignments as $assignment) {
                         $q->orWhere(function($sq) use ($assignment) {
@@ -63,7 +63,13 @@ class TaxObjectController extends Controller
             });
         }
 
-        $objects = $query->latest()->paginate($request->get('per_page', 50));
+        $perPage = $request->get('per_page', 50);
+        if ($perPage == -1) {
+            $objects = $query->latest()->get();
+            return response()->json(['data' => $objects]);
+        }
+
+        $objects = $query->latest()->paginate($perPage);
 
         return response()->json($objects);
     }
