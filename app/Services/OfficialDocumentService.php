@@ -105,6 +105,8 @@ class OfficialDocumentService
 
         $totalPbb = (float) $calc['pbb_terhutang'];
 
+        $qrBase64 = base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')->size(200)->generate(url("/api/verify/bill/{$bill->bill_number}")));
+
         return [
             'nop' => $bill->taxObject->nop ?? 'BELUM ADA NOP',
             'year' => date('Y', strtotime($bill->period_start ?? $bill->created_at)),
@@ -126,6 +128,7 @@ class OfficialDocumentService
             'terbilang' => self::terbilang($totalPbb),
             'due_date' => $bill->due_date ? $bill->due_date->isoFormat('D MMMM YYYY') : '-',
             'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'qr_base64' => $qrBase64,
         ];
     }
 

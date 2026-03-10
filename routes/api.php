@@ -177,6 +177,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/my-objects', [PbbBapendaController::class, 'myObjects']);
         Route::get('/my-transactions', [PbbBapendaController::class, 'myTransactions']);
         Route::post('/pay', [PbbBapendaController::class, 'pay']);
+        Route::get('/download-sppt', [PbbBapendaController::class, 'downloadSPPT']);
     });
 
     // ------------------------------------------------------------------------
