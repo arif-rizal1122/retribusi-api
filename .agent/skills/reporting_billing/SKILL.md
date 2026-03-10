@@ -33,6 +33,15 @@ Output dari siklus ini adalah dokumen yang dapat diunduh:
 2. **SSPD**: Surat Setoran Pajak Daerah (setelah lunas).
 3. **SPPT**: Untuk PBB.
 
+## 🤝 Fase 5: Rekonsiliasi & Settlement (Cash Orchestration)
+Fase ini memastikan uang tunai yang dipungut Petugas di lapangan benar-benar sampai ke kas negara melalui Admin.
+- **Workflow**:
+  1. **Pending**: Setiap pembayaran tunai (`cash`) oleh Petugas otomatis berstatus `metadata->settlement_status = 'pending'`.
+  2. **Setoran**: Petugas menyetorkan uang fisik ke Admin Bapenda.
+  3. **Approval**: Admin melakukan rekonsiliasi via Dashboard Pelaporan (Admin) menggunakan tombol "Settle".
+  4. **Settled**: Status berubah menjadi `settled`, dan jumlah `pending_settlement` di Dashboard Petugas berkurang.
+- **Kritikal**: Selalu pantau `GET /api/reports/petugas-performance` untuk melihat akumulasi dana yang belum disetorkan per petugas.
+
 ## 🛡️ Aturan Keamanan & Integritas
 - **Immutability**: Tagihan yang sudah berstatus `paid` tidak boleh diubah nilainya kecuali melalui proses `Reversal` (khusus PBB) atau oleh Super Admin dengan log audit yang ketat.
 - **Double Entry**: Pastikan setiap pembayaran (`Payment`) terekam ke dalam tabel ledger virtual untuk rekonsiliasi keuangan.

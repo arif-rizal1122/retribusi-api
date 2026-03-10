@@ -44,13 +44,13 @@ Ketika mencatatkan error baru ke `Mitigation_Registry.md`, gunakan format standa
 - **Penyebab Utama**: Pemrosesan sekuensial ribuan data tanpa batching.
 - **Mitigasi**: Gunakan Laravel Queue atau Chunking (50-100 data per batch) seperti dijelaskan di skill **Backend Expert**.
 
+### 5. Seeder Schema Mismatch (QueryException)
+- **Indikator**: `SQLSTATE[42S22]: Column not found` saat menjalankan `db:seed`.
+- **Penyebab Utama**: Model/Seeder menembak kolom yang sudah dihapus atau tidak ada di migrasi terbaru (misal: kolom `status` pada `taxpayers`).
+- **Mitigasi**: Selalu gunakan `DESCRIBE table_name` via tinker sebelum membuat seeder masif untuk memastikan integritas kolom. Gunakan `updateOrCreate` untuk idempotensi.
+
 ## 🧠 Aturan Penanganan Masalah Saat Testing
 1. **Identifikasi Dini:** Jika hasil `run_command` dari script QA mengembalikan gagal/error tak terduga (contoh: status HTTP 500, exception di CLI), JANGAN langsung menerka. Dump exception ke STDERR untuk membaca detail baris kode.
 2. **Lihat Registri Sejarah:** Sebelum memperbaiki bug, rujuklah (view_file) `testing/results/Mitigation_Registry.md` (if any) barangkali error tersebut adalah bug regresi yang solusinya sudah pernah dipetakan sebelumnya.
 3. **Penyembuhan (Healing):** Buka file yang menyebabkan *error trace*, gunakan `replace_file_content` untuk membenahi, uji ulang script QA hingga *Passed*.
 4. **Dokumentasikan:** Catat perbaikan Anda menggunakan format di atas ke _Registry Log_.
-
-Dengan adanya *Error Registry* ini, pengetahuan siklus _development_ tidak pernah hilang dan pengujian environment Staging/Production di waktu mendatang dapat mengantisipasi *known issues* terlebih dahulu!
-
----
-*Terakhir diperbarui: 2026-03-10 oleh Antigravity (Task Dashboard Expansion)*
