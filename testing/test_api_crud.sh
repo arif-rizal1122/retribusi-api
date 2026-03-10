@@ -98,7 +98,7 @@ else
 fi
 
 # Citizen login
-CITIZEN_RESP=$(test_json POST "$API/citizen/login" '{"nik":"3201234567890001","password":"password123"}')
+CITIZEN_RESP=$(test_json POST "$API/citizen/login" '{"nik":"1234567890123456","password":"password"}')
 CITIZEN_TOKEN=$(echo "$CITIZEN_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 if [ -n "$CITIZEN_TOKEN" ]; then
   log_pass "Citizen login → token received"
@@ -117,7 +117,7 @@ log_section "1. Public Endpoints (No Auth)"
 test_endpoint GET "$API/opds" "" "" "200" "/opds (list OPDs)" > /dev/null
 test_endpoint GET "$API/tax-formulas" "" "" "200" "/tax-formulas" > /dev/null
 test_endpoint GET "$API/pbb/classifications" "" "" "200" "/pbb/classifications" > /dev/null
-test_endpoint GET "$API/citizen/bills?nik=$CITIZEN_NIK" "" "" "200" "/citizen/bills?nik=..." > /dev/null
+test_endpoint GET "$API/citizen/bills?nik=$CITIZEN_NIK" "" "$ADMIN_TOKEN" "200" "/citizen/bills?nik=..." > /dev/null
 
 # Health check
 test_endpoint GET "https://api.mpad.online/up" "" "" "200" "/up (health)" > /dev/null

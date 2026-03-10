@@ -12,9 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
-        $middleware->prepend(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->prepend(\App\Http\Middleware\QueryStringToken::class);
+        $middleware->prepend(\App\Http\Middleware\SecurityHeaders::class);
+        $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
         
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
@@ -22,5 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response) {
+            $response->headers->set('Access-Control-Allow-Origin', 'https://mpad.online');
+            $response->headers->set('Access-Control-Allow-Credentials', 'true');
+            return $response;
+        });
         \Sentry\Laravel\Integration::handles($exceptions);
     })->create();

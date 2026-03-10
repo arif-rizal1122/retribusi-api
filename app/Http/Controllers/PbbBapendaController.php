@@ -62,11 +62,14 @@ class PbbBapendaController extends Controller
             ], 404);
 
         } catch (\Exception $e) {
-            Log::error('PBB Inquiry Error', ['error' => $e->getMessage()]);
+            Log::error('PBB Inquiry Service Error', [
+                'nop' => $request->nop,
+                'error' => $e->getMessage()
+            ]);
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Gagal terhubung ke server Bapenda. Silakan coba lagi.',
-            ], 500);
+                'message' => 'Layanan Bapenda sedang tidak tersedia. (Error: ' . $e->getMessage() . ')',
+            ], 503);
         }
     }
 

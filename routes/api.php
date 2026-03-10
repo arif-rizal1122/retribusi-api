@@ -26,8 +26,8 @@ use App\Http\Controllers\PbbBapendaController;
 |--------------------------------------------------------------------------
 */
 
-// Public auth routes with explicit throttle
-Route::middleware('throttle:60,1')->group(function () {
+// Public auth routes with strict throttle (prevent brute force)
+Route::middleware('throttle:10,1')->group(function () {
     Route::post('/opd/register', [OpdController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/citizen/login', [AuthController::class, 'citizenLogin']);
@@ -139,8 +139,8 @@ Route::get('/pbb/classifications/{type}/{code}', [PbbClassificationController::c
 Route::post('/pbb/lookup-class', [PbbClassificationController::class, 'lookupByValue']);
 Route::post('/pbb/calculate', [PbbClassificationController::class, 'calculate']);
 
-// Public: PBB Bapenda Inquiry (cek tagihan tanpa login)
-Route::post('/pbb/bapenda/inquiry', [PbbBapendaController::class, 'inquiry']);
+// Public: PBB Bapenda Inquiry (cek tagihan tanpa login) - Throttled
+Route::post('/pbb/bapenda/inquiry', [PbbBapendaController::class, 'inquiry'])->middleware('throttle:10,1');
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
