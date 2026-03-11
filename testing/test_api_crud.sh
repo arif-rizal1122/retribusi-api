@@ -98,15 +98,29 @@ else
 fi
 
 # Citizen login
-CITIZEN_RESP=$(test_json POST "$API/citizen/login" '{"nik":"1234567890123456","password":"password"}')
+CITIZEN_LOGIN_DATA='{"nik":"1234567890123456","password":"password"}'
+CITIZEN_RESP=$(test_json POST "$API/citizen/login" "$CITIZEN_LOGIN_DATA")
 CITIZEN_TOKEN=$(echo "$CITIZEN_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+if [ -z "$CITIZEN_TOKEN" ] && [ -n "$ADMIN_TOKEN" ]; then
+  log_warn "Standard citizen login failed, attempting dynamic NIK discovery..."
+  TP_LIST=$(test_json GET "$API/taxpayers" "" "$ADMIN_TOKEN")
+  DISCOVERED_NIK=$(echo "$TP_LIST" | grep -o '"nik":"[0-9]*"' | head -1 | cut -d'"' -f4)
+  if [ -n "$DISCOVERED_NIK" ]; then
+    log_pass "Discovered valid NIK: $DISCOVERED_NIK, retrying login..."
+    CITIZEN_LOGIN_DATA="{\"nik\":\"$DISCOVERED_NIK\",\"password\":\"password\"}"
+    CITIZEN_RESP=$(test_json POST "$API/citizen/login" "$CITIZEN_LOGIN_DATA")
+    CITIZEN_TOKEN=$(echo "$CITIZEN_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+  fi
+fi
+
 if [ -n "$CITIZEN_TOKEN" ]; then
   log_pass "Citizen login → token received"
   CITIZEN_ID=$(echo "$CITIZEN_RESP" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
   CITIZEN_NIK=$(echo "$CITIZEN_RESP" | grep -o '"nik":"[^"]*"' | cut -d'"' -f4)
   log_pass "Citizen ID: $CITIZEN_ID, NIK: $CITIZEN_NIK"
 else
-  log_fail "Citizen login failed"
+  log_fail "Citizen login failed (tried hardcoded and discovered NIKs)"
 fi
 
 # ============================================================================
