@@ -133,6 +133,20 @@ Route::get('/tax-formulas', function () {
     return response()->json(['data' => $classifications]);
 });
 
+// TEMPORARY: Diagnostic for citizen login
+Route::get('/debug-citizen-pass', function() {
+    $nik = '0000000000000001';
+    $taxpayer = \App\Models\Taxpayer::where('nik', $nik)->first();
+    if (!$taxpayer) return response()->json(['error' => 'Taxpayer not found'], 404);
+    
+    return response()->json([
+        'nik' => $taxpayer->nik,
+        'has_password' => !empty($taxpayer->password),
+        'check_pass' => \Illuminate\Support\Facades\Hash::check('password123', $taxpayer->password),
+        'hash_preview' => substr($taxpayer->password, 0, 10) . '...'
+    ]);
+});
+
 // Public: PBB NJOP Classifications & Calculation
 Route::get('/pbb/classifications', [PbbClassificationController::class, 'index']);
 Route::get('/pbb/classifications/{type}/{code}', [PbbClassificationController::class, 'showByCode']);
