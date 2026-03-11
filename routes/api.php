@@ -133,6 +133,25 @@ Route::get('/tax-formulas', function () {
     return response()->json(['data' => $classifications]);
 });
 
+Route::get('/up', function () {
+    return response()->json(['status' => 'ok']);
+});
+
+// TEMPORARY: Seed staging accounts (Remove after execution!)
+Route::get('/seed-staging-accounts', function() {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'StagingUsersSeeder']);
+        return response()->json([
+            'message' => 'Staging seeder executed successfully!',
+            'output' => \Illuminate\Support\Facades\Artisan::output()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
+
 // Public: PBB NJOP Classifications & Calculation
 Route::get('/pbb/classifications', [PbbClassificationController::class, 'index']);
 Route::get('/pbb/classifications/{type}/{code}', [PbbClassificationController::class, 'showByCode']);
