@@ -29,3 +29,4 @@ return Application::configure(basePath: dirname(__DIR__))
         });
         \Sentry\Laravel\Integration::handles($exceptions);
     })->create();
+// Deploy trigger: Wed Mar 11 08:02:35 WITA 2026
