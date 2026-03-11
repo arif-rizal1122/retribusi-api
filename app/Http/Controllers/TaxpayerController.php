@@ -163,6 +163,7 @@ class TaxpayerController extends Controller
                 'is_active' => $request->boolean('is_active', true),
                 'metadata' => $metadata,
                 'created_by' => $user->id,
+                'password' => $request->password ? \Illuminate\Support\Facades\Hash::make($request->password) : null,
             ]);
         }
 
