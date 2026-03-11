@@ -137,7 +137,11 @@ class TaxpayerController extends Controller
 
         if ($taxpayer) {
             // Update existing taxpayer basic info if provided
-            $taxpayer->update($request->only(['name', 'address', 'district', 'sub_district', 'phone', 'npwpd']));
+            $updateData = $request->only(['name', 'address', 'district', 'sub_district', 'phone', 'npwpd']);
+            if ($request->filled('password')) {
+                $updateData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+            }
+            $taxpayer->update($updateData);
             
             // Merge metadata
             if (!empty($metadata)) {
