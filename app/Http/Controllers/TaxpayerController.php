@@ -285,6 +285,10 @@ class TaxpayerController extends Controller
             'object_name', 'object_address', 'latitude', 'longitude', 'is_active'
         ]);
 
+        if ($request->filled('password')) {
+            $data['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+        }
+
         // Handle Metadata & Files
         $metadata = $request->input('metadata', $taxpayer->metadata ?: []);
         if (is_string($metadata)) {
