@@ -28,6 +28,7 @@ class TaxpayerSearchController extends Controller
         return response()->json([
             'message' => 'Data wajib pajak ditemukan',
             'found' => true,
+            'debug_check' => 'V3',
             'count' => $taxpayers->count(),
             'data' => $taxpayers->first(), // For backward compatibility with simpler auto-fill
             'all_assets' => $taxpayers // The full list for multi-asset lookup
