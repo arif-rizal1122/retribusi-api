@@ -6,15 +6,15 @@
 # Run: chmod +x test_api_crud.sh && ./test_api_crud.sh
 # ============================================================================
 
-# Default to Production
-API="https://api.sipanda.online/api"
-ORIGIN="https://sipanda.online"
+# Default to Staging
+API="https://api.mpad.online/api"
+ORIGIN="https://mpad.online"
 
 # Handle environment argument
-if [ "$1" == "dev" ]; then
-  echo -e "${YELLOW}Mode: DEVELOPMENT (VPS)${NC}"
-  API="https://api-dev.sipanda.online/api"
-  ORIGIN="https://dev.sipanda.online"
+if [ "$1" == "prod" ]; then
+  echo -e "${YELLOW}Mode: PRODUCTION${NC}"
+  API="https://apimpad.baubaukota.go.id/api"
+  ORIGIN="https://mpad.baubaukota.go.id"
 elif [ "$1" == "staging" ]; then
   echo -e "${YELLOW}Mode: STAGING (mpad.online)${NC}"
   API="https://api.mpad.online/api"

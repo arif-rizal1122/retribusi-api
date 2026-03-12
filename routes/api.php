@@ -157,7 +157,7 @@ Route::post('/pbb/calculate', [PbbClassificationController::class, 'calculate'])
 Route::post('/pbb/bapenda/inquiry', [PbbBapendaController::class, 'inquiry'])->middleware('throttle:10,1');
 
 // Protected routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'scope_user'])->group(function () {
     // ------------------------------------------------------------------------
     // Shared Routes (Admin, Petugas, Citizen)
     // ------------------------------------------------------------------------

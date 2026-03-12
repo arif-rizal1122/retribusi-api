@@ -19,6 +19,10 @@ class CitizenServiceController extends Controller
     {
         $taxpayer = $request->user();
         
+        if (!$taxpayer) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        
         $classifications = \App\Models\RetributionClassification::whereHas('retributionType', function($q) {
                 $q->where('is_active', true);
             })
@@ -54,6 +58,10 @@ class CitizenServiceController extends Controller
     public function show(Request $request, $id)
     {
         $taxpayer = $request->user();
+        
+        if (!$taxpayer) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
         
         $classification = \App\Models\RetributionClassification::with(['retributionType.opd'])
             ->findOrFail($id);
@@ -98,6 +106,10 @@ class CitizenServiceController extends Controller
     public function register(Request $request, $id)
     {
         $taxpayer = $request->user();
+
+        if (!$taxpayer) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
         $classification = \App\Models\RetributionClassification::with('retributionType')->findOrFail($id);
         $service = $classification->retributionType;
 
@@ -200,6 +212,10 @@ class CitizenServiceController extends Controller
     public function bills(Request $request, $id)
     {
         $taxpayer = $request->user();
+
+        if (!$taxpayer) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
         $classification = \App\Models\RetributionClassification::findOrFail($id);
         
         $objectIds = TaxObject::where('taxpayer_id', $taxpayer->id)
@@ -220,6 +236,10 @@ class CitizenServiceController extends Controller
     public function getPendingPeriods(Request $request)
     {
         $user = $request->user();
+        
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
         
         $objects = TaxObject::where('taxpayer_id', $user->id)
             ->where('status', 'active')
