@@ -11,6 +11,11 @@ class MeController extends Controller
     public function show(Request $request)
     {
         $user = $request->user();
+        
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         $isTaxpayer = $user instanceof \App\Models\Taxpayer;
 
         $load = ['opd'];
@@ -26,6 +31,11 @@ class MeController extends Controller
     public function update(Request $request)
     {
         $user = $request->user();
+        
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         $cloudinary = app(CloudinaryService::class);
         $isTaxpayer = $user instanceof \App\Models\Taxpayer;
 
