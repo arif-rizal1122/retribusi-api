@@ -15,9 +15,12 @@ class EnsureAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Allow all internal staff roles (Admin, OPD, Pengawas, Petugas, Walikota)
-        // Only block unauthenticated users or those without a valid role.
-        if (!auth()->check() || !(auth()->user() instanceof \App\Models\User)) {
+        $user = auth()->user();
+        
+        // Allow all internal staff roles (App\Models\User) 
+        // OR citizens (App\Models\Taxpayer) for shared endpoints
+        // Note: Specific route groups in api.php should handle further role-based restrictions
+        if (!auth()->check() || (!($user instanceof \App\Models\User) && !($user instanceof \App\Models\Taxpayer))) {
             return response()->json([
                 'message' => 'Forbidden: Internal access required.'
             ], 403);
