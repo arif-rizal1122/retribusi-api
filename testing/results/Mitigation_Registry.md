@@ -65,3 +65,15 @@ Registry ini mencatat temuan bug serius, akar masalahnya, dan pola mitigasi yang
     1. Jalankan `php artisan config:clear`, `php artisan cache:clear`, dan `php artisan view:clear` di VPS.
     2. Verifikasi status migrasi dengan `php artisan migrate:status`.
     3. Pastikan `.env` terisi dengan benar (tidak ada baris yang korup).
+    4. **Memori PHP-FPM Usang**: Jika kredensial database (contoh: password) usang masih dipertahankan meskipun *artisan cache* sudah dihapus, muat ulang layanan secara paksa (contoh: `sudo systemctl reload php8.3-fpm && sudo systemctl reload php8.4-fpm`).
+
+---
+
+### BUG-006: RBAC Isolation Bypass & Deployment Obstacles — 2026-03-17
+- **Environment**: Staging
+- **Endpoint/Kasus**: `GET /api/users` (dan rujukan *middleware* tingkat staf)
+- **Deskripsi Error**: Panggilan memakai token **Citizen** (Taxpayer) justru diberi respons `HTTP 200 OK`, memperlihatkan daftar pengguna dan staf BAPENDA.
+- **Akar Masalah (Root Cause)**: Middleware `EnsureAdmin` diinjeksi dengan pemeriksaan sintaks lemah yang mengizinkan *instance* spesifik `App\Models\Taxpayer` pada rutenya secara global sebelum dicegat di tempat lain.
+- **Solusi (Mitigation)**: 
+    1. **Strict Instance Validation**: Ganti penyaringan di dalam `app/Http/Middleware/EnsureAdmin.php` agar secara absolut HANYA mengizinkan `App\Models\User`.
+    2. **SOP Fallback Sinkronisasi File (SCP)**: Sistem CI/CD mungkin berstatus *Success* tapi *code update* gagal menimpa VPS lama karena *divergent branches* maupun ketiadaan bash command `git` di lingkungan SSH non-interaktif VPS. Gunakan terminal lokal untuk menimpa berkas kritis langsung dengan `scp -o StrictHostKeyChecking=no local_file.php user@ip:/path/remote_file.php` lantas jalankan optimasi ulang memori di VPS.

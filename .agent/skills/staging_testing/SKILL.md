@@ -59,5 +59,6 @@ Jika `git pull` gagal di VPS karena "divergent branches" atau rintangan lainnya,
 ## 🩺 Protokol Troubleshooting
 Jika ditemukan 500 Error:
 1. Buka Network Tab ➡️ Cek `error_detail` dan `trace`.
-2. Verifikasi apakah kode sudah ter-deploy ke VPS (`git pull` & `migrate`).
+2. Verifikasi apakah kode sudah ter-deploy ke VPS (`git pull` & `migrate` atau via fallback `scp` manual).
 3. Cek `laravel.log` di server staging.
+4. **Stale Environment Memory:** Jika `.env` sudah di-update namun DB tetap `Access denied`, jalankan *reload* pada process manager PHP di server (contoh: `sudo systemctl reload php8.3-fpm && sudo systemctl reload php8.4-fpm`) untuk memaksa pemuatan variabel baru dari memori.
