@@ -26,11 +26,15 @@ class Verification extends Model
         'proof_file_url',
         'taxpayer_id',
         'tax_object_id',
+        'is_assessment_final',
+        'assessed_at',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
         'verified_at' => 'datetime',
+        'assessed_at' => 'datetime',
+        'is_assessment_final' => 'boolean',
     ];
 
     public function opd(): BelongsTo

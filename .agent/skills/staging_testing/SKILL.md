@@ -49,6 +49,13 @@ Sesuai standar **/noss**, semua bukti harus murni dari Terminal/Log:
 - Jalankan `./testing/test_penetration.sh` untuk audit keamanan.
 - Hasil pengujian **wajib** disimpan di `testing/results/` dengan timestamp lengkap.
 
+## 🛰️ Deployment & Environment Sync (Git & VPS)
+
+Jika `git pull` gagal di VPS karena "divergent branches" atau rintangan lainnya, gunakan strategi paksa (Hard Sync):
+1. **Hard Reset**: Gunakan `git fetch origin` lalu `git reset --hard origin/staging` untuk memastikan VPS identik dengan remote.
+2. **Permission Handling**: Jika reset gagal karena `Permission denied`, gunakan `sudo chown` sementara ke user `sipanda` untuk folder `storage` & `bootstrap/cache`, lakukan git sync, lalu kembalikan ke `www-data`.
+3. **Expect Automation**: Gunakan script `.exp` (Expect) untuk otomatisasi SSH, Sudo, dan input password yang repetitif guna menghindari human error.
+
 ## 🩺 Protokol Troubleshooting
 Jika ditemukan 500 Error:
 1. Buka Network Tab ➡️ Cek `error_detail` dan `trace`.

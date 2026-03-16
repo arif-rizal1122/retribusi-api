@@ -49,6 +49,15 @@ Ketika mencatatkan error baru ke `Mitigation_Registry.md`, gunakan format standa
 - **Penyebab Utama**: Model/Seeder menembak kolom yang sudah dihapus atau tidak ada di migrasi terbaru (misal: kolom `status` pada `taxpayers`).
 - **Mitigasi**: Selalu gunakan `DESCRIBE table_name` via tinker sebelum membuat seeder masif untuk memastikan integritas kolom. Gunakan `updateOrCreate` untuk idempotensi.
 
+### 6. Infinite Recursion / Circular Auth Guard
+- **Indikator**: Response 500 setelah penundaan lama (~9-10 detik), body kosong (atau JSON jika handler aktif), dan stack trace menunjukkan ribuan frame di `Sanctum\Guard` atau `RequestGuard`.
+- **Penyebab Utama**: 
+    1. Konfigurasi `sanctum.guard` menyertakan guard yang sendiri menggunakan driver `sanctum` (Circular Reference).
+    2. Global Scope memanggil `Auth::user()` sebelum guard selesai meresolusi user, memicu loop.
+- **Mitigasi**: 
+    1. Pastikan `sanctum.guard` hanya berisi stateful guards (seperti `web`).
+    2. Jangan panggil `Auth` facade di dalam Global Scope. Gunakan pola middleware (`SetScopeUser`) untuk menyuntikkan user ke Scope secara pasif SETELAH autentikasi selesai.
+
 ## 🧠 Aturan Penanganan Masalah Saat Testing
 1. **Identifikasi Dini:** Jika hasil `run_command` dari script QA mengembalikan gagal/error tak terduga (contoh: status HTTP 500, exception di CLI), JANGAN langsung menerka. Dump exception ke STDERR untuk membaca detail baris kode.
 2. **Lihat Registri Sejarah:** Sebelum memperbaiki bug, rujuklah (view_file) `testing/results/Mitigation_Registry.md` (if any) barangkali error tersebut adalah bug regresi yang solusinya sudah pernah dipetakan sebelumnya.

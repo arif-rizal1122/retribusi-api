@@ -81,7 +81,7 @@ class VerificationController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = Verification::with(['opd', 'submitter', 'verifier', 'taxObject']);
+        $query = Verification::with(['opd', 'submitter', 'verifier', 'taxObject.classification']);
 
         if (!$user->isSuperAdmin() && $user->opd_id) {
             $query->where('opd_id', $user->opd_id);
@@ -96,6 +96,15 @@ class VerificationController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('document_number', 'like', "%{$search}%")
                   ->orWhere('taxpayer_name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('classification') && $request->classification !== 'all') {
+            $classification = $request->classification;
+            $query->where(function ($q) use ($classification) {
+                $q->whereHas('taxObject.classification', function ($sq) use ($classification) {
+                    $sq->where('name', 'like', "%{$classification}%");
+                })->orWhere('type', 'like', "%{$classification}%");
             });
         }
 

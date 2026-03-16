@@ -33,10 +33,59 @@ class OfficialDocumentService
             'number' => $notice->number,
             'taxpayer' => $notice->taxObject->taxpayer->name,
             'tax_object' => $notice->taxObject->name,
-            'address' => $notice->taxObject->address ?? 'Kota Kendari',
+            'address' => $notice->taxObject->address ?? 'Kota Baubau',
             'notes' => $notice->notes,
             'date' => $notice->created_at->translatedFormat('d F Y'),
             'qr_url' => url("/verify/spp/{$notice->number}"),
+        ];
+    }
+
+    /**
+     * Generate Surat Teguran (I, II, Jatuh Tempo)
+     */
+    public function generateTeguran(EnforcementNotice $notice)
+    {
+        $notice->load(['taxObject.taxpayer', 'bill']);
+        $bill = $notice->bill;
+        
+        if (!$bill) {
+            throw new \Exception("Surat Teguran harus tertaut pada sebuah Tagihan (Bill).");
+        }
+
+        $total = (float) $bill->amount + (float) $bill->penalty_amount + (float) $bill->fixed_fine_amount + (float) $bill->surcharge_amount + (float) $bill->admin_fee;
+
+        return [
+            'type' => $notice->type,
+            'number' => $notice->number,
+            'taxpayer_name' => $notice->taxObject->taxpayer->name,
+            'taxpayer_address' => $notice->taxObject->taxpayer->address ?? 'Kota Baubau',
+            'tax_object_name' => $notice->taxObject->name,
+            'period' => $bill->period,
+            'bill_number' => $bill->bill_number,
+            'amount' => (float) $bill->amount,
+            'penalty' => (float) $bill->penalty_amount + (float) $bill->fixed_fine_amount + (float) $bill->surcharge_amount + (float) $bill->admin_fee,
+            'total' => $total,
+            'terbilang' => self::terbilang($total) . " Rupiah",
+            'date' => $notice->created_at->translatedFormat('d F Y'),
+            'qr_url' => url("/verify/notice/{$notice->number}"),
+        ];
+    }
+
+    /**
+     * Generate Surat Teguran SPTPD (Warning to report)
+     */
+    public function generateTeguranSPTPD(EnforcementNotice $notice)
+    {
+        $notice->load(['taxObject.taxpayer']);
+        
+        return [
+            'number' => $notice->number,
+            'taxpayer_name' => $notice->taxObject->taxpayer->name,
+            'npwpd' => $notice->taxObject->taxpayer->npwpd ?? '-',
+            'tax_object_name' => $notice->taxObject->name,
+            'period' => $notice->notes ?? now()->isoFormat('MMMM YYYY'),
+            'date' => $notice->created_at->translatedFormat('d F Y'),
+            'qr_url' => url("/verify/notice/{$notice->number}"),
         ];
     }
 
@@ -336,7 +385,7 @@ class OfficialDocumentService
      */
     public function generateSPMP(EnforcementNotice $notice)
     {
-        $notice->load(['taxObject.taxpayer', 'auditor']);
+        $notice->load(['taxObject.taxpayer', 'creator']);
         $spmpNumber = 'SPMP/' . date('Y') . '/' . str_pad($notice->id, 5, '0', STR_PAD_LEFT);
 
         $taxpayer = $notice->taxObject->taxpayer ?? null;
@@ -350,10 +399,10 @@ class OfficialDocumentService
             'taxpayer_address' => $taxpayer->address ?? 'Kota Baubau',
             'tax_object' => $notice->taxObject->name ?? 'N/A',
             'object_address' => $notice->taxObject->address ?? '-',
-            'deficit_amount' => (float) $notice->deficit_amount,
-            'terbilang' => self::terbilang((float) $notice->deficit_amount) . ' Rupiah',
+            'deficit_amount' => (float) ($notice->amount_at_issue ?? 0),
+            'terbilang' => self::terbilang((float) ($notice->amount_at_issue ?? 0)) . ' Rupiah',
             'notes' => $notice->notes,
-            'auditor_name' => $notice->auditor->name ?? 'N/A',
+            'auditor_name' => $notice->creator->name ?? 'N/A',
             'issued_at' => now()->translatedFormat('d F Y'),
             'qr_url' => url("/api/verify/spmp/{$spmpNumber}"),
         ];

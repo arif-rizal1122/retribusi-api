@@ -400,6 +400,7 @@ class DashboardController extends Controller
                     'retribution_type_id' => $obj->retribution_type_id,
                     'retribution_classification_id' => $obj->retribution_classification_id,
                     'opd_id' => $obj->opd_id,
+                    'metadata' => $obj->metadata,
                 ];
             });
 

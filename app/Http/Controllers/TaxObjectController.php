@@ -129,6 +129,15 @@ class TaxObjectController extends Controller
     }
 
     /**
+     * Display the specified tax object
+     */
+    public function show(TaxObject $taxObject)
+    {
+        $taxObject->load(['taxpayer', 'retributionType', 'opd', 'classification']);
+        return response()->json($taxObject);
+    }
+
+    /**
      * Update a pending tax object
      */
     public function update(Request $request, TaxObject $taxObject)

@@ -121,12 +121,10 @@ class TaxpayerController extends Controller
             $metadata = json_decode($metadata, true) ?: [];
         }
 
-        if ($request->hasFile('foto_lokasi_open_kamera')) {
-            $metadata['foto_lokasi_open_kamera'] = $cloudinary->upload($request->file('foto_lokasi_open_kamera'), 'taxpayers/survey');
-        }
-        
-        if ($request->hasFile('formulir_data_dukung')) {
-            $metadata['formulir_data_dukung'] = $cloudinary->upload($request->file('formulir_data_dukung'), 'taxpayers/docs');
+        // Dynamically handle all file uploads and add to metadata
+        foreach ($request->allFiles() as $key => $file) {
+            $folder = $key === 'foto_lokasi_open_kamera' ? 'taxpayers/survey' : 'taxpayers/docs';
+            $metadata[$key] = $cloudinary->upload($file, $folder);
         }
 
         // Check if taxpayer with this NIK already exists
@@ -185,14 +183,14 @@ class TaxpayerController extends Controller
             if (empty($typeClassifications)) {
                 $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => null]]);
                 
-                // Also create/update TaxObject
-                $this->syncTaxObject($taxpayer, $typeId, null);
+                // Also create/update TaxObject with metadata
+                $this->syncTaxObject($taxpayer, $typeId, null, $metadata);
             } else {
                 foreach ($typeClassifications as $cId) {
                     $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => $cId]]);
                     
-                    // Also create/update TaxObject
-                    $this->syncTaxObject($taxpayer, $typeId, $cId);
+                    // Also create/update TaxObject with metadata
+                    $this->syncTaxObject($taxpayer, $typeId, $cId, $metadata);
                 }
             }
         }
@@ -340,11 +338,11 @@ class TaxpayerController extends Controller
 
                     if (empty($typeClassifications)) {
                         $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => null]]);
-                        $this->syncTaxObject($taxpayer, $typeId, null);
+                        $this->syncTaxObject($taxpayer, $typeId, null, $metadata);
                     } else {
                         foreach ($typeClassifications as $cId) {
                             $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => $cId]]);
-                            $this->syncTaxObject($taxpayer, $typeId, $cId);
+                            $this->syncTaxObject($taxpayer, $typeId, $cId, $metadata);
                         }
                     }
                 }
@@ -390,7 +388,7 @@ class TaxpayerController extends Controller
     /**
      * Helper to sync taxpayer object info to tax_objects table
      */
-    private function syncTaxObject(Taxpayer $taxpayer, $typeId, $classificationId = null)
+    private function syncTaxObject(Taxpayer $taxpayer, $typeId, $classificationId = null, $metadata = [])
     {
         if (!$taxpayer->object_name) return;
 
@@ -407,6 +405,7 @@ class TaxpayerController extends Controller
             'longitude' => $taxpayer->longitude,
             'status' => 'active',
             'nop' => $nop,
+            'metadata' => $metadata,
         ];
 
         try {

@@ -1,5 +1,5 @@
 # Consolidated Todolist & Audit Dokumen BAPENDA
-**Terakhir diperbarui**: 5 Maret 2026
+**Terakhir diperbarui**: 15 Maret 2026 (Update Status Dokumen Resmi)
 
 ---
 
@@ -207,3 +207,17 @@ Sistem digitalisasi "Kertas Kerja Penelitian/Pemeriksaan - Pengambilan Sampel Da
   - Analisis Hari Biasa (Senin - Jumat)
   - Analisis Akhir Pekan (Sabtu - Minggu)
 - [ ] **Integrasi Penindakan (SKPDKB):** Mengaitkan output/hasil akhir UI Modul Uji Petik ini sebagai dasar/lampiran ketika Pengawas menerbitkan Penetapan Pajak Secara Jabatan.
+
+---
+
+## 🏗️ 11. Penyelesaian Template PDF Dokumen Oficial
+**Target**: Mengonversi logika JSON yang sudah ada menjadi format cetak PDF.
+
+**Daftar Tunggu (Partial → Full PDF):**
+- [ ] **SKT** (Surat Keterangan Terdaftar) - Pendaftaran
+- [ ] **LKOK** (Lembar Kerja Objek Khusus) - Pendataan
+- [ ] **SSRD / STRD** (Retribusi) - Penagihan
+- [ ] **SKPDKBT / SKPDN** - Audit/Penetapan
+- [ ] **SPMP** (Surat Paksa/Penyitaan) - Penyelamatan Aset
+
+**Referensi Detail**: Lihat [07-status-dokumen-resmi.md](file:///Users/pondokit/Herd/retribusi-api/docs/07-status-dokumen-resmi.md)

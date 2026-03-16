@@ -55,6 +55,10 @@ Selain skrip *Command-Line* E2E (*automated*), pengujian manual ini diperlukan u
 4. Klik *Delete* (Hapus) pada *row* "Test Cascading".
 5. **Ekspektasi Hasil:** Muncul pop-up atau respon `400 Bad Request` bertulis: "Gagal menghapus jenis retribusi karena masih memiliki objek pajak atau data terkait lainnya" di layar / Network tab Chrome. API tidak boleh crash dengan Status 500 (Internal Server Error) dan tidak boleh melontarkan peringatan CORS Policy.
 
+### 8. Verifikasi Ketersediaan Dokumen Resmi (Official Document Verification)
+- **Aksi:** Menjalankan script `php testing/stg4_document_availability.php` untuk memvalidasi seluruh endpoint dokumen.
+- **Ekspektasi:** Endpoint merespons dengan HTTP 200/201 (Valid JSON atau PDF Stream).
+
 ---
 
 ## Eksekusi Rutin Pengujian (How to Run)
