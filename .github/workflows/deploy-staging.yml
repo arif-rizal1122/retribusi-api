@@ -14,11 +14,12 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Deploy to VPS
-      uses: appleboy/ssh-action@master
+      uses: appleboy/ssh-action@v1.2.0
       with:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USERNAME }}
         password: ${{ secrets.VPS_PASSWORD }}
+        port: ${{ secrets.VPS_PORT }}
         script: |
           cd /home/sipanda/retribusi-api-staging
           git checkout staging
