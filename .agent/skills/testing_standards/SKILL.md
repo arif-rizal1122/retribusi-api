@@ -19,5 +19,26 @@ Terdapat script shell yang sudah disiapkan di folder `testing/`:
 - `testing/test_production_ready.sh` (Health check infrastruktur)
 - `testing/test_api_crud.sh` (Validasi CRUD API)
 - `testing/test_penetration.sh` (Audit Keamanan)
+- `testing/apentest.sh` (⭐ Advanced Penetration & V-Tax Route Audit — 7 section)
+- `testing/test_vtax_parity.php` (PHP — 56 assertions V-Tax schema/model/route)
+- `testing/verify_pdf_templates.php` (PHP — PDF template syntax render)
+
+### APENTEST v2.0 — Cara Penggunaan
+```bash
+# Tanpa auth (hanya security test):
+bash testing/apentest.sh https://api.mpad.online/api
+
+# Dengan auth token (full test termasuk V-Tax routes & documents):
+bash testing/apentest.sh https://api.mpad.online/api <TOKEN>
+```
+
+APENTEST mencakup 7 section:
+1. RBAC Isolation (unauthenticated access)
+2. Information Exposure (.env, logs, telescope)
+3. SQL Injection Resilience
+4. XSS Headers
+5. Public Endpoints Health
+6. V-Tax Parity Routes (classification filter, reject, PDF)
+7. Document Endpoints (9 official BAPENDA documents)
 
 Jika Anda perlu membuat test baru untuk kasus spesifik, buat script bash/PHP di folder `testing/` atau buat class test di `tests/Feature/`. Pastikan tidak merusak skenario test utama yang telah ada.
