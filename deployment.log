@@ -1,0 +1,254 @@
+Starting deployment log...
+spawn ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74
+sipanda@157.10.252.74's password: 
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-164-generic x86_64)
+
+ * Panduan:  https://idcloudhost.com/panduan
+ -------------------------------------------
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+ System information as of Wed Mar  4 09:43:59 UTC 2026
+
+  System load:  1.0                Processes:             126
+  Usage of /:   48.6% of 19.20GB   Users logged in:       0
+  Memory usage: 35%                IPv4 address for ens3: 10.48.77.206
+  Swap usage:   0%
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+13 updates can be applied immediately.
+3 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+18 additional security updates can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+New release '24.04.4 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+
+*** System restart required ***
+Last login: Thu Mar 12 20:15:16 2026 from 180.251.152.91
+sipanda@sipanda:~$ cd /home/sipanda/retribusi-api
+sipanda@sipanda:~/retribusi-api$ <storage /home/sipanda/retribusi-api/bootstrap/cache
+sipanda@sipanda:~/retribusi-api$ git fetch origin
+sipanda@sipanda:~/retribusi-api$ git reset --hard origin/staging
+HEAD is now at caa2f7b Merge branch 'dev' into staging
+sipanda@sipanda:~/retribusi-api$ <pi$ composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+Installing dependencies from lock file
+Verifying lock file contents can be installed on current platform.
+Nothing to install, update or remove
+Generating optimized autoload files
+> Illuminate\Foundation\ComposerScripts::postAutoloadDump
+> @php artisan package:discover --ansi
+
+  [37;44m INFO [39;49m Discovering packages.  
+
+  barryvdh/laravel-dompdf [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  cloudinary-labs/cloudinary-laravel [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  laravel/sanctum [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  laravel/tinker [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  nesbot/carbon [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  nunomaduro/termwind [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  sentry/sentry-laravel [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  simplesoftwareio/simple-qrcode [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+
+59 packages you are using are looking for funding.
+Use the `composer fund` command to find out more!
+sipanda@sipanda:~/retribusi-api$ php artisan migrate --force
+php artisan optimize:clear
+
+   INFO  Running migrations.  
+
+  2026_03_09_031406_create_petugas_tasks_table .................. 32.44ms FAIL
+
+In Connection.php line 825:
+                                                                               
+  SQLSTATE[42S01]: Base table or view already exists: 1050 Table 'petugas_tas  
+  ks' already exists (Connection: mysql, SQL: create table `petugas_tasks` (`  
+  id` bigint unsigned not null auto_increment primary key, `user_id` bigint u  
+  nsigned not null, `zone_id` bigint unsigned null, `taxpayer_id` bigint unsi  
+  gned null, `due_date` date not null, `notes` text null, `status` enum('pend  
+  ing', 'completed') not null default 'pending', `completed_at` timestamp nul  
+  l, `created_by` bigint unsigned null, `created_at` timestamp null, `updated  
+  _at` timestamp null) default character set utf8mb4 collate 'utf8mb4_unicode  
+  _ci')                                                                        
+                                                                               
+
+In Connection.php line 571:
+                                                                               
+  SQLSTATE[42S01]: Base table or view already exists: 1050 Table 'petugas_tas  
+  ks' already exists                                                           
+                                                                               
+
+sipanda@sipanda:~/retribusi-api$ php artisan optimize:clear
+php artisan config:cache
+
+   INFO  Clearing cached bootstrap files.  
+
+  cache ......................................................... 80.39ms DONE
+  compiled ....................................................... 1.45ms DONE
+  config ......................................................... 1.36ms DONE
+  events ......................................................... 1.48ms DONE
+  routes ......................................................... 2.37ms DONE
+  views ......................................................... 44.49ms DONE
+
+sipanda@sipanda:~/retribusi-api$ php artisan config:cache
+php artisan route:cache
+
+   INFO  Configuration cached successfully.  
+
+sipanda@sipanda:~/retribusi-api$ php artisan route:cache
+php artisan queue:restart
+
+   INFO  Routes cached successfully.  
+
+sipanda@sipanda:~/retribusi-api$ php artisan queue:restart
+sudo chown -R www-data:www-data /home/sipanda/retribusi-api/storage /home/sipanda/retribusi-api/bootstrap/cache
+
+   INFO  Broadcasting queue restart signal.  
+
+sipanda@sipanda:~/retribusi-api$ <storage /home/sipanda/retribusi-api/bootstrap/cache
+exit
+exit
+sipanda@sipanda:~/retribusi-api$ Starting deployment log...
+spawn ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74
+sipanda@157.10.252.74's password: 
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-164-generic x86_64)
+
+ * Panduan:  https://idcloudhost.com/panduan
+ -------------------------------------------
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+ System information as of Wed Mar  4 09:43:59 UTC 2026
+
+  System load:  1.0                Processes:             126
+  Usage of /:   48.6% of 19.20GB   Users logged in:       0
+  Memory usage: 35%                IPv4 address for ens3: 10.48.77.206
+  Swap usage:   0%
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+13 updates can be applied immediately.
+3 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+18 additional security updates can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+New release '24.04.4 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+
+*** System restart required ***
+Last login: Thu Mar 12 20:17:23 2026 from 180.251.152.91
+sipanda@sipanda:~$ cd /home/sipanda/retribusi-api
+sipanda@sipanda:~/retribusi-api$ <storage /home/sipanda/retribusi-api/bootstrap/cache
+sipanda@sipanda:~/retribusi-api$ git fetch origin
+remote: Enumerating objects: 6, done.        
+remote: Counting objects:  16% (1/6)        remote: Counting objects:  33% (2/6)        remote: Counting objects:  50% (3/6)        remote: Counting objects:  66% (4/6)        remote: Counting objects:  83% (5/6)        remote: Counting objects: 100% (6/6)        remote: Counting objects: 100% (6/6), done.        
+remote: Compressing objects:  50% (1/2)        remote: Compressing objects: 100% (2/2)        remote: Compressing objects: 100% (2/2), done.        
+remote: Total 6 (delta 4), reused 6 (delta 4), pack-reused 0 (from 0)        
+Unpacking objects:  16% (1/6)Unpacking objects:  33% (2/6)Unpacking objects:  50% (3/6)Unpacking objects:  66% (4/6)Unpacking objects:  83% (5/6)Unpacking objects: 100% (6/6)Unpacking objects: 100% (6/6), 2.33 KiB | 216.00 KiB/s, done.
+From https://github.com/muhdanfyan/retribusi-api
+   caa2f7b..3b90578  staging    -> origin/staging
+sipanda@sipanda:~/retribusi-api$ git reset --hard origin/staging
+HEAD is now at 3b90578 feat: optimize tax classification icons with unique visual assets
+sipanda@sipanda:~/retribusi-api$ <pi$ composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+Installing dependencies from lock file
+Verifying lock file contents can be installed on current platform.
+Nothing to install, update or remove
+Generating optimized autoload files
+> Illuminate\Foundation\ComposerScripts::postAutoloadDump
+> @php artisan package:discover --ansi
+
+  [37;44m INFO [39;49m Discovering packages.  
+
+  barryvdh/laravel-dompdf [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  cloudinary-labs/cloudinary-laravel [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  laravel/sanctum [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  laravel/tinker [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  nesbot/carbon [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  nunomaduro/termwind [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  sentry/sentry-laravel [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+  simplesoftwareio/simple-qrcode [90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m[90m.[39m [32;1mDONE[39;22m
+
+59 packages you are using are looking for funding.
+Use the `composer fund` command to find out more!
+sipanda@sipanda:~/retribusi-api$ php artisan migrate --force
+php artisan db:seed --class=TaxHierarchySyncSeeder
+
+   INFO  Running migrations.  
+
+  2026_03_09_031406_create_petugas_tasks_table .................. 37.49ms FAIL
+
+In Connection.php line 825:
+                                                                               
+  SQLSTATE[42S01]: Base table or view already exists: 1050 Table 'petugas_tas  
+  ks' already exists (Connection: mysql, SQL: create table `petugas_tasks` (`  
+  id` bigint unsigned not null auto_increment primary key, `user_id` bigint u  
+  nsigned not null, `zone_id` bigint unsigned null, `taxpayer_id` bigint unsi  
+  gned null, `due_date` date not null, `notes` text null, `status` enum('pend  
+  ing', 'completed') not null default 'pending', `completed_at` timestamp nul  
+  l, `created_by` bigint unsigned null, `created_at` timestamp null, `updated  
+  _at` timestamp null) default character set utf8mb4 collate 'utf8mb4_unicode  
+  _ci')                                                                        
+                                                                               
+
+In Connection.php line 571:
+                                                                               
+  SQLSTATE[42S01]: Base table or view already exists: 1050 Table 'petugas_tas  
+  ks' already exists                                                           
+                                                                               
+
+sipanda@sipanda:~/retribusi-api$ < php artisan db:seed --class=TaxHierarchySyncSeeder
+php artisan cache:clear && php artisan config:clear
+
+   INFO  Seeding database.  
+
+Configuring Wilayah I...
+Configuring Wilayah II...
+✅ Master Data Sync Complete: 2 Wilayah structure active.
+sipanda@sipanda:~/retribusi-api$ <php artisan cache:clear && php artisan config:clear
+php artisan config:cache
+
+   INFO  Application cache cleared successfully.  
+
+
+   INFO  Configuration cache cleared successfully.  
+
+sipanda@sipanda:~/retribusi-api$ php artisan config:cache
+php artisan route:cache
+
+   INFO  Configuration cached successfully.  
+
+sipanda@sipanda:~/retribusi-api$ php artisan route:cache
+php artisan queue:restart
+
+   INFO  Routes cached successfully.  
+
+sipanda@sipanda:~/retribusi-api$ php artisan queue:restart
+sudo chown -R www-data:www-data /home/sipanda/retribusi-api/storage /home/sipanda/retribusi-api/bootstrap/cache
+
+   INFO  Broadcasting queue restart signal.  
+
+sipanda@sipanda:~/retribusi-api$ <storage /home/sipanda/retribusi-api/bootstrap/cache
+exit
+exit
+sipanda@sipanda:~/retribusi-api$ 

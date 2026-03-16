@@ -25,10 +25,8 @@ class DocumentController extends Controller
     public function skt($taxpayerId)
     {
         $taxpayer = Taxpayer::findOrFail($taxpayerId);
-        return response()->json([
-            'message' => 'SKT berhasil dibuat',
-            'data' => $this->docService->generateSKT($taxpayer),
-        ]);
+        $data = $this->docService->generateSKT($taxpayer);
+        return $this->docService->renderPDF('pdf.skt', $data, "SKT-{$taxpayer->id}.pdf");
     }
 
     /**
@@ -59,11 +57,9 @@ class DocumentController extends Controller
      */
     public function ssrd($billId)
     {
-        $bill = Bill::with('payments')->findOrFail($billId);
-        return response()->json([
-            'message' => 'SSRD berhasil dibuat',
-            'data' => $this->docService->generateSSRD($bill),
-        ]);
+        $bill = Bill::with(['taxpayer', 'retributionType', 'payments'])->findOrFail($billId);
+        $data = $this->docService->generateSSRD($bill);
+        return $this->docService->renderPDF('pdf.ssrd', $data, "SSRD-{$bill->bill_number}.pdf");
     }
 
     /**
@@ -110,9 +106,11 @@ class DocumentController extends Controller
         ]);
 
         $bill = Bill::findOrFail($billId);
+        $data = $this->docService->generateSKPDN($bill, $request->audit_notes);
+        // SKPDN use skrd template with status NIHIL or its own if preferred, but for now we follow the pattern
         return response()->json([
-            'message' => 'SKPDN berhasil dibuat',
-            'data' => $this->docService->generateSKPDN($bill, $request->audit_notes),
+            'message' => 'SKPDN berhasil dibuat (Logic Ready)',
+            'data' => $data,
         ]);
     }
 
@@ -122,11 +120,9 @@ class DocumentController extends Controller
      */
     public function strd($billId)
     {
-        $bill = Bill::findOrFail($billId);
-        return response()->json([
-            'message' => 'STRD berhasil dibuat',
-            'data' => $this->docService->generateSTRD($bill),
-        ]);
+        $bill = Bill::with(['taxpayer', 'retributionType'])->findOrFail($billId);
+        $data = $this->docService->generateSTRD($bill);
+        return $this->docService->renderPDF('pdf.strd', $data, "STRD-{$bill->bill_number}.pdf");
     }
 
     /**
@@ -135,11 +131,9 @@ class DocumentController extends Controller
      */
     public function spmp($noticeId)
     {
-        $notice = EnforcementNotice::findOrFail($noticeId);
-        return response()->json([
-            'message' => 'SPMP berhasil dibuat',
-            'data' => $this->docService->generateSPMP($notice),
-        ]);
+        $notice = EnforcementNotice::with(['taxObject.taxpayer', 'auditor'])->findOrFail($noticeId);
+        $data = $this->docService->generateSPMP($notice);
+        return $this->docService->renderPDF('pdf.spmp', $data, "SPMP-{$notice->number}.pdf");
     }
 
     /**
@@ -148,11 +142,9 @@ class DocumentController extends Controller
      */
     public function lkok($taxObjectId)
     {
-        $taxObject = TaxObject::findOrFail($taxObjectId);
-        return response()->json([
-            'message' => 'LKOK berhasil dibuat',
-            'data' => $this->docService->generateLKOK($taxObject),
-        ]);
+        $taxObject = TaxObject::with(['taxpayer', 'retributionType', 'classification', 'zone'])->findOrFail($taxObjectId);
+        $data = $this->docService->generateLKOK($taxObject);
+        return $this->docService->renderPDF('pdf.lkok', $data, "LKOK-{$taxObject->id}.pdf");
     }
 
     /**
@@ -161,10 +153,8 @@ class DocumentController extends Controller
      */
     public function spp($noticeId)
     {
-        $notice = EnforcementNotice::findOrFail($noticeId);
-        return response()->json([
-            'message' => 'SPP berhasil dibuat',
-            'data' => $this->docService->generateSPP($notice),
-        ]);
+        $notice = EnforcementNotice::with(['taxObject.taxpayer', 'taxObject.retributionType'])->findOrFail($noticeId);
+        $data = $this->docService->generateSPP($notice);
+        return $this->docService->renderPDF('pdf.spp', $data, "SPP-{$notice->number}.pdf");
     }
 }

@@ -45,18 +45,15 @@ class CalculateBillPenalties extends Command
         $count = 0;
 
         foreach ($unpaidBills as $bill) {
+            $now = \Carbon\Carbon::now();
+            $dueDate = $bill->due_date;
+            
             // 1. Determine if it's PBB for specific logic
             $isPBB = ($bill->retributionType && stripos($bill->retributionType->name, 'PBB') !== false);
             
             $effectiveDueDate = $dueDate;
             if ($isPBB) {
-                // PBB specific: Default due date Nov 10 of current year if not set
-                if ($dueDate->month < 11 || ($dueDate->month == 11 && $dueDate->day < 10)) {
-                    // It's before Nov 10, maybe we should use the registration date logic instead
-                }
-                
                 // Add grace period: 6 months after registration
-                // We use bill creation or taxpayer creation as proxy for "pendaftaran"
                 $registrationDate = ($bill->taxpayer ? $bill->taxpayer->created_at : $bill->created_at);
                 $gracePeriodEnd = $registrationDate->copy()->addMonths(6);
                 
@@ -75,7 +72,7 @@ class CalculateBillPenalties extends Command
             if ($now->day > $effectiveDueDate->day) {
                 $diffInMonths++;
             }
-            if ($diffInMonths === 0) $diffInMonths = 1; // Even 1 day late counts as 1 month
+            if ($diffInMonths === 0) $diffInMonths = 1;
 
             // 1. Calculate Interest (Bunga) based on penalty_type
             $penaltyType = $bill->penalty_type ?: 'stpd';

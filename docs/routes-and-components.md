@@ -1,5 +1,5 @@
 # Daftar Lengkap: API Endpoints, FE Routes & Komponen
-**Terakhir diperbarui**: 5 Maret 2026
+**Terakhir diperbarui**: 16 Maret 2026
 
 ---
 
@@ -129,8 +129,9 @@
 | `POST` | `/api/pengawas/enforcements` | `EnforcementNoticeController::store` | Buat penindakan |
 | `POST` | `/api/pengawas/enforcements/{id}` | `EnforcementNoticeController::update` | Update penindakan |
 | `POST` | `/api/pengawas/enforcements/{id}/approve` | `EnforcementNoticeController::approve` | Approve penindakan |
+| `POST` | `/api/pengawas/enforcements/{id}/reject` | `EnforcementNoticeController::reject` | Tolak penindakan (⭐ Baru) |
 | `GET` | `/api/pengawas/enforcements/history/{tax_object_id}` | `EnforcementNoticeController::getHistory` | Riwayat penindakan |
-| `GET` | `/api/pengawas/enforcements/{id}/pdf` | `EnforcementNoticeController::generatePDF` | Cetak PDF |
+| `GET` | `/api/pengawas/enforcements/{id}/pdf` | `EnforcementNoticeController::generatePDF` | Cetak PDF (Teguran/SPMP/SPP) |
 | `GET/POST` | `/api/spot-checks` | `SpotCheckController` | CRUD Uji Petik |
 | `PATCH` | `/api/spot-checks/{id}/status` | `SpotCheckController::updateStatus` | Approve Uji Petik |
 | `GET` | `/api/spot-checks/tax-object/{id}/estimation` | `SpotCheckController::getEstimatedRevenue` | Kalkulasi Estimasi Spot Check |
@@ -375,7 +376,13 @@ testing/
 │   ├── test_penetration.sh            (Bash — Security audit)
 │   ├── test_production_cors.sh        (Bash — CORS verification)
 │   ├── test_production_ready.sh       (Bash — Infra readiness)
-│   └── test_production_regression.sh  (Bash — Regression test)
+│   ├── test_production_regression.sh  (Bash — Regression test)
+│   ├── test_vtax_parity.php           (PHP — V-Tax 9-Pajak parity) ⭐ Baru
+│   ├── verify_pdf_templates.php       (PHP — PDF template syntax)
+│   ├── stg1_health_check.php          (PHP — Staging health)
+│   ├── stg2_penetration_rbac.php      (PHP — Staging RBAC)
+│   ├── stg3_formula_sync.php          (PHP — Formula sync)
+│   └── stg4_document_availability.php (PHP — Document endpoints)
 │
 └── 📊 results/
     ├── 07_Hasil_Kalkulator_Semua_Pajak.md
@@ -448,6 +455,8 @@ Tabel berikut menunjukkan endpoint API mana yang sudah ter-cover oleh skrip test
 | `/api/pengawas/audit-logs` | GET | `run_rbac_test.php` | Pengawasan |
 | `/api/pengawas/anomalies` | GET | `run_rbac_test.php` | Pengawasan |
 | `/api/pengawas/enforcements` | GET/POST | `run_rbac_test.php` | Penindakan |
+| `/api/pengawas/enforcements/{id}/reject` | POST | `test_vtax_parity.php` | Penindakan ⭐ |
+| `/api/pengawas/enforcements/{id}/pdf` | GET | `test_vtax_parity.php` | Dokumen ⭐ |
 | `/api/pengawas/penindakan` | GET | `run_rbac_test.php` | Penindakan |
 | `/api/amnesty` | GET/POST | `run_rbac_test.php` | Amnesti |
 
@@ -483,4 +492,5 @@ Tabel berikut menunjukkan endpoint API mana yang sudah ter-cover oleh skrip test
 | `/api/pbb/bapenda/pay` | POST | 🟡 Sedang | Test PBB payment |
 | `/api/upload` | POST | 🟢 Rendah | Multipart upload test |
 | `/api/tte/sign` | POST | 🟡 Sedang | TTE signing flow |
+| `/api/pengawas/enforcements/{id}/reject` | POST | ✅ Ter-cover | `test_vtax_parity.php` |
 

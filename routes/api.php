@@ -246,6 +246,7 @@ Route::middleware(['auth:sanctum', 'scope_user'])->group(function () {
             Route::post('/enforcements', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'store']);
             Route::post('/enforcements/{id}', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'update']);
             Route::post('/enforcements/{id}/approve', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'approve']);
+            Route::post('/enforcements/{id}/reject', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'reject']);
             Route::get('/enforcements/history/{tax_object_id}', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'getHistory']);
             Route::get('/enforcements/{id}/pdf', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'generatePDF']);
             Route::get('/penindakan', [\App\Http\Controllers\Pengawas\PenindakanController::class, 'index']);

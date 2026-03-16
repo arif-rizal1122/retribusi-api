@@ -19,7 +19,7 @@ class EnforcementNoticeController extends Controller
             return response()->json(['message' => 'Unauthorized. Only Supervisor, Petugas, and OPD roles can view enforcement notices.'], 403);
         }
 
-        $query = EnforcementNotice::with(['taxObject.taxpayer', 'creator', 'approver', 'assignedPetugas']);
+        $query = EnforcementNotice::with(['taxObject.taxpayer', 'bill', 'creator', 'approver', 'assignedPetugas']);
         
         if ($request->has('status')) {
             $query->where('status', $request->status);
@@ -39,9 +39,11 @@ class EnforcementNoticeController extends Controller
 
         $validated = $request->validate([
             'tax_object_id' => 'required|exists:tax_objects,id',
+            'bill_id' => 'nullable|exists:bills,id',
             'assigned_to' => 'nullable|exists:users,id',
-            'type' => 'required|in:teguran_1,teguran_2,paksa,penyitaan',
+            'type' => 'required|in:teguran_1,teguran_2,paksa,penyitaan,jatuh_tempo,sptpd_warning',
             'number' => 'required|string|unique:enforcement_notices,number',
+            'amount_at_issue' => 'nullable|numeric',
             'due_date' => 'nullable|date',
             'notes' => 'nullable|string',
             'lat' => 'nullable|numeric',
@@ -49,7 +51,7 @@ class EnforcementNoticeController extends Controller
         ]);
 
         $validated['created_by'] = Auth::id();
-        $validated['status'] = 'draft';
+        $validated['status'] = 'proses';
 
         $notice = EnforcementNotice::create($validated);
 
@@ -79,24 +81,62 @@ class EnforcementNoticeController extends Controller
 
     public function generatePDF($id, \App\Services\OfficialDocumentService $docService)
     {
-        $notice = EnforcementNotice::with(['taxObject.taxpayer', 'taxObject.retributionType'])->findOrFail($id);
+        $notice = EnforcementNotice::with(['taxObject.taxpayer', 'bill'])->findOrFail($id);
         
-        $data = $docService->generateSPP($notice);
+        switch ($notice->type) {
+            case 'teguran_1':
+            case 'teguran_2':
+            case 'jatuh_tempo':
+                $data = $docService->generateTeguran($notice);
+                $view = 'pdf.teguran';
+                break;
+            case 'sptpd_warning':
+                $data = $docService->generateTeguranSPTPD($notice);
+                $view = 'pdf.teguran_sptpd';
+                break;
+            case 'paksa':
+            case 'penyitaan':
+                $data = $docService->generateSPMP($notice);
+                $view = 'pdf.spmp';
+                break;
+            default:
+                $data = $docService->generateSPP($notice);
+                $view = 'pdf.spp';
+        }
         
-        return view('pdf.spp', $data);
+        return $docService->renderPDF($view, $data, "{$notice->type}-{$notice->number}.pdf");
     }
 
     public function approve($id)
     {
         $notice = EnforcementNotice::findOrFail($id);
         
-        // Only Kabid (or Super Admin) can approve enforcement notices
         if (!Auth::user()->isKabid() && !Auth::user()->isSuperAdmin()) {
-            return response()->json(['message' => 'Unauthorized. Only Kabid can approve.'], 403);
+            return response()->json(['message' => 'Unauthorized. Only Kabid or Super Admin can approve.'], 403);
         }
 
         $notice->update([
-            'status' => 'approved',
+            'status' => 'disetujui',
+            'approved_by' => Auth::id(),
+        ]);
+
+        return response()->json($notice);
+    }
+
+    public function reject(Request $request, $id)
+    {
+        $notice = EnforcementNotice::findOrFail($id);
+        
+        if (!Auth::user()->isKabid() && !Auth::user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized. Only Kabid or Super Admin can reject.'], 403);
+        }
+
+        $request->validate(['notes' => 'required|string']);
+
+        $notice->update([
+            'status' => 'ditolak',
+            'rejected_at' => now(),
+            'rejection_notes' => $request->notes,
             'approved_by' => Auth::id(),
         ]);
 
