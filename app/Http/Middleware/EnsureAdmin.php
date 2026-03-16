@@ -15,6 +15,8 @@ class EnsureAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
+        $user = auth()->user();
+
         // Allow only internal staff roles (App\Models\User)
         if (!auth()->check() || !($user instanceof \App\Models\User)) {
             return response()->json([
