@@ -34,8 +34,34 @@ Registry ini mencatat temuan bug serius, akar masalahnya, dan pola mitigasi yang
 - **Environment**: Local
 - **Endpoint/Kasus**: `OfficialDocumentService::generateSPMP()` via `verify_pdf_templates.php`
 - **Deskripsi Error**: `Call to undefined relationship [auditor] on model [App\Models\EnforcementNotice]`
-- **Akar Masalah (Root Cause)**: `generateSPMP()` memanggil `$notice->load(['taxObject.taxpayer', 'auditor'])` tetapi model `EnforcementNotice` tidak memiliki relasi `auditor()`. Relasi yang benar adalah `creator()` (`created_by`). Property `deficit_amount` juga tidak ada — digantikan oleh `amount_at_issue`.
+- **Akar Masalah (Root Cause)**: `generateSPMP()` memanggil `$notice->load(['taxObject.taxpayer', 'auditor'])` tetapi model `EnforcementNotice` tidak memiliki relasi `auditor()`. Relasi yang benar adalah `creator()` (`created_by`). Property `deficit_amount` juga tidak ada — digantikan by `amount_at_issue`.
 - **Solusi (Mitigation)**: 
     1. Ubah eager-load dari `auditor` → `creator`.
     2. Ubah `$notice->deficit_amount` → `$notice->amount_at_issue ?? 0`.
     3. Re-run test: SPMP renders OK.
+
+---
+
+### BUG-004: SSH Authentication Failure (can't connect) — 2026-03-17
+- **Environment**: Staging & Production CI/CD
+- **Endpoint/Kasus**: GitHub Actions (`appleboy/ssh-action` & `appleboy/scp-action`)
+- **Deskripsi Error**: `Error: can't connect without a private SSH key or password`.
+- **Akar Masalah (Root Cause)**: 
+    1. **Password Rotated**: Password VPS berubah tetapi rahasia di GitHub belum di-update.
+    2. **Unstable Versioning**: Penggunaan tag `@master` pada GitHub Actions menyebabkan ketidakkonsistenan saat rahasia hilang atau format input berubah.
+- **Solusi (Mitigation)**: 
+    1. **Action Pinning**: Gunakan versi stabil (`ssh-action@v1.2.0` dan `scp-action@v0.1.7`).
+    2. **Explicit Port**: Selalu tambahkan `port: ${{ secrets.VPS_PORT }}` (default 22).
+    3. **CLI Sync**: Gunakan `gh secret set` untuk sinkronisasi massal rahasia antar repositori.
+
+---
+
+### BUG-005: 500 Server Error Stale configuration — 2026-03-17
+- **Environment**: Staging
+- **Endpoint/Kasus**: `GET https://api.mpad.online/up` (Layanan API)
+- **Deskripsi Error**: HTTP 500 Server Error pasca deployment berhasil.
+- **Akar Masalah (Root Cause)**: Cache konfigurasi, rute, atau view yang sudah usang (*stale*) setelah perubahan skema database V-Tax yang signifikan, menyebabkan konflik resolusi dependensi pada kontainer Laravel.
+- **Solusi (Mitigation)**: 
+    1. Jalankan `php artisan config:clear`, `php artisan cache:clear`, dan `php artisan view:clear` di VPS.
+    2. Verifikasi status migrasi dengan `php artisan migrate:status`.
+    3. Pastikan `.env` terisi dengan benar (tidak ada baris yang korup).
