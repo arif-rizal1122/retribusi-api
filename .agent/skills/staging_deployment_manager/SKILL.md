@@ -37,8 +37,10 @@ Gunakan perintah `curl` untuk mengecek status hidup setiap domain:
 Jika CI/CD gagal atau domain tidak merespon:
 
 ### 1. Masalah Koneksi SSH/Authentication
-Jika deployment gagal karena `Permission denied` atau `Host key verification failed`:
-- Cek apakah kredensial di GitHub Secrets masih valid.
+Jika deployment gagal karena `Permission denied`, `Host key verification failed`, atau `can't connect without a private SSH key or password`:
+- **Pin Version**: Selalu gunakan versi spesifik di workflow, contoh: `appleboy/ssh-action@v1.2.0` dan `appleboy/scp-action@v0.1.7`. Hindari penggunaan `@master`.
+- **Port Explicit**: Pastikan parameter `port: ${{ secrets.VPS_PORT }}` (biasanya 22) disertakan secara eksplisit.
+- **Sync Secrets**: Jika password VPS berubah, update rahasia `VPS_PASSWORD` di SELURUH repositori terkait menggunakan GitHub CLI (`gh secret set --repo [REPO]`).
 - Gunakan taktik "Hard Sync" yang ada di skill **Staging Domain Testing**.
 
 ### 2. Service Down (500 Error / 502 Bad Gateway)
