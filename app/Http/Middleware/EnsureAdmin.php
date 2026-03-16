@@ -15,14 +15,10 @@ class EnsureAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = auth()->user();
-        
-        // Allow all internal staff roles (App\Models\User) 
-        // OR citizens (App\Models\Taxpayer) for shared endpoints
-        // Note: Specific route groups in api.php should handle further role-based restrictions
-        if (!auth()->check() || (!($user instanceof \App\Models\User) && !($user instanceof \App\Models\Taxpayer))) {
+        // Allow only internal staff roles (App\Models\User)
+        if (!auth()->check() || !($user instanceof \App\Models\User)) {
             return response()->json([
-                'message' => 'Forbidden: Internal access required.'
+                'message' => 'Forbidden: Internal staff access required.'
             ], 403);
         }
 
