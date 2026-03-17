@@ -5,10 +5,6 @@
     <title>Surat Penegakan - {{ $enforcement->number }}</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 14px; margin: 0; padding: 30px 40px; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
-        .header img { width: 80px; float: left; }
-        .header .titles { margin-left: 90px; }
-        .header h2, .header h3, .header h4 { margin: 2px 0; }
         
         .letter-info { width: 100%; margin-bottom: 30px; }
         .letter-info td { vertical-align: top; }
@@ -23,13 +19,7 @@
 </head>
 <body>
 
-    <div class="header">
-        <div class="titles">
-            <h2>PEMERINTAH KOTA BAUBAU</h2>
-            <h3>BADAN PENDAPATAN DAERAH (BAPENDA)</h3>
-            <p style="font-size: 12px; margin:0;">Jalan Dayanu Ikhsanuddin No. 12, Baubau, Sulawesi Tenggara</p>
-        </div>
-    </div>
+    @include('pdf.header')
 
     <table class="letter-info">
         <tr>

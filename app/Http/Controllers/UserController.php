@@ -15,6 +15,12 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        
+        // Pelaku lapangan (petugas) tidak boleh melihat daftar user admin/staff lainnya
+        if ($user->role === 'petugas') {
+            return response()->json(['message' => 'Unauthorized: Officers cannot access user management.'], 403);
+        }
+
         $query = User::query();
 
         // If not super_admin, scope by OPD
@@ -44,6 +50,10 @@ class UserController extends Controller
     {
         $loggedInUser = $request->user();
         
+        if ($loggedInUser->role === 'petugas') {
+            return response()->json(['message' => 'Unauthorized: Officers cannot create users.'], 403);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
@@ -111,6 +121,10 @@ class UserController extends Controller
     {
         $loggedInUser = $request->user();
 
+        if ($loggedInUser->role === 'petugas') {
+            return response()->json(['message' => 'Unauthorized: Officers cannot update users.'], 403);
+        }
+
         if (!$loggedInUser->isSuperAdmin() && $user->opd_id !== $loggedInUser->opd_id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -167,6 +181,10 @@ class UserController extends Controller
 public function destroy(User $user, Request $request)
 {
     $loggedInUser = $request->user();
+
+    if ($loggedInUser->role === 'petugas') {
+        return response()->json(['message' => 'Unauthorized: Officers cannot delete users.'], 403);
+    }
 
     // Validasi: tidak bisa hapus diri sendiri
     if ($user->id === $loggedInUser->id) {

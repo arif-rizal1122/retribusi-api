@@ -39,6 +39,9 @@ class TaxObject extends Model
         'audit_status',
         'approved_at',
         'approved_by',
+        'installation_date',
+        'last_photo_url',
+        'is_verified_physically',
     ];
 
     protected $casts = [
@@ -47,6 +50,8 @@ class TaxObject extends Model
         'longitude' => 'decimal:8',
         'approved_at' => 'datetime',
         'audit_status' => 'string',
+        'installation_date' => 'date',
+        'is_verified_physically' => 'boolean',
     ];
 
     /**
@@ -119,5 +124,22 @@ class TaxObject extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Check if this is a new billboard (installed within last 30 days)
+     */
+    public function getIsNewBillboardAttribute(): bool
+    {
+        if (!$this->installation_date || !$this->retributionType) {
+            return false;
+        }
+
+        // Logic check: only for billboard type (slug likely 'pajak-reklame' or similar)
+        if (!str_contains(strtolower($this->retributionType->name), 'reklame')) {
+            return false;
+        }
+
+        return $this->installation_date->gt(now()->subDays(30));
     }
 }

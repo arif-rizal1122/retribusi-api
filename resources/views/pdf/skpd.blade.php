@@ -5,10 +5,6 @@
     <title>Surat Ketetapan Pajak Daerah (SKPD)</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 12px; margin: 0; padding: 20px; }
-        .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
-        .header img { width: 70px; float: left; }
-        .header .titles { margin-left: 80px; }
-        .header h2, .header h3, .header h4 { margin: 2px 0; }
         .title { text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 15px; text-decoration: underline; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .table-info td { padding: 5px; vertical-align: top; }
@@ -24,13 +20,7 @@
 </head>
 <body>
 
-    <div class="header">
-        <div class="titles">
-            <h2>PEMERINTAH KOTA BAUBAU</h2>
-            <h3>BADAN PENDAPATAN DAERAH (BAPENDA)</h3>
-            <p>Jalan Dayanu Ikhsanuddin No. 12, Baubau, Sulawesi Tenggara</p>
-        </div>
-    </div>
+    @include('pdf.header')
 
     <div class="title">SURAT KETETAPAN PAJAK DAERAH (SKPD)</div>
 

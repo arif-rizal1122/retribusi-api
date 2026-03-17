@@ -131,7 +131,7 @@ class DocumentController extends Controller
      */
     public function spmp($noticeId)
     {
-        $notice = EnforcementNotice::with(['taxObject.taxpayer', 'auditor'])->findOrFail($noticeId);
+        $notice = EnforcementNotice::with(['taxObject.taxpayer', 'creator'])->findOrFail($noticeId);
         $data = $this->docService->generateSPMP($notice);
         return $this->docService->renderPDF('pdf.spmp', $data, "SPMP-{$notice->number}.pdf");
     }
@@ -156,5 +156,16 @@ class DocumentController extends Controller
         $notice = EnforcementNotice::with(['taxObject.taxpayer', 'taxObject.retributionType'])->findOrFail($noticeId);
         $data = $this->docService->generateSPP($notice);
         return $this->docService->renderPDF('pdf.spp', $data, "SPP-{$notice->number}.pdf");
+    }
+
+    /**
+     * Generate Surat Teguran
+     * GET /api/public/pdf/surat-teguran/{noticeId}
+     */
+    public function suratTeguran($noticeId)
+    {
+        $notice = EnforcementNotice::with(['taxObject.taxpayer', 'bill.retributionType'])->findOrFail($noticeId);
+        $data = $this->docService->generateTeguran($notice);
+        return $this->docService->renderPDF('pdf.teguran', $data, "Teguran-{$notice->number}.pdf");
     }
 }

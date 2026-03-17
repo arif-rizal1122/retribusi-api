@@ -58,6 +58,21 @@ Ketika mencatatkan error baru ke `Mitigation_Registry.md`, gunakan format standa
     1. Pastikan `sanctum.guard` hanya berisi stateful guards (seperti `web`).
     2. Jangan panggil `Auth` facade di dalam Global Scope. Gunakan pola middleware (`SetScopeUser`) untuk menyuntikkan user ke Scope secara pasif SETELAH autentikasi selesai.
 
+### 7. PHP Syntax Compatibility (Error 500)
+- **Konteks**: VPS terkadang menggunakan PHP versi yang lebih ketat/lama.
+- **Penyebab**: Penggunaan `named arguments` di middleware (misal `guest: function()`).
+- **Mitigasi**: Gunakan **Positional Arguments** secara berurutan di `bootstrap/app.php`.
+
+### 8. Permission Denied (Storage)
+- **Konteks**: Aplikasi crash karena tidak bisa menulis log.
+- **Penyebab**: Owner folder tertukar (sipanda vs www-data).
+- **Mitigasi**: Reset owner ke `www-data` (`chown -R www-data:www-data storage bootstrap/cache`). Jangan jalankan `artisan optimize` sebagai user SSH biasa.
+
+### 9. Duplicate CORS Headers
+- **Konteks**: Browser memblokir request ("Multiple Access-Control-Allow-Origin").
+- **Penyebab**: Nginx dan Laravel keduanya mengirim header CORS.
+- **Mitigasi**: Nginx hanya menangani `OPTIONS`, Laravel menangani sisanya.
+
 ## 🧠 Aturan Penanganan Masalah Saat Testing
 1. **Identifikasi Dini:** Jika hasil `run_command` dari script QA mengembalikan gagal/error tak terduga (contoh: status HTTP 500, exception di CLI), JANGAN langsung menerka. Dump exception ke STDERR untuk membaca detail baris kode.
 2. **Lihat Registri Sejarah:** Sebelum memperbaiki bug, rujuklah (view_file) `testing/results/Mitigation_Registry.md` (if any) barangkali error tersebut adalah bug regresi yang solusinya sudah pernah dipetakan sebelumnya.

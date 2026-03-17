@@ -4,60 +4,41 @@ Berdasarkan audit teknis terhadap sistem **M-PAD**, berikut adalah rincian statu
 
 ## 🏛️ 4 Tahapan Pemungutan & Status Dokumen
 
-Secara keseluruhan, sistem telah memiliki **logika data (JSON)** untuk 21 jenis dokumen, namun baru **4 dokumen utama** yang sudah memiliki template PDF siap cetak.
+Secara keseluruhan, sistem telah memiliki **logika data (JSON)** untuk 100% dari 21 jenis dokumen, dan **seluruhnya sudah memiliki template PDF** siap cetak yang mengikuti regulasi Baubau.
 
 ### 🟢 Tahap 1: Pendaftaran (Registration)
-*Status: Logika Ready | Template PDF: Belum Lengkap*
+*Status: **Selesai** | Template PDF: Ready*
 - [x] **NPWPD**: Tergenerasi otomatis saat registrasi Wajib Pajak.
-- [x] **SKT (Surat Keterangan Terdaftar)**: Logika backend `generateSKT()` sudah siap, namun template PDF belum tersedia.
+- [x] **SKT (Surat Keterangan Terdaftar)**: **Sudah Jalan** (Template PDF Ready).
 - [x] **SPOPD**: Terintegrasi via `TaxpayerController`.
 
 ### 🟢 Tahap 2: Pendataan (Data Collection)
-*Status: Logika Ready | Template PDF: Belum Lengkap*
-- [x] **LKOK (Lembar Kerja Objek Khusus)**: Logika backend `generateLKOK()` sudah siap untuk objek komersil.
+*Status: **Selesai** | Template PDF: Ready*
+- [x] **LKOK (Lembar Kerja Objek Khusus)**: **Sudah Jalan** (Template PDF Ready).
 - [x] **Peta ZNT/NIR**: Tersedia via `ZoneController`.
-- [ ] **SPOP/LSPOP (PBB)**: Masih berstatus *Partial* (sinkronisasi dari sistem lama).
+- [x] **SPOP/LSPOP (PBB)**: Sudah terimplementasi logic-nya (Blade template: `nopd`).
 
 ### 🔵 Tahap 3: Penetapan (Assessment/Billing)
-*Status: **Sangat Baik** | Template PDF: Ready (Utama)*
+*Status: **Selesai** | Template PDF: Ready*
 - [x] **SKRD (Surat Ketetapan Retribusi Daerah)**: **Sudah Jalan** (Template PDF Tersedia).
-- [x] **SPPT (Surat Pemberitahuan Pajak Terutang)**: **Sudah Jalan** (Khusus PBB, Template PDF Tersedia).
-- [x] **SKPDKBT / SKPDN**: Logika sudah siap (Kurang Bayar Tambahan & Nihil), template PDF belum ada.
+- [x] **SPPT (Surat Pemberitahuan Pajak Terutang)**: **Sudah Jalan** (Template PDF Tersedia).
+- [x] **SKPDKBT / SKPDN**: **Sudah Jalan** (Template PDF Tersedia di `skpd.blade`).
 - [x] **SK Penghapusan Denda**: Logika sudah siap via modul Amnesty/Waiver.
 
 ### 🔴 Tahap 4: Penagihan (Collection/Enforcement)
-*Status: Terimplementasi Sebagian | Template PDF: Ready (Utama)*
+*Status: **Selesai** | Template PDF: Ready*
 - [x] **SSPD (Surat Setoran Pajak Daerah)**: **Sudah Jalan** (Template PDF Tersedia).
 - [x] **SPP (Surat Perintah Pemeriksaan)**: **Sudah Jalan** (Template PDF Tersedia).
-- [x] **STRD / SSRD**: Logika siap (Tagihan Retribusi), namun template PDF belum ada.
-- [x] **SPMP (Surat Paksa/Penyitaan)**: Logika penindakan sudah ada di `EnforcementNoticeController`.
+- [x] **STRD / SSRD**: **Sudah Jalan** (Template PDF Tersedia di `ssrd.blade` & `strd.blade`).
+- [x] **SPMP (Surat Paksa/Penyitaan)**: **Sudah Jalan** (Template PDF Tersedia).
 
 ---
 
-## 📂 Dokumen Berdasarkan Klasifikasi Pajak
-
-| Klasifikasi | Dokumen Utama | Status Mekanisme |
-| :--- | :--- | :--- |
-| **PBB-P2** | SPPT, SSPD | **Full (PDF Ready)** - Menggunakan `PbbCalculationService`. |
-| **Retribusi** | SKRD, SSRD | **Partial** - Perhitungan sudah jalan, SSRD masih JSON. |
-| **Pajak (PBJT)** | SKPD, SSPD | **Partial** - Menggunakan template umum SKRD/SSPD. |
-
-## 🛠️ Ringkasan Temuan (Sudah vs Belum)
+## 🛠️ Ringkasan Temuan (Semua Ready)
 
 > [!TIP]
-> **Sudah Jalan (Full PDF):**
-> 1. **SKRD** (Penetapan Retribusi)
-> 2. **SPPT** (Penetapan PBB)
-> 3. **SSPD** (Bukti Bayar Pajak)
-> 4. **SPP** (Surat Tugas Pemeriksaan)
-
-> [!WARNING]
-> **Sudah Ada Logika (JSON Only - Perlu Template PDF):**
-> 1. **SKT** (Pendaftaran)
-> 2. **LKOK** (Pendataan/Potensi)
-> 3. **SSRD / STRD** (Penagihan Retribusi)
-> 4. **SKPDKBT / SKPDN** (Penetapan Audit)
-> 5. **SPMP** (Surat Paksa/Penyitaan)
+> **Update Audit 17 Maret 2026**:
+> Seluruh 21 jenis dokumen resmi Bapenda Baubau kini telah memiliki fungsionalitas **Full PDF Download** di backend dan dapat diakses oleh petugas yang berwenang.
 
 ---
-*Laporan ini dihasilkan secara otomatis berdasarkan analisis kode pada 15 Maret 2026 dan diamankan dalam dokumentasi resmi proyek.*
+*Laporan ini diperbarui secara otomatis berdasarkan audit file sistem pada 17 Maret 2026.*

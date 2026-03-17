@@ -1,6 +1,6 @@
 # 🛑 Laporan Hasil Uji Coba Input Invalid (Negative Testing)
 
-**Waktu Eksekusi**: 2026-03-05 00:14:59
+**Waktu Eksekusi**: 2026-03-17 06:52:56
 Pengujian ini sengaja merusak input API untuk memastikan Controller menolak transaksi berakibat fatal ke Database.
 
 ### 1. Injeksi Pembayaran Negatif (Rp -5.000.000)

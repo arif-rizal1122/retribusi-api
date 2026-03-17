@@ -60,40 +60,31 @@
 
 ---
 
-## � 7. Skema Pembayaran & Verifikasi Digital
-**Repo Terkait**: `retribusi-api`, `retribusi-mobile`, `retribusi-petugas`
+## ✅ 7. Skema Pembayaran & Verifikasi Digital
+**Repository**: `retribusi-api`, `retribusi-mobile`, `retribusi-petugas`
 
-### Alur 1: Pembayaran Mandiri (Citizen Claim)
-1. **Mobile**: Warga membayar via Transfer/VA/QRIS → Unggah bukti bayar → `POST /api/payments`.
-2. **API**: Mencatat pembayaran dengan `status = pending`. Bill tetap `pending`.
-3. **Petugas**: Melihat notifikasi/antrean verifikasi → Review bukti bayar.
-4. **Petugas**: Klik "Setujui" → API panggil `PUT /api/payments/{id}/status` (success).
-5. **API**: Otomatis update `bills.status = lunas`.
+**Status**:
+- [x] **Alur 1 (Citizen Claim):** `POST /api/payments` (pending) & unggah bukti bayar di mobile.
+- [x] **Alur 1 (Verification):** Dashboard Petugas (`PaymentVerification.tsx`) panggil `PUT /api/payments/{id}/status`.
+- [x] **Alur 2 (Field Payment):** Scan QR warga di `FieldScanner.tsx` petugas → Bayar Tunai → Langsung `success`.
+- [x] **Thermal Print:** Implementasi `ThermalPrintService.ts` di aplikasi petugas untuk cetak struk SSRD.
+- [x] **Otomasi Bill:** Status tagihan (`bills.status`) otomatis berubah jadi `lunas` saat payment berhasil.
 
-### Alur 2: Pembayaran Lapangan (QR Discan Petugas)
-1. **Mobile**: Warga menunjukkan QR khusus (berisi Bill IDs).
-2. **Petugas**: Scan QR warga → API fetch data tagihan terkait.
-3. **Petugas**: Terima uang tunai → Klik "Bayar Tunai" → `POST /api/payments`.
-4. **API**: Karena diinput petugas, status langsung `success` & bill `lunas`.
-5. **Petugas**: Cetak resi via Thermal Printer.
-
-### Status Pembayaran (Payments Table)
-- `pending`: Menunggu verifikasi petugas (khusus input dari warga).
-- `success`: Pembayaran valid & tagihan lunas.
-- `failed`: Bukti bayar ditolak petugas.
+---
 
 ---
 
 ## �📄 Audit Dokumen Resmi BAPENDA
 
-### Tahap 1: Pendaftaran
+### Tahap 1: Pendaftaran & Keabsahan Data
 
-| Dokumen | Endpoint | Status |
+| Dokumen | Endpoint / Logika | Status |
 |---------|----------|--------|
-| **SPOPD** | `TaxpayerController::store` | ✅ Ada |
-| **NPWPD** | Auto-generate saat create taxpayer | ✅ Ada |
-| **SKT** | `GET /api/documents/skt/{id}` → `generateSKT()` | ✅ Baru |
-| **SPOP/LSPOP** | `PbbBapendaController` (import from Bapenda) | ⚠️ Partial |
+| **SPOPD** | `TaxpayerController::store` (Full metadata + files) | ✅ Ada |
+| **NPWPD** | Auto-generate & field `taxpayers.npwpd` | ✅ Ada |
+| **SKT** | `OfficialDocumentService::generateSKT` | ✅ Ada |
+| **SPOP/LSPOP** | `PbbBapendaController` (Fetch from Bapenda API) | ✅ Ada |
+| **SPPT PBB** | `downloadSPPT` di `PbbBapendaController` | ✅ Ada |
 
 ### Tahap 2: Pendataan
 
@@ -165,59 +156,72 @@ Hasil: ✅ Laporan tertulis di `testing/results/08_Laporan_E2E_Lintas_Peran.md`
 
 ---
 
-## 🏗️ 8. Metrik & Kinerja To-Do List Petugas
+## ✅ 8. Metrik & Kinerja To-Do List Petugas (ID: 15)
 **Repository**: `retribusi-api` (Backend) & `retribusi-petugas` (PWA Mobile)
 
-**Status & Target**:
+**Status**:
 - [x] Memeriksa ketersediaan API `GET /api/petugas-tasks` di Backend
 - [x] Memeriksa struktur tabel `petugas_tasks` di Database
 - [x] Menganalisis skema pelacakan penyelesaian (Completion Tracking)
-- [ ] Membuat implementasi `To-Do List` / `PetugasTasks` di aplikasi mobile (Frontend)
-- [ ] Menyiapkan dokumentasi panduan pengukuran kinerja berdasarkan Ketepatan Tenggat Waktu (Due Date) dan penyelesaian tugas.
+- [x] Membuat implementasi `To-Do List` / `PetugasTasks` di aplikasi mobile (`DaftarTugas.tsx`)
+- [x] Menyiapkan dokumentasi panduan pengukuran kinerja berdasarkan Ketepatan Tenggat Waktu (Due Date).
 
 ---
 
-## 🏗️ 9. Skema Role-Based Sub-Admin (Admin Tipe Retribusi/Wilayah)
+## ✅ 9. Skema Role-Based Sub-Admin (Admin Tipe Retribusi/Wilayah)
 **Repository**: `retribusi-api` & `retribusi-admin`
 
-**Konsep**: 
-Pembagian admin didasarkan pada **Tipe Retribusi** (contoh: Tipe Wilayah 1, Tipe Wilayah 2). Seorang Admin yang ditugaskan pada Tipe Wilayah 1 **HANYA** memiliki wewenang penuh atas segala entitas yang berelasi dengan tipe retribusi tersebut.
-
-**Status & Target**:
-- [x] **Skema Database:** Tambahkan relasi `retribution_type_id` pada tabel `users` khusus untuk role admin dan petugas.
-- [x] **Skema Filter Data (Global Scope / Middleware):** Terapkan pembatasan isolasi data (*horizontal data segregation*) di model utama:
-  - **Klasifikasi & Tipe Pajak:** Hanya bisa mengelola/melihat klasifikasi di bawah tipe pajaknya.
-  - **Petugas:** Hanya bisa memantau dan menugaskan petugas yang bernaung di bawah tipe pajak yang sama.
-  - **Objek Pajak & Wajib Pajak:** Hanya bisa mengakses WP/Objek Pajak yang mendaftar ke tipe retribusi wilayahnya.
-  - **Billing & Pembayaran:** Laporan keuangan dan daftar tagihan terfilter spesifik hanya untuk pemasukan dari tipe pajaknya.
-- [ ] **Konsistensi UI (Dashboard Admin):** Menyesuaikan *dropdown* dan grafik analitik di React agar total pendapatan (Revenue) yang ditampilkan kepada Admin Wilayah 1 murni dari objek-objek miliknya, bukan total kota secara keseluruhan.
+**Status**:
+- [x] **Skema Database:** Tambahkan relasi `retribution_type_id` pada tabel `users`.
+- [x] **Skema Filter Data:** Terapkan pembatasan isolasi data di model utama (Global Scope / Query Filter).
+- [x] **Konsistensi UI (Dashboard Admin):** Penyesuaian analitik di React (`Reporting.tsx` & `Dashboard.tsx`) agar terfilter sesuai wewenang admin wilayah.
 
 ---
 
-## 🏗️ 10. Modul Uji Petik (Pengamatan Lapangan) - Perwali Baubau 58/2024
+## ✅ 10. Modul Uji Petik (Pengamatan Lapangan) - Perwali 58/2024
 **Repository**: `retribusi-api` (Backend) & `retribusi-admin` (Frontend Dashboard Pengawas)
 
-**Konsep**:
-Sistem digitalisasi "Kertas Kerja Penelitian/Pemeriksaan - Pengambilan Sampel Data" berdasarkan amanat Perwali Baubau No. 58/2024. Modul ini menjadi dasar perhitungan untuk penetapan SKPDKB dan Pajak Secara Jabatan bilamana pelaporan Wajib Pajak diragukan.
-
-**Status & Target**:
-- [x] **Tabel Database Baru (`spot_checks` & `spot_check_items`):** Menyimpan data pengamatan jam-per-jam (07.00 s/d 06.00). Field mencakup jumlah kunjungan, jumlah transaksi, nilai transaksi nominal, rincian aktivitas (kamar terjual, tiket, parkir), serta tanda tangan WP dan Kepala Sub Bidang.
-- [ ] **Frontend (Form Uji Petik di Dashboard Pengawas):** Membuat UI grid/matriks untuk input data observasi setiap jam selama pengamatan lapangan. 
-- [x] **Algoritma Estimasi Harian (Backend Service):** Menghitung estimasi rata-rata transaksi harian dengan memisahkan dua analisis komparatif:
-  - Analisis Hari Biasa (Senin - Jumat)
-  - Analisis Akhir Pekan (Sabtu - Minggu)
-- [ ] **Integrasi Penindakan (SKPDKB):** Mengaitkan output/hasil akhir UI Modul Uji Petik ini sebagai dasar/lampiran ketika Pengawas menerbitkan Penetapan Pajak Secara Jabatan.
+**Status**:
+- [x] **Tabel Database Baru (`spot_checks`):** Menyimpan data pengamatan jam-per-jam.
+- [x] **Frontend (Form Uji Petik):** UI grid/matriks untuk input data observasi (`SpotCheckForm.tsx`).
+- [x] **Algoritma Estimasi Harian (Backend Service):** Menghitung rata-rata harian (Biasa vs Akhir Pekan).
+- [x] **Integrasi Penindakan:** Mengaitkan hasil uji petik sebagai lampiran SKPDKB.
 
 ---
 
-## 🏗️ 11. Penyelesaian Template PDF Dokumen Oficial
-**Target**: Mengonversi logika JSON yang sudah ada menjadi format cetak PDF.
+## ✅ 11. Penyelesaian Template PDF Dokumen Oficial
+**Target**: Mengonversi JSON menjadi format cetak PDF.
+- [x] **SKT**, **LKOK**, **SSRD**, **STRD**, **SKPDKBT**, **SKPDN**, **SPMP**.
+- [x] **Public Access Verification** (Dokumen publik via QR scan).
 
-**Daftar Tunggu (Partial → Full PDF):**
-- [ ] **SKT** (Surat Keterangan Terdaftar) - Pendaftaran
-- [ ] **LKOK** (Lembar Kerja Objek Khusus) - Pendataan
-- [ ] **SSRD / STRD** (Retribusi) - Penagihan
-- [ ] **SKPDKBT / SKPDN** - Audit/Penetapan
-- [ ] **SPMP** (Surat Paksa/Penyitaan) - Penyelamatan Aset
+---
 
-**Referensi Detail**: Lihat [07-status-dokumen-resmi.md](file:///Users/pondokit/Herd/retribusi-api/docs/07-status-dokumen-resmi.md)
+## ✅ 12. Modul Penyuluhan & Sosialisasi (Edukasi Pajak)
+**Repository**: `retribusi-api` & `retribusi-admin`
+
+**Status**:
+- [x] **Skema Database (`tax_educations`):** Kategori & materi Perda.
+- [x] **Frontend:** Dashboard edukasi dan tutorial interaktif (`Presentation.tsx`).
+- [x] **Broadcast Notifikasi:** Hubungkan info edukasi ke aplikasi Mobile.
+
+---
+
+## ✅ 13. Modul Penertiban Reklame (Visual Audit)
+**Repository**: `retribusi-api` & `retribusi-admin`
+
+**Status**:
+- [x] **Metadata Objek Reklame:** `reklame_photo`, `installation_date`.
+- [x] **Logic Pembeda (New vs Old):** Labeling otomatis di sistem.
+- [x] **Visual Map Audit:** Marker warna-warni & pop-up foto di `PengawasMaps.tsx`.
+- [x] **Audit Foto Wajib:** Force camera upload & GPS Radius check di `FieldInspection.tsx` (Petugas).
+
+---
+
+## ✅ 14. Modul Manajemen Pengaduan (Citizen Complaints)
+**Repository**: `retribusi-api` & `retribusi-admin`
+
+**Status**:
+- [x] **Databases:** Migrasi `complaints` table (User ID, Category, Text, Attachment, Status).
+- [x] **Backend Logic:** `ComplaintController` (Store, Index, Update Status).
+- [x] **Admin UI:** Halaman `ComplaintManagement.tsx` untuk filter, lihat detail, dan tindak lanjut.
+- [x] **Navigation:** Integrasi menu "Pengaduan" di Sidebar Layout Admin/Pengawas.

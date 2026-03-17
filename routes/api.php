@@ -19,6 +19,9 @@ use App\Http\Controllers\TaxObjectController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\PbbClassificationController;
 use App\Http\Controllers\PbbBapendaController;
+use App\Http\Controllers\TaxEducationController;
+use App\Http\Controllers\BillboardAuditController;
+use App\Http\Controllers\ComplaintController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,7 +30,7 @@ use App\Http\Controllers\PbbBapendaController;
 */
 
 // Public auth routes with strict throttle (prevent brute force)
-Route::middleware('throttle:10,1')->group(function () {
+Route::group(['middleware' => 'throttle:10,1'], function () {
     Route::post('/opd/register', [OpdController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/citizen/login', [AuthController::class, 'citizenLogin']);
@@ -41,12 +44,10 @@ Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationCon
 Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
 
 // Public: Documents (PDF)
-Route::prefix('public/pdf')->group(function () {
-    Route::get('/skpd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skrd']);
-    Route::get('/skrd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skrd']);
-    Route::get('/sspd/{billId}', [\App\Http\Controllers\DocumentController::class, 'sspd']);
-    Route::get('/sppt/{billId}', [\App\Http\Controllers\DocumentController::class, 'sppt']);
-});
+Route::get('/public/pdf/skrd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skrd']);
+Route::get('/public/pdf/sspd/{billId}', [\App\Http\Controllers\DocumentController::class, 'sspd']);
+Route::get('/public/pdf/sppt/{billId}', [\App\Http\Controllers\DocumentController::class, 'sppt']);
+Route::get('/public/pdf/surat-teguran/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'suratTeguran']);
 
 // Tax Simulation (public, no auth needed)
 Route::post('/simulate-tax', function (Request $request) {
@@ -157,10 +158,8 @@ Route::post('/pbb/calculate', [PbbClassificationController::class, 'calculate'])
 Route::post('/pbb/bapenda/inquiry', [PbbBapendaController::class, 'inquiry'])->middleware('throttle:10,1');
 
 // Protected routes
-Route::middleware(['auth:sanctum', 'scope_user'])->group(function () {
-    // ------------------------------------------------------------------------
+Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     // Shared Routes (Admin, Petugas, Citizen)
-    // ------------------------------------------------------------------------
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
@@ -171,7 +170,7 @@ Route::middleware(['auth:sanctum', 'scope_user'])->group(function () {
     Route::post('/me/update', [\App\Http\Controllers\MeController::class, 'update']);
     
     // Citizen Service Registration (Shared, but usually for citizens)
-    Route::prefix('citizen/services')->group(function () {
+    Route::group(['prefix' => 'citizen/services'], function () {
         Route::get('/', [\App\Http\Controllers\CitizenServiceController::class, 'index']);
         Route::get('/pending-periods', [\App\Http\Controllers\CitizenServiceController::class, 'getPendingPeriods']);
         Route::get('/{id}', [\App\Http\Controllers\CitizenServiceController::class, 'show']);
@@ -187,13 +186,15 @@ Route::middleware(['auth:sanctum', 'scope_user'])->group(function () {
     Route::get('/tte/verify/{number}', [\App\Http\Controllers\Api\EregistryController::class, 'verify'])->withoutMiddleware('auth:sanctum');
 
     // Citizen Specific Actions
-    Route::prefix('citizen')->group(function () {
+    Route::group(['prefix' => 'citizen'], function () {
         Route::post('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'store']);
         Route::get('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
+        Route::post('/complaints', [ComplaintController::class, 'store']);
+        Route::get('/complaints', [ComplaintController::class, 'index']);
     });
 
     // PBB Bapenda Citizen Actions
-    Route::prefix('pbb/bapenda')->group(function () {
+    Route::group(['prefix' => 'pbb/bapenda'], function () {
         Route::post('/link-nop', [PbbBapendaController::class, 'linkNop']);
         Route::delete('/unlink-nop/{id}', [PbbBapendaController::class, 'unlinkNop']);
         Route::get('/my-objects', [PbbBapendaController::class, 'myObjects']);
@@ -272,7 +273,7 @@ Route::middleware(['auth:sanctum', 'scope_user'])->group(function () {
 
         Route::prefix('tte')->group(function () {
             Route::get('/documents', [\App\Http\Controllers\Api\EregistryController::class, 'index']);
-            Route::post('/sign', [\App\Http\Controllers\BillController::class, 'signTTE']);
+            Route::post('/sign', [BillController::class, 'signTTE']);
         });
 
         Route::prefix('pbb/bapenda')->group(function () {
@@ -300,5 +301,20 @@ Route::middleware(['auth:sanctum', 'scope_user'])->group(function () {
             Route::get('/spp/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'spp']);
             Route::get('/spmp/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'spmp']);
         });
+
+        // Modul Penyuluhan & Sosialisasi
+        Route::apiResource('tax-educations', TaxEducationController::class);
+        Route::post('tax-educations/{taxEducation}/broadcast', [TaxEducationController::class, 'broadcast']);
+
+        // Modul Penertiban Reklame (Visual Audit)
+        Route::prefix('billboards')->group(function () {
+            Route::post('/{taxObject}/photo', [BillboardAuditController::class, 'uploadPhoto']);
+            Route::post('/{taxObject}/verify', [BillboardAuditController::class, 'verify']);
+        });
+
+        // Modul Pengaduan (Admin & Pengawas)
+        Route::get('/complaints', [ComplaintController::class, 'index']);
+        Route::get('/complaints/{complaint}', [ComplaintController::class, 'show']);
+        Route::put('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus']);
     });
 });
