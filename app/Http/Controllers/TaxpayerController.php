@@ -67,7 +67,7 @@ class TaxpayerController extends Controller
     /**
      * Store new taxpayer with retribution types
      */
-    public function store(Request $request, \App\Services\IdentityValidationService $validationService)
+    public function store(Request $request)
     {
         \Log::info('Taxpayer store request', $request->all());
         $user = $request->user();
@@ -103,20 +103,6 @@ class TaxpayerController extends Controller
             $opdId = $user->opd_id;
         }
 
-        if ($request->nik) {
-            $nikCheck = $validationService->validateNik($request->nik);
-            if (!$nikCheck['valid']) {
-                return response()->json(['message' => $nikCheck['message']], 422);
-            }
-        }
-
-        if ($request->npwpd) {
-            $npwpCheck = $validationService->validateNpwp($request->npwpd);
-            if (!$npwpCheck['valid']) {
-                return response()->json(['message' => $npwpCheck['message']], 422);
-            }
-        }
-
         // Validate that retribution types belong to the same OPD
         $validTypesIds = (array)$request->retribution_type_ids;
         $validTypesCount = RetributionType::where('opd_id', $opdId)
@@ -135,12 +121,10 @@ class TaxpayerController extends Controller
             $metadata = json_decode($metadata, true) ?: [];
         }
 
-        if ($request->hasFile('foto_lokasi_open_kamera')) {
-            $metadata['foto_lokasi_open_kamera'] = $cloudinary->upload($request->file('foto_lokasi_open_kamera'), 'taxpayers/survey');
-        }
-        
-        if ($request->hasFile('formulir_data_dukung')) {
-            $metadata['formulir_data_dukung'] = $cloudinary->upload($request->file('formulir_data_dukung'), 'taxpayers/docs');
+        // Dynamically handle all file uploads and add to metadata
+        foreach ($request->allFiles() as $key => $file) {
+            $folder = $key === 'foto_lokasi_open_kamera' ? 'taxpayers/survey' : 'taxpayers/docs';
+            $metadata[$key] = $cloudinary->upload($file, $folder);
         }
 
         // Check if taxpayer with this NIK already exists
@@ -151,7 +135,11 @@ class TaxpayerController extends Controller
 
         if ($taxpayer) {
             // Update existing taxpayer basic info if provided
-            $taxpayer->update($request->only(['name', 'address', 'district', 'sub_district', 'phone', 'npwpd']));
+            $updateData = $request->only(['name', 'address', 'district', 'sub_district', 'phone', 'npwpd']);
+            if ($request->filled('password')) {
+                $updateData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+            }
+            $taxpayer->update($updateData);
             
             // Merge metadata
             if (!empty($metadata)) {
@@ -177,6 +165,7 @@ class TaxpayerController extends Controller
                 'is_active' => $request->boolean('is_active', true),
                 'metadata' => $metadata,
                 'created_by' => $user->id,
+                'password' => $request->password ? \Illuminate\Support\Facades\Hash::make($request->password) : null,
             ]);
         }
 
@@ -194,14 +183,14 @@ class TaxpayerController extends Controller
             if (empty($typeClassifications)) {
                 $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => null]]);
                 
-                // Also create/update TaxObject
-                $this->syncTaxObject($taxpayer, $typeId, null);
+                // Also create/update TaxObject with metadata
+                $this->syncTaxObject($taxpayer, $typeId, null, $metadata);
             } else {
                 foreach ($typeClassifications as $cId) {
                     $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => $cId]]);
                     
-                    // Also create/update TaxObject
-                    $this->syncTaxObject($taxpayer, $typeId, $cId);
+                    // Also create/update TaxObject with metadata
+                    $this->syncTaxObject($taxpayer, $typeId, $cId, $metadata);
                 }
             }
         }
@@ -249,7 +238,7 @@ class TaxpayerController extends Controller
     /**
      * Update taxpayer
      */
-    public function update(Request $request, Taxpayer $taxpayer, \App\Services\IdentityValidationService $validationService)
+    public function update(Request $request, Taxpayer $taxpayer)
     {
         \Log::info('Taxpayer update request for ID: ' . $taxpayer->id, $request->all());
         $user = $request->user();
@@ -298,18 +287,8 @@ class TaxpayerController extends Controller
             'object_name', 'object_address', 'latitude', 'longitude', 'is_active'
         ]);
 
-        if (!empty($data['nik'])) {
-            $nikCheck = $validationService->validateNik($data['nik']);
-            if (!$nikCheck['valid']) {
-                return response()->json(['message' => $nikCheck['message'], 'errors' => ['nik' => [$nikCheck['message']]]], 422);
-            }
-        }
-
-        if (!empty($data['npwpd'])) {
-            $npwpCheck = $validationService->validateNpwp($data['npwpd']);
-            if (!$npwpCheck['valid']) {
-                return response()->json(['message' => $npwpCheck['message'], 'errors' => ['npwpd' => [$npwpCheck['message']]]], 422);
-            }
+        if ($request->filled('password')) {
+            $data['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
         }
 
         // Handle Metadata & Files
@@ -359,11 +338,11 @@ class TaxpayerController extends Controller
 
                     if (empty($typeClassifications)) {
                         $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => null]]);
-                        $this->syncTaxObject($taxpayer, $typeId, null);
+                        $this->syncTaxObject($taxpayer, $typeId, null, $metadata);
                     } else {
                         foreach ($typeClassifications as $cId) {
                             $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => $cId]]);
-                            $this->syncTaxObject($taxpayer, $typeId, $cId);
+                            $this->syncTaxObject($taxpayer, $typeId, $cId, $metadata);
                         }
                     }
                 }
@@ -409,7 +388,7 @@ class TaxpayerController extends Controller
     /**
      * Helper to sync taxpayer object info to tax_objects table
      */
-    private function syncTaxObject(Taxpayer $taxpayer, $typeId, $classificationId = null)
+    private function syncTaxObject(Taxpayer $taxpayer, $typeId, $classificationId = null, $metadata = [])
     {
         if (!$taxpayer->object_name) return;
 
@@ -426,6 +405,7 @@ class TaxpayerController extends Controller
             'longitude' => $taxpayer->longitude,
             'status' => 'active',
             'nop' => $nop,
+            'metadata' => $metadata,
         ];
 
         try {

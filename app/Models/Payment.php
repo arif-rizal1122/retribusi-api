@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+    }
+
     protected $fillable = [
         'bill_id',
         'taxpayer_id',
@@ -20,11 +25,15 @@ class Payment extends Model
         'approved_by',
         'proof_url',
         'metadata',
+        'tendered_amount',
+        'change_amount',
     ];
 
     protected $casts = [
         'paid_at' => 'datetime',
         'metadata' => 'array',
+        'tendered_amount' => 'decimal:2',
+        'change_amount' => 'decimal:2',
     ];
 
     public function bill(): BelongsTo

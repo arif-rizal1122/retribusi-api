@@ -10,9 +10,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Bill extends Model
 {
     use HasFactory;
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+    }
+
     protected $fillable = [
         'taxpayer_id',
         'tax_object_id',
+        'spot_check_id',
         'opd_id',
         'retribution_type_id',
         'retribution_classification_id',
@@ -29,6 +36,9 @@ class Bill extends Model
         'fixed_fine_amount',
         'surcharge_amount',
         'waived_penalty_amount',
+        'admin_fee',
+        'postponed_at',
+        'reason_postponed',
     ];
 
     protected $casts = [
@@ -40,6 +50,8 @@ class Bill extends Model
         'fixed_fine_amount' => 'decimal:2',
         'surcharge_amount' => 'decimal:2',
         'waived_penalty_amount' => 'decimal:2',
+        'admin_fee' => 'decimal:2',
+        'postponed_at' => 'datetime',
     ];
 
     protected $appends = [
@@ -63,7 +75,7 @@ class Bill extends Model
         $basePenalty = (float) $this->penalty_amount + (float) $this->fixed_fine_amount + (float) $this->surcharge_amount;
         $effectivePenalty = max(0, $basePenalty - (float) $this->waived_penalty_amount);
         
-        return (float) $this->amount + $effectivePenalty;
+        return (float) $this->amount + (float) $this->admin_fee + $effectivePenalty;
     }
 
     public function taxpayer(): BelongsTo
@@ -99,6 +111,11 @@ class Bill extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function spotCheck(): BelongsTo
+    {
+        return $this->belongsTo(SpotCheck::class);
     }
 
     public function waivers(): HasMany

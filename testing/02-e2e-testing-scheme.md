@@ -63,6 +63,20 @@ Selain skrip *Command-Line* E2E (*automated*), pengujian manual ini diperlukan u
 4. Klik *Delete* (Hapus) pada *row* "Test Cascading".
 5. **Ekspektasi Hasil:** Muncul pop-up atau respon `400 Bad Request` bertulis: "Gagal menghapus jenis retribusi karena masih memiliki objek pajak atau data terkait lainnya" di layar / Network tab Chrome. API tidak boleh crash dengan Status 500 (Internal Server Error) dan tidak boleh melontarkan peringatan CORS Policy.
 
+### 8. Verifikasi Ketersediaan Dokumen Resmi (Official Document Verification)
+- **Aksi:** Menjalankan script `php testing/stg4_document_availability.php` untuk memvalidasi seluruh endpoint dokumen.
+- **Ekspektasi:** Endpoint merespons dengan HTTP 200/201 (Valid JSON atau PDF Stream).
+
+### 9. Uji Keamanan RBAC (Role-Based Access Control Isolation Test)
+- **Aksi:** Memanggil endpoint khusus staf internal (cth: `GET /api/users`) menggunakan Bearer Token milik Wajib Pajak (Citizen).
+- **Ekspektasi:** Endpoint wajib merespons dengan HTTP 403 (Forbidden).
+- **Mitigasi Kondisi:** Jika merespons 200 OK, injeksi middleware (seperti `EnsureAdmin`) kemungkinan cacat. Pastikan middleware tidak meloloskan *instance* model `App\Models\Taxpayer` pada rute yang mensyaratkan `App\Models\User`.
+
+### 10. Pengujian Konsistensi Environment (Stale Cache Mitigation Test)
+- **Aksi:** Verifikasi respon aplikasi API setelah pembaruan parameter sensitif (kredensial database) pada file `.env` VPS yang disuntikkan oleh bot CI/CD.
+- **Ekspektasi:** API segera merespons 200 OK tanpa error Database Connection (contoh 1045 Access Denied) pada rute yang dilindungi.
+- **Mitigasi Kondisi (500 Server Error):** Jika respon gagal setelah *deploy* konfigurasi, kemungkinan memori servis *process manager* menahan *environment variables* usang (Stale Cache). Coba instruksi *reload* layanan PHP-FPM di VPS (contoh: `sudo systemctl reload php8.3-fpm` dan `php8.4-fpm`) untuk memaksa pemuatan ulang konfigurasi.
+
 ---
 
 ## Eksekusi Rutin Pengujian (How to Run)

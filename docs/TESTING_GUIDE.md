@@ -53,5 +53,10 @@ chmod +x *.sh
 - **Audit Dokumen BAPENDA:** Lihat [todo-list.md](file:///Users/pondokit/Herd/retribusi-api/docs/todo-list.md).
 
 ---
-*Acuan Pengujian Terintegrasi. Terakhir diperbarui: 5 Maret 2026.*
+*Acuan Pengujian Terintegrasi. Terakhir diperbarui: 15 Maret 2026.*
+
+### Test Penambahan Terbaru (Maret 2026):
+- **`stg4_document_availability.php`**: 
+  - *Fungsi:* Verifikasi ketersediaan 21 dokumen resmi.
+  - *Cakupan:* Validasi endpoint dokumen (JSON/PDF).
 

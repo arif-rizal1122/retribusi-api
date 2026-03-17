@@ -19,12 +19,28 @@ use Illuminate\Support\Facades\DB;
  */
 class TaxHierarchySyncSeeder extends Seeder
 {
-    const ICON_PAJAK   = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855477/retribusi/icons/cixchfed9fiadty2c4a1.jpg';
     const ICON_REKLAME = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855480/retribusi/icons/airqm7ydazqqpsqezlrv.jpg';
     const ICON_MBLB    = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855474/retribusi/icons/pl1ag8vgja8jwzabaavc.jpg';
     const ICON_WALET   = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855486/retribusi/icons/agqc0orhv7i9wg4a7x1t.jpg';
     const ICON_BPHTB   = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855470/retribusi/icons/tjhkxpabcvlhjegvnzyf.jpg';
     const ICON_RETRIB  = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855483/retribusi/icons/mqbtlhf4modvik6ikhvi.jpg';
+    const ICON_PAJAK   = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855477/retribusi/icons/cixchfed9fiadty2c4a1.jpg';
+    
+    // Core Icons from RetributionTypeSeeder
+    const ICON_PARKIR   = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769703397/retribusi/mobile/icons/parkir.png';
+    const ICON_TERMINAL = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769703406/retribusi/mobile/icons/terminal.png';
+    const ICON_TICKET   = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769703393/retribusi/mobile/icons/e-Ticket.png';
+    const ICON_KENDAR   = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769703396/retribusi/mobile/icons/kendaraan.png';
+    const ICON_PELABUH  = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769703401/retribusi/mobile/icons/pelabuhan.png';
+    const ICON_PASAR    = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769703399/retribusi/mobile/icons/pasar.png';
+    const ICON_UMK      = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769703391/retribusi/mobile/icons/Izin%20UMK.png';
+    const ICON_SIUP     = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769703403/retribusi/mobile/icons/tdp-siup.png';
+    const ICON_SAMPAH   = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769703402/retribusi/mobile/icons/sampah.png';
+    const ICON_PDAM     = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769703399/retribusi/mobile/icons/pdam.png';
+    const ICON_IMB      = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769703394/retribusi/mobile/icons/imb.png';
+    const ICON_INTERNET = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769703395/retribusi/mobile/icons/internet.png';
+    const ICON_TELKOM   = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769703404/retribusi/mobile/icons/telkom.png';
+    const ICON_PBB_IMG  = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769705644/retribusi/mobile/icons/pbb.jpg';
 
     private array $commonReqs = [
         ['key' => 'foto_lokasi_open_kamera', 'label' => 'Dokumentasi Open Kamera', 'required' => true],
@@ -50,7 +66,7 @@ class TaxHierarchySyncSeeder extends Seeder
         
         // PBB-P2
         $this->syncClassification($bapenda, $w1, 'PBB-P2', [
-            'code' => 'PBB', 'icon' => self::ICON_PAJAK, 'formula' => '(njop - 10000000) * 0.003'
+            'code' => 'PBB', 'icon' => self::ICON_PBB_IMG, 'formula' => '(njop - 10000000) * 0.003'
         ]);
 
         $this->syncClassification($bapenda, $w1, 'BPHTB', [
@@ -77,39 +93,39 @@ class TaxHierarchySyncSeeder extends Seeder
         $this->command->info('Configuring Wilayah II...');
 
         $this->syncClassification($bapenda, $w2, 'PBJT - Makan dan Minum', [
-            'code' => 'PBJT-MNM', 'icon' => self::ICON_PAJAK, 'formula' => 'omzet * 0.10'
+            'code' => 'PBJT-MNM', 'icon' => self::ICON_PASAR, 'formula' => 'omzet * 0.10'
         ]);
 
         $this->syncClassification($bapenda, $w2, 'PBJT - Jasa Perhotelan', [
-            'code' => 'PBJT-HTL', 'icon' => self::ICON_PAJAK, 'formula' => 'omzet * 0.10'
+            'code' => 'PBJT-HTL', 'icon' => self::ICON_BPHTB, 'formula' => 'omzet * 0.10'
         ]);
 
         $this->syncClassification($bapenda, $w2, 'PBJT - Kesenian dan Hiburan', [
-            'code' => 'PBJT-HBR', 'icon' => self::ICON_PAJAK, 'formula' => 'omzet * 0.10'
+            'code' => 'PBJT-HBR', 'icon' => self::ICON_TICKET, 'formula' => 'omzet * 0.10'
         ]);
 
         $this->syncClassification($bapenda, $w2, 'PBJT - Parkir', [
-            'code' => 'PBJT-PRK', 'icon' => self::ICON_PAJAK, 'formula' => 'omzet * 0.10'
+            'code' => 'PBJT-PRK', 'icon' => self::ICON_PARKIR, 'formula' => 'omzet * 0.10'
         ]);
 
         $this->syncClassification($bapenda, $w2, 'PBJT - Tenaga Listrik', [
-            'code' => 'PBJT-LIS', 'icon' => self::ICON_PAJAK, 'formula' => 'tagihan * 0.10'
+            'code' => 'PBJT-LIS', 'icon' => self::ICON_INTERNET, 'formula' => 'tagihan * 0.10'
         ]);
 
         $this->syncClassification($bapenda, $w2, 'Pajak Air Tanah', [
-            'code' => 'PAT', 'icon' => self::ICON_PAJAK, 'formula' => '(volume * hda) * 0.20'
+            'code' => 'PAT', 'icon' => self::ICON_PDAM, 'formula' => '(volume * hda) * 0.20'
         ]);
 
         $this->syncClassification($bapenda, $w2, 'Retribusi Persampahan', [
-            'code' => 'SAMPAH', 'icon' => self::ICON_RETRIB, 'formula' => 'tarif_flat'
+            'code' => 'SAMPAH', 'icon' => self::ICON_SAMPAH, 'formula' => 'tarif_flat'
         ]);
 
         $this->syncClassification($bapenda, $w2, 'Retribusi PKD', [
-            'code' => 'PKD', 'icon' => self::ICON_RETRIB, 'formula' => 'tarif_kios'
+            'code' => 'PKD', 'icon' => self::ICON_UMK, 'formula' => 'tarif_kios'
         ]);
 
         $this->syncClassification($bapenda, $w2, 'PBG (Building Permit)', [
-            'code' => 'PBG', 'icon' => self::ICON_RETRIB, 'formula' => 'luas * indeks'
+            'code' => 'PBG', 'icon' => self::ICON_IMB, 'formula' => 'luas * indeks'
         ]);
 
         $this->command->info('✅ Master Data Sync Complete: 2 Wilayah structure active.');

@@ -98,6 +98,7 @@ class DashboardController extends Controller
             'revenue_by_type' => Payment::join('bills', 'payments.bill_id', '=', 'bills.id')
                 ->join('retribution_types', 'bills.retribution_type_id', '=', 'retribution_types.id')
                 ->when($opdId, fn($q) => $q->where('bills.opd_id', $opdId))
+                ->when($user->retribution_type_id && in_array($user->role, ['admin', 'pengawas']), fn($q) => $q->where('bills.retribution_type_id', $user->retribution_type_id))
                 ->when($user->role === 'petugas', function($q) use ($user) {
                     $assignments = $user->assignments;
                     if ($assignments->isNotEmpty()) {
@@ -122,6 +123,7 @@ class DashboardController extends Controller
             'revenue_by_classification' => Payment::join('bills', 'payments.bill_id', '=', 'bills.id')
                 ->join('retribution_classifications', 'bills.retribution_classification_id', '=', 'retribution_classifications.id')
                 ->when($opdId, fn($q) => $q->where('bills.opd_id', $opdId))
+                ->when($user->retribution_type_id && in_array($user->role, ['admin', 'pengawas']), fn($q) => $q->where('bills.retribution_type_id', $user->retribution_type_id))
                 ->when($user->role === 'petugas', function($q) use ($user) {
                     $assignments = $user->assignments;
                     if ($assignments->isNotEmpty()) {
@@ -351,6 +353,7 @@ class DashboardController extends Controller
                     'status' => 'zone',
                     'icon' => $obj->retributionType->icon ?? null,
                     'retribution_type_id' => $obj->retribution_type_id,
+                    'opd_id' => $obj->opd_id,
                 ];
             });
 
@@ -396,6 +399,8 @@ class DashboardController extends Controller
                     'icon' => null, // We will use user icon in frontend
                     'retribution_type_id' => $obj->retribution_type_id,
                     'retribution_classification_id' => $obj->retribution_classification_id,
+                    'opd_id' => $obj->opd_id,
+                    'metadata' => $obj->metadata,
                 ];
             });
 

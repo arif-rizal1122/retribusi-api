@@ -62,11 +62,14 @@ class PbbBapendaController extends Controller
             ], 404);
 
         } catch (\Exception $e) {
-            Log::error('PBB Inquiry Error', ['error' => $e->getMessage()]);
+            Log::error('PBB Inquiry Service Error', [
+                'nop' => $request->nop,
+                'error' => $e->getMessage()
+            ]);
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Gagal terhubung ke server Bapenda. Silakan coba lagi.',
-            ], 500);
+                'message' => 'Layanan Bapenda sedang tidak tersedia. (Error: ' . $e->getMessage() . ')',
+            ], 503);
         }
     }
 
@@ -454,5 +457,93 @@ class PbbBapendaController extends Controller
                 'monthly_revenue'      => $monthlyRevenue,
             ],
         ]);
+    }
+
+    /**
+     * Bulk Sync all NOPs from Bapenda (Admin Only)
+     */
+    public function syncAllObjects(Request $request)
+    {
+        $objects = TaxpayerPbbObject::all();
+        $count = 0;
+        $errors = 0;
+
+        foreach ($objects as $obj) {
+            try {
+                $inquiry = $this->bapendaService->inquiry($obj->nop, date('Y'));
+                if (($inquiry['status'] ?? 0) === 200) {
+                    $obj->update([
+                        'name_on_sppt'    => $inquiry['nama_wp'] ?? $obj->name_on_sppt,
+                        'address_on_sppt' => $inquiry['alamat_wp'] ?? $obj->address_on_sppt,
+                        'kelurahan'       => $inquiry['kelurahan'] ?? $obj->kelurahan,
+                        'kota'            => $inquiry['kota'] ?? $obj->kota,
+                    ]);
+                    $count++;
+                }
+            } catch (\Exception $e) {
+                $errors++;
+                Log::error('Sync PBB Error', ['nop' => $obj->nop, 'msg' => $e->getMessage()]);
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Berhasil menyinkronkan $count data NOP. ($errors gagal)",
+        ]);
+    }
+
+    /**
+     * Download SPPT PDF based on NOP and Year.
+     */
+    public function downloadSPPT(Request $request)
+    {
+        $request->validate([
+            'nop'   => 'required|string|size:18',
+            'tahun' => 'required|string|size:4',
+        ]);
+
+        try {
+            // Get data from Bapenda
+            $inquiry = $this->bapendaService->inquiry($request->nop, $request->tahun);
+            if (($inquiry['status'] ?? 0) !== 200) {
+                return response()->json(['message' => 'Data SPPT tidak ditemukan di server Bapenda.'], 404);
+            }
+
+            // Create a "Virtual Bill" for compatibility with OfficialDocumentService
+            // and populate it with data from Bapenda service
+            $bill = new \App\Models\Bill();
+            $bill->bill_number = 'V-SPPT-' . $request->nop;
+            $bill->period = $request->tahun;
+            $bill->amount = (float) ($inquiry['pbb_pokok'] ?? 0);
+            
+            // Temporary Taxpayer and TaxObject
+            $taxpayer = new \App\Models\Taxpayer();
+            $taxpayer->name = $inquiry['nama_wp'] ?? '-';
+            $taxpayer->address = $inquiry['alamat_wp'] ?? '-';
+            
+            $taxObject = new \App\Models\TaxObject();
+            $taxObject->nop = $request->nop;
+            $taxObject->metadata = [
+                'luas_bumi' => (float) ($inquiry['luas_bumi'] ?? 0),
+                'luas_tanah' => (float) ($inquiry['luas_bumi'] ?? 0),
+                'luas_bangunan' => (float) ($inquiry['luas_bangunan'] ?? 0),
+                'kelas_bumi' => $inquiry['kelas_bumi'] ?? '',
+                'kelas_bangunan' => $inquiry['kelas_bangunan'] ?? '',
+            ];
+
+            // Re-bind to Virtual Bill
+            $bill->setRelation('taxpayer', $taxpayer);
+            $bill->setRelation('taxObject', $taxObject);
+            
+            $docService = app(\App\Services\OfficialDocumentService::class);
+            $data = $docService->generateSPPT($bill);
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.sppt', $data);
+            return $pdf->download("SPPT-{$request->nop}-{$request->tahun}.pdf");
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Download SPPT Error', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Gagal mengunduh SPPT: ' . $e->getMessage()], 500);
+        }
     }
 }

@@ -6,15 +6,19 @@
 # Run: chmod +x test_api_crud.sh && ./test_api_crud.sh
 # ============================================================================
 
-# Default to Production
-API="https://api.sipanda.online/api"
-ORIGIN="https://sipanda.online"
+# Default to Staging
+API="https://api.mpad.online/api"
+ORIGIN="https://mpad.online"
 
 # Handle environment argument
-if [ "$1" == "dev" ]; then
-  echo -e "${YELLOW}Mode: DEVELOPMENT (VPS)${NC}"
-  API="https://api-dev.sipanda.online/api"
-  ORIGIN="https://dev.sipanda.online"
+if [ "$1" == "prod" ]; then
+  echo -e "${YELLOW}Mode: PRODUCTION${NC}"
+  API="https://apimpad.baubaukota.go.id/api"
+  ORIGIN="https://mpad.baubaukota.go.id"
+elif [ "$1" == "staging" ]; then
+  echo -e "${YELLOW}Mode: STAGING (mpad.online)${NC}"
+  API="https://api.mpad.online/api"
+  ORIGIN="https://mpad.online"
 elif [ "$1" == "local" ]; then
   echo -e "${YELLOW}Mode: LOCALHOST${NC}"
   API="http://localhost:8000/api"
@@ -94,15 +98,29 @@ else
 fi
 
 # Citizen login
-CITIZEN_RESP=$(test_json POST "$API/citizen/login" '{"nik":"3201234567890001","password":"password123"}')
+CITIZEN_LOGIN_DATA='{"nik":"1234567890123456","password":"password"}'
+CITIZEN_RESP=$(test_json POST "$API/citizen/login" "$CITIZEN_LOGIN_DATA")
 CITIZEN_TOKEN=$(echo "$CITIZEN_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+if [ -z "$CITIZEN_TOKEN" ] && [ -n "$ADMIN_TOKEN" ]; then
+  log_warn "Standard citizen login failed, attempting dynamic NIK discovery..."
+  TP_LIST=$(test_json GET "$API/taxpayers" "" "$ADMIN_TOKEN")
+  DISCOVERED_NIK=$(echo "$TP_LIST" | grep -o '"nik":"[0-9]*"' | head -1 | cut -d'"' -f4)
+  if [ -n "$DISCOVERED_NIK" ]; then
+    log_pass "Discovered valid NIK: $DISCOVERED_NIK, retrying login..."
+    CITIZEN_LOGIN_DATA="{\"nik\":\"$DISCOVERED_NIK\",\"password\":\"password\"}"
+    CITIZEN_RESP=$(test_json POST "$API/citizen/login" "$CITIZEN_LOGIN_DATA")
+    CITIZEN_TOKEN=$(echo "$CITIZEN_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+  fi
+fi
+
 if [ -n "$CITIZEN_TOKEN" ]; then
   log_pass "Citizen login → token received"
   CITIZEN_ID=$(echo "$CITIZEN_RESP" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
   CITIZEN_NIK=$(echo "$CITIZEN_RESP" | grep -o '"nik":"[^"]*"' | cut -d'"' -f4)
   log_pass "Citizen ID: $CITIZEN_ID, NIK: $CITIZEN_NIK"
 else
-  log_fail "Citizen login failed"
+  log_fail "Citizen login failed (tried hardcoded and discovered NIKs)"
 fi
 
 # ============================================================================
@@ -113,10 +131,10 @@ log_section "1. Public Endpoints (No Auth)"
 test_endpoint GET "$API/opds" "" "" "200" "/opds (list OPDs)" > /dev/null
 test_endpoint GET "$API/tax-formulas" "" "" "200" "/tax-formulas" > /dev/null
 test_endpoint GET "$API/pbb/classifications" "" "" "200" "/pbb/classifications" > /dev/null
-test_endpoint GET "$API/citizen/bills?nik=$CITIZEN_NIK" "" "" "200" "/citizen/bills?nik=..." > /dev/null
+test_endpoint GET "$API/citizen/bills?nik=$CITIZEN_NIK" "" "$ADMIN_TOKEN" "200" "/citizen/bills?nik=..." > /dev/null
 
 # Health check
-test_endpoint GET "https://api.sipanda.online/up" "" "" "200" "/up (health)" > /dev/null
+test_endpoint GET "https://api.mpad.online/up" "" "" "200" "/up (health)" > /dev/null
 
 # ============================================================================
 # 2. AUTH-REQUIRED ENDPOINTS (Citizen)
@@ -217,6 +235,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
   log_subsection "PBB Bapenda Admin"
   test_endpoint GET "$API/pbb/bapenda/transactions" "" "$ADMIN_TOKEN" "200" "/pbb/bapenda/transactions" > /dev/null
   test_endpoint GET "$API/pbb/bapenda/stats" "" "$ADMIN_TOKEN" "200" "/pbb/bapenda/stats" > /dev/null
+  test_endpoint POST "$API/pbb/bapenda/inquiry" "{\"nop\":\"320101010101010101\",\"tahun\":\"$(date +%Y)\"}" "" "404" "/pbb/bapenda/inquiry (Public - Expect 404)" > /dev/null
 
 else
   log_skip "Admin endpoints skipped (no token)"

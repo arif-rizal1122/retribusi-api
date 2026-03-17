@@ -15,10 +15,12 @@ class EnsureAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Only allow users that are authenticated and are instances of the User model (Admin/Petugas)
-        if (!auth()->check() || !(auth()->user() instanceof \App\Models\User)) {
+        $user = auth()->user();
+
+        // Allow only internal staff roles (App\Models\User)
+        if (!auth()->check() || !($user instanceof \App\Models\User)) {
             return response()->json([
-                'message' => 'Forbidden: Admin access required.'
+                'message' => 'Forbidden: Internal staff access required.'
             ], 403);
         }
 

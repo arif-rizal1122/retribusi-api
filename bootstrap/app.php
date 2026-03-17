@@ -12,14 +12,24 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Ensure CORS runs early
+        $middleware->prepend(\App\Http\Middleware\QueryStringToken::class);
+        $middleware->prepend(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
         
-        // Add aliases
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
+            'query_token' => \App\Http\Middleware\QueryStringToken::class,
+            'scope_user' => \App\Http\Middleware\SetScopeUser::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response) {
+            $response->headers->set('Access-Control-Allow-Origin', request()->headers->get('Origin') ?: '*');
+            $response->headers->set('Access-Control-Allow-Credentials', 'true');
+            $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+            $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+            return $response;
+        });
         \Sentry\Laravel\Integration::handles($exceptions);
     })->create();
+// Deploy trigger: Wed Mar 11 08:02:35 WITA 2026
