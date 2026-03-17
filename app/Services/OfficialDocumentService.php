@@ -21,6 +21,8 @@ class OfficialDocumentService
      */
     public function renderPDF(string $viewPath, array $data, string $filename = 'document.pdf')
     {
+        // Sanitize filename to prevent HeaderUtils error
+        $filename = str_replace(['/', '\\'], '-', $filename);
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($viewPath, $data);
         return $pdf->stream($filename);
     }
@@ -110,6 +112,7 @@ class OfficialDocumentService
             'period' => $bill->period,
             'due_date' => $bill->due_date,
             'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'billing' => $bill,
         ];
     }
 
@@ -163,7 +166,7 @@ class OfficialDocumentService
 
         $totalPbb = (float) $calc['pbb_terhutang'];
 
-        $qrBase64 = base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')->size(200)->generate(url("/api/verify/bill/{$bill->bill_number}")));
+        $qrBase64 = base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(200)->generate(url("/api/verify/bill/{$bill->bill_number}")));
 
         return [
             'nop' => $bill->taxObject->nop ?? 'BELUM ADA NOP',

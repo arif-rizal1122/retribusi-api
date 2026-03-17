@@ -7,9 +7,6 @@
     <style>
         body { font-family: 'Arial', sans-serif; font-size: 11pt; line-height: 1.4; color: #333; margin: 0; padding: 0; }
         .container { padding: 40px; }
-        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-        .header h1 { margin: 0; font-size: 16pt; text-transform: uppercase; }
-        .header h2 { margin: 0; font-size: 12pt; text-transform: uppercase; font-weight: normal; }
         
         .sppt-label { text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 20px; text-decoration: underline; }
         
@@ -40,11 +37,7 @@
     <div class="watermark">V-TAX VERIFIED</div>
     
     <div class="container">
-        <div class="header">
-            <h2>PEMERINTAH KOTA BAUBAU</h2>
-            <h1>BADAN PENDAPATAN DAERAH</h1>
-            <p>Jalan Raya No. 123, Kota Baubau, Sulawesi Tenggara</p>
-        </div>
+        @include('pdf.header')
 
         <div class="sppt-label">SURAT PEMBERITAHUAN PAJAK TERUTANG (SPPT)</div>
         

@@ -3,8 +3,7 @@
 <head>
     <style>
         body { font-family: 'Courier', monospace; font-size: 12px; color: #000; margin: 30px; border: 2px solid #000; padding: 20px; }
-        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
-        .title { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+        .title { font-size: 16px; font-weight: bold; margin-bottom: 5px; text-align: center; }
         .section { margin-bottom: 15px; }
         .table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         .table th, .table td { border: 1px solid #000; padding: 10px; text-align: left; }
@@ -14,11 +13,9 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <div style="font-weight: bold; font-size: 14px;">PEMERINTAH KOTA BAUBAU</div>
-        <div class="title">SURAT SETORAN RETRIBUSI DAERAH (SSRD)</div>
-        <div>Bukti Bayar Sah</div>
-    </div>
+    @include('pdf.header')
+    <div class="title">SURAT SETORAN RETRIBUSI DAERAH (SSRD)</div>
+    <div style="text-align: center; margin-bottom: 20px;">Bukti Bayar Sah</div>
 
     <div class="section">
         <table style="width: 100%;">

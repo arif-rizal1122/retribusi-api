@@ -11,53 +11,26 @@ Sistem M-PAD terdiri dari 4 komponen utama yang saling terintegrasi:
 - **Frontend Mobile:** Aplikasi PWA berbasis **React (Vite)** untuk masyarakat (Wajib Pajak) melakukan pendaftaran, pengecekan tagihan, dan simulasi pajak.
 - **Frontend Petugas:** Aplikasi berbasis **React (Vite)** khusus untuk petugas lapangan untuk melakukan pengawasan dan input data potensi.
 
-### Diagram Aliran Data
-```mermaid
-graph TD
-    User([Masyarakat]) <--> Mobile[M-PAD Mobile PWA]
-    Admin([Bapenda Admin]) <--> Dashboard[Admin Panel]
-    Petugas([Petugas Lapangan]) <--> AppPetugas[Petugas App]
-    
-    Mobile <--> API[Laravel API]
-    Dashboard <--> API
-    AppPetugas <--> API
-    
-    API <--> DB[(MySQL Database)]
-    API --- Sentry[Sentry Error Monitoring]
-    API --- Cloudinary[Cloudinary Media Storage]
-```
+## 4. Kategori Pendapatan & Pajak (BAPENDA BAUBAU)
 
-## 2. Environment & Domain
+Sistem ini melayani kategori pendapatan daerah sebagai berikut:
 
-Sistem dipisahkan menjadi dua lingkungan utama untuk memastikan stabilitas:
+### A. Pajak Barang dan Jasa Tertentu (PBJT)
+| Kode | Jenis PBJT | Deskripsi |
+|------|-----------|-----------|
+| `PBJT-LIS` | Tenaga Listrik | Pajak atas konsumsi tenaga listrik. |
+| `PBJT-MNM` | Makan & Minum | Pajak restoran dan katering (10%). |
+| `PBJT-HTL` | Perhotelan | Pajak jasa penginapan (10%). |
+| `PBJT-HBR` | Kesenian & Hiburan| Pajak hiburan (Umum: 10%, Hiburan Malam: 40%). |
+| `PBJT-PRK` | Jasa Parkir | Pajak area parkir swasta (LIPO, Bandara, dll). |
 
-| Environment | API URL | Frontend URL (Mobile) | Tujuan |
-| :--- | :--- | :--- | :--- |
-| **Production** | `api.sipanda.online` | `sipanda.online` | Penggunaan nyata oleh publik & OPD. |
-| **Development** | `api-dev.sipanda.online` | `dev.sipanda.online` | Uji coba fitur baru sebelum rilis. |
+### B. Pajak Spesifik lainnya
+- **Pajak Reklame**: Papan reklame, neon box, billboard.
+- **Pajak MBLB**: Mineral Bukan Logam dan Batuan.
+- **Pajak Air Tanah (PAT)**: Pengambilan/pemanfaatan air tanah.
+- **BPHTB & PBB-P2**: Bea Perolehan Hak Tanah dan Pajak Bumi Bangunan.
 
-## 3. Skema Sinkronisasi (Deployment)
-
-Sinkronisasi file menggunakan alur **Git-Flow** otomatis melalui **GitHub Actions**:
-
-1. **Lokal:** Development dilakukan di komputer lokal ( folder `Herd`).
-2. **Push GitHub:** Kode di-push ke branch `dev` atau `main`.
-3. **GitHub Actions:**
-   - **Backend:** SSH langsung ke VPS, melakukan `git pull`, `composer install`, dan `migrate`.
-   - **Frontend:** Build aplikasi secara otomatis, lalu mengirimkan folder `dist/` ke VPS menggunakan SCP.
-4. **VPS Update:** File di VPS diperbarui, cache dibersihkan, dan sistem online dengan versi terbaru.
-
-## 4. Cara Kerja Fitur Utama
-
-### A. Autentikasi
-Menggunakan **Laravel Sanctum**. User (Masyarakat/Admin/Petugas) login menggunakan NIK atau Email. Sistem memberikan **Bearer Token** yang disimpan di browser untuk otorisasi request selanjutnya.
-
-### B. Manajemen Retribusi & Pajak
-- **Zonasi:** Data dikelompokkan berdasarkan wilayah koordinat (Latitude/Longitude).
-- **Billing:** Tagihan digenerate berdasarkan jenis retribusi (Parkir, Sampah, Pasar, dll).
-- **Payment:** Saat ini mendukung pencatatan status pembayaran (Lunas/Pending) yang terintegrasi dengan data wajib pajak.
-
-### C. Keamanan & Stabilitas
+## 5. Keamanan & Stabilitas
 - **CORS:** Diatur ketat di sisi Nginx dan Laravel agar hanya domain resmi (`*.sipanda.online`) yang bisa mengakses API. Penanganan `OPTIONS` preflight dilakukan di level Nginx untuk mencegah "Duplicate Header".
 - **Branding PWA:** Nama aplikasi telah diperbarui menjadi **M-PAD** (Mitra PAD) dengan ikon yang dioptimalkan sesuai standar PWA (192, 512, apple-touch) dan latar belakang putih.
 - **Monitoring:** Terintegrasi dengan **Sentry** untuk memantau error secara real-time.

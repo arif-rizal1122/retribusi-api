@@ -119,6 +119,8 @@ class BillController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
+            $type = RetributionType::find($request->retribution_type_id);
+
             $bill = Bill::create([
                 'user_id' => $user->id,
                 'taxpayer_id' => $taxpayer->id,

@@ -4,9 +4,7 @@
     <title>Sertifikat NOPD - {{ $taxObject->nop }}</title>
     <style>
         body { font-family: 'Helvetica', 'Arial', sans-serif; margin: 40px; color: #333; }
-        .header { text-align: center; border-bottom: 3px solid #074764; padding-bottom: 20px; margin-bottom: 30px; }
         h1 { margin: 0; font-size: 24px; color: #074764; text-transform: uppercase; }
-        h2 { margin: 5px 0 0 0; font-size: 16px; font-weight: normal; color: #555; }
         .title-doc { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 5px; text-decoration: underline; }
         .subtitle-doc { text-align: center; font-size: 14px; margin-bottom: 40px; }
         
@@ -22,11 +20,7 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>PEMERINTAH KOTA BAUBAU</h1>
-        <h2>BADAN PENDAPATAN DAERAH</h2>
-        <p style="margin:5px 0 0 0; font-size:12px;">Jl. Raya Palagimata, Kel. Lipu, Kec. Betoambari, Kota Baubau, Sulawesi Tenggara</p>
-    </div>
+    @include('pdf.header')
 
     <div class="title-doc">SURAT KETERANGAN TERDAFTAR OBJEK DAERAH</div>
     <div class="subtitle-doc">Nomor: BAPENDA/{{ date('Y') }}/NOPD/{{ $taxObject->id }}</div>

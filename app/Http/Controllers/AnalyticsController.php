@@ -48,7 +48,7 @@ class AnalyticsController extends Controller
                 $q->whereYear('payments.paid_at', $year)
                     ->where('payments.status', 'success')
                     ->when($retributionTypeId, function($sq) use ($retributionTypeId) {
-                        $sq->whereExists(function($sub) {
+                        $sq->whereExists(function($sub) use ($retributionTypeId) {
                             $sub->select(DB::raw(1))
                                 ->from('bills')
                                 ->whereColumn('bills.id', 'payments.bill_id')

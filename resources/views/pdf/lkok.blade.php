@@ -3,7 +3,6 @@
 <head>
     <style>
         body { font-family: 'Arial', sans-serif; font-size: 11px; margin: 30px; }
-        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
         .title { font-size: 14px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
         .section-title { font-weight: bold; background: #eee; padding: 5px; margin-top: 15px; border: 1px solid #000; }
         .table-data { width: 100%; border-collapse: collapse; margin-top: 5px; }
@@ -15,11 +14,7 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <div style="font-weight: bold; font-size: 12px;">PEMERINTAH KOTA BAUBAU</div>
-        <div class="title">LEMBAR KERJA OBJEK KHUSUS (LKOK)</div>
-        <div>Nomor: {{ $lkok_number }}</div>
-    </div>
+    @include('pdf.header')
 
     <div class="section-title">I. IDENTITAS SUBJEK DAN OBJEK PAJAK</div>
     <table class="table-data">
@@ -51,7 +46,7 @@
 
     <div class="section-title">II. METADATA DAN PARAMETER PERHITUNGAN</div>
     <table class="table-data">
-        @forelse($metadata as $key => $value)
+        @forelse ($metadata as $key => $value)
         <tr>
             <td class="label">{{ strtoupper(str_replace('_', ' ', $key)) }}</td>
             <td>{{ is_scalar($value) ? $value : json_encode($value) }}</td>

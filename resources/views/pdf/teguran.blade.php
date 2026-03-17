@@ -3,9 +3,6 @@
 <head>
     <style>
         body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; margin: 40px; }
-        .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
-        .kop-surat { font-weight: bold; font-size: 18px; margin: 0; }
-        .sub-kop { font-size: 14px; margin: 0; }
         .title { text-align: center; font-weight: bold; font-size: 16px; text-decoration: underline; margin-top: 20px; margin-bottom: 5px; }
         .number { text-align: center; margin-bottom: 25px; }
         .content { margin-bottom: 30px; text-align: justify; }
@@ -20,11 +17,7 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <p class="kop-surat">PEMERINTAH KOTA BAUBAU</p>
-        <p class="kop-surat">BADAN PENDAPATAN DAERAH</p>
-        <p class="sub-kop">Jl. Raya No. 1, Kota Baubau, Sulawesi Tenggara</p>
-    </div>
+    @include('pdf.header')
 
     <div class="title">
         @if($type == 'teguran_1') SURAT TEGURAN I @endif

@@ -3,10 +3,7 @@
 <head>
     <style>
         body { font-family: 'Arial', sans-serif; font-size: 12px; color: #333; margin: 30px; }
-        .header { display: flex; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-        .header-text { flex-grow: 1; text-align: center; }
-        .v-tax-seal { border: 2px solid #000; padding: 5px; font-weight: bold; background: #f0f0f0; width: 100px; text-align: center; }
-        .main-title { font-size: 18px; font-weight: bold; margin: 10px 0; }
+        .main-title { font-size: 18px; font-weight: bold; margin: 10px 0; text-align: center; }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
         .info-box { border: 1px solid #ccc; padding: 10px; border-radius: 5px; }
         .info-title { font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 5px; font-size: 10px; color: #666; }
@@ -20,13 +17,9 @@
 <body>
     <div style="float: right;" class="status-badge">LUNAS / PAID</div>
     
-    <div class="header">
-        <div class="header-text">
-            <div style="font-weight: bold;">PEMERINTAH KOTA BAUBAU</div>
-            <div class="main-title">SURAT SETORAN PAJAK DAERAH (SSPD)</div>
-            <div>BUKTI PEMBAYARAN ELEKTRONIK</div>
-        </div>
-    </div>
+    @include('pdf.header')
+    <div class="main-title">SURAT SETORAN PAJAK DAERAH (SSPD)</div>
+    <div style="text-align: center; margin-bottom: 20px;">BUKTI PEMBAYARAN ELEKTRONIK</div>
 
     <div class="info-grid">
         <div class="info-box">

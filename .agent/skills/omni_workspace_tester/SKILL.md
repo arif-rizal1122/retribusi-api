@@ -7,10 +7,14 @@ description: Skill komprehensif untuk menganalisis struktur file, route frontend
 
 Skill ini memberikan Anda "Mata Dewa" untuk membaca, memahami, dan menguji seluruh ekosistem MPAD (Retribusi) yang terbagi dalam 4 repositori utama dalam workspace pengguna.
 
-**Satu Aturan Mutlak:** 
-Setiap kali Anda menggunakan skill ini, Anda **WAJIB** membaca `docs/routes-and-components.md` di dalam `/Users/pondokit/Herd/retribusi-api/` terlebih dahulu untuk mendapatkan gambaran real-time struktur tabel, API, dan komponen React lintas repositori.
+**Aturan Mutlak Pengujian:**
+1.  **WAJIB** membaca `docs/routes-and-components.md` di `/Users/pondokit/Herd/retribusi-api/` sebelum merancang skema tes. 
+2.  **Mapping Check**: Pastikan setiap endpoint yang akan dites memiliki referensi di bagian **5. TESTING — Pemetaan Endpoint → Test Coverage**.
+3.  **Untested Priority**: Jika melakukan pengujian menyeluruh, **PRIORITASKAN** endpoint di bagian **⚠️ Endpoint Belum Ter-Test** (seperti `/api/payments`, `/api/pbb/bapenda/link-nop`, dll).
+4.  **Consistency**: Jangan pernah menebak (hallucinate) endpoint; gunakan kolom `Method` dan `URI` dari tabel resmi di `docs/routes-and-components.md`.
 
-**Tips**: Rujuk skill **Documentation Context** (`docs_context`) untuk melihat daftar lengkap 11 skill spesialisasi sistem ini.
+**Tips**: Rujuk skill **Documentation Context** (`docs_context`) untuk daftar lengkap 11 skill spesialisasi sistem ini.
+ ini.
 
 ## 📂 Pemahaman Ekosistem Workspace
 
@@ -83,7 +87,46 @@ Menguji siklus hulu-ke-hilir dana tunai dari Petugas ke Admin.
 
 ---
 
-## 🛠 Panduan Eksekusi (How to Test)
+## 🚀 Protokol Pengujian Terpadu (Master Protocols)
+
+Ikuti protokol ini secara berurutan untuk menjamin integritas workspace:
+
+### PROTOKOL 1: Verifikasi Integritas Dokumen (21 PDF)
+Wajib dijalankan setiap ada perubahan pada `resources/views/pdf/` atau Asset Logo.
+- **Eksekusi**: `php testing/stg5_document_integrity.php`
+- **Output Kritis**: Semua endpoint (11+) harus mengembalikan status `200 OK`.
+- **Target Utama**: SKRD, SKT, SSPD, SPPT, SPMP.
+
+### PROTOKOL 2: Pengawasan RBAC & Isolasi Peran
+Wajib dijalankan setiap penambahan rute API atau middleware baru.
+- **Eksekusi**: `php testing/run_rbac_test.php`
+- **Validasi Manual (Extra Check)**: Lakukan `curl` atau request HTTP menggunakan token `petugas` ke rute `/api/users`.
+- **Kondisi Lulus**: Harus mengembalikan `403 Forbidden`.
+
+### PROTOKOL 3: The Golden Path (End-to-End lifecycle)
+Wajib dijalankan sebelum Deployment (Staging/Production).
+- **Eksekusi**: `php testing/run_role_e2e_test.php`
+- **Cakupan**: 9 Jenis Pajak (PBJT, Reklame, MBLB, dll) & PBB.
+- **Kondisi Lulus**: Status tagihan berubah dari `unpaid` -> `paid` dan SSPD terbit.
+
+### PROTOKOL 4: Validasi Modul Baru (12 & 13)
+- **Edukasi Pajak**: Pastikan `TaxEducation` dapat disimpan via API.
+- **Audit Reklame**: Pastikan logika `is_new_billboard` membedakan pemasangan < 30 hari.
+
+---
+
+## 🛠 Tahapan Akhir (Triple Check SOP)
+
+Setelah menjalankan pengujian di atas, lakukan **Pengecekan Akhir 3 Lapis**:
+
+1.  **Lapis 1 (Syntactic & Structural)**: Jalankan `php artisan route:list` untuk memastikan tidak ada syntax error pada `api.php`.
+2.  **Lapis 2 (Security Lockdown)**: Pastikan token `petugas` TIDAK BISA mengakses `/api/users` (Verifikasi Patch `EnsureAdmin`).
+3.  **Lapis 3 (Visual Output)**: Pastikan salah satu file PDF (misal: SKRD) berhasil di-generate (Verifikasi Header Baru).
+
+---
+
+## 📚 Panduan Eksekusi (How to Test)
+... (konten asli tetap ada di bawah)
 
 1. **Pemilihan Target Environment (Penting)**: Sebelum menjalankan pengujian, **WAJIB** tentukan *Environment* yang akan dites dengan menyesuaikan Konfigurasi Base URL pada Script Testing:
    - **Local**: Eksekusi operasi sistem secara lokal di direktori `Herd` menggunakan internal application request (Laravel) atau cURL ke domain lokal `*.test`.

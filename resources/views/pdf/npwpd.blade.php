@@ -6,11 +6,7 @@
         body { font-family: sans-serif; margin: 0; padding: 0; background: #ffffff; }
         .card { width: 100%; height: 100%; box-sizing: border-box; padding: 10px; border: 2px solid #074764; border-radius: 8px; position: relative; overflow: hidden; }
         .bg-pattern { position: absolute; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.1; background-image: repeating-linear-gradient(45deg, #074764 0, #074764 1px, transparent 0, transparent 50%); background-size: 10px 10px; z-index: -1; }
-        .header { display: table; width: 100%; margin-bottom: 5px; border-bottom: 1px solid #d9a742; padding-bottom: 5px; }
-        .header-col { display: table-cell; vertical-align: middle; }
-        .logo { width: 35px; height: 40px; }
-        h1 { margin: 0; font-size: 10px; color: #074764; text-transform: uppercase; text-align: center; }
-        h2 { margin: 0; font-size: 8px; color: #555; text-align: center; }
+        h1 { margin: 0; font-size: 11px; color: #074764; text-transform: uppercase; text-align: center; }
         .content { font-size: 8px; font-weight: bold; line-height: 1.4; margin-top: 5px; }
         .row { display: table; width: 100%; margin-bottom: 2px; }
         .label { display: table-cell; width: 30%; color: #666; }
@@ -22,17 +18,17 @@
 <body>
     <div class="card">
         <div class="bg-pattern"></div>
-        <div class="header">
-            <div class="header-col" style="width: 15%; text-align: left;">
-                <!-- Fallback to text if img fails -->
-                <div style="width: 30px; height: 35px; background: #074764; color:white; font-size:6px; text-align:center; padding-top:15px; border-radius:3px;">LOGO</div>
-            </div>
-            <div class="header-col" style="width: 85%;">
-                <h1>Pemerintah Kota Baubau</h1>
-                <h2>Badan Pendapatan Daerah</h2>
-                <h1 style="font-size:11px; margin-top:2px;">KARTU NOMOR POKOK WAJIB PAJAK DAERAH</h1>
-            </div>
-        </div>
+        <table style="width: 100%; border-bottom: 1px solid #d9a742; padding-bottom: 5px; margin-bottom: 5px;">
+            <tr>
+                <td style="width: 15%; text-align: left;"><img src="{{ public_path('assets/logos/logo-baubau.png') }}" style="width: 25px;"></td>
+                <td style="width: 70%; text-align: center;">
+                    <div style="font-size: 8px; font-weight: bold; color: #074764;">PEMERINTAH KOTA BAUBAU</div>
+                    <div style="font-size: 7px; color: #555;">BADAN PENDAPATAN DAERAH</div>
+                </td>
+                <td style="width: 15%; text-align: right;"><img src="{{ public_path('assets/logos/mitra-logo.png') }}" style="width: 25px;"></td>
+            </tr>
+        </table>
+        <h1 style="font-size:10px; margin-top:2px;">KARTU NOMOR POKOK WAJIB PAJAK DAERAH</h1>
         
         <div class="npwpd-box">
             {{ $taxpayer->npwpd ?: 'DALAM PROSES' }}

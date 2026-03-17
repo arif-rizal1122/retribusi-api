@@ -3,34 +3,35 @@ name: Documentation Context & Maintenance
 description: Menjaga konsistensi pemahaman AI tentang arsitektur sistem dari folder docs/ dan aturan memperbarui dokumentasi.
 ---
 
-# Instruksi Manajemen Dokumen & Konteks
-Saat bekerja dalam project ini, terutama untuk fitur besar atau ketika diminta mempelajari konteks arsitektur sistem, Anda harus mematuhi aturan dokumentasi berikut:
+## 🧭 Protokol Pembacaan Kondisional (Context Routing)
+AI Agent **TIDAK BOLEH** melakukan riset buta. Gunakan tabel ini untuk menentukan skill mana yang harus diaktifkan:
 
-## Rujukan Pengetahuan Utama
-Sebelum membuat penyesuaian logika bisnis besar atau arsitektural, periksa dokumen berikut di folder `docs/`:
-1. `docs/system-knowledge.md` - Untuk mempelajari struktur Models, Services, dan Commands.
-2. `docs/routes-and-components.md` - Untuk melihat pemetaan Endpoint API.
-3. `docs/04-database-schema.md` & `docs/DOMAIN_SCHEMA.md` - Untuk memahami referensi tabel dan skema relasi.
-4. `docs/TESTING_GUIDE.md` - Untuk standar eksekusi dan instruksi testing.
-5. `API_PBB_BAUBAU_2026.md` - Spesifikasi utama integrasi PBB Bapenda.
+| Kondisi / Tugas | Skill yang WAJIB Dibaca | Alasan |
+| :--- | :--- | :--- |
+| **Awal Percakapan** | `docs_context` | Memahami Master Index & Aturan Keselamatan. |
+| **Terjadi Error 500/CORS** | `qa_error_registry` | Daftar bug historis & fix yang sudah ada. |
+| **Akses VPS / Staging** | `staging_deployment_manager` | Protokol deployment & infra. |
+| **Testing / Verifikasi** | `omni_workspace_tester` | Protokol pengujian E2E & PDF Integrity. |
+| **Penindakan / SPT** | `audit_enforcement` | SOP pengawas & penindakan. |
+
+## 🧬 Aturan Keselamatan Mutlak (The Never-Do's)
+- **DILARANG** meng-hardcode password/secrets di dokumentasi atau kode.
+- **DILARANG** merubah CORS pada Nginx tanpa mendaftarkan domain secara eksplisit.
+- **DILARANG** mengosongkan folder `storage` atau `bootstrap/cache` di server.
+- **DILARANG** menggunakan `named arguments` pada middleware (Gunakan Positional Arguments).
+- **DILARANG** melakukan verifikasi visual (Screenshot). Gunakan protokol `/noss` (Terminal/Script).
 
 ## 🧠 Daftar Skill Agen (Specialized Knowledge)
-Gunakan skill berikut sesuai konteks tugas untuk mendapatkan panduan SOP yang mendalam:
-1.  **Auditor & Enforcement Specialist** (`audit_enforcement`): Fokus pada surveillance & penindakan.
-2.  **Backend Expert** (`backend_expert`): Fokus pada performance & GPS live tracking.
-3.  **Documentation Context** (`docs_context`): Standar penulisan & pemeliharaan dokumen.
-4.  **Omni Workspace Tester** (`omni_workspace_tester`): Strategi testing E2E lintas 4 repositori.
-5.  **QA Error Registry** (`qa_error_registry`): Database mitigasi bug & known issues.
-6.  **Regulatory Compliance** (`regulatory_logic`): Aturan pajak (Perwali 58) & PBB 2026.
-7.  **Reporting & Billing Lifecycle** (`reporting_billing`): Siklus SPTPD hingga SKRD/Billing.
-8.  **Staging Domain Testing** (`staging_testing`): Protokol pengujian di mpad.online.
-9.  **Project Testing Standards** (`testing_standards`): Aturan /noss & skrip testing.
-10. **TTE & Digital Document** (`tte_documents`): Alur TTE & 21 jenis dokumen resmi.
-11. **POS Specialist** (`pos_specialist`): Khusus untuk pengembangan di repo `retribusi-pos`.
+... (list existing skills) ...
+
+## 🛠️ Task Dispatcher (Alur Kerja Agen)
+Jika user memberikan tugas kompleks, bagi ke dalam kategori:
+1. **Infrastruktur/Deployment**: Aktifkan `staging_deployment_manager`.
+2. **Logika Bisnis/Pajak**: Aktifkan `reporting_billing` atau `regulatory_logic`.
+3. **Security/QA**: Aktifkan `qa_error_registry` & `omni_workspace_tester`.
+4. **Dokumen Resmi/TTE**: Aktifkan `tte_documents`.
 
 ## Aturan Pembaruan Dokumentasi
-1. Jika Anda mengubah struktur Database (Migration/Seeder), Anda **wajib** memperbarui file `docs/04-database-schema.md` atau `DOMAIN_SCHEMA.md` jika relevan.
-2. Jika Anda menambahkan/mengubah rute API atau Controller, perbarui `docs/routes-and-components.md` agar pemetaan API tetap relevan.
-3. Selalu pastikan pembaruan menggunakan standar markdown proyek.
-4. Catat setiap perubahan atau modifikasi fitur yang signifikan di file `CHANGE_LOG.md` (di root directory).
-5. Jangan berasumsi arsitektur bisnis tanpa merujuk ke direktori `docs/` terlebih dahulu.
+1. Jika Anda mengubah struktur Database, perbarui `docs/04-database-schema.md`.
+2. Jika Anda mengubah rute API, perbarui `docs/routes-and-components.md`.
+3. Catat perubahan signifikan di `docs/todo-list.md` (Update status [x]).
