@@ -1,5 +1,5 @@
 # Consolidated Todolist & Audit Dokumen BAPENDA
-**Terakhir diperbarui**: 5 Maret 2026
+**Terakhir diperbarui**: 15 Maret 2026 (Update Status Dokumen Resmi)
 
 ---
 
@@ -162,3 +162,62 @@
 /usr/local/bin/php testing/run_role_e2e_test.php
 ```
 Hasil: ✅ Laporan tertulis di `testing/results/08_Laporan_E2E_Lintas_Peran.md`
+
+---
+
+## 🏗️ 8. Metrik & Kinerja To-Do List Petugas
+**Repository**: `retribusi-api` (Backend) & `retribusi-petugas` (PWA Mobile)
+
+**Status & Target**:
+- [x] Memeriksa ketersediaan API `GET /api/petugas-tasks` di Backend
+- [x] Memeriksa struktur tabel `petugas_tasks` di Database
+- [x] Menganalisis skema pelacakan penyelesaian (Completion Tracking)
+- [ ] Membuat implementasi `To-Do List` / `PetugasTasks` di aplikasi mobile (Frontend)
+- [ ] Menyiapkan dokumentasi panduan pengukuran kinerja berdasarkan Ketepatan Tenggat Waktu (Due Date) dan penyelesaian tugas.
+
+---
+
+## 🏗️ 9. Skema Role-Based Sub-Admin (Admin Tipe Retribusi/Wilayah)
+**Repository**: `retribusi-api` & `retribusi-admin`
+
+**Konsep**: 
+Pembagian admin didasarkan pada **Tipe Retribusi** (contoh: Tipe Wilayah 1, Tipe Wilayah 2). Seorang Admin yang ditugaskan pada Tipe Wilayah 1 **HANYA** memiliki wewenang penuh atas segala entitas yang berelasi dengan tipe retribusi tersebut.
+
+**Status & Target**:
+- [x] **Skema Database:** Tambahkan relasi `retribution_type_id` pada tabel `users` khusus untuk role admin dan petugas.
+- [x] **Skema Filter Data (Global Scope / Middleware):** Terapkan pembatasan isolasi data (*horizontal data segregation*) di model utama:
+  - **Klasifikasi & Tipe Pajak:** Hanya bisa mengelola/melihat klasifikasi di bawah tipe pajaknya.
+  - **Petugas:** Hanya bisa memantau dan menugaskan petugas yang bernaung di bawah tipe pajak yang sama.
+  - **Objek Pajak & Wajib Pajak:** Hanya bisa mengakses WP/Objek Pajak yang mendaftar ke tipe retribusi wilayahnya.
+  - **Billing & Pembayaran:** Laporan keuangan dan daftar tagihan terfilter spesifik hanya untuk pemasukan dari tipe pajaknya.
+- [ ] **Konsistensi UI (Dashboard Admin):** Menyesuaikan *dropdown* dan grafik analitik di React agar total pendapatan (Revenue) yang ditampilkan kepada Admin Wilayah 1 murni dari objek-objek miliknya, bukan total kota secara keseluruhan.
+
+---
+
+## 🏗️ 10. Modul Uji Petik (Pengamatan Lapangan) - Perwali Baubau 58/2024
+**Repository**: `retribusi-api` (Backend) & `retribusi-admin` (Frontend Dashboard Pengawas)
+
+**Konsep**:
+Sistem digitalisasi "Kertas Kerja Penelitian/Pemeriksaan - Pengambilan Sampel Data" berdasarkan amanat Perwali Baubau No. 58/2024. Modul ini menjadi dasar perhitungan untuk penetapan SKPDKB dan Pajak Secara Jabatan bilamana pelaporan Wajib Pajak diragukan.
+
+**Status & Target**:
+- [x] **Tabel Database Baru (`spot_checks` & `spot_check_items`):** Menyimpan data pengamatan jam-per-jam (07.00 s/d 06.00). Field mencakup jumlah kunjungan, jumlah transaksi, nilai transaksi nominal, rincian aktivitas (kamar terjual, tiket, parkir), serta tanda tangan WP dan Kepala Sub Bidang.
+- [ ] **Frontend (Form Uji Petik di Dashboard Pengawas):** Membuat UI grid/matriks untuk input data observasi setiap jam selama pengamatan lapangan. 
+- [x] **Algoritma Estimasi Harian (Backend Service):** Menghitung estimasi rata-rata transaksi harian dengan memisahkan dua analisis komparatif:
+  - Analisis Hari Biasa (Senin - Jumat)
+  - Analisis Akhir Pekan (Sabtu - Minggu)
+- [ ] **Integrasi Penindakan (SKPDKB):** Mengaitkan output/hasil akhir UI Modul Uji Petik ini sebagai dasar/lampiran ketika Pengawas menerbitkan Penetapan Pajak Secara Jabatan.
+
+---
+
+## 🏗️ 11. Penyelesaian Template PDF Dokumen Oficial
+**Target**: Mengonversi logika JSON yang sudah ada menjadi format cetak PDF.
+
+**Daftar Tunggu (Partial → Full PDF):**
+- [ ] **SKT** (Surat Keterangan Terdaftar) - Pendaftaran
+- [ ] **LKOK** (Lembar Kerja Objek Khusus) - Pendataan
+- [ ] **SSRD / STRD** (Retribusi) - Penagihan
+- [ ] **SKPDKBT / SKPDN** - Audit/Penetapan
+- [ ] **SPMP** (Surat Paksa/Penyitaan) - Penyelamatan Aset
+
+**Referensi Detail**: Lihat [07-status-dokumen-resmi.md](file:///Users/pondokit/Herd/retribusi-api/docs/07-status-dokumen-resmi.md)

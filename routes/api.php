@@ -26,8 +26,8 @@ use App\Http\Controllers\PbbBapendaController;
 |--------------------------------------------------------------------------
 */
 
-// Public auth routes with explicit throttle
-Route::middleware('throttle:60,1')->group(function () {
+// Public auth routes with strict throttle (prevent brute force)
+Route::middleware('throttle:10,1')->group(function () {
     Route::post('/opd/register', [OpdController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/citizen/login', [AuthController::class, 'citizenLogin']);
@@ -40,20 +40,12 @@ Route::get('/citizen/bills', [BillController::class, 'citizenBills']); // Public
 Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyBill']);
 Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
 
-// Public Registration Endpoints
-Route::prefix('public')->group(function () {
-    Route::get('/retribution-types', [\App\Http\Controllers\PublicRegistrationController::class, 'getTypes']);
-    Route::get('/retribution-classifications', [\App\Http\Controllers\PublicRegistrationController::class, 'getClassifications']);
-    Route::get('/opds', [\App\Http\Controllers\PublicRegistrationController::class, 'getOpds']);
-    Route::get('/taxpayers/check-nik/{nik}', [\App\Http\Controllers\PublicRegistrationController::class, 'checkNik']);
-    Route::post('/register-taxpayer', [\App\Http\Controllers\PublicRegistrationController::class, 'register']);
-    
-    // PDF Generation
-    Route::get('/pdf/npwpd/{taxpayer_id}', [PdfController::class, 'generateNpwpd']);
-    Route::get('/pdf/nopd/{tax_object_id}', [PdfController::class, 'generateNopd']);
-    Route::get('/pdf/skpd/{billing_id}', [PdfController::class, 'generateSkpd']);
-    Route::get('/pdf/skrd/{billing_id}', [PdfController::class, 'generateSkrd']);
-    Route::get('/pdf/surat-teguran/{id}', [PdfController::class, 'generateSuratTeguran']);
+// Public: Documents (PDF)
+Route::prefix('public/pdf')->group(function () {
+    Route::get('/skpd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skrd']);
+    Route::get('/skrd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skrd']);
+    Route::get('/sspd/{billId}', [\App\Http\Controllers\DocumentController::class, 'sspd']);
+    Route::get('/sppt/{billId}', [\App\Http\Controllers\DocumentController::class, 'sppt']);
 });
 
 // Tax Simulation (public, no auth needed)
@@ -141,17 +133,31 @@ Route::get('/tax-formulas', function () {
     return response()->json(['data' => $classifications]);
 });
 
+// TEMPORARY: Diagnostic for citizen login
+Route::get('/debug-citizen-pass', function() {
+    $nik = '0000000000000001';
+    $taxpayer = \App\Models\Taxpayer::where('nik', $nik)->first();
+    if (!$taxpayer) return response()->json(['error' => 'Taxpayer not found'], 404);
+    
+    return response()->json([
+        'nik' => $taxpayer->nik,
+        'has_password' => !empty($taxpayer->password),
+        'check_pass' => \Illuminate\Support\Facades\Hash::check('password123', $taxpayer->password),
+        'hash_preview' => substr($taxpayer->password, 0, 10) . '...'
+    ]);
+});
+
 // Public: PBB NJOP Classifications & Calculation
 Route::get('/pbb/classifications', [PbbClassificationController::class, 'index']);
 Route::get('/pbb/classifications/{type}/{code}', [PbbClassificationController::class, 'showByCode']);
 Route::post('/pbb/lookup-class', [PbbClassificationController::class, 'lookupByValue']);
 Route::post('/pbb/calculate', [PbbClassificationController::class, 'calculate']);
 
-// Public: PBB Bapenda Inquiry (cek tagihan tanpa login)
-Route::post('/pbb/bapenda/inquiry', [PbbBapendaController::class, 'inquiry']);
+// Public: PBB Bapenda Inquiry (cek tagihan tanpa login) - Throttled
+Route::post('/pbb/bapenda/inquiry', [PbbBapendaController::class, 'inquiry'])->middleware('throttle:10,1');
 
 // Protected routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'scope_user'])->group(function () {
     // ------------------------------------------------------------------------
     // Shared Routes (Admin, Petugas, Citizen)
     // ------------------------------------------------------------------------
@@ -193,12 +199,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/my-objects', [PbbBapendaController::class, 'myObjects']);
         Route::get('/my-transactions', [PbbBapendaController::class, 'myTransactions']);
         Route::post('/pay', [PbbBapendaController::class, 'pay']);
+        Route::get('/download-sppt', [PbbBapendaController::class, 'downloadSPPT']);
     });
 
     // ------------------------------------------------------------------------
     // Admin & Petugas ONLY (Restricted by EnsureAdmin middleware)
     // ------------------------------------------------------------------------
     Route::middleware('admin')->group(function () {
+        Route::apiResource('petugas-tasks', \App\Http\Controllers\PetugasTaskController::class);
+        Route::apiResource('spot-checks', \App\Http\Controllers\SpotCheckController::class);
+        Route::patch('spot-checks/{id}/status', [\App\Http\Controllers\SpotCheckController::class, 'updateStatus']);
+        Route::get('spot-checks/tax-object/{id}/estimation', [\App\Http\Controllers\SpotCheckController::class, 'getEstimatedRevenue']);
+        
         Route::get('/analytics/realization', [AnalyticsController::class, 'getRealization']);
         Route::get('/analytics/heatmap', [AnalyticsController::class, 'getHeatmapData']);
         Route::apiResource('retribution-types', RetributionTypeController::class);
@@ -218,24 +230,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('retribution-rates', RetributionRateController::class);
         Route::apiResource('opds', OpdController::class)->except(['create', 'edit', 'index']);
         Route::apiResource('users', UserController::class);
-        Route::apiResource('petugas-tasks', \App\Http\Controllers\PetugasTaskController::class);
-        Route::post('/sptpd', [\App\Http\Controllers\SptpdController::class, 'store']);
 
         Route::prefix('dashboard')->group(function () {
             Route::get('/stats', [DashboardController::class, 'getStats']);
             Route::get('/revenue-trend', [DashboardController::class, 'getRevenueTrend']);
             Route::get('/map-potentials', [DashboardController::class, 'getMapPotentials']);
-            // Payment Gateway Integration
-            Route::post('/payment/generate', [\App\Http\Controllers\PaymentGatewayController::class, 'generatePayment']);
         });
-    });
-});
 
-// Non-authenticated Webhook
-Route::post('/webhook/payment', [\App\Http\Controllers\PaymentGatewayController::class, 'webhook']);
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::middleware('admin')->group(function () {
         Route::prefix('pengawas')->group(function () {
             Route::get('/audit-logs', [\App\Http\Controllers\Pengawas\AuditLogController::class, 'index']);
             Route::get('/anomalies', [\App\Http\Controllers\Pengawas\SurveillanceController::class, 'getAnomalies']);
@@ -245,6 +246,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/enforcements', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'store']);
             Route::post('/enforcements/{id}', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'update']);
             Route::post('/enforcements/{id}/approve', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'approve']);
+            Route::post('/enforcements/{id}/reject', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'reject']);
             Route::get('/enforcements/history/{tax_object_id}', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'getHistory']);
             Route::get('/enforcements/{id}/pdf', [\App\Http\Controllers\Pengawas\EnforcementNoticeController::class, 'generatePDF']);
             Route::get('/penindakan', [\App\Http\Controllers\Pengawas\PenindakanController::class, 'index']);
@@ -277,6 +279,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/reversal', [PbbBapendaController::class, 'reversal']);
             Route::get('/transactions', [PbbBapendaController::class, 'transactions']);
             Route::get('/stats', [PbbBapendaController::class, 'stats']);
+            Route::post('/sync-all', [PbbBapendaController::class, 'syncAllObjects']);
         });
 
         // Official BAPENDA Documents

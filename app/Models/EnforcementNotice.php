@@ -20,6 +20,10 @@ class EnforcementNotice extends Model
         'lat',
         'lng',
         'photo_path',
+        'bill_id',
+        'amount_at_issue',
+        'rejected_at',
+        'rejection_notes',
     ];
 
     public function taxObject(): BelongsTo
@@ -30,6 +34,11 @@ class EnforcementNotice extends Model
     public function assignedPetugas(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function bill(): BelongsTo
+    {
+        return $this->belongsTo(Bill::class);
     }
 
     public function creator(): BelongsTo

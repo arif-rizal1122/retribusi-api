@@ -6,9 +6,24 @@
 # Run: chmod +x test_production_ready.sh && ./test_production_ready.sh
 # ============================================================================
 
+# Default values
 API_URL="https://api.sipanda.online"
 FRONTEND_ORIGIN="https://sipanda.online"
 ADMIN_ORIGIN="https://admin.sipanda.online"
+
+# Environment selection
+if [ "$1" == "staging" ]; then
+  echo -e "${YELLOW}Mode: STAGING (mpad.online)${NC}"
+  API_URL="https://api.mpad.online"
+  FRONTEND_ORIGIN="https://mpad.online"
+  ADMIN_ORIGIN="https://admin.mpad.online"
+elif [ "$1" == "dev" ]; then
+  echo -e "${YELLOW}Mode: DEVELOPMENT (sipanda.online)${NC}"
+  API_URL="https://api-dev.sipanda.online"
+  FRONTEND_ORIGIN="https://dev.sipanda.online"
+  ADMIN_ORIGIN="https://admin-dev.sipanda.online"
+fi
+
 RESULTS_FILE="results/12_Production_Readiness_$(date +%Y%m%d_%H%M%S).md"
 
 PASS=0
@@ -126,7 +141,7 @@ LOGIN_RESPONSE=$(curl --retry 10 --retry-delay 1 --retry-all-errors -s "$API_URL
   -H "Origin: $FRONTEND_ORIGIN" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
-  -d '{"nik":"3201234567890001","password":"password123"}')
+  -d '{"nik":"1234567890123456","password":"password"}')
 
 if echo "$LOGIN_RESPONSE" | grep -q '"token"'; then
   TOKEN=$(echo "$LOGIN_RESPONSE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)

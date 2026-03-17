@@ -291,6 +291,12 @@ class BillController extends Controller
             }
 
             $data = $docService->generateSPPT($bill);
+            
+            if ($request->query('download') === 'pdf') {
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.sppt', $data);
+                return $pdf->download("SPPT-{$bill->taxObject->nop}-{$data['year']}.pdf");
+            }
+
             return view('pdf.sppt', $data);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Gagal generate SPPT: ' . $e->getMessage()], 500);

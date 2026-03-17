@@ -35,6 +35,7 @@ class User extends Authenticatable
         'metadata',
         'latitude',
         'longitude',
+        'retribution_type_id',
     ];
  
     /**
@@ -69,10 +70,21 @@ class User extends Authenticatable
         return $this->belongsTo(Opd::class);
     }
 
+    public function retributionType(): BelongsTo
+    {
+        return $this->belongsTo(RetributionType::class);
+    }
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+    }
+
     /**
      * Role Constants
      */
     const ROLE_SUPER_ADMIN = 'super_admin';
+    const ROLE_ADMIN = 'admin';
     const ROLE_OPD = 'opd';
     const ROLE_PENGAWAS = 'pengawas';
     const ROLE_KABID_PENGAWAS = 'kabid_pengawas';
@@ -81,11 +93,11 @@ class User extends Authenticatable
     const ROLE_WALIKOTA = 'walikota';
 
     /**
-     * Check if user is super admin
+     * Check if user is super admin or admin
      */
     public function isSuperAdmin(): bool
     {
-        return $this->role === self::ROLE_SUPER_ADMIN;
+        return $this->role === self::ROLE_SUPER_ADMIN || $this->role === self::ROLE_ADMIN;
     }
 
     /**

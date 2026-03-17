@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PetugasTask;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PetugasTaskController extends Controller
 {
@@ -12,20 +13,28 @@ class PetugasTaskController extends Controller
      */
     public function index(Request $request)
     {
-        $user = $request->user();
-        $query = PetugasTask::with(['user', 'zone', 'taxpayer']);
+        $user = Auth::user();
+        $query = PetugasTask::with(['user', 'zone', 'taxpayer', 'creator']);
 
+        // Jika dia role petugas, hanya lihat tugasnya sendiri
         if ($user->role === 'petugas') {
             $query->where('user_id', $user->id);
+        } elseif (!$user->isSuperAdmin()) {
+            // Jika bukan super_admin/admin, hanya lihat tugas di OPD-nya
+            $query->whereHas('user', function($q) use ($user) {
+                $q->where('opd_id', $user->opd_id);
+            });
         }
 
-        if ($request->has('status')) {
+        // Filter status all, pending, completed
+        if ($request->has('status') && in_array($request->status, ['pending', 'completed'])) {
             $query->where('status', $request->status);
         }
 
-        $tasks = $query->orderBy('due_date', 'asc')->paginate($request->get('per_page', 15));
-
-        return response()->json($tasks);
+        return response()->json([
+            'status' => 'success',
+            'data' => $query->orderBy('due_date', 'asc')->get()
+        ]);
     }
 
     /**
@@ -33,12 +42,12 @@ class PetugasTaskController extends Controller
      */
     public function store(Request $request)
     {
-        // Admin or super_admin only
-        if (!in_array($request->user()->role, ['admin', 'super_admin'])) {
+        $user = Auth::user();
+        if (!$user->isSuperAdmin() && !$user->isPengawas() && $user->role !== 'opd') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'zone_id' => 'nullable|exists:zones,id',
             'taxpayer_id' => 'nullable|exists:taxpayers,id',
@@ -46,37 +55,31 @@ class PetugasTaskController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        if (!$request->zone_id && !$request->taxpayer_id) {
-            return response()->json(['message' => 'Zone or Taxpayer is required'], 422);
+        $targetUser = \App\Models\User::withoutGlobalScope(\App\Models\Scopes\RetributionTypeScope::class)->find($request->user_id);
+
+        if (!$targetUser) {
+            return response()->json(['message' => 'Petugas tidak ditemukan di dalam sistem.'], 404);
         }
 
-        $task = PetugasTask::create([
-            'user_id' => $request->user_id,
-            'zone_id' => $request->zone_id,
-            'taxpayer_id' => $request->taxpayer_id,
-            'status' => 'pending',
-            'due_date' => $request->due_date,
-            'notes' => $request->notes,
-        ]);
+        // Enforce OPD scoping for non-super-admins
+        if (!$user->isSuperAdmin() && $targetUser->opd_id !== $user->opd_id) {
+            return response()->json(['message' => 'Akses Ditolak: Anda hanya bisa menugaskan petugas pada OPD Anda sendiri.'], 403);
+        }
+
+        if ($user->role === 'admin' && $user->retribution_type_id && $targetUser->retribution_type_id !== $user->retribution_type_id) {
+            return response()->json(['message' => 'Akses Ditolak: Anda hanya bisa menugaskan petugas pada Tipe Pajak/Wilayah Anda sendiri.'], 403);
+        }
+
+        $validated['created_by'] = $user->id;
+        $validated['status'] = 'pending';
+
+        $task = PetugasTask::create($validated);
 
         return response()->json([
-            'message' => 'Tugas berhasil ditugaskan',
+            'status' => 'success',
+            'message' => 'Tugas berhasil dibuat',
             'data' => $task->load(['user', 'zone', 'taxpayer'])
         ], 201);
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Request $request, string $id)
-    {
-        $task = PetugasTask::with(['user', 'zone', 'taxpayer'])->findOrFail($id);
-
-        if ($request->user()->role === 'petugas' && $task->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        return response()->json(['data' => $task]);
     }
 
     /**
@@ -84,63 +87,69 @@ class PetugasTaskController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $task = PetugasTask::findOrFail($id);
-        $user = $request->user();
-
-        // Petugas can only update status to completed
-        if ($user->role === 'petugas') {
-            if ($task->user_id !== $user->id) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-
-            $request->validate(['status' => 'required|in:pending,completed']);
-            $task->status = $request->status;
-            if ($task->status === 'completed') {
-                $task->completed_at = now();
-            } else {
-                $task->completed_at = null;
-            }
-            $task->save();
-
-            return response()->json(['message' => 'Status tugas diperbarui', 'data' => $task]);
+        $task = PetugasTask::find($id);
+        if (!$task) {
+            return response()->json(['message' => 'Task not found'], 404);
         }
 
-        // Admin updates
-        $request->validate([
-            'user_id' => 'sometimes|exists:users,id',
-            'zone_id' => 'nullable|exists:zones,id',
-            'taxpayer_id' => 'nullable|exists:taxpayers,id',
-            'status' => 'sometimes|in:pending,completed',
-            'due_date' => 'sometimes|date',
+        $user = Auth::user();
+
+        // Hanya petugas bersangkutan atau admin yang boleh update
+        if ($user->role === 'petugas' && $task->user_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized to update this task'], 403);
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:pending,completed',
             'notes' => 'nullable|string',
+            'photo' => 'nullable|image|max:2048',
         ]);
 
-        $task->update($request->all());
-
-        if ($request->has('status')) {
-            if ($request->status === 'completed' && !$task->completed_at) {
-                $task->completed_at = now();
-            } else if ($request->status === 'pending') {
-                $task->completed_at = null;
+        if ($validated['status'] === 'completed' && $task->status === 'pending') {
+            $validated['completed_at'] = now();
+            if ($request->hasFile('photo')) {
+                $path = $request->file('photo')->store('tasks/photos', 'public');
+                $validated['completion_photo_path'] = $path;
             }
-            $task->save();
+        } elseif ($validated['status'] === 'pending') {
+            $validated['completed_at'] = null;
+            $validated['completion_photo_path'] = null;
         }
 
-        return response()->json(['message' => 'Tugas berhasil diperbarui', 'data' => $task->fresh()->load(['user', 'zone', 'taxpayer'])]);
+        $task->update($validated);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Tugas berhasil diupdate',
+            'data' => $task
+        ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, string $id)
+    public function destroy(string $id)
     {
-        if (!in_array($request->user()->role, ['admin', 'super_admin'])) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+         $task = PetugasTask::find($id);
+         if (!$task) {
+             return response()->json(['message' => 'Task not found'], 404);
+         }
 
-        $task = PetugasTask::findOrFail($id);
-        $task->delete();
+         $user = Auth::user();
+         if (!$user->isSuperAdmin() && !$user->isPengawas() && $user->role !== 'opd') {
+             return response()->json(['message' => 'Unauthorized deletion'], 403);
+         }
 
-        return response()->json(['message' => 'Tugas berhasil dihapus']);
+         // Enforce OPD scoping for non-super-admins
+         if (!$user->isSuperAdmin() && $task->user->opd_id !== $user->opd_id) {
+             return response()->json(['message' => 'Unauthorized deletion of other OPD tasks'], 403);
+         }
+
+         $task->delete();
+
+         return response()->json([
+             'status' => 'success',
+             'message' => 'Tugas dihapus'
+         ]);
     }
 }

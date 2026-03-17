@@ -10,10 +10,11 @@ class PetugasTask extends Model
         'user_id',
         'zone_id',
         'taxpayer_id',
-        'status',
         'due_date',
         'notes',
+        'status',
         'completed_at',
+        'created_by'
     ];
 
     protected $casts = [
@@ -23,7 +24,7 @@ class PetugasTask extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function zone()
@@ -34,5 +35,10 @@ class PetugasTask extends Model
     public function taxpayer()
     {
         return $this->belongsTo(Taxpayer::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }
