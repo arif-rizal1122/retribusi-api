@@ -32,25 +32,27 @@ class BillingService
         $periods = collect();
         $tempDate = $startDate->copy();
         
-        // Load successful payments for this object
+        // 1. Preload all successful payments for this object
         $paidPeriods = Payment::where('tax_object_id', $taxObject->id)
             ->where('status', 'success')
             ->pluck('billing_period')
             ->toArray();
 
+        // 2. Preload all monthly reports for this object (for self-assessment)
+        $classification = $taxObject->classification;
+        $isSelfAssessment = $classification ? $classification->is_self_assessment : false;
+        $allReports = collect();
+        if ($isSelfAssessment) {
+            $allReports = \App\Models\MonthlyReport::where('tax_object_id', $taxObject->id)
+                ->get()
+                ->keyBy('period');
+        }
+
         while ($tempDate->lte($currentDate)) {
             $periodString = $this->getPeriodString($tempDate, $cycle);
             
             if (!in_array($periodString, $paidPeriods)) {
-                $classification = $taxObject->classification;
-                $isSelfAssessment = $classification ? $classification->is_self_assessment : false;
-                
-                $report = null;
-                if ($isSelfAssessment) {
-                    $report = \App\Models\MonthlyReport::where('tax_object_id', $taxObject->id)
-                        ->where('period', $periodString)
-                        ->first();
-                }
+                $report = $allReports->get($periodString);
 
                 $amount = $this->calculateAmountForPeriod($taxObject, $tempDate, $report);
                 $dueDate = $this->getDueDate($tempDate, $cycle);

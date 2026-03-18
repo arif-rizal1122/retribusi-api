@@ -27,87 +27,77 @@ class CalculateBillPenalties extends Command
     {
         $this->info('🚀 Starting penalty calculation for unpaid bills...');
         
-        $unpaidBills = \App\Models\Bill::where('status', 'pending')
+        $query = \App\Models\Bill::where('status', 'pending')
             ->whereNotNull('due_date')
             ->where('due_date', '<', \Carbon\Carbon::now())
-            ->with(['retributionType', 'classification'])
-            ->get();
+            ->with(['retributionType', 'classification', 'taxpayer']);
 
-        if ($unpaidBills->isEmpty()) {
+        $totalCount = $query->count();
+        if ($totalCount === 0) {
             $this->comment('No unpaid bills past due date found.');
             return;
         }
 
-        $bar = $this->output->createProgressBar(count($unpaidBills));
+        $bar = $this->output->createProgressBar($totalCount);
         $bar->start();
 
         $parser = app(\App\Services\FormulaParserService::class);
         $count = 0;
 
-        foreach ($unpaidBills as $bill) {
-            $now = \Carbon\Carbon::now();
-            $dueDate = $bill->due_date;
-            
-            // 1. Determine if it's PBB for specific logic
-            $isPBB = ($bill->retributionType && stripos($bill->retributionType->name, 'PBB') !== false);
-            
-            $effectiveDueDate = $dueDate;
-            if ($isPBB) {
-                // Add grace period: 6 months after registration
-                $registrationDate = ($bill->taxpayer ? $bill->taxpayer->created_at : $bill->created_at);
-                $gracePeriodEnd = $registrationDate->copy()->addMonths(6);
+        $query->chunk(100, function ($unpaidBills) use ($parser, &$count, $bar) {
+            foreach ($unpaidBills as $bill) {
+                $now = \Carbon\Carbon::now();
+                $dueDate = $bill->due_date;
                 
-                if ($gracePeriodEnd->isAfter($effectiveDueDate)) {
-                    $effectiveDueDate = $gracePeriodEnd;
-                }
-            }
-
-            if ($now->isBefore($effectiveDueDate)) {
-                $bar->advance();
-                continue;
-            }
-
-            // Calculate months late (rounding up as per regulation: "Bagian dari bulan dihitung penuh 1 bulan")
-            $diffInMonths = $effectiveDueDate->diffInMonths($now);
-            if ($now->day > $effectiveDueDate->day) {
-                $diffInMonths++;
-            }
-            if ($diffInMonths === 0) $diffInMonths = 1;
-
-            // 1. Calculate Interest (Bunga) based on penalty_type
-            $penaltyType = $bill->penalty_type ?: 'stpd';
-            $interest = $parser->calculatePenalty($bill->amount, $diffInMonths, $penaltyType);
-
-            // 2. Calculate Fixed Fine (Denda) for late reporting (Self Assessment only)
-            // Check if it's a "Self Assessment" type (Wilayah II / Pajak category)
-            // Logic: if metadata['is_reported'] is false and it's self-assessment
-            $fixedFine = 0;
-            if ($bill->retributionType && $bill->retributionType->name === 'Wilayah II') {
-                $metadata = $bill->metadata ?? [];
-                if (isset($metadata['needs_reporting']) && $metadata['needs_reporting'] === true) {
-                    if (!isset($metadata['reported_at'])) {
-                        $fixedFine = $parser->getFixedFineForNoReporting();
+                // 1. Determine if it's PBB for specific logic
+                $isPBB = ($bill->retributionType && stripos($bill->retributionType->name, 'PBB') !== false);
+                
+                $effectiveDueDate = $dueDate;
+                if ($isPBB) {
+                    // Add grace period: 6 months after registration
+                    $registrationDate = ($bill->taxpayer ? $bill->taxpayer->created_at : $bill->created_at);
+                    $gracePeriodEnd = $registrationDate->copy()->addMonths(6);
+                    
+                    if ($gracePeriodEnd->isAfter($effectiveDueDate)) {
+                        $effectiveDueDate = $gracePeriodEnd;
                     }
                 }
+
+                if ($now->isBefore($effectiveDueDate)) {
+                    $bar->advance();
+                    continue;
+                }
+
+                // Calculate months late (rounding up as per regulation: "Bagian dari bulan dihitung penuh 1 bulan")
+                $diffInMonths = $effectiveDueDate->diffInMonths($now);
+                if ($now->day > $effectiveDueDate->day) {
+                    $diffInMonths++;
+                }
+                if ($diffInMonths === 0) $diffInMonths = 1;
+
+                // 1. Calculate Interest (Bunga) based on penalty_type
+                $penaltyType = $bill->penalty_type ?: 'stpd';
+                $interest = $parser->calculatePenalty($bill->amount, $diffInMonths, $penaltyType);
+
+                // 2. Calculate Fixed Fine (Denda) for late reporting (Self Assessment only)
+                $fixedFine = 0;
+                if ($bill->retributionType && $bill->retributionType->name === 'Wilayah II') {
+                    $metadata = $bill->metadata ?? [];
+                    if (isset($metadata['needs_reporting']) && $metadata['needs_reporting'] === true) {
+                        if (!isset($metadata['reported_at'])) {
+                            $fixedFine = $parser->getFixedFineForNoReporting();
+                        }
+                    }
+                }
+
+                $bill->penalty_amount = $interest;
+                $bill->fixed_fine_amount = $fixedFine;
+                $bill->save();
+
+                $count++;
+                $bar->advance();
             }
-
-            // Update the bill
-            // Important: We only update penalty_amount if it's NOT fully waived
-            // In a real scenario, we might want to store "calculated_penalty" separately
-            // but for now we subtract waived_amount to get the effective penalty
-            
-            $bill->penalty_amount = $interest;
-            $bill->fixed_fine_amount = $fixedFine;
-            
-            // If there's a waiver, the effectively shown 'penalty_amount' 
-            // is handled by the model's total_amount attribute logic,
-            // but we keep the raw calculated interest here.
-            
-            $bill->save();
-
-            $count++;
-            $bar->advance();
-        }
+        });
 
         $bar->finish();
         $this->newLine();
