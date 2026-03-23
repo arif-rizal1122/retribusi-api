@@ -11,24 +11,26 @@ Sistem M-PAD terdiri dari 4 komponen utama yang saling terintegrasi:
 - **Frontend Mobile:** Aplikasi PWA berbasis **React (Vite)** untuk masyarakat (Wajib Pajak) melakukan pendaftaran, pengecekan tagihan, dan simulasi pajak.
 - **Frontend Petugas:** Aplikasi berbasis **React (Vite)** khusus untuk petugas lapangan untuk melakukan pengawasan dan input data potensi.
 
-## 4. Kategori Pendapatan & Pajak (BAPENDA BAUBAU)
+## 4. Siklus & Kategori Pendapatan (V-Tax Parity)
 
-Sistem ini melayani kategori pendapatan daerah sebagai berikut:
+Sistem ini disesuaikan sepenuhnya dengan regulasi **9 Jenis Pajak Daerah** (UU HKPD & Perwali 58/2024), yaitu:
+1. **PBJT Jasa Perhotelan** (Tarif 10%)
+2. **PBJT Makan dan Minum** (Tarif 10%)
+3. **PBJT Jasa Kesenian dan Hiburan** (Tarif 10% - 40%)
+4. **Pajak Reklame**
+5. **PBJT Tenaga Listrik**
+6. **Pajak MBLB**
+7. **PBJT Jasa Parkir** (Tarif 30%)
+8. **Pajak Air Tanah** (Tarif 20%)
+9. **Pajak Sarang Burung Walet**
 
-### A. Pajak Barang dan Jasa Tertentu (PBJT)
-| Kode | Jenis PBJT | Deskripsi |
-|------|-----------|-----------|
-| `PBJT-LIS` | Tenaga Listrik | Pajak atas konsumsi tenaga listrik. |
-| `PBJT-MNM` | Makan & Minum | Pajak restoran dan katering (10%). |
-| `PBJT-HTL` | Perhotelan | Pajak jasa penginapan (10%). |
-| `PBJT-HBR` | Kesenian & Hiburan| Pajak hiburan (Umum: 10%, Hiburan Malam: 40%). |
-| `PBJT-PRK` | Jasa Parkir | Pajak area parkir swasta (LIPO, Bandara, dll). |
+### Pipeline Verifikasi & Siklus Penagihan (Correspondence)
+M-PAD mendukung siklus penagihan terintegrasi (End-to-End) layaknya sistem V-Tax:
+1. **Pendaftaran (SPTPD/SPOPD)**: WP melakukan perekaman data mandiri atau oleh petugas.
+2. **Surat Teguran I & II**: Otomatis di-generate oleh sistem (Cron Job) jika tagihan (SKPD/STPD) melewati batas jatuh tempo.
+3. **Surat Paksa (SPMP)**: Diterbitkan untuk upaya paksa jika denda awal diabaikan.
 
-### B. Pajak Spesifik lainnya
-- **Pajak Reklame**: Papan reklame, neon box, billboard.
-- **Pajak MBLB**: Mineral Bukan Logam dan Batuan.
-- **Pajak Air Tanah (PAT)**: Pengambilan/pemanfaatan air tanah.
-- **BPHTB & PBB-P2**: Bea Perolehan Hak Tanah dan Pajak Bumi Bangunan.
+Semua status alur dokumen diseragamkan: `draft` -> `proses` (verifikasi) -> `disetujui` (terbit SKPD) -> `ditolak`.
 
 ## 5. Keamanan & Stabilitas
 - **CORS:** Diatur ketat di sisi Nginx dan Laravel agar hanya domain resmi (`*.sipanda.online`) yang bisa mengakses API. Penanganan `OPTIONS` preflight dilakukan di level Nginx untuk mencegah "Duplicate Header".

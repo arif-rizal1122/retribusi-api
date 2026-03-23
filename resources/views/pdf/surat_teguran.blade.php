@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <title>Surat Penegakan - {{ $enforcement->number }}</title>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 14px; margin: 0; padding: 30px 40px; line-height: 1.6; }
-        
-        .letter-info { width: 100%; margin-bottom: 30px; }
-        .letter-info td { vertical-align: top; }
-        
-        .content { text-align: justify; margin-bottom: 40px; }
-        .recipient { margin-top: 10px; font-weight: bold; }
-        
+        body { font-family: Arial, sans-serif; font-size: 11px; margin: 25px; line-height: 1.3; }
+        .title { text-align: center; font-weight: bold; font-size: 15px; text-decoration: underline; margin-top: 10px; margin-bottom: 2px; }
+        .number { text-align: center; margin-bottom: 15px; }
+        .content { margin-bottom: 20px; text-align: justify; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        td { padding: 3px; vertical-align: top; }
+        .label { width: 180px; font-weight: bold; }
+        .footer { margin-top: 30px; }
         .signature-section { float: right; width: 300px; text-align: center; margin-top: 30px; }
         .signature-section p { margin: 5px 0; }
         .signature-space { height: 100px; }

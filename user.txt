@@ -1,4 +1,4 @@
-1. SIPANDA Mobile (Wajib Pajak)
+1. Mpad Mobile (Wajib Pajak)
 Primary Test User (NIK): 7301010101010001
 Password: [REDACTED]
 Link: sipanda.online

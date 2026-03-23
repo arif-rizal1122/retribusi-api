@@ -2,16 +2,16 @@
 <html>
 <head>
     <style>
-        body { font-family: 'Arial', sans-serif; font-size: 12px; color: #333; margin: 30px; }
-        .main-title { font-size: 18px; font-weight: bold; margin: 10px 0; text-align: center; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .info-box { border: 1px solid #ccc; padding: 10px; border-radius: 5px; }
-        .info-title { font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 5px; font-size: 10px; color: #666; }
-        .payment-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .payment-table th { background: #333; color: #fff; padding: 10px; text-align: left; }
-        .payment-table td { border-bottom: 1px solid #eee; padding: 10px; }
-        .status-badge { background: #dcfce7; color: #166534; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 14px; display: inline-block; }
-        .footer { margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 20px; font-size: 10px; color: #999; text-align: center; }
+        body { font-family: 'Arial', sans-serif; font-size: 11px; color: #333; margin: 25px; line-height: 1.3; }
+        .main-title { font-size: 16px; font-weight: bold; margin: 5px 0; text-align: center; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .info-box { border: 1px solid #ccc; padding: 8px; border-radius: 5px; }
+        .info-title { font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 3px; font-size: 9px; color: #666; }
+        .payment-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .payment-table th { background: #333; color: #fff; padding: 8px; text-align: left; }
+        .payment-table td { border-bottom: 1px solid #eee; padding: 8px; }
+        .status-badge { background: #dcfce7; color: #166534; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; display: inline-block; }
+        .footer { margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 9px; color: #999; text-align: center; }
     </style>
 </head>
 <body>

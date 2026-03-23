@@ -2,17 +2,17 @@
 <html>
 <head>
     <style>
-        body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; margin: 40px; }
-        .title { text-align: center; font-weight: bold; font-size: 16px; text-decoration: underline; margin-top: 20px; margin-bottom: 5px; }
-        .number { text-align: center; margin-bottom: 25px; }
-        .content { margin-bottom: 30px; text-align: justify; }
-        .table-info { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .table-info td { padding: 5px; vertical-align: top; }
+        body { font-family: 'Arial', sans-serif; line-height: 1.3; color: #333; margin: 25px; }
+        .title { text-align: center; font-weight: bold; font-size: 16px; text-decoration: underline; margin-top: 10px; margin-bottom: 2px; }
+        .number { text-align: center; margin-bottom: 15px; }
+        .content { margin-bottom: 15px; text-align: justify; }
+        .table-info { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        .table-info td { padding: 3px; vertical-align: top; }
         .label { width: 180px; font-weight: bold; }
-        .footer { margin-top: 50px; }
+        .footer { margin-top: 30px; }
         .signature-table { width: 100%; }
         .signature-box { text-align: center; width: 250px; }
-        .warning-box { border: 2px solid #000; padding: 15px; margin: 20px 0; background: #f9f9f9; }
+        .warning-box { border: 2px solid #000; padding: 10px; margin: 10px 0; background: #f9f9f9; }
         .urgent { color: #CC0000; font-weight: bold; }
     </style>
 </head>

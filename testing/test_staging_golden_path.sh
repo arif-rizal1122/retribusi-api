@@ -4,7 +4,7 @@
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-API_URL="https://api.mpad.online/api"
+API_URL="https://api.sipanda.online/api"
 
 echo "Starting Golden Path (E2E) on $API_URL..."
 

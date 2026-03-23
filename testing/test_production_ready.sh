@@ -13,10 +13,10 @@ ADMIN_ORIGIN="https://admin.sipanda.online"
 
 # Environment selection
 if [ "$1" == "staging" ]; then
-  echo -e "${YELLOW}Mode: STAGING (mpad.online)${NC}"
-  API_URL="https://api.mpad.online"
-  FRONTEND_ORIGIN="https://mpad.online"
-  ADMIN_ORIGIN="https://admin.mpad.online"
+  echo -e "${YELLOW}Mode: STAGING (sipanda.online)${NC}"
+  API_URL="https://api.sipanda.online"
+  FRONTEND_ORIGIN="https://sipanda.online"
+  ADMIN_ORIGIN="https://admin.sipanda.online"
 elif [ "$1" == "dev" ]; then
   echo -e "${YELLOW}Mode: DEVELOPMENT (sipanda.online)${NC}"
   API_URL="https://api-dev.sipanda.online"

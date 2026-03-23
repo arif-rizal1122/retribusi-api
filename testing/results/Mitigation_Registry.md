@@ -58,7 +58,7 @@ Registry ini mencatat temuan bug serius, akar masalahnya, dan pola mitigasi yang
 
 ### BUG-005: 500 Server Error Stale configuration — 2026-03-17
 - **Environment**: Staging
-- **Endpoint/Kasus**: `GET https://api.mpad.online/up` (Layanan API)
+- **Endpoint/Kasus**: `GET https://api.sipanda.online/up` (Layanan API)
 - **Deskripsi Error**: HTTP 500 Server Error pasca deployment berhasil.
 - **Akar Masalah (Root Cause)**: Cache konfigurasi, rute, atau view yang sudah usang (*stale*) setelah perubahan skema database V-Tax yang signifikan, menyebabkan konflik resolusi dependensi pada kontainer Laravel.
 - **Solusi (Mitigation)**: 

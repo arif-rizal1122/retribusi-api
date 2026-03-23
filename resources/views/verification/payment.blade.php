@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title }} - SIPANDA Baubau</title>
+    <title>{{ $title }} - Mpad Baubau</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -91,7 +91,7 @@
             @endif
 
             <p class="text-[9px] text-center text-slate-400 font-medium leading-relaxed italic">
-                * Data ini diambil secara realtime dari sistem SIPANDA Kota Baubau. Keaslian dokumen dijamin sah secara hukum.
+                * Data ini diambil secara realtime dari sistem Mpad Kota Baubau. Keaslian dokumen dijamin sah secara hukum.
             </p>
         </div>
 

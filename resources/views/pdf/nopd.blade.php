@@ -3,20 +3,12 @@
 <head>
     <title>Sertifikat NOPD - {{ $taxObject->nop }}</title>
     <style>
-        body { font-family: 'Helvetica', 'Arial', sans-serif; margin: 40px; color: #333; }
-        h1 { margin: 0; font-size: 24px; color: #074764; text-transform: uppercase; }
-        .title-doc { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 5px; text-decoration: underline; }
-        .subtitle-doc { text-align: center; font-size: 14px; margin-bottom: 40px; }
-        
-        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        table, th, td { border: 1px solid #ddd; }
-        th { background-color: #f2f2f2; text-align: left; padding: 12px; font-size: 14px; width: 30%; }
-        td { padding: 12px; font-size: 14px; font-weight: bold; color: #000; }
-        
-        .footer-sig { margin-top: 60px; width: 100%; display: table; }
-        .sig-col { display: table-cell; width: 40%; text-align: center; }
-        .sig-col.right { width: 60%; }
-        .sig-name { font-weight: bold; text-decoration: underline; margin-top: 80px; }
+        body { font-family: Arial, sans-serif; font-size: 11px; margin: 25px; line-height: 1.3; }
+        .title { text-align: center; font-weight: bold; font-size: 15px; margin-bottom: 10px; }
+        .card-container { border: 2px solid #000; padding: 15px; width: 450px; margin: 0 auto; }
+        .label { font-weight: bold; width: 120px; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 3px; vertical-align: top; }
     </style>
 </head>
 <body>

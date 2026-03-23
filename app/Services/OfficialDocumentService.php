@@ -117,6 +117,31 @@ class OfficialDocumentService
     }
 
     /**
+     * Generate SKPD (Surat Ketetapan Pajak Daerah)
+     */
+    public function generateSKPD(Bill $bill)
+    {
+        $total = (float) $bill->amount + (float) $bill->penalty_amount + (float) $bill->fixed_fine_amount + (float) $bill->surcharge_amount;
+
+        return [
+            'title' => $bill->retributionType->name,
+            'number' => $bill->bill_number,
+            'taxpayer' => $bill->taxpayer->name,
+            'address' => $bill->taxpayer->address ?? 'Kota Baubau',
+            'amount' => $bill->amount,
+            'penalty_amount' => $bill->penalty_amount,
+            'fixed_fine_amount' => $bill->fixed_fine_amount,
+            'surcharge_amount' => $bill->surcharge_amount,
+            'total_amount' => $total,
+            'terbilang' => self::terbilang($total) . " Rupiah",
+            'period' => $bill->period,
+            'due_date' => $bill->due_date,
+            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'billing' => $bill,
+        ];
+    }
+
+    /**
      * Generate SSPD (Surat Setoran Pajak Daerah)
      */
     public function generateSSPD(Bill $bill)

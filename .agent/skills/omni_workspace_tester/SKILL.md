@@ -130,7 +130,7 @@ Setelah menjalankan pengujian di atas, lakukan **Pengecekan Akhir 3 Lapis**:
 
 1. **Pemilihan Target Environment (Penting)**: Sebelum menjalankan pengujian, **WAJIB** tentukan *Environment* yang akan dites dengan menyesuaikan Konfigurasi Base URL pada Script Testing:
    - **Local**: Eksekusi operasi sistem secara lokal di direktori `Herd` menggunakan internal application request (Laravel) atau cURL ke domain lokal `*.test`.
-   - **Staging**: Arahkan endpoint request ke domain `*.mpad.online` (Contoh: `https://api.mpad.online`). Gunakan *credentials* dari akun Staging yang valid.
+   - **Staging**: Arahkan endpoint request ke domain `*.sipanda.online` (Contoh: `https://api.sipanda.online`). Gunakan *credentials* dari akun Staging yang valid.
    - **Production**: Arahkan endpoint ke domain live pemkot `*.mpad.baubaukota.go.id` (Contoh: `https://api.mpad.baubaukota.go.id`). Saat menguji di jalur Production, **SANGAT DISARANKAN** hanya mengeksekusi jenis validasi `GET` (Read-Only) atau memastikan script dapat me-_rollback_ *dummy injection* (jika menggunakan test endpoint yang disepakati).
 2. **Kepatuhan Protokol NOSS**: Jangan gunakan screenshot browser untuk eksekusi testing Backend lintas *environment*. Buat atau susuaikan script pengujian di folder `testing/` (seperti `run_role_e2e_test.php`) agar *Base URL*-nya bersifat dinamis atau dapat di *overwrite*.
 3. **Asesmen Frontend PWA**: Sebelum melakukan validasi PWA, periksalah variabel dilingkungan Frontend (misal: `.env.production` atau `.env.staging`) untuk memastikan React-Vite benar-benar memukul endpoint lintas server yang sesuai dengan environment *Testing* saat ini.

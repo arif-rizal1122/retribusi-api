@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <title>Surat Ketetapan Retribusi Daerah (SKRD)</title>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; margin: 0; padding: 20px; }
-        .title { text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 15px; text-decoration: underline; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .table-info td { padding: 5px; vertical-align: top; }
+        body { font-family: Arial, sans-serif; font-size: 11px; margin: 0; padding: 25px; line-height: 1.3; }
+        .title { text-align: center; font-weight: bold; font-size: 15px; margin-bottom: 5px; text-decoration: underline; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        .table-info td { padding: 3px; vertical-align: top; }
         .table-amount { border: 1px solid #000; }
-        .table-amount th, .table-amount td { border: 1px solid #000; padding: 8px; text-align: left; }
+        .table-amount th, .table-amount td { border: 1px solid #000; padding: 5px; text-align: left; }
         .table-amount th { background-color: #f0f0f0; }
         .total-row { font-weight: bold; }
-        .signature-section { float: right; width: 300px; text-align: center; margin-top: 30px; }
-        .signature-section p { margin: 5px 0; }
-        .signature-space { height: 80px; }
-        .footer { clear: both; margin-top: 40px; font-size: 10px; text-align: center; color: #555; border-top: 1px solid #ccc; padding-top: 5px; }
+        .signature-section { float: right; width: 300px; text-align: center; margin-top: 20px; }
+        .signature-section p { margin: 2px 0; }
+        .signature-space { height: 60px; }
+        .footer { clear: both; margin-top: 20px; font-size: 9px; text-align: center; color: #555; border-top: 1px solid #ccc; padding-top: 5px; }
     </style>
 </head>
 <body>

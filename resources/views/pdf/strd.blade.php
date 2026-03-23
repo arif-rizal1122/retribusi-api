@@ -2,14 +2,14 @@
 <html>
 <head>
     <style>
-        body { font-family: 'Courier', monospace; font-size: 12px; color: #000; margin: 30px; border: 2px solid #000; padding: 20px; }
-        .title { font-size: 16px; font-weight: bold; margin-bottom: 5px; text-align: center; }
-        .section { margin-bottom: 15px; }
-        .table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        .table th, .table td { border: 1px solid #000; padding: 10px; text-align: left; }
-        .total-row { font-weight: bold; background: #eee; }
-        .footer { margin-top: 40px; text-align: right; }
-        .qr-box { float: left; text-align: center; margin-top: 20px; }
+        body { font-family: Arial, sans-serif; font-size: 11px; margin: 25px; line-height: 1.3; }
+        .title { text-align: center; font-weight: bold; font-size: 15px; text-decoration: underline; margin-top: 10px; margin-bottom: 2px; }
+        .number { text-align: center; margin-bottom: 15px; }
+        .content { margin-bottom: 20px; text-align: justify; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        td { padding: 3px; vertical-align: top; }
+        .label { width: 180px; font-weight: bold; }
+        .footer { margin-top: 30px; }
     </style>
 </head>
 <body>

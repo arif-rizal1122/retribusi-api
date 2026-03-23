@@ -4,27 +4,27 @@ Dokumen ini mencatat detail teknis akses server dan perintah pemeliharaan manual
 
 ## 1. Detail Koneksi
 - **IP Address:** `157.10.252.74`
-- **User:** `sipanda`
+- **User:** `mpad`
 - **Sistem Operasi:** Ubuntu 22.04 LTS
 - **Web Server:** Nginx (v1.18.0+)
 - **PHP Version:** PHP 8.2+ (FPM)
 
 ## 2. Peta Direktori VPS
-Seluruh proyek terletak di bawah home user `/home/sipanda/`:
+Seluruh proyek terletak di bawah home user `/home/mpad/`:
 
 | Nama Proyek | Direktori (Production) | Direktori (Dev) |
 | :--- | :--- | :--- |
-| **API** | `/home/sipanda/retribusi-api` | `/home/sipanda/retribusi-api-dev` |
-| **Mobile** | `/home/sipanda/retribusi-mobile` | `/home/sipanda/retribusi-mobile-dev` |
-| **Admin** | `/home/sipanda/retribusi-admin` | `/home/sipanda/retribusi-admin-dev` |
-| **Petugas**| `/home/sipanda/retribusi-petugas`| `/home/sipanda/retribusi-petugas-dev`|
+| **API** | `/home/mpad/retribusi-api` | `/home/mpad/retribusi-api-dev` |
+| **Mobile** | `/home/mpad/retribusi-mobile` | `/home/mpad/retribusi-mobile-dev` |
+| **Admin** | `/home/mpad/retribusi-admin` | `/home/mpad/retribusi-admin-dev` |
+| **Petugas**| `/home/mpad/retribusi-petugas`| `/home/mpad/retribusi-petugas-dev`|
 
 ## 3. Perintah Pemeliharaan Manual
 Jika sinkronisasi GitHub Actions gagal, perintah berikut dapat dijalankan secara manual di terminal VPS:
 
 ### A. Sinkronisasi API
 ```bash
-cd /home/sipanda/retribusi-api
+cd /home/mpad/retribusi-api
 git pull origin main
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force

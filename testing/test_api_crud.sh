@@ -7,8 +7,8 @@
 # ============================================================================
 
 # Default to Staging
-API="https://api.mpad.online/api"
-ORIGIN="https://mpad.online"
+API="https://api.sipanda.online/api"
+ORIGIN="https://sipanda.online"
 
 # Handle environment argument
 if [ "$1" == "prod" ]; then
@@ -16,9 +16,9 @@ if [ "$1" == "prod" ]; then
   API="https://apimpad.baubaukota.go.id/api"
   ORIGIN="https://mpad.baubaukota.go.id"
 elif [ "$1" == "staging" ]; then
-  echo -e "${YELLOW}Mode: STAGING (mpad.online)${NC}"
-  API="https://api.mpad.online/api"
-  ORIGIN="https://mpad.online"
+  echo -e "${YELLOW}Mode: STAGING (sipanda.online)${NC}"
+  API="https://api.sipanda.online/api"
+  ORIGIN="https://sipanda.online"
 elif [ "$1" == "local" ]; then
   echo -e "${YELLOW}Mode: LOCALHOST${NC}"
   API="http://localhost:8000/api"
@@ -134,7 +134,7 @@ test_endpoint GET "$API/pbb/classifications" "" "" "200" "/pbb/classifications" 
 test_endpoint GET "$API/citizen/bills?nik=$CITIZEN_NIK" "" "$ADMIN_TOKEN" "200" "/citizen/bills?nik=..." > /dev/null
 
 # Health check
-test_endpoint GET "https://api.mpad.online/up" "" "" "200" "/up (health)" > /dev/null
+test_endpoint GET "https://api.sipanda.online/up" "" "" "200" "/up (health)" > /dev/null
 
 # ============================================================================
 # 2. AUTH-REQUIRED ENDPOINTS (Citizen)

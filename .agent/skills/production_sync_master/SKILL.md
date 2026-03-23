@@ -5,7 +5,7 @@ description: Protokol tingkat lanjut untuk sinkronisasi Staging ke Main (Product
 
 # 🚀 Protokol Production Sync Master
 
-Gunakan skill ini untuk melakukan promosi kode dari lingkungan Staging (`*.mpad.online`) ke Production (`*.baubaukota.go.id`) dengan tingkat keberhasilan 100%.
+Gunakan skill ini untuk melakukan promosi kode dari lingkungan Staging (`*.sipanda.online`) ke Production (`*.baubaukota.go.id`) dengan tingkat keberhasilan 100%.
 
 ## 🛡️ Aturan Emas Deployment
 1. **Promote Only Verified**: Dilarang melakukan merge ke `main` sebelum seluruh test di `testing/results/` menunjukkan status `All Passed` di Staging.

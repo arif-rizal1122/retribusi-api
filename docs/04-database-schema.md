@@ -308,6 +308,23 @@ CREATE TABLE spot_check_items (
 );
 ```
 
+### 9. complaints (Pengaduan Masyarakat)
+```sql
+CREATE TABLE complaints (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id),
+    category VARCHAR(100),
+    description TEXT NOT NULL,
+    status ENUM('pending', 'in_progress', 'resolved', 'rejected') DEFAULT 'pending',
+    attachment_url VARCHAR(255),
+    resolved_by UUID REFERENCES users(id),
+    resolved_at TIMESTAMP,
+    admin_notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
 ---
 
 ## Contoh object_data per Jenis Pajak

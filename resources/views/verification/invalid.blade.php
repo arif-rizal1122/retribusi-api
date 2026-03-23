@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title }} - SIPANDA Baubau</title>
+    <title>{{ $title }} - Mpad Baubau</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -25,7 +25,7 @@
         <!-- Content -->
         <div class="p-8 space-y-6 text-center">
             <p class="text-slate-600 font-medium">
-                Maaf, sistem tidak dapat menemukan data untuk nomor dokumen tersebut. Harap pastikan Anda memindai kode QR dari dokumen resmi yang diterbitkan oleh SIPANDA Kota Baubau.
+                Maaf, sistem tidak dapat menemukan data untuk nomor dokumen tersebut. Harap pastikan Anda memindai kode QR dari dokumen resmi yang diterbitkan oleh Mpad Kota Baubau.
             </p>
             
             <a href="/" class="inline-block px-6 py-3 bg-slate-800 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-slate-500/20 active:scale-95 transition-all">
@@ -46,7 +46,7 @@
             @endif
 
             <p class="text-[9px] text-center text-slate-400 font-medium leading-relaxed italic">
-                * Data ini diambil secara realtime dari sistem SIPANDA Kota Baubau. Keaslian dokumen dijamin sah secara hukum.
+                * Data ini diambil secara realtime dari sistem Mpad Kota Baubau. Keaslian dokumen dijamin sah secara hukum.
             </p>
         </div>
 

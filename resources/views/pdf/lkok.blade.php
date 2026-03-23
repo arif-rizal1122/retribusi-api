@@ -2,15 +2,15 @@
 <html>
 <head>
     <style>
-        body { font-family: 'Arial', sans-serif; font-size: 11px; margin: 30px; }
-        .title { font-size: 14px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
-        .section-title { font-weight: bold; background: #eee; padding: 5px; margin-top: 15px; border: 1px solid #000; }
-        .table-data { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        .table-data td { padding: 4px; border: 1px solid #000; vertical-align: top; }
-        .label { width: 150px; font-weight: bold; }
-        .footer { margin-top: 30px; }
-        .qr-box { float: left; text-align: center; }
-        .signature-box { float: right; text-align: center; width: 200px; }
+        body { font-family: 'Arial', sans-serif; font-size: 11px; color: #333; margin: 25px; line-height: 1.3; }
+        .title { text-align: center; font-weight: bold; font-size: 15px; text-decoration: underline; margin-top: 5px; margin-bottom: 2px; }
+        .subtitle { text-align: center; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        .table-info td { padding: 3px; vertical-align: top; }
+        .section-header { background: #f0f0f0; font-weight: bold; padding: 5px; border: 1px solid #ccc; margin-top: 5px; margin-bottom: 5px; }
+        .grid-table { border: 1px solid #000; }
+        .grid-table td, .grid-table th { border: 1px solid #000; padding: 5px; }
+        .footer { margin-top: 15px; font-size: 9px; text-align: center; color: #666; }
     </style>
 </head>
 <body>

@@ -2,14 +2,14 @@
 <html>
 <head>
     <style>
-        body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; margin: 40px; }
-        .title { text-align: center; font-weight: bold; font-size: 16px; text-decoration: underline; margin-top: 20px; margin-bottom: 5px; }
-        .number { text-align: center; margin-bottom: 25px; }
-        .content { margin-bottom: 30px; text-align: justify; }
-        .table-info { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .table-info td { padding: 5px; vertical-align: top; }
+        body { font-family: Arial, sans-serif; font-size: 11px; margin: 25px; line-height: 1.3; }
+        .title { text-align: center; font-weight: bold; font-size: 15px; text-decoration: underline; margin-top: 10px; margin-bottom: 2px; }
+        .number { text-align: center; margin-bottom: 15px; }
+        .content { margin-bottom: 20px; text-align: justify; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        td { padding: 3px; vertical-align: top; }
         .label { width: 180px; font-weight: bold; }
-        .signature-table { width: 100%; margin-top: 50px; }
+        .footer { margin-top: 30px; }
     </style>
 </head>
 <body>
@@ -42,7 +42,7 @@
 
         <p>Mengingat batas waktu pelaporan SPTPD paling lambat adalah setiap tanggal 15 bulan berikutnya, maka Saudara/i telah melewati batas waktu yang ditentukan. Pelambatan pelaporan ini dikenakan sanksi administrasi berupa denda sesuai dengan Peraturan Walikota Baubau Nomor 58 Tahun 2024.</p>
 
-        <p>Sehubungan dengan hal tersebut, Saudara/i diminta untuk segera melakukan pelaporan melalui aplikasi <strong>M-PAD</strong> atau portal <strong>https://mpad.online</strong> dalam waktu 3 (tiga) hari kerja sejak surat ini diterima.</p>
+        <p>Sehubungan dengan hal tersebut, Saudara/i diminta untuk segera melakukan pelaporan melalui aplikasi <strong>M-PAD</strong> atau portal <strong>https://sipanda.online</strong> dalam waktu 3 (tiga) hari kerja sejak surat ini diterima.</p>
 
         <p>Apabila Saudara/i mengabaikan teguran ini, maka akan dilakukan **Penetapan Pajak secara Jabatan (SKPDKB)** oleh Tim Pemeriksa Pajak Daerah Badan Pendapatan Daerah Kota Baubau.</p>
     </div>

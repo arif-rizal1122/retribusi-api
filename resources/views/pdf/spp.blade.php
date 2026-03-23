@@ -2,13 +2,14 @@
 <html>
 <head>
     <style>
-        body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; margin: 40px; }
-        .title { text-align: center; font-weight: bold; font-size: 16px; text-decoration: underline; margin-bottom: 5px; }
-        .number { text-align: center; margin-bottom: 20px; }
-        .content { margin-bottom: 30px; }
-        .field { display: flex; margin-bottom: 5px; }
-        .label { width: 150px; font-weight: bold; }
-        .footer { margin-top: 50px; display: flex; justify-content: space-between; }
+        body { font-family: Arial, sans-serif; font-size: 11px; margin: 25px; line-height: 1.3; }
+        .title { text-align: center; font-weight: bold; font-size: 15px; text-decoration: underline; margin-top: 10px; margin-bottom: 2px; }
+        .number { text-align: center; margin-bottom: 15px; }
+        .content { margin-bottom: 20px; text-align: justify; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        td { padding: 3px; vertical-align: top; }
+        .label { width: 180px; font-weight: bold; }
+        .footer { margin-top: 30px; display: flex; justify-content: space-between; }
         .signature { text-align: center; width: 250px; }
         .qr-code { margin-top: 20px; text-align: center; border: 1px solid #ccc; padding: 10px; display: inline-block; }
     </style>
