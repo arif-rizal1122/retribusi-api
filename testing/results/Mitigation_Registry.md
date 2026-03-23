@@ -77,3 +77,15 @@ Registry ini mencatat temuan bug serius, akar masalahnya, dan pola mitigasi yang
 - **Solusi (Mitigation)**: 
     1. **Strict Instance Validation**: Ganti penyaringan di dalam `app/Http/Middleware/EnsureAdmin.php` agar secara absolut HANYA mengizinkan `App\Models\User`.
     2. **SOP Fallback Sinkronisasi File (SCP)**: Sistem CI/CD mungkin berstatus *Success* tapi *code update* gagal menimpa VPS lama karena *divergent branches* maupun ketiadaan bash command `git` di lingkungan SSH non-interaktif VPS. Gunakan terminal lokal untuk menimpa berkas kritis langsung dengan `scp -o StrictHostKeyChecking=no local_file.php user@ip:/path/remote_file.php` lantas jalankan optimasi ulang memori di VPS.
+
+---
+
+### BUG-007: Access Denied for User (using password: NO) — 2026-03-24
+- **Environment**: Staging / Production
+- **Endpoint/Kasus**: All endpoints (misal `GET /api/me`)
+- **Deskripsi Error**: 500 Internal Server Error dengan `SQLSTATE[HY000] [1045] Access denied for user 'sipanda'@'localhost' (using password: NO)`.
+- **Akar Masalah (Root Cause)**: Laravel membaca bahwa tidak ada password di `.env`, meskipun string `DB_PASSWORD` sebenarnya terisi. Hal ini disebabkan oleh *stale configuration cache* atau PHP-FPM yang tidak mengenali perubahan `.env` terbaru, ataupun tanda kutip ganda pada password yang disalahartikan saat di-cache.
+- **Solusi (Mitigation)**: 
+    1. Pastikan string `DB_PASSWORD` tidak menggunakan tanda kutip jika tidak ada spasi.
+    2. Jalankan `php artisan config:clear` dan `php artisan cache:clear`.
+    3. Jika masih membandel, reload paksa worker PHP-FPM: `echo '<vps-password>' | sudo -S systemctl reload php8.3-fpm`.
