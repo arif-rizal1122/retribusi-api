@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SPPT PBB-P2</title>
     <style>
-        body { font-family: 'Arial', sans-serif; font-size: 11pt; line-height: 1.4; color: #333; margin: 0; padding: 0; }
-        .container { padding: 40px; }
+        body { font-family: 'Arial', sans-serif; font-size: 10pt; line-height: 1.3; color: #333; margin: 0; padding: 0; }
+        .container { padding: 25px; }
         
-        .sppt-label { text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 20px; text-decoration: underline; }
+        .sppt-label { text-align: center; font-weight: bold; font-size: 13pt; margin-bottom: 10px; text-decoration: underline; }
         
-        .section { margin-bottom: 15px; }
-        .section-title { font-weight: bold; background: #f0f0f0; padding: 5px; margin-bottom: 10px; border: 1px solid #ccc; }
+        .section { margin-bottom: 10px; }
+        .section-title { font-weight: bold; background: #f0f0f0; padding: 3px; margin-bottom: 5px; border: 1px solid #ccc; font-size: 9pt; }
         
         table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
         table th, table td { padding: 4px 8px; vertical-align: top; }

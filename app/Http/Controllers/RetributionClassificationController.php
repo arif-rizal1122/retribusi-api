@@ -90,6 +90,7 @@ class RetributionClassificationController extends Controller
                 'description' => $request->description,
                 'form_schema' => $form_schema,
                 'requirements' => $requirements,
+                'calculation_formula' => $request->calculation_formula,
             ]);
 
             return response()->json([

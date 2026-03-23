@@ -225,4 +225,122 @@ class ReportController extends Controller
             ],
         ]);
     }
+
+    /**
+     * SIPD-Compliant Report: Laporan Realisasi Anggaran (LRA) & Neraca Piutang
+     * Endpoint: GET /api/reports/sipd
+     *
+     * Structures data per SIPD Mendagri standard:
+     * - LRA: Penerimaan PAD per klasifikasi (Pajak Daerah, Retribusi, Lain-lain PAD)
+     * - Neraca Piutang: Outstanding receivables grouped by type
+     *
+     * @see reporting_billing/SKILL.md
+     */
+    public function getSipdReport(Request $request)
+    {
+        $user = $request->user();
+        $opdId = !$user->isSuperAdmin() ? $user->opd_id : $request->query('opd_id');
+        $year = $request->query('year', Carbon::now()->year);
+
+        // ===================================================================
+        // LRA: Laporan Realisasi Anggaran - Penerimaan PAD
+        // ===================================================================
+        $lraData = Payment::join('bills', 'payments.bill_id', '=', 'bills.id')
+            ->join('retribution_types', 'bills.retribution_type_id', '=', 'retribution_types.id')
+            ->when($opdId, fn($q) => $q->where('bills.opd_id', $opdId))
+            ->whereYear('payments.paid_at', $year)
+            ->select(
+                'retribution_types.category',
+                'retribution_types.name as type_name',
+                DB::raw('SUM(payments.amount) as realisasi'),
+                DB::raw('COUNT(payments.id) as jumlah_transaksi')
+            )
+            ->groupBy('retribution_types.category', 'retribution_types.name')
+            ->get();
+
+        // Group by SIPD classification
+        $lra = [
+            'pajak_daerah' => [
+                'label' => '4.1.01 - Pajak Daerah',
+                'items' => [],
+                'subtotal' => 0,
+            ],
+            'retribusi_daerah' => [
+                'label' => '4.1.02 - Retribusi Daerah',
+                'items' => [],
+                'subtotal' => 0,
+            ],
+            'lain_lain_pad' => [
+                'label' => '4.1.04 - Lain-lain PAD yang Sah',
+                'items' => [],
+                'subtotal' => 0,
+            ],
+        ];
+
+        $totalRealisasi = 0;
+        foreach ($lraData as $item) {
+            $cat = $item->category ?? 'lain_lain_pad';
+            if (!isset($lra[$cat])) $cat = 'lain_lain_pad';
+
+            $lra[$cat]['items'][] = [
+                'uraian'           => $item->type_name,
+                'realisasi'        => (float) $item->realisasi,
+                'jumlah_transaksi' => (int) $item->jumlah_transaksi,
+            ];
+            $lra[$cat]['subtotal'] += (float) $item->realisasi;
+            $totalRealisasi += (float) $item->realisasi;
+        }
+
+        // ===================================================================
+        // NERACA: Daftar Piutang Daerah (Outstanding Receivables)
+        // ===================================================================
+        $piutangData = Bill::join('retribution_types', 'bills.retribution_type_id', '=', 'retribution_types.id')
+            ->when($opdId, fn($q) => $q->where('bills.opd_id', $opdId))
+            ->whereYear('bills.created_at', $year)
+            ->whereIn('bills.status', ['pending', 'unpaid', 'overdue'])
+            ->select(
+                'retribution_types.category',
+                'retribution_types.name as type_name',
+                DB::raw('SUM(bills.amount) as total_piutang'),
+                DB::raw('SUM(COALESCE(bills.penalty_amount, 0)) as total_denda'),
+                DB::raw('COUNT(bills.id) as jumlah_tagihan')
+            )
+            ->groupBy('retribution_types.category', 'retribution_types.name')
+            ->get();
+
+        $piutang = [];
+        $totalPiutang = 0;
+        $totalDenda = 0;
+        foreach ($piutangData as $item) {
+            $piutang[] = [
+                'uraian'          => $item->type_name,
+                'kategori'        => $item->category,
+                'piutang_pokok'   => (float) $item->total_piutang,
+                'denda'           => (float) $item->total_denda,
+                'total'           => (float) $item->total_piutang + (float) $item->total_denda,
+                'jumlah_tagihan'  => (int) $item->jumlah_tagihan,
+            ];
+            $totalPiutang += (float) $item->total_piutang;
+            $totalDenda += (float) $item->total_denda;
+        }
+
+        return response()->json([
+            'format'  => 'SIPD_MENDAGRI',
+            'tahun'   => (int) $year,
+            'opd_id'  => $opdId,
+            'lra'     => [
+                'judul'          => 'Laporan Realisasi Anggaran - Pendapatan Asli Daerah',
+                'klasifikasi'    => array_values($lra),
+                'total_realisasi' => $totalRealisasi,
+            ],
+            'neraca_piutang' => [
+                'judul'          => 'Daftar Piutang Pajak/Retribusi Daerah',
+                'items'          => $piutang,
+                'total_piutang'  => $totalPiutang,
+                'total_denda'    => $totalDenda,
+                'grand_total'    => $totalPiutang + $totalDenda,
+            ],
+            'generated_at' => now()->toDateTimeString(),
+        ]);
+    }
 }

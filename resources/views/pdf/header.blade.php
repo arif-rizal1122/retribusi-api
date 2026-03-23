@@ -1,4 +1,4 @@
-<table style="width: 100%; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px;">
+<table style="width: 100%; border-bottom: 3px double #000; padding-bottom: 5px; margin-bottom: 10px;">
     <tr>
         <td style="width: 15%; text-align: left; vertical-align: middle;">
             <img src="{{ public_path('assets/logos/logo-baubau.png') }}" style="width: 70px; height: auto;">

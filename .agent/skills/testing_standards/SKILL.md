@@ -26,10 +26,10 @@ Terdapat script shell yang sudah disiapkan di folder `testing/`:
 ### APENTEST v2.0 — Cara Penggunaan
 ```bash
 # Tanpa auth (hanya security test):
-bash testing/apentest.sh https://api.mpad.online/api
+bash testing/apentest.sh https://api.sipanda.online/api
 
 # Dengan auth token (full test termasuk V-Tax routes & documents):
-bash testing/apentest.sh https://api.mpad.online/api <TOKEN>
+bash testing/apentest.sh https://api.sipanda.online/api <TOKEN>
 ```
 
 APENTEST mencakup 7 section:

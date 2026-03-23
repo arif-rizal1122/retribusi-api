@@ -18,11 +18,11 @@ Digunakan untuk testing fitur baru sebelum di-deploy ke produksi.
 
 | Komponen | Domain | Deskripsi |
 | :--- | :--- | :--- |
-| **Main Entrance** | `mpad.online` | Pintu masuk utama lingkungan dev |
-| **Admin Panel** | `admin.mpad.online` | Dashboard admin versi staging |
-| **API Endpoint** | `api.mpad.online` | Backend API untuk development |
-| **Officer Portal** | `petugas.mpad.online` | Antarmuka petugas versi staging |
-| **Launch Teaser** | `launch.mpad.online` | Halaman promosi/hitung mundur |
+| **Main Entrance** | `sipanda.online` | Pintu masuk utama lingkungan dev |
+| **Admin Panel** | `admin.sipanda.online` | Dashboard admin versi staging |
+| **API Endpoint** | `api.sipanda.online` | Backend API untuk development |
+| **Officer Portal** | `petugas.sipanda.online` | Antarmuka petugas versi staging |
+| **Launch Teaser** | `launch.sipanda.online` | Halaman promosi/hitung mundur |
 
 ## 3. Domain Alternatif / Legacy
 Domain lain yang mungkin masih terdaftar dalam konfigurasi sistem (CORS/SSL):

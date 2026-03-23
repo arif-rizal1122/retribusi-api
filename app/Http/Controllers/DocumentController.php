@@ -41,6 +41,17 @@ class DocumentController extends Controller
     }
 
     /**
+     * Generate SKPD (Surat Ketetapan Pajak Daerah)
+     * GET /api/documents/skpd/{billId}
+     */
+    public function skpd($billId)
+    {
+        $bill = Bill::with(['taxpayer', 'retributionType'])->findOrFail($billId);
+        $data = $this->docService->generateSKPD($bill);
+        return $this->docService->renderPDF('pdf.skpd', $data, "SKPD-{$bill->bill_number}.pdf");
+    }
+
+    /**
      * Generate SSPD (Surat Setoran Pajak Daerah)
      * GET /api/documents/sspd/{billId}
      */

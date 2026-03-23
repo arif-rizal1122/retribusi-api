@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\Hash;
 /**
  * StagingUsersSeeder
  * 
- * Seeder for creating specific staging accounts on mpad.online.
- * 1. Admin: admin.staging@mpad.online / password123
- * 2. Petugas: petugas.staging@mpad.online / password123
+ * Seeder for creating specific staging accounts on sipanda.online.
+ * 1. Admin: admin.staging@sipanda.online / password123
+ * 2. Petugas: petugas.staging@sipanda.online / password123
  * 3. Mobile/Citizen: NIK 0000000000000001 / password123
  */
 class StagingUsersSeeder extends Seeder
@@ -23,9 +23,9 @@ class StagingUsersSeeder extends Seeder
         $bapenda = Opd::where('code', 'BAPENDA')->first();
         $opdId = $bapenda ? $bapenda->id : null;
 
-        // 1. Admin Staging (admin.mpad.online)
+        // 1. Admin Staging (admin.sipanda.online)
         User::updateOrCreate(
-            ['email' => 'admin.staging@mpad.online'],
+            ['email' => 'admin.staging@sipanda.online'],
             [
                 'name' => 'Staging Admin',
                 'password' => Hash::make('password123'),
@@ -35,9 +35,9 @@ class StagingUsersSeeder extends Seeder
             ]
         );
 
-        // 2. Petugas Staging (petugas.mpad.online)
+        // 2. Petugas Staging (petugas.sipanda.online)
         User::updateOrCreate(
-            ['email' => 'petugas.staging@mpad.online'],
+            ['email' => 'petugas.staging@sipanda.online'],
             [
                 'name' => 'Staging Petugas',
                 'password' => Hash::make('password123'),
@@ -47,7 +47,7 @@ class StagingUsersSeeder extends Seeder
             ]
         );
 
-        // 3. Mobile/Citizen Staging (mpad.online)
+        // 3. Mobile/Citizen Staging (sipanda.online)
         Taxpayer::updateOrCreate(
             ['nik' => '0000000000000001'],
             [

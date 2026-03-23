@@ -1,13 +1,13 @@
 ---
 name: Staging Domain Testing (Comprehensive)
-description: Master skill untuk pengujian menyeluruh pada lingkungan staging *.mpad.online, mencakup infrastruktur, keamanan RBAC, akurasi formula, dan integrasi sistem.
+description: Master skill untuk pengujian menyeluruh pada lingkungan staging *.sipanda.online, mencakup infrastruktur, keamanan RBAC, akurasi formula, dan integrasi sistem.
 ---
 
-# Instruksi Pengujian Terpadu (mpad.online)
+# Instruksi Pengujian Terpadu (sipanda.online)
 Gunakan skill ini untuk melakukan audit dan validasi menyeluruh pada sistem MPAD. Skill ini mengacu pada seluruh standar di folder `/testing/`.
 
 ## 🚨 Aturan Emas (The Golden Rule)
-Setiap perubahan kode di lokal **WAJIB** diikuti dengan deployment ke staging dan diuji langsung di domain `*.mpad.online`. Jangan hanya mengandalkan tes lokal.
+Setiap perubahan kode di lokal **WAJIB** diikuti dengan deployment ke staging dan diuji langsung di domain `*.sipanda.online`. Jangan hanya mengandalkan tes lokal.
 
 ## 🛠️ Cakupan Pengujian & Diagnostik
 
@@ -34,7 +34,7 @@ Uji penugasan pengguna:
 
 ### 4. Kesiapan Infrastruktur (Ref: test_production_ready.sh)
 Lakukan sanity check periodik:
-- **CORS:** Cek preflight `OPTIONS` dan header `Access-Control-Allow-Origin` dari `admin`/`petugas` ke `api.mpad.online`.
+- **CORS:** Cek preflight `OPTIONS` dan header `Access-Control-Allow-Origin` dari `admin`/`petugas` ke `api.sipanda.online`.
 - **SSL & Health:** Pastikan HTTPS aktif dan endpoint `/up` merespon 200 OK.
 - **Environment Sync:** Pastikan `.env.staging` di seluruh repo selaras.
 

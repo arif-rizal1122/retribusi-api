@@ -12,9 +12,9 @@ FRONTEND="https://sipanda.online"
 
 # Environment selection
 if [ "$1" == "staging" ]; then
-  echo -e "${YELLOW}Mode: STAGING (mpad.online)${NC}"
-  API_URL="https://api.mpad.online"
-  FRONTEND="https://mpad.online"
+  echo -e "${YELLOW}Mode: STAGING (sipanda.online)${NC}"
+  API_URL="https://api.sipanda.online"
+  FRONTEND="https://sipanda.online"
 elif [ "$1" == "dev" ]; then
   echo -e "${YELLOW}Mode: DEVELOPMENT (sipanda.online)${NC}"
   API_URL="https://api-dev.sipanda.online"

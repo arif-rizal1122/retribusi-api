@@ -20,7 +20,7 @@ use Tests\TestCase;
  * HistoricalErrorRegressionTest
  *
  * Test regresi otomatis untuk SELURUH error historis yang pernah terjadi
- * di ekosistem SIPANDA. Setiap test case di-mapping ke satu error spesifik
+ * di ekosistem Mpad. Setiap test case di-mapping ke satu error spesifik
  * dari register sejarah error (error_history_and_mitigation_registry.md).
  *
  * Kategori Error:

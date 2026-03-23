@@ -30,7 +30,7 @@ Lakukan pengecekan berkala menggunakan `curl` untuk memastikan layanan publik ti
 
 ## 🚀 Prosedur Deployment Aman (Safe Deploy)
 
-1.  **Staging First**: Selalu uji coba di domain `*.mpad.online` (Staging) sebelum melakukan merge ke branch `main`.
+1.  **Staging First**: Selalu uji coba di domain `*.sipanda.online` (Staging) sebelum melakukan merge ke branch `main`.
 2.  **Migration Watch**: Jika ada migrasi database, pastikan tidak ada perubahan destruktif (drop column) tanpa koordinasi. CI/CD akan menjalankan `php artisan migrate --force`.
 3.  **Assets Optimization**: CI/CD frontend akan menjalankan `npm run build` yang secara otomatis mengarahkan `VITE_API_URL` ke `https://api.sipanda.online`.
 

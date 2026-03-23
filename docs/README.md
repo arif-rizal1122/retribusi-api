@@ -1,29 +1,45 @@
-# Mitra PAD
+# 📚 M-PAD Master Documentation Index
 
-Selamat datang di dokumentasi API MITRA (Mitra PAD - Manajemen Integrasi Tax, Retribusi, dan Aset Daerah). Dokumentasi ini mencakup seluruh endpoint yang tersedia untuk integrasi dengan aplikasi Admin, Petugas, dan Mobile.
+Selamat datang di pusat dokumentasi **M-PAD (Mitra PAD) Kota Baubau**. Folder ini merupakan hasil konsolidasi seluruh dokumen teknis, regulasi, testing, dan panduan pengguna dari seluruh sub-repositori ekosistem (Admin, API, Mobile, Petugas, dan POS). 
 
-## Daftar Dokumentasi
+Fungsi file ini adalah sebagai **Peta Navigasi Utama** agar Anda tidak tersesat di antara puluhan file markdown.
 
-1.  **[Public APIs](public_apis.md)**
-    *   Endpoint yang dapat diakses tanpa autentikasi atau untuk kebutuhan awal (Login, Simulasi Pajak, PBB Lookup).
-2.  **[Core APIs](core_apis.md)**
-    *   Fungsi inti aplikasi: Pengelolaan Wajib Pajak, Objek Pajak, Pembuatan Tagihan (Billing), dan Pembayaran.
-3.  **[Surveillance & TTE](surveillance_tte.md)**
-    *   Modul lanjutan untuk Pengawasan (Audit Log, Anomali, Penindakan) serta E-Registry dan Tanda Tangan Elektronik (TTE).
-4.  **[Informasi Tambahan](spopd-form-structure.md)**
-    *   Struktur data formulir SPOPD dan pemetaan field database.
-5.  **[Project Artifacts](artifacts/task.md)**
-    *   Berisi [Task List](artifacts/task.md), [Implementation Plan](artifacts/implementation_plan.md), dan [Walkthrough](artifacts/walkthrough.md) pengerjaan fitur.
+---
 
-## Standar API
+## 📂 Peta Navigasi Direktori
 
-- **Base URL**: `https://api.sipanda.online/api`
-- **Format Respons**: JSON
-- **Autentikasi**: Laravel Sanctum (Bearer Token)
-- **Status Codes**: 
-    - `200 OK`: Berhasil
-    - `201 Created`: Berhasil membuat data
-    - `401 Unauthorized`: Token tidak valid atau sesi berakhir
-    - `403 Forbidden`: Tidak memiliki izin akses
-    - `422 Unprocessable Content`: Validasi input gagal
-    - `500 Server Error`: Kesalahan pada server
+### 1. 🏛️ Regulasi & Penyelarasan (Folder `/regulasi`)
+Memuat aturan daerah (Perwali), standar penagihan pajak daerah (V-Tax Parity), dan status kelengkapan 21 jenis formulir.
+- [Ringkasan Perwali 58/2024](regulasi/03-perwali-pdrd-summary.md)
+- [Status Implementasi 21 Dokumen Resmi (PDF & TTE)](regulasi/07-status-dokumen-resmi.md)
+- [Standarisasi Master Data Pajak](regulasi/02-master-data-objek-pajak.md)
+- [Pedoman Integrasi PBB 2026](regulasi/API_PBB_BAUBAU_2026.md)
+
+### 2. 📖 Panduan Pengguna (User Guides)
+Dokumentasi langkah demi langkah (*step-by-step*) lengkap dengan panduan visual untuk masing-masing aktor sistem.
+- 🧑‍💻 **Administrator (Bapenda)**: [admin-userguide.md](admin-userguide.md)
+- 👮 **Petugas Lapangan**: [petugas-userguide.md](petugas-userguide.md)
+- 👩‍👩‍👦 **Warga (Citizen App)**: [mobile-e-retribusi.md](mobile-e-retribusi.md)
+
+### 3. ⚙️ Arsitektur & Teknis (Core Tech)
+Informasi esensial untuk para Developer, Software Engineer, dan Agen AI.
+- ⭐ **M-PAD System Overview**: [SYSTEM_OVERVIEW.md](SYSTEM_OVERVIEW.md) *(Mulai baca dari sini)*
+- **Database Schema & ERD**: [04-database-schema.md](04-database-schema.md)
+- **Modul API & Frontend Routing**: [routes-and-components.md](routes-and-components.md)
+- **To-Do List Terpusat**: [todo-list.md](todo-list.md)
+
+### 4. 🧪 Standar Pengujian (`/testing`)
+Protokol QA mutlak yang harus ditaati sebelum memindahkan kode ke Production.
+- **Standar Utama Testing**: [testing/00-Panduan-Standar-Pengujian.md](testing/00-Panduan-Standar-Pengujian.md)
+- 🛡️ **QA Error & Mitigation Registry**: [testing/12-Error-History-Mitigation-Registry.md](testing/12-Error-History-Mitigation-Registry.md) *(Buku panduan sejarah error & mitigasinya)*
+- **Staging Readiness**: [testing/13-Workspace-Master-Testing-Protocol.md](testing/13-Workspace-Master-Testing-Protocol.md)
+
+### 5. 📊 Laporan Uji Coba (`/results`)
+Folder ini menampung log historikal pengujian penetrasi keamanan, simulasi kalkulator, dan tes CRUD API.
+
+### 6. 🏪 Modul Cross-Domain Khusus
+- **POS/Kasir**: `pos-MAIN-backend.md`, `pos-MAIN-frontend.md`
+- **Integrasi Peta**: `skema-pelacakan-lokasi-petugas.md`
+
+---
+*Catatan AI Agent: Jika Anda seorang AI yang bertugas melanjutkan pengerjaan modul, bacalah `SYSTEM_OVERVIEW.md` dan `04-database-schema.md` terlebih dahulu.*

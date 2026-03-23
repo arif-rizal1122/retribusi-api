@@ -45,6 +45,7 @@ Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerification
 
 // Public: Documents (PDF)
 Route::get('/public/pdf/skrd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skrd']);
+Route::get('/public/pdf/skpd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skpd']);
 Route::get('/public/pdf/sspd/{billId}', [\App\Http\Controllers\DocumentController::class, 'sspd']);
 Route::get('/public/pdf/sppt/{billId}', [\App\Http\Controllers\DocumentController::class, 'sppt']);
 Route::get('/public/pdf/surat-teguran/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'suratTeguran']);
@@ -248,6 +249,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/monthly', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
             Route::put('/monthly/{report}/validate', [\App\Http\Controllers\MonthlyReportController::class, 'validateReport']);
             Route::get('/bpk', [ReportController::class, 'getMonthlyReport']);
+            Route::get('/sipd', [ReportController::class, 'getSipdReport']);
         });
 
         Route::prefix('amnesty')->group(function () {
@@ -278,6 +280,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/lkok/{taxObjectId}', [\App\Http\Controllers\DocumentController::class, 'lkok']);
             // Penetapan
             Route::get('/skrd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skrd']);
+            Route::get('/skpd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skpd']);
             Route::get('/sppt/{billId}', [\App\Http\Controllers\DocumentController::class, 'sppt']);
             Route::post('/skpdkbt/{billId}', [\App\Http\Controllers\DocumentController::class, 'skpdkbt']);
             Route::post('/skpdn/{billId}', [\App\Http\Controllers\DocumentController::class, 'skpdn']);

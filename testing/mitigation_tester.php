@@ -11,7 +11,7 @@ use App\Models\Taxpayer;
 use App\Models\RetributionType;
 
 echo "========================================================\n";
-echo "    SIPANDA REGRESSION & MITIGATION TESTS (LOCAL)       \n";
+echo "    Mpad REGRESSION & MITIGATION TESTS (LOCAL)       \n";
 echo "========================================================\n\n";
 
 $baseUrl = 'http://localhost:8000/api';

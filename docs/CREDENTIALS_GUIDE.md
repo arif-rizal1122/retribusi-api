@@ -4,7 +4,7 @@ Dokumen ini menjelaskan **lokasi penyimpanan** kredensial tanpa mencantumkan nil
 
 ## 1. Kredensial VPS (Server)
 - **Hostname:** `157.10.252.74`
-- **Username:** `sipanda`
+- **Username:** `mpad`
 - **Penyimpanan:** 
   - **GitHub Secrets:** `VPS_HOST`, `VPS_USERNAME`, `VPS_PASSWORD`.
   - **Environment Lokasi:** Disimpan dalam password manager pribadi.
@@ -22,7 +22,7 @@ Dokumen ini menjelaskan **lokasi penyimpanan** kredensial tanpa mencantumkan nil
 
 ### Super Admin (Akses Penuh)
 - **Email**: `admin@retribusi.id` / `superadmin@baubaukota.go.id`
-- **Password**: `password123` / `Sipanda123#` (untuk Dev)
+- **Password**: `password123` / `Mpad123#` (untuk Dev)
 - **Role**: `super_admin`
 
 ### Admin OPD (Dinas Terkait)
@@ -52,13 +52,13 @@ Dokumen ini menjelaskan **lokasi penyimpanan** kredensial tanpa mencantumkan nil
 ---
 ## 5. File `.env` (Source of Truth)
 Setiap lingkungan memiliki file `.env` yang **tidak masuk Git**:
-- **Production:** `/home/sipanda/retribusi-api/.env`
-- **Development:** `/home/sipanda/retribusi-api-dev/.env`
+- **Production:** `/home/mpad/retribusi-api/.env`
+- **Development:** `/home/mpad/retribusi-api-dev/.env`
 - **Local:** Terletak di root masing-masing folder repo.
 
 ## 6. Cara Rotasi Kredensial
 Jika terjadi kebocoran keamanan:
-1. Update password user `sipanda` di VPS.
+1. Update password user `mpad` di VPS.
 2. Update **Actions Secrets** di Settings GitHub Repositori.
 3. Update variabel terkait di file `.env` server.
 4. Jalankan `php artisan config:cache` (Production) untuk memuat nilai baru.

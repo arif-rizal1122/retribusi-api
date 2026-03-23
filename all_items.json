@@ -379,10 +379,10 @@
         {
             "component": "🚗 SIMAKA-D",
             "content": {
-                "body": "## Deskripsi\nREST API endpoints untuk integrasi dua sistem:\n- Sinkronisasi data aset kendaraan (SIMAKA-D) ke retribusi (SIPANDA)\n- Endpoint CRUD untuk data sharing antar sistem\n\n## Acceptance Criteria\n- [ ] API endpoint integrasi tersedia\n- [ ] Data aset bisa di-query dari SIPANDA\n- [ ] Autentikasi Bearer Token tersedia",
+                "body": "## Deskripsi\nREST API endpoints untuk integrasi dua sistem:\n- Sinkronisasi data aset kendaraan (SIMAKA-D) ke retribusi (Mpad)\n- Endpoint CRUD untuk data sharing antar sistem\n\n## Acceptance Criteria\n- [ ] API endpoint integrasi tersedia\n- [ ] Data aset bisa di-query dari Mpad\n- [ ] Autentikasi Bearer Token tersedia",
                 "number": 1,
                 "repository": "muhdanfyan/asetkendaraandaerah",
-                "title": "API Integrasi SIMAKA-D ↔ SIPANDA",
+                "title": "API Integrasi SIMAKA-D ↔ Mpad",
                 "type": "Issue",
                 "url": "https://github.com/muhdanfyan/asetkendaraandaerah/issues/1"
             },
@@ -394,7 +394,7 @@
             "repository": "https://github.com/muhdanfyan/asetkendaraandaerah",
             "sprint": "Sprint 3 - Surveillance & GIS",
             "status": "📋 Backlog",
-            "title": "API Integrasi SIMAKA-D ↔ SIPANDA"
+            "title": "API Integrasi SIMAKA-D ↔ Mpad"
         },
         {
             "component": "⚙️ API (Backend)",
@@ -525,7 +525,7 @@
         },
         {
             "content": {
-                "body": "Fitur download E-SPPT langsung dari aplikasi SIPANDA Mobile.",
+                "body": "Fitur download E-SPPT langsung dari aplikasi Mpad Mobile.",
                 "id": "DI_lAHOAPm_Ts4BPIUYzgKK2GE",
                 "title": "Phase 1: E-SPPT Digital: Download PDF di Mobile",
                 "type": "DraftIssue"
@@ -606,7 +606,7 @@
         },
         {
             "content": {
-                "body": "Penyelarasan SIPANDA Roadmap: Integrasi Tanda Tangan Elektronik untuk keabsahan dokumen digital.",
+                "body": "Penyelarasan Mpad Roadmap: Integrasi Tanda Tangan Elektronik untuk keabsahan dokumen digital.",
                 "id": "DI_lAHOAPm_Ts4BPIUYzgKK2Zs",
                 "title": "[Phase 1] Integrasi TTE (BSRE/DSIGN)",
                 "type": "DraftIssue"
@@ -616,7 +616,7 @@
         },
         {
             "content": {
-                "body": "Penyelarasan SIPANDA Roadmap: Implementasi generator PDF resmi dengan QR Code verifikasi.",
+                "body": "Penyelarasan Mpad Roadmap: Implementasi generator PDF resmi dengan QR Code verifikasi.",
                 "id": "DI_lAHOAPm_Ts4BPIUYzgKK2Zw",
                 "title": "[Phase 1] Template PDF SKRD & SSPD dengan QR Code",
                 "type": "DraftIssue"
@@ -626,7 +626,7 @@
         },
         {
             "content": {
-                "body": "Penyelarasan SIPANDA Roadmap: Koneksi ke BPD Sultra atau Xendit/Midtrans.",
+                "body": "Penyelarasan Mpad Roadmap: Koneksi ke BPD Sultra atau Xendit/Midtrans.",
                 "id": "DI_lAHOAPm_Ts4BPIUYzgKK2Z0",
                 "title": "[Phase 2] Integrasi Payment Gateway",
                 "type": "DraftIssue"
@@ -636,7 +636,7 @@
         },
         {
             "content": {
-                "body": "Penyelarasan SIPANDA Roadmap: Otomasi status lunas saat dana diterima bank.",
+                "body": "Penyelarasan Mpad Roadmap: Otomasi status lunas saat dana diterima bank.",
                 "id": "DI_lAHOAPm_Ts4BPIUYzgKK2Z4",
                 "title": "[Phase 2] Webhook Auto-Settlement Pembayaran",
                 "type": "DraftIssue"
@@ -646,7 +646,7 @@
         },
         {
             "content": {
-                "body": "Penyelarasan SIPANDA Roadmap: Fitur pengajuan keberatan WP via Mobile.",
+                "body": "Penyelarasan Mpad Roadmap: Fitur pengajuan keberatan WP via Mobile.",
                 "id": "DI_lAHOAPm_Ts4BPIUYzgKK2Z8",
                 "title": "[Phase 3] Modul Keberatan & Pembetulan (E-Objection)",
                 "type": "DraftIssue"
@@ -656,7 +656,7 @@
         },
         {
             "content": {
-                "body": "Penyelarasan SIPANDA Roadmap: Log detail perubahan nilai/tarif (SOTK 2025).",
+                "body": "Penyelarasan Mpad Roadmap: Log detail perubahan nilai/tarif (SOTK 2025).",
                 "id": "DI_lAHOAPm_Ts4BPIUYzgKK2aA",
                 "title": "[Phase 4] Advanced Audit Trail",
                 "type": "DraftIssue"
@@ -666,7 +666,7 @@
         },
         {
             "content": {
-                "body": "Penyelarasan SIPANDA Roadmap: Validasi lapangan untuk mencegah manipulasi data (Perwali 58/2024).",
+                "body": "Penyelarasan Mpad Roadmap: Validasi lapangan untuk mencegah manipulasi data (Perwali 58/2024).",
                 "id": "DI_lAHOAPm_Ts4BPIUYzgKK2aE",
                 "title": "[Surveillance] GPS & Photo Verification Petugas",
                 "type": "DraftIssue"

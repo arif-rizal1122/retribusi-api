@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# SIPANDA - Production Endpoint Regression Test
+# Mpad - Production Endpoint Regression Test
 # Menguji SEMUA endpoint API produksi untuk memastikan tidak ada error 500.
 #
 # Penggunaan: bash testing/test_production_regression.sh
@@ -29,7 +29,7 @@ check() {
 }
 
 echo "============================================"
-echo "  SIPANDA Production Regression Test"
+echo "  Mpad Production Regression Test"
 echo "  Target: $BASE_URL"
 echo "  Time: $(date)"
 echo "============================================"
