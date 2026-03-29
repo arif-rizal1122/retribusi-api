@@ -53,7 +53,14 @@ class BillController extends Controller
         }
 
         if ($request->has('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'overdue') {
+                $query->where('status', 'pending')
+                      ->where('due_date', '<', now());
+            } elseif ($request->status === 'lunas') {
+                $query->whereIn('status', ['lunas', 'paid']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         if ($request->has('search')) {

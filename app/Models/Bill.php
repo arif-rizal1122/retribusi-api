@@ -59,6 +59,20 @@ class Bill extends Model
         'is_signed',
     ];
 
+    public function getStatusAttribute($value): string
+    {
+        if ($value === 'pending' && $this->due_date && $this->due_date->isPast()) {
+            return 'overdue';
+        }
+        
+        // Handle variations between 'paid' and 'lunas' for frontend consistency
+        if ($value === 'paid') {
+            return 'lunas';
+        }
+
+        return $value;
+    }
+
     public function getIsSignedAttribute(): bool
     {
         return $this->signedDocuments()->where('status', 'signed')->exists();
