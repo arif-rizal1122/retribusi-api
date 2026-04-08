@@ -44,6 +44,9 @@ jobs:
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
+          echo "--- Laravel Error Logs (Last 50 Lines) ---"
+          [ -f storage/logs/laravel.log ] && tail -n 50 storage/logs/laravel.log || echo "Logs not found or empty"
+          echo "-----------------------------------------"
           sudo chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
           sudo chmod -R 775 storage bootstrap/cache 2>/dev/null || true
           
