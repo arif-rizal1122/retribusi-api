@@ -224,4 +224,24 @@ Hasil: ✅ Laporan tertulis di `testing/results/08_Laporan_E2E_Lintas_Peran.md`
 - [x] **Databases:** Migrasi `complaints` table (User ID, Category, Text, Attachment, Status).
 - [x] **Backend Logic:** `ComplaintController` (Store, Index, Update Status).
 - [x] **Admin UI:** Halaman `ComplaintManagement.tsx` untuk filter, lihat detail, dan tindak lanjut.
-- [x] **Navigation:** Integrasi menu "Pengaduan" di Sidebar Layout Admin/Pengawas.
+---
+
+## 🎯 15. Strategic Roadmap (Target Penyelesaian: BULAN INI)
+
+### Integrasi Eksternal & Data
+- [ ] **Full-Sync SISMIOP (PBB-P2)**: Migrasi data massal dan sinkronisasi dashboard tunggal.
+- [ ] **PKS Bank BPD**: Perjanjian Kerja Sama dengan Bank Sulawesi Tenggara (BPD) untuk integrasi fitur pembayaran Host-to-Host (VA/QRIS) yang belum rampung.
+- [x] **Template Dokumen Sisa Pembayaran**: Penyempurnaan format PDF (**Selesai**).
+- [/] **Otomasi Pelacakan Sisa Pembayaran**: Sinkronisasi real-time pembayaran parsial (Target Minor).
+
+### Analitik & Kecerdasan Buatan (AI)
+- [ ] **Predictive Analytics Engine**: Proyeksi target pendapatan tahunan berdasarkan tren historis.
+- [ ] **Anomaly Detection V2**: Penajaman algoritma deteksi kecurangan melalui pola transaksi non-tunai.
+
+### Deployment & Sosialisasi
+- [ ] **TTE Live Activation**: Finalisasi pendaftaran sertifikat digital BSRE untuk E-Registry.
+- [ ] **Pelatihan OPD Massal**: Workshop operasional dashboard untuk seluruh dinas terkait.
+- [ ] **Sosialisasi Wajib Pajak**: Kampanye penggunaan M-PAD Mobile untuk edukasi warga.
+
+---
+*Terakhir diperbarui oleh AI Antigravity pada 06 April 2026. Seluruh target pengerjaan difokuskan selesai pada bulan ini.*

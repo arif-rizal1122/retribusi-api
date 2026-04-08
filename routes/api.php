@@ -22,6 +22,7 @@ use App\Http\Controllers\PbbBapendaController;
 use App\Http\Controllers\TaxEducationController;
 use App\Http\Controllers\BillboardAuditController;
 use App\Http\Controllers\ComplaintController;
+use App\Http\Controllers\Api\SimpadKoneksiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -196,6 +197,14 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     // Admin & Petugas ONLY (Restricted by EnsureAdmin middleware)
     // ------------------------------------------------------------------------
     Route::middleware('admin')->group(function () {
+        // Simpad Koneksi (Legacy Migration)
+        Route::prefix('simpad-koneksi')->group(function () {
+             Route::get('/taxpayers/{npwpd}', [SimpadKoneksiController::class, 'getTaxpayer']);
+             Route::get('/objects/{type}', [SimpadKoneksiController::class, 'getObjects']);
+             Route::get('/officers', [SimpadKoneksiController::class, 'getOfficers']);
+             Route::post('/sync-object', [SimpadKoneksiController::class, 'syncObject']);
+        });
+
         Route::apiResource('petugas-tasks', \App\Http\Controllers\PetugasTaskController::class);
         Route::apiResource('spot-checks', \App\Http\Controllers\SpotCheckController::class);
         Route::patch('spot-checks/{id}/status', [\App\Http\Controllers\SpotCheckController::class, 'updateStatus']);

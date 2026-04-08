@@ -1,35 +1,35 @@
 # 🌐 Domain Schema & Subdomain Mapping
+## Arsitektur M-PAD (April 2026)
 
-Dokumentasi ini merinci pemetaan domain dan subdomain untuk sistem MPAD (Mitra Pajak & Retribusi Daerah) baik di lingkungan Produksi maupun Staging.
+Dokumentasi ini merinci pemetaan domain dan subdomain untuk sistem M-PAD (Mitra Pajak & Retribusi Daerah) Kota Baubau.
 
 ## 1. Lingkungan Produksi (Pemerintah Kota Baubau)
-Domain resmi yang digunakan untuk operasional publik dan internal.
+Domain resmi yang digunakan untuk operasional publik (Wajib Pajak) dan internal (Bapenda/Petugas).
 
 | Komponen | Domain | Deskripsi |
 | :--- | :--- | :--- |
-| **Portal Utama** | `mpad.baubaukota.go.id` | Pintu masuk utama aplikasi/Landing page |
-| **Dashboard Admin** | `adminmpad.baubaukota.go.id` | Panel manajemen untuk Bapenda & OPD |
-| **Backend API** | `apimpad.baubaukota.go.id` | Endpoint layanan data (Core API) |
-| **Interface Petugas** | `petugasmpad.baubaukota.go.id` | Akses petugas lapangan (Mobile/Web) |
+| **Portal Layanan WP** | `mpad.baubaukota.go.id` | PWA: Pendaftaran, Inkuiri NOP PBB, E-SPPT |
+| **Dashboard Admin** | `adminmpad.baubaukota.go.id` | Backoffice: Penetapan, Verifikasi, TTE Dokumen |
+| **Backend API** | `apimpad.baubaukota.go.id` | Centralized Logic: CRUD, Auth, Integrasi Bank |
+| **Portal Petugas** | `petugasmpad.baubaukota.go.id` | Lapangan: Spot Check, Audit Reklame, Live Tracking |
+| **E-Registry** | `verify.baubaukota.go.id` | Validasi QR-Code TTE (Publik) |
 
-## 2. Lingkungan Staging / Development (VPS)
-Digunakan untuk testing fitur baru sebelum di-deploy ke produksi.
-**Host IP:** `157.10.252.74`
+## 2. Lingkungan Staging / Testing (VPS)
+Digunakan untuk validasi fitur baru (Hotfix & Minor/Major Releases).
 
 | Komponen | Domain | Deskripsi |
 | :--- | :--- | :--- |
-| **Main Entrance** | `sipanda.online` | Pintu masuk utama lingkungan dev |
-| **Admin Panel** | `admin.sipanda.online` | Dashboard admin versi staging |
-| **API Endpoint** | `api.sipanda.online` | Backend API untuk development |
-| **Officer Portal** | `petugas.sipanda.online` | Antarmuka petugas versi staging |
-| **Launch Teaser** | `launch.sipanda.online` | Halaman promosi/hitung mundur |
+| **Main Entrance** | `sipanda.online` | Mobile/Citizen frontend staging |
+| **Admin Panel** | `admin.sipanda.online` | Admin dashboard staging |
+| **API Endpoint** | `api.sipanda.online` | Backend API staging |
+| **Officer Portal** | `petugas.sipanda.online` | Petugas field portal staging |
 
-## 3. Domain Alternatif / Legacy
-Domain lain yang mungkin masih terdaftar dalam konfigurasi sistem (CORS/SSL):
-- `sipanda.online`
-- `admin.sipanda.online`
-- `petugas.sipanda.online`
-- `api.sipanda.online`
+## 3. Alur Komunikasi Data
+1. **WP/Petugas** mengirimkan request ke `apimpad`.
+2. **API** memproses logika (Formula Parser, PBB Inquiry).
+3. **Database** (MySQL) menyimpan state dan `metadata` JSON.
+4. **TTE Service** (BSrE) dipanggil untuk penandatanganan dokumen resmi.
+5. **Gateway Payment** memproses billing via `api.sipanda.online` (Redirect/Callback).
 
 ---
-*Terakhir Diperbarui: 3 Maret 2026*
+*Last modified: April 2026. Unified Branding M-PAD.*
