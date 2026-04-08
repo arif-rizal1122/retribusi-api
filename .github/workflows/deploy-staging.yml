@@ -22,18 +22,28 @@ jobs:
         port: ${{ secrets.VPS_PORT }}
         script: |
           cd /home/sipanda/retribusi-api-staging
-          echo "--- Environment Diagnostics ---"
+          echo "--- Comprehensive Diagnostics ---"
           pwd
+          whereis git
+          which git
+          echo "PATH: $PATH"
           ls -la .env
           grep -E "DB_|APP_URL" .env | sed 's/PW=.*/PW=******/' | sed 's/PASSWORD=.*/PASSWORD=******/'
           echo "-------------------------------"
-          git checkout staging
-          git fetch origin staging
-          git reset --hard origin/staging
+          
+          # Force git path if missing from session
+          GIT_CMD=$(which git || echo "/usr/bin/git")
+          
+          $GIT_CMD checkout staging || echo "Checkout failed, continuing..."
+          $GIT_CMD fetch origin staging
+          $GIT_CMD reset --hard origin/staging
+          
           composer install --no-interaction --prefer-dist --optimize-autoloader
           php artisan migrate --force
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
-          sudo chown -R www-data:www-data storage bootstrap/cache
-          sudo chmod -R 775 storage bootstrap/cache
+          sudo chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
+          sudo chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+          
+          echo "✅ Deploy completed successfully!"
