@@ -24,19 +24,6 @@ use App\Http\Controllers\BillboardAuditController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\Api\SimpadKoneksiController;
 
-// Diagnostic route for DB issues
-Route::get('/debug-db', function () {
-    $results = [];
-    foreach (['mysql', 'mysql_legacy'] as $conn) {
-        try {
-            \Illuminate\Support\Facades\DB::connection($conn)->getPdo();
-            $results[$conn] = 'OK';
-        } catch (\Exception $e) {
-            $results[$conn] = 'ERROR [' . get_class($e) . ']: ' . $e->getMessage();
-        }
-    }
-    return response()->json($results);
-});
 
 /*
 |--------------------------------------------------------------------------
