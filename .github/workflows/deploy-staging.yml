@@ -35,12 +35,16 @@ jobs:
           GIT_CMD=$(which git || echo "/usr/bin/git")
           
           $GIT_CMD checkout staging || echo "Checkout failed, continuing..."
-          $GIT_CMD fetch origin staging
-          $GIT_CMD reset --hard origin/staging
-          
-          # Apply correct staging env values from .env.staging discovery
+          # Apply correct staging env values and fix Host mapping (127.0.0.1 -> localhost)
+          sed -i 's/DB_HOST=.*/DB_HOST=localhost/' .env
           sed -i 's/DB_DATABASE=.*/DB_DATABASE=retribusi_staging/' .env
           sed -i 's/DB_USERNAME=.*/DB_USERNAME=sipanda/' .env
+          
+          # Map Legacy connection (required for SimpadKoneksiService / bills)
+          sed -i 's/DB_HOST_LEGACY=.*/DB_HOST_LEGACY=localhost/' .env
+          sed -i 's/DB_DATABASE_LEGACY=.*/DB_DATABASE_LEGACY=sw_patda/' .env
+          sed -i 's/DB_USERNAME_LEGACY=.*/DB_USERNAME_LEGACY=sipanda/' .env
+          
           sed -i 's/APP_DEBUG=true/APP_DEBUG=false/' .env
           
           composer install --no-interaction --prefer-dist --optimize-autoloader
@@ -48,9 +52,11 @@ jobs:
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
+          
           echo "--- Laravel Error Logs (Last 50 Lines) ---"
           [ -f storage/logs/laravel.log ] && tail -n 50 storage/logs/laravel.log || echo "Logs not found or empty"
           echo "-----------------------------------------"
+          
           sudo chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
           sudo chmod -R 775 storage bootstrap/cache 2>/dev/null || true
           
