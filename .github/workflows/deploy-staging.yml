@@ -38,9 +38,13 @@ jobs:
           $GIT_CMD fetch origin staging
           $GIT_CMD reset --hard origin/staging
           
+          # Apply correct staging env values from .env.staging discovery
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=retribusi_staging/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=sipanda/' .env
+          sed -i 's/APP_DEBUG=true/APP_DEBUG=false/' .env
+          
           composer install --no-interaction --prefer-dist --optimize-autoloader
           php artisan migrate --force
-          sed -i 's/APP_DEBUG=false/APP_DEBUG=true/' .env
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
@@ -49,5 +53,9 @@ jobs:
           echo "-----------------------------------------"
           sudo chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
           sudo chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+          
+          echo "--- Final Verification ---"
+          php artisan --version
+          echo "--------------------------"
           
           echo "✅ Deploy completed successfully!"
