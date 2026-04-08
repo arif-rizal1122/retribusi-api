@@ -22,6 +22,11 @@ jobs:
         port: ${{ secrets.VPS_PORT }}
         script: |
           cd /home/sipanda/retribusi-api-staging
+          echo "--- Environment Diagnostics ---"
+          pwd
+          ls -la .env
+          grep -E "DB_|APP_URL" .env | sed 's/PW=.*/PW=******/' | sed 's/PASSWORD=.*/PASSWORD=******/'
+          echo "-------------------------------"
           git checkout staging
           git fetch origin staging
           git reset --hard origin/staging
