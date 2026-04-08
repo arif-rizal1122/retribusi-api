@@ -23,7 +23,8 @@ jobs:
         script: |
           cd /home/sipanda/retribusi-api-staging
           git checkout staging
-          git pull origin staging
+          git fetch origin staging
+          git reset --hard origin/staging
           composer install --no-interaction --prefer-dist --optimize-autoloader
           php artisan migrate --force
           php artisan config:cache
