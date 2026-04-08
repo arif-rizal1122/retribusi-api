@@ -35,15 +35,17 @@ jobs:
           GIT_CMD=$(which git || echo "/usr/bin/git")
           
           $GIT_CMD checkout staging || echo "Checkout failed, continuing..."
-          # Apply correct staging env values and fix Host mapping (127.0.0.1 -> localhost)
-          sed -i 's/DB_HOST=.*/DB_HOST=localhost/' .env
+          # Apply correct staging env values and CRITICAL password fix
+          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
           sed -i 's/DB_DATABASE=.*/DB_DATABASE=retribusi_staging/' .env
           sed -i 's/DB_USERNAME=.*/DB_USERNAME=sipanda/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=MpadSecure2026!/' .env
           
-          # Map Legacy connection (required for SimpadKoneksiService / bills)
-          sed -i 's/DB_HOST_LEGACY=.*/DB_HOST_LEGACY=localhost/' .env
+          # Map Legacy connection with correct password
+          sed -i 's/DB_HOST_LEGACY=.*/DB_HOST_LEGACY=127.0.0.1/' .env
           sed -i 's/DB_DATABASE_LEGACY=.*/DB_DATABASE_LEGACY=sw_patda/' .env
           sed -i 's/DB_USERNAME_LEGACY=.*/DB_USERNAME_LEGACY=sipanda/' .env
+          sed -i 's/DB_PASSWORD_LEGACY=.*/DB_PASSWORD_LEGACY=MpadSecure2026!/' .env
           
           sed -i 's/APP_DEBUG=true/APP_DEBUG=false/' .env
           
