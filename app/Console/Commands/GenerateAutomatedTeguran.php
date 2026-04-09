@@ -48,32 +48,51 @@ class GenerateAutomatedTeguran extends Command
 
         $count = 0;
         foreach ($overdueBills as $bill) {
-            // Check if there is already an active (draft or approved) enforcement notice for this object
-            // To avoid duplicate Teguran 1 for the same object
-            $existingNotice = EnforcementNotice::where('tax_object_id', $bill->tax_object_id)
-                ->whereIn('type', ['teguran_1', 'teguran_2'])
-                ->whereIn('status', ['draft', 'approved', 'sent'])
-                ->exists();
+            // 2. Check for existing notices for this specific object
+            $lastNotice = EnforcementNotice::where('tax_object_id', $bill->tax_object_id)
+                ->latest()
+                ->first();
 
-            if ($existingNotice) {
+            $newType = 'teguran_1';
+            $shouldCreate = false;
+
+            if (!$lastNotice) {
+                // No notice yet at all -> Create Teguran 1
+                $shouldCreate = true;
+                $newType = 'teguran_1';
+            } else if ($lastNotice->type === 'teguran_1' && in_array($lastNotice->status, ['approved', 'sent'])) {
+                // Teguran 1 exists, check if it's been 14 days
+                $noticeDate = $lastNotice->created_at;
+                if ($noticeDate->diffInDays(Carbon::now()) >= 14) {
+                    $shouldCreate = true;
+                    $newType = 'teguran_2';
+                }
+            }
+
+            if (!$shouldCreate) {
                 continue;
             }
 
-            // Generate Teguran 1 Draft
+            // 3. Generate Notice Draft
+            $typeName = ($newType === 'teguran_1' ? 'KESATU' : 'KEDUA');
+            $typeCode = ($newType === 'teguran_1' ? 'TEG1' : 'TEG2');
+
             $notice = EnforcementNotice::create([
                 'tax_object_id' => $bill->tax_object_id,
-                'type' => 'teguran_1',
-                'number' => 'TEG1-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
+                'type' => $newType,
+                'number' => "{$typeCode}-" . date('Ymd') . "-" . strtoupper(Str::random(6)),
                 'status' => 'draft',
-                'created_by' => 1, // System / Admin
-                'due_date' => Carbon::now()->addDays(7), // Give another 7 days to pay after Teguran 1
-                'notes' => 'Otomatis dibuat oleh sistem karena tunggakan pada periode ' . $bill->period,
+                'created_by' => 1,
+                'due_date' => Carbon::now()->addDays(7),
+                'notes' => "Otomatis dibuat oleh sistem (Eskalasi {$newType}) karena tunggakan pada periode {$bill->period}",
+                'amount_at_issue' => $bill->amount + $bill->penalty_amount,
+                'bill_id' => $bill->id,
             ]);
 
-            // Notify taxpayer
+            // 4. Notify taxpayer
             if ($taxpayer = $bill->taxObject->taxpayer) {
                 $waService = app(\App\Services\WhatsAppService::class);
-                $message = "Halo {$taxpayer->name},\n\nSistem kami mendeteksi keterlambatan pembayaran tagihan Retribusi/Pajak untuk objek: " . ($bill->taxObject->name ?? $bill->taxObject->code) . ".\n\nPeriode: {$bill->period}\nKami telah menerbitkan draf SURAT TEGURAN 1 (Nomor: {$notice->number}).\n\nMohon segera melakukan pelunasan untuk menghindari tindakan penagihan lebih lanjut.\n\nTerima kasih.";
+                $message = "⚠️ *PERINGATAN {$typeName}*\n\nHalo {$taxpayer->name},\n\nSistem kami mendeteksi Anda belum melakukan pelunasan tunggakan setelah himbauan sebelumnya.\n\nObjek: {$bill->taxObject->name}\nPeriode: {$bill->period}\nKami telah menerbitkan draf *SURAT TEGURAN {$typeName}* (Nomor: {$notice->number}).\n\nMohon segera melakukan pelunasan untuk menghindari tindakan penagihan paksa.\n\nTerima kasih.";
                 $waService->sendMessage($taxpayer->phone ?? '', $message);
             }
 
