@@ -124,6 +124,25 @@ class PaymentController extends Controller
                     ->first();
             }
 
+            // --- Advanced Billing V2: Real-time Data Sync before Payment ---
+            if ($bill) {
+                $pendingPeriods = $this->billingService->getPendingPeriods($taxObject);
+                $periodData = $pendingPeriods->firstWhere('period', $bill->period);
+
+                if ($periodData) {
+                    // Sync latest calculated penalty and amount to the Bill record
+                    $bill->update([
+                        'penalty_amount' => $periodData['penalty_amount'],
+                        'amount' => $periodData['amount'],
+                    ]);
+                    
+                    // Logic: If user is paying the total amount (including penalties), ensure it matches
+                    // For now, we update the record to reflect the truth at the time of payment.
+                    \Log::info("Synced Bill #{$bill->bill_number} before payment. Penalty: {$bill->penalty_amount}");
+                }
+            }
+            // -----------------------------------------------------------------
+
             $payment = Payment::create([
                 'bill_id' => $bill ? $bill->id : null,
                 'tax_object_id' => $taxObject->id,
