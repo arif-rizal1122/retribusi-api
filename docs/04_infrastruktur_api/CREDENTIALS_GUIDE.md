@@ -22,23 +22,23 @@ Dokumen ini menjelaskan **lokasi penyimpanan** kredensial tanpa mencantumkan nil
 
 ### Super Admin (Akses Penuh)
 - **Email**: `admin@retribusi.id` / `superadmin@baubaukota.go.id`
-- **Password**: `password123` / `Mpad123#` (untuk Dev)
+- **Password**: `Bapenda123#$` / `Bapenda123#$` (untuk Dev)
 - **Role**: `super_admin`
 
 ### Admin OPD (Dinas Terkait)
 - **Email**: `bapenda@baubaukota.go.id`, `dishub@retribusi.id`, `disperindag@retribusi.id`, `dlh@retribusi.id`
-- **Password**: `password123`
+- **Password**: `Bapenda123#$`
 - **Role**: `opd`
 
 ### Pengawas (Approval & Penindakan)
 - **Email**: `kabid@retribusi.id` / `pengawas@baubaukota.go.id`
-- **Password**: `password123`
+- **Password**: `Bapenda123#$`
 - **Role**: `pengawas`
 - **Wewenang**: Full Approval SPP, SKRD, SSPD, dan Penerbitan SKPDKB.
 
 ### Petugas (Mobile Quick Scan / Patroli)
 - **Email**: `petugas@bapenda.go.id` / `petugasrbac@test.com`
-- **Password**: `password123`
+- **Password**: `Bapenda123#$`
 - **Role**: `petugas`
 
 ---

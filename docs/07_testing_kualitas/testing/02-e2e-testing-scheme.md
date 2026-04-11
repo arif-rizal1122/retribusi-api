@@ -18,7 +18,7 @@ Proses pengujian utama dilakukan melalui *command-line interface* (CLI) artisan,
 ### 1. Uji Otentikasi (Authentication Test)
 - **Aksi:** Memanggil endpoint `POST /api/login` sebagai Admin dan Petugas secara berurutan.
 - **Ekspektasi:** Endpoint mengembalikan respon HTTP 200 beserta bearer token otentikasi.
-- **Kasus Error jika Gagal:** Konfigurasi `.env` `APP_URL` atau sandi (`Mpad123#` vs `password`) tidak sesuai. 
+- **Kasus Error jika Gagal:** Konfigurasi `.env` `APP_URL` atau sandi (`Bapenda123#$` vs `password`) tidak sesuai. 
 
 ### 2. Uji Referensi Klasifikasi (Classification Reference Test)
 - **Aksi:** Memanggil endpoint `GET /api/retribution-types` menggunakan *token* Petugas.

@@ -127,5 +127,19 @@ Laporan hasil uji coba dan panduan operasional aktor.
 -   **Icon Standard**: Sistem menggunakan URL Cloudinary unik untuk setiap klasifikasi guna menjamin variasi visual (Unique Visual Alignment).
 -   **Zonasi Codes**: Menggunakan kode standar `RD-CL-A` (Jalan Strategis) dan `PKD-PREM` (Lapak Premium).
 
+
+---
+## 🖥️ 10. Local Development & Port Mapping
+Daftar port dan akses lokal untuk pengembangan dan pengujian otomatis (run_all.sh).
+
+| Service | Port | Local URL |
+| :--- | :--- | :--- |
+| **Backend API** | `8000` | [http://localhost:8000](http://localhost:8000) |
+| **Admin Panel** | `3001` | [http://localhost:3001](http://localhost:3001) |
+| **Mobile Portal** | `3002` | [http://localhost:3002](http://localhost:3002) |
+| **Officer PWA** | `3003` | [http://localhost:3003](http://localhost:3003) |
+| **POS API** | `8001` | [http://localhost:8001](http://localhost:8001) |
+| **POS Web** | `3004` | [http://localhost:3004](http://localhost:3004) |
+
 ---
 *Catatan: Dokumen ini wajib diperbarui setiap kali ada folder atau file dokumentasi baru yang ditambahkan ke dalam sistem.*
