@@ -3,30 +3,22 @@
 
 ---
 
-## Entity Relationship Diagram
+## Entity Relationship Diagram (Baubau 2024)
 
 ```mermaid
 erDiagram
+    RETRIBUTION_TYPES ||--o{ RETRIBUTION_CLASSIFICATIONS : "Level 1 -> Level 2"
+    RETRIBUTION_CLASSIFICATIONS ||--o{ TAX_OBJECTS : "Categorizes"
+    RETRIBUTION_CLASSIFICATIONS ||--o{ RETRIBUTION_RATES : "Defines Rates (Lvl 3/4)"
+    
     USERS ||--o{ TAX_OBJECTS : manages
-    USERS ||--o{ VERIFICATIONS : performs
     USERS ||--o{ BILLS : creates
-    USERS ||--o{ SIGNED_DOCUMENTS : signs
-    USERS ||--o{ PENALTY_WAIVERS : approves
-    USERS ||--o{ ENFORCEMENT_NOTICES : issues
     
-    TAX_TYPES ||--o{ TAX_OBJECTS : categorizes
-    TAX_OBJECTS ||--o{ VERIFICATIONS : has
     TAX_OBJECTS ||--o{ BILLS : generates
-    TAX_OBJECTS ||--o{ TAX_TRANSACTIONS : records
-    TAX_OBJECTS ||--o{ ENFORCEMENT_NOTICES : flagged_by
-    
     TAXPAYERS ||--o{ TAX_OBJECTS : owns
+    
     BILLS ||--o{ PAYMENTS : receives
     BILLS ||--o{ SIGNED_DOCUMENTS : generates
-    BILLS ||--o{ PENALTY_WAIVERS : has_amnesty
-    
-    SIGNED_DOCUMENTS ||--o{ BILLS : validates
-    ENFORCEMENT_NOTICES ||--o{ BILLS : refers_to
 ```
 
 ---
@@ -235,11 +227,12 @@ CREATE TABLE audit_logs (
 
 ---
 
-## 10. Referensi Tabel Master Lainnya
+## 10. Referensi Tabel Master (MITRA Level 1-4)
 
-- **retribution_types**: 9 Jenis Pajak PBJT + PBB-P2.
-- **retribution_classifications**: Sub-kategori dengan tarif spesifik dan `form_schema`.
-- **zones**: Data wilayah (Kelurahan/Kecamatan Kota Baubau) untuk GIS mapping.
+- **retribution_types**: Kontainer Wilayah Operasional (Level 1). Saat ini: **Wilayah I (16)** dan **Wilayah II (17)**.
+- **retribution_classifications**: Kategori Pajak Utama (Level 2). Contoh: PBJT, Reklame, PBB-P2. Menyimpan `formula` dan `icon`.
+- **retribution_rates**: Data Tarif Spasial (Level 3 & 4). Menghubungkan Klasifikasi ke Zona dengan nominal Rupiah tertentu.
+- **zones**: Data wilayah administratif (Kelurahan/Kecamatan) untuk pemetaan objek dan personil.
 
 ---
 

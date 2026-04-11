@@ -67,6 +67,13 @@ class GenerateAutomatedTeguran extends Command
                     $shouldCreate = true;
                     $newType = 'teguran_2';
                 }
+            } else if ($lastNotice->type === 'teguran_2' && in_array($lastNotice->status, ['approved', 'sent'])) {
+                // Teguran 2 exists, check if it's been 7 days to escalate to field action
+                $noticeDate = $lastNotice->created_at;
+                if ($noticeDate->diffInDays(Carbon::now()) >= 7) {
+                    $shouldCreate = true;
+                    $newType = 'penindakan';
+                }
             }
 
             if (!$shouldCreate) {

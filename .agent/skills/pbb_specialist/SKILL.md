@@ -21,8 +21,14 @@ Digitalisasi dokumen ketetapan PBB.
 
 ## 💰 Kalkulasi NJOP & Ketetapan
 - **Model**: `PbbNjopClassification`, `TransactionPbb`.
-- **Logic**: Perhitungan menggunakan parameter Luas Bumi (Tanah), Kelas Bumi, Luas Bangunan, Kelas Bangunan, NJOPTKP, dan Tarif daerah.
+- **ID Master Classification**: **186** (PBB-P2).
 - **Service**: `PbbCalculationService.php`.
+- **Logic**: Perhitungan menggunakan parameter Luas Bumi (Tanah) dan Bangunan.
+- **Paramater Master (Perda 1/2024)**:
+    - **NJOPTKP**: Rp 10.000.000.
+    - **Tarif Maksimal**: 0.3%.
+    - **Tarif Khusus (Lahan Produksi Pangan/Ternak)**: 0.25%.
+- **Formula Teknis**: `(njop - 10000000) * 0.003`
 
 ## 🔄 Sinkronisasi & Rekonsiliasi
 - **Sync All**: `POST /api/pbb/bapenda/sync-all` untuk sinkronisasi master data objek PBB ke portal M-PAD.

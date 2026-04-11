@@ -8,8 +8,9 @@ description: Panduan mendalam mengenai perhitungan Pajak Reklame Kota Baubau ber
 Skill ini memberikan panduan teknis bagi AI untuk memahami dan menghitung Pajak Reklame sesuai regulasi terbaru.
 
 ## 1. Komponen Utama Perhitungan
-Dasar Pengenaan Pajak (DPP) adalah **Nilai Sewa Reklame (NSR)**.
-`NSR = NJOPR (Nilai Fisik) + NSPR (Nilai Lokasi/Strategis)`
+- **ID Master Classification**: **188** (Pajak Reklame).
+- **Dasar Pengenaan Pajak (DPP)**: **Nilai Sewa Reklame (NSR)**.
+- **Formula Utama**: `((njopr + nspr) * luas * sisi) * 0.25`
 
 ### NJOPR (Nilai Jual Objek Pajak Reklame)
 - Dihitung berdasarkan luas (m2) x tarif jenis reklame.
@@ -20,7 +21,10 @@ Dasar Pengenaan Pajak (DPP) adalah **Nilai Sewa Reklame (NSR)**.
 
 ### NSPR (Nilai Strategis Penyelenggaraan Reklame)
 - Didasarkan pada:
-    - Kelas Jalan (Zonasi A, B, C).
+    - **Zonasi Kelas Jalan**:
+        - **Kelas Jalan A (Sangat Strategis)**: Jl. RA. Kartini, Jl. Yos Sudarso, Jl. Jend. Sudirman, Pantai Kamali, Kotamara.
+        - **Kelas Jalan B (Strategis)**: Jl. Teuku Umar, Jl. RE Martadinata, Jl. Gatot Subroto.
+        - **Kelas Jalan C (Standar)**: Jl. Imam Bonjol, Jl. Seram, dll.
     - Sudut Pandang (Jumlah Sisi).
     - Ukuran Luas.
 
@@ -48,6 +52,5 @@ Beberapa kategori memiliki faktor pengali terhadap NSR sebelum dikalikan tarif p
 - `sifat_pemasangan`: [permanen, insidentil]
 - `jenis_reklame`: [videotron, billboard, papan, spanduk, selebaran, kendaraan, suara, film]
 - `produk_khusus`: [umum, rokok_alkohol, mall_indoor]
-- `kelas_jalan`: [kelas_a, kelas_b, kelas_c]
-- `njopr_satuan`: Input manual per m2.
-- `nspr_satuan`: Input manual berdasarkan zonasi.
+- `kelas_jalan`: [`RD-CL-A`, `RD-CL-B`, `RD-CL-C`]
+- `njop_reklame_id`: 188

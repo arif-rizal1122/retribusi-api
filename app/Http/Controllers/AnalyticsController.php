@@ -243,6 +243,8 @@ class AnalyticsController extends Controller
                 'to.name',
                 'tp.name as taxpayer_name',
                 'rt.name as type_name',
+                'rt.icon as type_icon',
+                'to.last_photo_url',
                 'rc.name as classification_name',
                 DB::raw('COALESCE(b.total_target, 0) as target'),
                 DB::raw('COALESCE(p.total_realization, 0) as realization'),
@@ -259,17 +261,52 @@ class AnalyticsController extends Controller
                 });
             });
 
-        // Filter out objects with no financial data for that year if not searched
-        if (!$search) {
-            $query->where(function($q) {
-                $q->whereNotNull('b.total_target')
-                  ->orWhereNotNull('p.total_realization');
-            });
-        }
+        // Show all objects including those with zero achievements
+        // as requested by user to maintain transparency.
 
         $performance = $query->orderBy('percentage', 'desc')
             ->paginate($request->get('limit', 15));
 
         return response()->json($performance);
+    }
+
+    public function getClassificationPerformance(Request $request)
+    {
+        $year = $request->get('year', date('Y'));
+        $search = $request->get('q');
+
+        // Subquery for total billed per classification
+        $billedSub = DB::table('bills as b')
+            ->join('tax_objects as to', 'b.tax_object_id', '=', 'to.id')
+            ->select('to.retribution_classification_id', DB::raw('SUM(b.amount) as total_target'))
+            ->whereYear('b.created_at', $year)
+            ->groupBy('to.retribution_classification_id');
+
+        // Subquery for total paid per classification
+        $paidSub = DB::table('payments as p')
+            ->join('tax_objects as to', 'p.tax_object_id', '=', 'to.id')
+            ->select('to.retribution_classification_id', DB::raw('SUM(p.amount) as total_realization'))
+            ->where('p.status', 'success')
+            ->whereYear('p.paid_at', $year)
+            ->groupBy('to.retribution_classification_id');
+
+        $query = DB::table('retribution_classifications as rc')
+            ->leftJoinSub($billedSub, 'b', 'rc.id', '=', 'b.retribution_classification_id')
+            ->leftJoinSub($paidSub, 'p', 'rc.id', '=', 'p.retribution_classification_id')
+            ->select(
+                'rc.id',
+                'rc.name',
+                'rc.code',
+                DB::raw('COALESCE(b.total_target, 0) as target'),
+                DB::raw('COALESCE(p.total_realization, 0) as realization'),
+                DB::raw('CASE WHEN COALESCE(b.total_target, 0) > 0 
+                             THEN ROUND((COALESCE(p.total_realization, 0) / b.total_target) * 100, 2) 
+                             ELSE 0 END as percentage')
+            )
+            ->when($search, fn($q) => $q->where('rc.name', 'like', "%{$search}%"));
+
+        $performance = $query->orderBy('percentage', 'desc')->get();
+
+        return response()->json(['data' => $performance]);
     }
 }

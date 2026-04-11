@@ -24,10 +24,12 @@ Verifikasi objek reklame fisik vs izin administratif.
 - **Flagging**: Tandai reklame liar yang tidak memiliki NPWPD untuk penindakan penempelan stiker.
 
 ## ⚖️ Penindakan & Penalty Waiver (Amnesty)
-Langkah tegas dan relaksasi untuk Wajib Pajak.
-1. **Penerbitan SKPDKB**: `POST /api/pengawas/penindakan/issue-skpdkb` untuk menetapkan kurang bayar hasil pemeriksaan.
-2. **Enforcement Notice**: Terbitan Surat Teguran atau Surat Paksa (`POST /api/pengawas/enforcements`).
-3. **Amnesty (Penghapusan Denda)**: Permohonan keringanan denda (`PenaltyWaiver`) diproses melalui otorisasi pimpinan untuk mendorong pelunasan pokok.
+Langkah tegas dan relaksasi untuk Wajib Pajak:
+1. **Penerbitan SKPDKB**: Menetapkan kurang bayar hasil audit/uji petik.
+2. **Siklus Penagihan Aktif (Collection)**:
+    - **Surat Teguran 1, 2, 3**: Diterbitkan secara berkala jika jatuh tempo terlewati.
+    - **SPMP (Surat Paksa)**: Dasar hukum melakukan tindakan penyitaan atau penyegelan objek.
+3. **Amnesty (Penghapusan Denda)**: Permohonan keringanan denda (`PenaltyWaiver`) diproses melalui otorisasi pimpinan.
 
 ## 🔍 Audit Trail
 - Setiap aktivitas di modul ini wajib terekam dalam `AuditLog`.

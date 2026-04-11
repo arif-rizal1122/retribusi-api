@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\TaxObject;
 use App\Models\Payment;
+use App\Models\Bill;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -48,34 +49,75 @@ class BillingService
                 ->keyBy('period');
         }
 
+        // 3. Preload all pending bills for this object (Consolidation)
+        $existingBills = Bill::where('tax_object_id', $taxObject->id)
+            ->where('status', 'pending')
+            ->get()
+            ->keyBy('period');
+            
         while ($tempDate->lte($currentDate)) {
             $periodString = $this->getPeriodString($tempDate, $cycle);
             
             if (!in_array($periodString, $paidPeriods)) {
+                $existingBill = $existingBills->get($periodString);
                 $report = $allReports->get($periodString);
 
-                $amount = $this->calculateAmountForPeriod($taxObject, $tempDate, $report);
-                $dueDate = $this->getDueDate($tempDate, $cycle);
-                
-                $virtualPenalty = 0;
-                if (Carbon::now()->gt($dueDate)) {
-                    $diffInMonths = $dueDate->diffInMonths(Carbon::now());
-                    if (Carbon::now()->day > $dueDate->day) $diffInMonths++;
-                    if ($diffInMonths === 0) $diffInMonths = 1;
+                // Use existing bill data if it exists, otherwise calculate virtual
+                if ($existingBill) {
+                    $amount = (float) $existingBill->amount;
+                    $dueDate = $existingBill->due_date ?? $this->getDueDate($tempDate, $cycle);
+                    
+                    // Always recalculate penalty to ensure it is up-to-date
+                    $currentPenalty = 0;
+                    if (Carbon::now()->gt($dueDate)) {
+                        $diffInMonths = $dueDate->diffInMonths(Carbon::now());
+                        if (Carbon::now()->day > $dueDate->day) $diffInMonths++;
+                        if ($diffInMonths === 0) $diffInMonths = 1;
 
-                    $parser = app(\App\Services\FormulaParserService::class);
-                    $virtualPenalty = $parser->calculatePenalty($amount, $diffInMonths, 'stpd');
+                        $parser = app(\App\Services\FormulaParserService::class);
+                        $currentPenalty = $parser->calculatePenalty($amount, $diffInMonths, 'stpd');
+                    }
+                    
+                    // Use the higher value between DB and Recalculated (to avoid regressions)
+                    $dbPenalty = (float) $existingBill->penalty_amount + (float) $existingBill->fixed_fine_amount + (float) $existingBill->surcharge_amount;
+                    $virtualPenalty = max($dbPenalty, $currentPenalty);
+                    
+                    $waived = (float) $existingBill->waived_penalty_amount;
+                    $effectivePenalty = max(0, $virtualPenalty - $waived);
+                    
+                    $status = $existingBill->status; // 'pending' or 'overdue'
+                    $billId = $existingBill->id;
+                    $isFromDB = true;
+                } else {
+                    $amount = $this->calculateAmountForPeriod($taxObject, $tempDate, $report);
+                    $dueDate = $this->getDueDate($tempDate, $cycle);
+                    
+                    $virtualPenalty = 0;
+                    if (Carbon::now()->gt($dueDate)) {
+                        $diffInMonths = $dueDate->diffInMonths(Carbon::now());
+                        if (Carbon::now()->day > $dueDate->day) $diffInMonths++;
+                        if ($diffInMonths === 0) $diffInMonths = 1;
+
+                        $parser = app(\App\Services\FormulaParserService::class);
+                        $virtualPenalty = $parser->calculatePenalty($amount, $diffInMonths, 'stpd');
+                    }
+                    $status = ($isSelfAssessment && !$report) ? 'required_reporting' : 'unpaid';
+                    $billId = null;
+                    $isFromDB = false;
+                    $effectivePenalty = $virtualPenalty;
                 }
 
                 $periods->push([
                     'period' => $periodString,
                     'label' => $this->getPeriodLabel($tempDate, $cycle),
-                    'status' => ($isSelfAssessment && !$report) ? 'required_reporting' : 'unpaid',
+                    'status' => $status,
                     'report_status' => $report ? $report->status : null,
                     'amount' => $amount,
-                    'penalty_amount' => $virtualPenalty,
-                    'total_amount' => $amount + $virtualPenalty,
-                    'due_date' => $dueDate->toDateTimeString(),
+                    'penalty_amount' => $effectivePenalty,
+                    'total_amount' => $amount + $effectivePenalty,
+                    'due_date' => $dueDate instanceof Carbon ? $dueDate->toDateTimeString() : $dueDate,
+                    'bill_id' => $billId,
+                    'is_from_db' => $isFromDB
                 ]);
             }
             
@@ -220,6 +262,6 @@ class BillingService
      */
     public function getTotalAmount(\App\Models\Bill $bill): float
     {
-        return (float) $bill->amount + (float) $bill->penalty_amount + (float) $bill->fixed_fine_amount + (float) $bill->surcharge_amount;
+        return (float) $bill->total_amount;
     }
 }

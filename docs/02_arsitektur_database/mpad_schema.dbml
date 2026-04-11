@@ -1,0 +1,546 @@
+// M-PAD (Retribusi) DBML Schema
+// Generated: 2026-04-09 14:53:24
+
+Table bills {
+  id "bigint unsigned" [pk]
+  taxpayer_id "bigint unsigned"
+  tax_object_id "bigint unsigned"
+  opd_id "bigint unsigned"
+  user_id "bigint unsigned"
+  retribution_type_id "bigint unsigned"
+  retribution_classification_id "bigint unsigned"
+  bill_number "varchar(255)"
+  amount "decimal(15,2)"
+  admin_fee "decimal(15,2)"
+  penalty_amount "decimal(15,2)"
+  waived_penalty_amount "decimal(15,2)"
+  penalty_type "varchar(255)"
+  fixed_fine_amount "decimal(15,2)"
+  surcharge_amount "decimal(15,2)"
+  status "varchar(255)"
+  postponed_at "timestamp"
+  reason_postponed "text"
+  period "varchar(255)"
+  period_start "date"
+  period_end "date"
+  metadata "json"
+  due_date "timestamp"
+  created_at "timestamp"
+  updated_at "timestamp"
+  spot_check_id "bigint unsigned"
+}
+
+Table complaints {
+  id "bigint unsigned" [pk]
+  taxpayer_id "bigint unsigned"
+  name "varchar(255)"
+  email "varchar(255)"
+  phone "varchar(255)"
+  category "varchar(255)"
+  complaint_text "text"
+  rating "int"
+  suggestion_text "text"
+  attachments "json"
+  status "enum('pending','processing','resolved','rejected')"
+  admin_notes "text"
+  resolved_at "timestamp"
+  resolved_by "bigint unsigned"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table enforcement_notices {
+  id "bigint unsigned" [pk]
+  tax_object_id "bigint unsigned"
+  assigned_to "bigint unsigned"
+  type "varchar(255)"
+  number "varchar(255)"
+  status "varchar(255)"
+  rejected_at "timestamp"
+  rejection_notes "text"
+  notes "text"
+  lat "decimal(10,8)"
+  lng "decimal(11,8)"
+  photo_path "varchar(255)"
+  created_by "bigint unsigned"
+  approved_by "bigint unsigned"
+  due_date "date"
+  created_at "timestamp"
+  updated_at "timestamp"
+  bill_id "bigint unsigned"
+  amount_at_issue "decimal(15,2)"
+}
+
+Table incentive_tables {
+  id "bigint unsigned" [pk]
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table monthly_reports {
+  id "bigint unsigned" [pk]
+  taxpayer_id "bigint unsigned"
+  tax_object_id "bigint unsigned"
+  period "varchar(255)"
+  turnover_amount "decimal(15,2)"
+  tax_amount "decimal(15,2)"
+  attachments "json"
+  notes "text"
+  status "enum('pending','approved','rejected')"
+  validated_at "timestamp"
+  validated_by "bigint unsigned"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table object_verifications {
+  id "bigint unsigned" [pk]
+  tax_object_id "bigint unsigned"
+  pendata_tanggal "date"
+  pendata_nama "varchar(255)"
+  pendata_nip "varchar(255)"
+  pendata_tanda_tangan_url "varchar(255)"
+  pejabat_tanggal "date"
+  pejabat_nama "varchar(255)"
+  pejabat_nip "varchar(255)"
+  pejabat_tanda_tangan_url "varchar(255)"
+  status "varchar(255)"
+  notes "text"
+  verified_by "bigint unsigned"
+  verified_at "timestamp"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table opds {
+  id "bigint unsigned" [pk]
+  name "varchar(255)"
+  code "varchar(255)"
+  address "text"
+  phone "varchar(255)"
+  email "varchar(255)"
+  logo_url "varchar(255)"
+  status "enum('pending','approved','rejected')"
+  is_active "tinyint(1)"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table payments {
+  id "bigint unsigned" [pk]
+  bill_id "bigint unsigned"
+  billing_period "varchar(50)"
+  taxpayer_id "bigint unsigned"
+  tax_object_id "bigint unsigned"
+  transaction_id "varchar(255)"
+  payment_method "varchar(255)"
+  amount "decimal(15,2)"
+  tendered_amount "decimal(15,2)"
+  change_amount "decimal(15,2)"
+  status "varchar(255)"
+  approved_by "bigint unsigned"
+  proof_url "varchar(255)"
+  paid_at "timestamp"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table pbb_njop_classifications {
+  id "bigint unsigned" [pk]
+  type "enum('bumi','bangunan')"
+  class_code "varchar(255)"
+  min_value "decimal(15,2)"
+  max_value "decimal(15,2)"
+  njop_value "decimal(15,2)"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table penalty_waivers {
+  id "bigint unsigned" [pk]
+  bill_id "bigint unsigned"
+  requested_by "bigint unsigned"
+  approved_by "bigint unsigned"
+  reason "text"
+  reduction_type "enum('percentage','fixed_amount')"
+  reduction_value "decimal(15,2)"
+  status "enum('pending','approved','rejected')"
+  approval_notes "text"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table petugas_tasks {
+  id "bigint unsigned" [pk]
+  user_id "bigint unsigned"
+  zone_id "bigint unsigned"
+  taxpayer_id "bigint unsigned"
+  due_date "date"
+  notes "text"
+  status "enum('pending','completed')"
+  completed_at "timestamp"
+  completion_photo_path "varchar(255)"
+  created_by "bigint unsigned"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table retribution_classifications {
+  id "bigint unsigned" [pk]
+  opd_id "bigint unsigned"
+  retribution_type_id "bigint unsigned"
+  name "varchar(255)"
+  is_self_assessment "tinyint(1)"
+  code "varchar(255)"
+  form_schema "json"
+  requirements "json"
+  calculation_formula "text"
+  bank_accounts "json"
+  description "text"
+  icon "varchar(255)"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table retribution_rates {
+  id "bigint unsigned" [pk]
+  opd_id "bigint unsigned"
+  retribution_type_id "bigint unsigned"
+  retribution_classification_id "bigint unsigned"
+  zone_id "bigint unsigned"
+  name "varchar(255)"
+  amount "decimal(15,2)"
+  calculation_formula "text"
+  unit "varchar(255)"
+  is_active "tinyint(1)"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table retribution_types {
+  id "bigint unsigned" [pk]
+  opd_id "bigint unsigned"
+  name "varchar(255)"
+  category "varchar(255)"
+  tariff_percent "decimal(5,2)"
+  icon "varchar(255)"
+  base_amount "decimal(15,2)"
+  unit "varchar(255)"
+  billing_cycle "enum('daily','weekly','monthly','yearly')"
+  is_active "tinyint(1)"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table signed_documents {
+  id "bigint unsigned" [pk]
+  document_type "varchar(255)"
+  document_id "bigint unsigned"
+  document_number "varchar(255)"
+  file_path "varchar(255)"
+  signature_hash "text"
+  signed_by "bigint unsigned"
+  signed_at "timestamp"
+  metadata "json"
+  verification_url "varchar(255)"
+  status "varchar(255)"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table spot_check_items {
+  id "bigint unsigned" [pk]
+  spot_check_id "bigint unsigned"
+  observation_time "time"
+  visitor_count "int"
+  transaction_count "int"
+  estimated_value "decimal(15,2)"
+  details "json"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table spot_checks {
+  id "bigint unsigned" [pk]
+  taxpayer_id "bigint unsigned"
+  tax_object_id "bigint unsigned"
+  inspector_id "bigint unsigned"
+  start_date "datetime"
+  end_date "datetime"
+  is_weekend "tinyint(1)"
+  taxpayer_representative "varchar(255)"
+  supervisor_id "bigint unsigned"
+  status "enum('draft','submitted','approved')"
+  remarks "text"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table tax_educations {
+  id "bigint unsigned" [pk]
+  title "varchar(255)"
+  category "enum('consultation','socialization','public_info')"
+  description "text"
+  material_url "varchar(255)"
+  event_date "date"
+  location "varchar(255)"
+  participant_count "int"
+  feedback_summary "text"
+  created_by "bigint unsigned"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table tax_objects {
+  id "bigint unsigned" [pk]
+  nop "varchar(255)"
+  taxpayer_id "bigint unsigned"
+  retribution_type_id "bigint unsigned"
+  retribution_classification_id "bigint unsigned"
+  opd_id "bigint unsigned"
+  zone_id "bigint unsigned"
+  name "varchar(255)"
+  address "varchar(255)"
+  latitude "decimal(10,8)"
+  longitude "decimal(11,8)"
+  nomor_formulir "varchar(255)"
+  transaction_type "varchar(255)"
+  metadata "json"
+  status "varchar(255)"
+  audit_status "varchar(255)"
+  nama_penandatangan "varchar(255)"
+  tanggal_pernyataan "date"
+  tanda_tangan_url "varchar(255)"
+  approved_at "timestamp"
+  approved_by "bigint unsigned"
+  created_at "timestamp"
+  updated_at "timestamp"
+  installation_date "date"
+  last_photo_url "varchar(255)"
+  is_verified_physically "tinyint(1)"
+}
+
+Table tax_transactions {
+  id "bigint unsigned" [pk]
+  opd_id "bigint unsigned"
+  taxpayer_id "bigint unsigned"
+  tax_object_id "bigint unsigned"
+  transaction_date "date"
+  amount "decimal(15,2)"
+  tax_amount "decimal(15,2)"
+  source "varchar(255)"
+  description "text"
+  metadata "json"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table taxpayer_pbb_objects {
+  id "bigint unsigned" [pk]
+  taxpayer_id "bigint unsigned"
+  nop "varchar(25)"
+  name_on_sppt "varchar(255)"
+  address_on_sppt "varchar(255)"
+  kelurahan "varchar(100)"
+  kota "varchar(100)"
+  is_verified "tinyint(1)"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table taxpayer_retribution_type {
+  id "bigint unsigned" [pk]
+  taxpayer_id "bigint unsigned"
+  retribution_type_id "bigint unsigned"
+  retribution_classification_id "bigint unsigned"
+  custom_amount "decimal(15,2)"
+  notes "text"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table taxpayers {
+  id "bigint unsigned" [pk]
+  opd_id "bigint unsigned"
+  created_by "bigint unsigned"
+  nik "varchar(255)"
+  name "varchar(255)"
+  address "text"
+  district "varchar(255)"
+  sub_district "varchar(255)"
+  phone "varchar(255)"
+  npwpd "varchar(255)"
+  object_name "varchar(255)"
+  object_address "varchar(255)"
+  latitude "decimal(10,8)"
+  longitude "decimal(11,8)"
+  metadata "json"
+  password "varchar(255)"
+  is_active "tinyint(1)"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table transaction_pbb {
+  id "bigint unsigned" [pk]
+  user_id "bigint unsigned"
+  taxpayer_id "bigint unsigned"
+  nop "varchar(25)"
+  tahun "varchar(4)"
+  amount "decimal(15,2)"
+  denda "decimal(15,2)"
+  total_bayar "decimal(15,2)"
+  ntpd "varchar(50)"
+  payment_status "enum('pending','success','failed','reversed')"
+  wp_name "varchar(100)"
+  wp_address "varchar(200)"
+  kelurahan "varchar(100)"
+  kota "varchar(100)"
+  reversal_reason "text"
+  api_response "json"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table user_retribution_assignments {
+  id "bigint unsigned" [pk]
+  user_id "bigint unsigned"
+  retribution_type_id "bigint unsigned"
+  retribution_classification_id "bigint unsigned"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table users {
+  id "bigint unsigned" [pk]
+  name "varchar(255)"
+  email "varchar(255)"
+  nik "varchar(50)"
+  role "varchar(255)"
+  phone "varchar(255)"
+  address "text"
+  opd_id "bigint unsigned"
+  latitude "decimal(10,8)"
+  longitude "decimal(11,8)"
+  status "varchar(255)"
+  metadata "longtext"
+  email_verified_at "timestamp"
+  password "varchar(255)"
+  remember_token "varchar(100)"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table verifications {
+  id "bigint unsigned" [pk]
+  opd_id "bigint unsigned"
+  user_id "bigint unsigned"
+  taxpayer_id "bigint unsigned"
+  tax_object_id "bigint unsigned"
+  document_number "varchar(255)"
+  proof_file_url "varchar(255)"
+  taxpayer_name "varchar(255)"
+  type "varchar(255)"
+  amount "decimal(15,2)"
+  status "varchar(255)"
+  is_assessment_final "tinyint(1)"
+  assessed_at "timestamp"
+  notes "text"
+  verifier_id "bigint unsigned"
+  submitted_at "timestamp"
+  verified_at "timestamp"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+Table zones {
+  id "bigint unsigned" [pk]
+  opd_id "bigint unsigned"
+  retribution_type_id "bigint unsigned"
+  retribution_classification_id "bigint unsigned"
+  name "varchar(255)"
+  code "varchar(255)"
+  description "text"
+  geometry_type "enum('point','polygon')"
+  coordinates "json"
+  latitude "decimal(10,8)"
+  longitude "decimal(11,8)"
+  created_at "timestamp"
+  updated_at "timestamp"
+}
+
+// Relationships
+Ref: audit_logs.user_id > users.id
+Ref: bills.retribution_classification_id > retribution_classifications.id
+Ref: bills.opd_id > opds.id
+Ref: bills.retribution_type_id > retribution_types.id
+Ref: bills.spot_check_id > spot_checks.id
+Ref: bills.taxpayer_id > taxpayers.id
+Ref: bills.tax_object_id > tax_objects.id
+Ref: bills.user_id > users.id
+Ref: complaints.resolved_by > users.id
+Ref: complaints.taxpayer_id > taxpayers.id
+Ref: enforcement_notices.approved_by > users.id
+Ref: enforcement_notices.assigned_to > users.id
+Ref: enforcement_notices.bill_id > bills.id
+Ref: enforcement_notices.created_by > users.id
+Ref: enforcement_notices.tax_object_id > tax_objects.id
+Ref: monthly_reports.taxpayer_id > taxpayers.id
+Ref: monthly_reports.tax_object_id > tax_objects.id
+Ref: monthly_reports.validated_by > users.id
+Ref: object_verifications.tax_object_id > tax_objects.id
+Ref: object_verifications.verified_by > users.id
+Ref: payments.approved_by > users.id
+Ref: payments.bill_id > bills.id
+Ref: payments.taxpayer_id > taxpayers.id
+Ref: payments.tax_object_id > tax_objects.id
+Ref: penalty_waivers.approved_by > users.id
+Ref: penalty_waivers.bill_id > bills.id
+Ref: penalty_waivers.requested_by > users.id
+Ref: petugas_tasks.created_by > users.id
+Ref: petugas_tasks.taxpayer_id > taxpayers.id
+Ref: petugas_tasks.user_id > users.id
+Ref: petugas_tasks.zone_id > zones.id
+Ref: retribution_classifications.opd_id > opds.id
+Ref: retribution_classifications.retribution_type_id > retribution_types.id
+Ref: retribution_rates.opd_id > opds.id
+Ref: retribution_rates.retribution_classification_id > retribution_classifications.id
+Ref: retribution_rates.retribution_type_id > retribution_types.id
+Ref: retribution_rates.zone_id > zones.id
+Ref: retribution_types.opd_id > opds.id
+Ref: signed_documents.signed_by > users.id
+Ref: spot_check_items.spot_check_id > spot_checks.id
+Ref: spot_checks.inspector_id > users.id
+Ref: spot_checks.supervisor_id > users.id
+Ref: spot_checks.taxpayer_id > taxpayers.id
+Ref: spot_checks.tax_object_id > tax_objects.id
+Ref: tax_educations.created_by > users.id
+Ref: tax_objects.approved_by > users.id
+Ref: tax_objects.opd_id > opds.id
+Ref: tax_objects.retribution_classification_id > retribution_classifications.id
+Ref: tax_objects.retribution_type_id > retribution_types.id
+Ref: tax_objects.taxpayer_id > taxpayers.id
+Ref: tax_objects.zone_id > zones.id
+Ref: tax_transactions.opd_id > opds.id
+Ref: tax_transactions.taxpayer_id > taxpayers.id
+Ref: tax_transactions.tax_object_id > tax_objects.id
+Ref: taxpayer_pbb_objects.taxpayer_id > taxpayers.id
+Ref: taxpayer_retribution_type.retribution_classification_id > retribution_classifications.id
+Ref: taxpayer_retribution_type.retribution_type_id > retribution_types.id
+Ref: taxpayer_retribution_type.taxpayer_id > taxpayers.id
+Ref: taxpayers.created_by > users.id
+Ref: taxpayers.opd_id > opds.id
+Ref: transaction_pbb.taxpayer_id > taxpayers.id
+Ref: transaction_pbb.user_id > users.id
+Ref: user_retribution_assignments.retribution_classification_id > retribution_classifications.id
+Ref: user_retribution_assignments.retribution_type_id > retribution_types.id
+Ref: user_retribution_assignments.user_id > users.id
+Ref: users.opd_id > opds.id
+Ref: verifications.opd_id > opds.id
+Ref: verifications.taxpayer_id > taxpayers.id
+Ref: verifications.tax_object_id > tax_objects.id
+Ref: verifications.user_id > users.id
+Ref: verifications.verifier_id > users.id
+Ref: zones.opd_id > opds.id
+Ref: zones.retribution_classification_id > retribution_classifications.id
+Ref: zones.retribution_type_id > retribution_types.id

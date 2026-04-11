@@ -3,24 +3,31 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Billing;
+use App\Models\Bill;
+use App\Services\BillingService;
 use Illuminate\Support\Facades\Log;
 
 class PaymentGatewayController extends Controller
 {
+    protected $billingService;
+
+    public function __construct(BillingService $billingService)
+    {
+        $this->billingService = $billingService;
+    }
     /**
      * Mock generating a payment token/link/QRIS
      */
     public function generatePayment(Request $request)
     {
         $request->validate([
-            'billing_id' => 'required|exists:billings,id',
+            'bill_id' => 'required|exists:bills,id',
             'method' => 'required|in:qris,va_bca,va_mandiri,va_bri'
         ]);
 
-        $billing = Billing::findOrFail($request->billing_id);
+        $bill = Bill::findOrFail($request->bill_id);
 
-        if ($billing->status === 'lunas') {
+        if ($bill->status === 'lunas') {
             return response()->json(['message' => 'Tagihan sudah lunas.'], 400);
         }
 
@@ -67,14 +74,25 @@ class PaymentGatewayController extends Controller
         }
 
         if ($payload['transaction_status'] === 'settlement' || $payload['transaction_status'] === 'capture') {
-            $billing = Billing::where('bill_number', $payload['order_id'])->first();
+            $bill = Bill::where('bill_number', $payload['order_id'])->first();
 
-            if ($billing && $billing->status !== 'lunas') {
-                $billing->status = 'lunas';
-                // You could also create a Payment record here if the DB structure supports it
-                $billing->save();
+            if ($bill && $bill->status !== 'lunas') {
+                // --- Advanced Billing V2: Real-time Data Sync before Payment ---
+                $taxObject = $bill->taxObject;
+                if ($taxObject) {
+                    $periods = $this->billingService->getPendingPeriods($taxObject);
+                    $matchingPeriod = $periods->firstWhere('period', $bill->period);
+                    
+                    if ($matchingPeriod) {
+                        $bill->penalty_amount = $matchingPeriod['penalty_amount'];
+                        $bill->amount = $matchingPeriod['amount'];
+                    }
+                }
 
-                Log::info("Billing {$billing->bill_number} marked as LUNAS via webhook.");
+                $bill->status = 'lunas';
+                $bill->save();
+
+                Log::info("Bill {$bill->bill_number} marked as LUNAS via webhook.");
                 return response()->json(['message' => 'Payment processed, billing updated to lunas.']);
             }
         }
