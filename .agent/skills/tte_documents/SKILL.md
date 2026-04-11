@@ -19,12 +19,12 @@ Setiap dokumen resmi (SKPD, SKRD, SSPD, SPPT, dll) memiliki QR-Code unik untuk v
 - **Persyaratan**: Dokumen hanya bisa di-TTE jika status verifikasi sudah `approved` oleh pejabat berwenang (Kadis/Kabid).
 - **Logika**: Pembubuhan tanda tangan akan men-generate hash unik yang disimpan di tabel `signed_documents`.
 
-## 📄 Inventori Dokumen BAPENDA
-Backend `DocumentController` melayani pembentukan PDF untuk jenis dokumen berikut:
-1.  **Pendaftaran**: SKT (Surat Keterangan Terdaftar).
-2.  **Pendataan**: LKOK (Laporan Kunjungan Objek Pajak).
-3.  **Penetapan**: SKPD, SKRD, SPPT, SKPDKBT, SKPDN.
-4.  **Penagihan**: SSPD (Surat Setoran), SSRD, STRD (Teguran), SPP, SPMP (Paksa).
+## 📄 Inventori Dokumen BAPENDA (Target TTE)
+Sistem mendukung pembentukan PDF dan TTE untuk 21+ jenis dokumen:
+1.  **Pendaftaran**: SKT (Surat Keterangan Terdaftar), SPOPD, SPOP, LSPOP.
+2.  **Pendataan**: LKOK (Lembar Kerja Objek Khusus).
+3.  **Penetapan**: SPTPD (Lapor Mandiri), SKPD, SKRD, SPPT (PBB), SKPDKB, SKPDKBT, SKPDLB, SKPDN.
+4.  **Penagihan**: SSPD (Bukti Bayar), SSRD, STPD (Denda), Surat Teguran (1, 2, 3), SPMP (Surat Paksa), Surat Penyegelan.
 
 ## 🛡️ Prinsip Keamanan Dokumen
 1. **Immutable Result**: Dokumen yang sudah bertanda tangan (`status: signed`) adalah *final*. Perubahan data objek wajib membatalkan (`revoked`) signature lama.

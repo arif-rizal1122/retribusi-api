@@ -38,7 +38,7 @@ class TestingScenarioSeeder extends Seeder
                 'address' => 'Jl. Wolter Monginsidi No. 12, Baubau',
                 'phone' => '081234567890',
                 'npwpd' => 'P-2-0000001',
-                'password' => Hash::make('password123'),
+                'password' => Hash::make('password'),
                 'is_active' => true,
             ]
         );
@@ -52,20 +52,18 @@ class TestingScenarioSeeder extends Seeder
                 'address' => 'Jl. Pahlawan No. 45, Baubau',
                 'phone' => '081234567899',
                 'npwpd' => 'P-2-0000002',
-                'password' => Hash::make('password123'),
+                'password' => Hash::make('password'),
                 'is_active' => true,
             ]
         );
 
         // 4. Create Tax Objects for Budi
-        $parkirType = RetributionType::where('name', 'Retribusi Parkir Mobil')->first() 
-            ?? RetributionType::where('name', 'like', '%Parkir%')->first();
-            
+        $parkirType = RetributionType::where('id', 2)->first();
         $parkirObject = TaxObject::updateOrCreate(
             ['nop' => 'PRK-74-001'],
             [
                 'taxpayer_id' => $budi->id,
-                'retribution_type_id' => $parkirType->id ?? 1,
+                'retribution_type_id' => $parkirType->id,
                 'opd_id' => $dishub->id,
                 'name' => 'Lahan Parkir Toko Budi',
                 'address' => 'Jl. Merdeka No. 5',
@@ -76,17 +74,14 @@ class TestingScenarioSeeder extends Seeder
             ]
         );
 
-        $pbbType = RetributionType::where('name', 'Wilayah I')->first() 
-            ?? RetributionType::where('name', 'like', '%Wilayah%')->first();
-        
-        $pbbClass = \App\Models\RetributionClassification::where('name', 'PBB')->first();
-        
+        $pbbType = RetributionType::where('id', 16)->first();
+        $pbbClass = \App\Models\RetributionClassification::where('retribution_type_id', 16)->first();
         $pbbObject = TaxObject::updateOrCreate(
             ['nop' => 'PBB-74-001'],
             [
                 'taxpayer_id' => $budi->id,
-                'retribution_type_id' => $pbbType->id ?? 1,
-                'retribution_classification_id' => $pbbClass->id ?? null,
+                'retribution_type_id' => $pbbType->id,
+                'retribution_classification_id' => $pbbClass->id ?? 2,
                 'opd_id' => $bapenda->id,
                 'name' => 'Rumah Tinggal Budi',
                 'address' => 'Jl. Wolter Monginsidi No. 12',
@@ -99,15 +94,13 @@ class TestingScenarioSeeder extends Seeder
         );
 
         // 5. Create Tax Objects for Ani
-        $kiosType = RetributionType::where('name', 'Retribusi Kios Pasar')->first() 
-            ?? RetributionType::where('name', 'like', '%Kios%')->first();
-            
+        $kiosType = RetributionType::where('name', 'like', '%Kios%')->first();
         $kiosObject = TaxObject::updateOrCreate(
             ['nop' => 'KIO-74-001'],
             [
                 'taxpayer_id' => $ani->id,
-                'retribution_type_id' => $kiosType->id ?? 1,
-                'opd_id' => Opd::where('code', 'DISPERINDAG')->first()->id ?? $bapenda->id,
+                'retribution_type_id' => $kiosType->id ?? 4, // Fallback
+                'opd_id' => Opd::where('code', 'DISPERINDAG')->first()->id ?? 2,
                 'name' => 'Kios Sembako Ani',
                 'address' => 'Pasar Karya No. 10',
                 'status' => 'active',
@@ -115,15 +108,13 @@ class TestingScenarioSeeder extends Seeder
             ]
         );
 
-        $sampahType = RetributionType::where('name', 'Retribusi Persampahan')->first() 
-            ?? RetributionType::where('name', 'like', '%Sampah%')->first();
-            
+        $sampahType = RetributionType::where('name', 'like', '%Sampah%')->first();
         $sampahObject = TaxObject::updateOrCreate(
             ['nop' => 'SMP-74-001'],
             [
                 'taxpayer_id' => $ani->id,
-                'retribution_type_id' => $sampahType->id ?? 1,
-                'opd_id' => Opd::where('code', 'DLH')->first()->id ?? $bapenda->id,
+                'retribution_type_id' => $sampahType->id ?? 6, // Fallback
+                'opd_id' => Opd::where('code', 'DLH')->first()->id ?? 3,
                 'name' => 'Rumah Ani (Retribusi Sampah)',
                 'address' => 'Jl. Pahlawan No. 45',
                 'status' => 'active',
@@ -138,7 +129,7 @@ class TestingScenarioSeeder extends Seeder
                 'taxpayer_id' => $budi->id,
                 'tax_object_id' => $parkirObject->id,
                 'opd_id' => $dishub->id,
-                'retribution_type_id' => $parkirType->id ?? 1,
+                'retribution_type_id' => $parkirType->id,
                 'amount' => 50000,
                 'status' => 'paid',
                 'period' => '2025-01',

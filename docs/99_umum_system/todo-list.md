@@ -53,10 +53,14 @@
 
 ---
 
-## ✅ 6. Hybrid Dynamic Billing
+## ✅ 6. Hybrid Dynamic Billing & Consolidation (V2)
 **File**: `BillingService::getPendingPeriods()`
 
-**Cara Kerja**: Loop periode registrasi → sekarang, hitung virtual bill + denda JIT per periode belum bayar
+**Cara Kerja**:
+1. **JIT Loop**: Menghitung periode tunggakan dari tanggal registrasi hingga sekarang.
+2. **Consolidation**: Mengecek eksistensi record di tabel `bills`. Jika ada record `pending/overdue`, sistem menggunakan data database sebagai basis utama (menghindari duplikasi).
+3. **Dynamic Penalty**: Denda direkalkulasi secara real-time meskipun record berasal dari database, memastikan angka selalu *up-to-date* saat diakses (`is_from_db`).
+4. **Waiver Recognition**: Mengurangi denda secara otomatis jika terdapat record `waived_penalty_amount` yang disetujui.
 
 ---
 
@@ -69,6 +73,18 @@
 - [x] **Alur 2 (Field Payment):** Scan QR warga di `FieldScanner.tsx` petugas → Bayar Tunai → Langsung `success`.
 - [x] **Thermal Print:** Implementasi `ThermalPrintService.ts` di aplikasi petugas untuk cetak struk SSRD.
 - [x] **Otomasi Bill:** Status tagihan (`bills.status`) otomatis berubah jadi `lunas` saat payment berhasil.
+- [x] **Universal Sync:** Webhook payment gateway dan scan verifikasi kini memicu rekalkulasi denda otomatis demi integritas finansial (*Zero Gap*).
+
+---
+
+## ✅ 7.5 Sistem Eskalasi Penagihan (Dunning V2)
+**File**: `GenerateAutomatedTeguran`, `EnforcementNotice`
+
+**Cara Kerja**:
+1. **Tier 1 (Teguran 1)**: Terbit otomatis jika tagihan overdue > 7 hari.
+2. **Tier 2 (Teguran 2)**: Eskalasi otomatis jika Teguran 1 diabaikan selama 14 hari.
+3. **Tier 3 (Penindakan)**: Eskalasi otomatis ke status "Penindakan Lapangan" jika Teguran 2 diabaikan selama 7 hari.
+4. **WhatsApp Integration**: Notifikasi otomatis dikirim ke Wajib Pajak pada setiap tahap eskalasi.
 
 ---
 
@@ -232,7 +248,7 @@ Hasil: ✅ Laporan tertulis di `testing/results/08_Laporan_E2E_Lintas_Peran.md`
 - [ ] **Full-Sync SISMIOP (PBB-P2)**: Migrasi data massal dan sinkronisasi dashboard tunggal.
 - [ ] **PKS Bank BPD**: Perjanjian Kerja Sama dengan Bank Sulawesi Tenggara (BPD) untuk integrasi fitur pembayaran Host-to-Host (VA/QRIS) yang belum rampung.
 - [x] **Template Dokumen Sisa Pembayaran**: Penyempurnaan format PDF (**Selesai**).
-- [/] **Otomasi Pelacakan Sisa Pembayaran**: Sinkronisasi real-time pembayaran parsial (Target Minor).
+- [x] **Otomasi Pelacakan Sisa Pembayaran**: Sinkronisasi real-time pembayaran & rekalkulasi denda (V2 Alignment) (**Selesai**).
 
 ### Analitik & Kecerdasan Buatan (AI)
 - [ ] **Predictive Analytics Engine**: Proyeksi target pendapatan tahunan berdasarkan tren historis.

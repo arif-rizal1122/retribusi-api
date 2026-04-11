@@ -15,20 +15,18 @@ Skill ini mendefinisikan kemampuan agen dalam menangani siklus hidup tagihan di 
 - **Hybrid Support**: Mendukung perhitungan Pajak Daerah (PBB-P2, Hotel, Restoran) dan Retribusi Jasa Umum/Usaha.
 
 ### 2. Status Transisi Tagihan
-| Status | Deskripsi |
-| :--- | :--- |
-| `pending` | Tagihan terbit namun belum dibayar. |
-| `unpaid` | Status virtual dari mesin JIT untuk periode yang belum dibayar tapi record `bills` belum dibuat. |
-| `lunas` | Pembayaran berhasil diverifikasi. |
-| `expired` | Melewati masa berlaku billing (biasanya untuk tagihan VA/QRIS). |
+| Status | Deskripsi | Dokumen Dasar |
+| :--- | :--- | :--- |
+| `pending` | Tagihan terbit belum bayar. | SKPD / SKRD / SPPT |
+| `unpaid` | Melewati jatuh tempo. | STPD (Tagihan Denda) |
+| `paid` | Pembayaran lunas. | SSPD / SSRD |
+| `expired` | Melewati masa VA/QRIS. | - |
 
-### 3. Logika Denda & Eskalasi (Dunning)
-- **STPD (Surat Tagihan Pajak Daerah)**: Digunakan untuk menagih bunga 1-2% akibat keterlambatan.
-- **Waiver Logic**: Penghapusan denda dikelola melalui `PenaltyWaiverController`.
-- **Eskalasi Otomatis (V2)**:
-  - **Teguran 1**: Dibuat jika Bill melewati `due_date`.
-  - **Teguran 2**: Dibuat jika Teguran 1 berumur > 14 hari dan belum lunas.
-  - **Automasi**: Dijalankan via `enforcements:generate-drafts`.
+### 3. Logika Denda & Penegakan (Enforcement)
+- **STPD (Surat Tagihan Pajak Daerah)**: Dokumen penagih bunga sanksi administrasi (Penalty).
+- **Alur Paksaan (Enforcement)**:
+  - **Surat Teguran 1, 2, 3**: Diterbitkan jika menunggak berturut-turut.
+  - **SPMP (Surat Paksa)**: Dasar hukum melakukan tindakan penyitaan/penyegelan objek pajak.
 
 ### 4. Integritas Data (Payment Sync V2)
 Sistem menjamin keakuratan saldo piutang melalui **Pre-Payment Sync**:

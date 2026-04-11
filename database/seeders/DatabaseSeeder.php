@@ -212,7 +212,6 @@ class DatabaseSeeder extends Seeder
         $this->call(SurveillanceAccountSeeder::class);
         $this->call(AchievementSeeder::class);
         $this->call(AdminWilayahSeeder::class);
-        $this->call(ComplaintSeeder::class);
 
         $this->command->info('Database seeded successfully!');
         $this->command->info('Super Admin: superadmin@sipanda.online / Bapenda2026!');

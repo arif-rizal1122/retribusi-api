@@ -11,6 +11,7 @@ Dokumen yang mendefinisikan pondasi sistem secara keseluruhan.
 | File | Maksud & Tujuan (Intent) |
 | :--- | :--- |
 | **[README.md](README.md)** | Gerbang utama navigasi. Memetakan seluruh kategori dokumen agar pembaca tahu ke mana harus mencari informasi. |
+| **[BAUBAU_REGULATORY_MASTER.md](01_regulasi_baubau/BAUBAU_REGULATORY_MASTER.md)** | **Technical Source of Truth**. Definisi Rumus eksak, Zonasi, dan Mapping ID Database (186-200). |
 | **[SYSTEM_OVERVIEW.md](SYSTEM_OVERVIEW.md)** | Definisi arsitektur MPAD. Menjelaskan pilar PBJT vs PBB, alur TTE, dan sejarah keputusan teknis terpenting. |
 | **[04-database-schema.md](04-database-schema.md)** | Blueprint data. Berisi ERD dan spesifikasi tabel (termasuk modul baru: Enforcement, Amnesty, dan TTE). |
 | **[DOMAIN_SCHEMA.md](DOMAIN_SCHEMA.md)** | Mapping infrastruktur. Menjelaskan URL Production vs Staging serta alur komunikasi data antar domain. |
@@ -80,6 +81,51 @@ Laporan hasil uji coba dan panduan operasional aktor.
 | **[petugas-userguide.md](petugas-userguide.md)** | Panduan operasional aplikasi mobile untuk petugas lapangan. |
 | **[mobile-e-retribusi.md](mobile-e-retribusi.md)** | Panduan penggunaan portal layanan mandiri bagi Warga Kota Baubau. |
 | **[docs/results/*.md](results/)** | Kumpulan log eksekusi tes penetrasi (keamanan), CRUD API, dan kalkulator pajak. |
+
+---
+
+## 🏛️ 7. Akronim dan Istilah Berkaitan dengan Pajak
+-   **PAD**: Pendapatan Asli Daerah.
+-   **PDRD**: Pajak Daerah dan Retribusi Daerah.
+-   **WP & WR**: Wajib Pajak dan Wajib Retribusi.
+-   **NPWPD**: Nomor Pokok Wajib Pajak Daerah.
+-   **PBJT**: Pajak Barang dan Jasa Tertentu.
+-   **NJOP**: Nilai Jual Objek Pajak (Dasar PBB-P2 & Reklame).
+-   **NJOPTKP**: Nilai Jual Objek Pajak Tidak Kena Pajak.
+-   **NPOP & NPOPTKP**: Nilai Perolehan Objek Pajak (Dasar BPHTB).
+-   **NSR**: Nilai Sewa Reklame.
+-   **ZNT & NIR**: Zona Nilai Tanah dan Nilai Indikasi Rata-rata.
+-   **Self Assessment**: Pajak dihitung mandiri oleh WP (Resto/Hotel).
+-   **Official Assessment**: Pajak ditetapkan oleh Pemda (PBB/Reklame).
+
+---
+
+## 📄 8. Kamus Dokumen & Siklus Administrasi Perpajakan
+
+### A. Pendaftaran & Pendataan
+-   **SPOPD**: Formulir daftar/lapor usaha (PBJT, Reklame, Air Tanah, dsb).
+-   **SPOP & LSPOP**: Formulir pendaftaran spesifik PBB-P2.
+-   **SKT (Surat Keterangan Terdaftar)**: Bukti WP telah masuk sistem.
+-   **LKOK**: Lembar kerja pemeriksaan lapangan petugas.
+
+### B. Penetapan & Tagihan
+-   **SPTPD**: Dokumen lapor omzet bulanan dari WP.
+-   **SKPD / SKRD**: Tagihan resmi Pokok Pajak / Retribusi.
+-   **SPPT**: Tagihan resmi tahunan PBB-P2.
+-   **SKPDKB / SKPDKBT**: Tagihan Kurang Bayar (hasil pemeriksaan).
+-   **SKPDLB / SKPDN**: Penetapan Lebih Bayar atau Nihil.
+
+### C. Pembayaran & Penegakan Hukum
+-   **SSPD / SSRD**: Bukti sah penyetoran ke Kas Daerah.
+-   **STPD**: Tagihan denda/sanksi bunga keterlambatan.
+-   **Surat Teguran (1, 2, 3)**: Peringatan tunggakan.
+-   **SPMP (Surat Paksa)**: Dasar hukum melakukan penyitaan/penyegelan.
+
+---
+## 🏛️ 9. Visual & Logic Baseline (April 2026)
+-   **Database Alignment**: Klasifikasi ID 186-200 adalah klasifikasi master yang telah disinkronkan dengan rumus aktif Perda 1/2024.
+-   **Icon Standard**: Sistem menggunakan URL Cloudinary unik untuk setiap klasifikasi guna menjamin variasi visual (Unique Visual Alignment).
+-   **Zonasi Codes**: Menggunakan kode standar `RD-CL-A` (Jalan Strategis) dan `PKD-PREM` (Lapak Premium).
 
 ---
 *Catatan: Dokumen ini wajib diperbarui setiap kali ada folder atau file dokumentasi baru yang ditambahkan ke dalam sistem.*

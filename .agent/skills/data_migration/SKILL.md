@@ -21,14 +21,16 @@ Pastikan Wajib Pajak tetap bisa menggunakan identitas lama mereka.
 -   **NPWPD**: Simpan NPWPD lama di kolom `npwpd` pada tabel `taxpayers`. 
 -   **NOP/NOPD**: Simpan nomor objek lama di kolom `nop` pada tabel `tax_objects`.
 -   **Legacy Linking**: Gunakan kolom `metadata->legacy_id` untuk menyimpan primary key (UUID atau Autoincrement) dari sistem `9pajak`.
+-   **Hierarchy Transformation**: Petakan `legacy_jenis` (dari `PATDA_JENIS_PAJAK`) menjadi `retribution_classifications` (Level 2). Pastikan penetapan `retribution_type_id` (Level 1) mengikuti pembagian Portofolio Wilayah (I/II).
 
 ## 3. Akurasi Perhitungan (Formula Parity)
 Setiap penetapan (billing) yang dimigrasikan harus bisa diverifikasi ulang menggunakan `FormulaParserService`.
 
 -   **Langkah Verifikasi**:
-    1. Ambil data `metadata` dari objek pajak.
+    1. Ambil data `metadata` (NPOP, dll) dari objek pajak.
     2. Masukkan ke dalam rumus di `RetributionClassification`.
-    3. Pastikan hasilnya sama dengan `CPM_TOTAL_PAJAK` di sistem lama.
+    3. **Threshold Check**: Pastikan NPOPTKP yang digunakan sesuai (80jt untuk Umum, 300jt untuk Waris Sedarah).
+    4. Pastikan hasilnya sama dengan `CPM_TOTAL_PAJAK` di sistem lama.
 -   **Anomaly**: Jika ada selisih, catat di kolom `rejection_notes` atau `metadata->migration_anomaly`.
 
 ## 4. Alur Status Dokumen (State Mapping)

@@ -33,6 +33,11 @@ class RetributionTypeController extends Controller
         $user = $request->user();
         $query = RetributionType::with(['opd', 'classifications']);
 
+        // Default to active types only, unless explicitly requested otherwise
+        if (!$request->has('show_all')) {
+            $query->where('is_active', $request->boolean('is_active', true));
+        }
+
         // Admin OPD and Petugas only see their own retribution types
         if ($user && $user->role === 'opd') {
             $query->where('opd_id', $user->opd_id);

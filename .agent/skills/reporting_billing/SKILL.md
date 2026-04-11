@@ -7,17 +7,15 @@ description: Standarisasi alur hulu-ke-hilir dari Pelaporan Mandiri (SPTPD), Ver
 
 Skill ini adalah jantung dari operasional MPAD, mengelola transisi dari laporan warga menjadi ketetapan pajak.
 
-## 📝 Fase 1: Pelaporan (Citizen Reporting)
-- **Modul**: `MonthlyReportController` (Backend) & `SptpdReporting` (Mobile).
-- **Proses**: Citizen mengirimkan bukti transaksi bulanan melalui `POST /api/citizen/reports`.
-- **Kritikal**: Validasi metadata (luas, jumlah kamar, omzet) harus dilakukan di level frontend sebelum dikirim ke API.
+## 📝 Fase 1: Pendaftaran & Pelaporan
+- **Pendaftaran**: Menggunakan **SPOPD** (Usaha) atau **SPOP/LSPOP** (PBB) untuk mendapatkan **SKT**.
+- **Pelaporan**: Wajib Pajak Self-Assessment (Resto/Hotel) mengirimkan **SPTPD** (Laporan Mandiri) bulanan melalui `MonthlyReportController`.
+- **Kritikal**: Validasi omzet dan metadata harus dilakukan sebelum status laporan berlanjut ke tahap penetapan.
 
-## 🔎 Fase 2: Verifikasi & Validasi (Admin)
-- **Modul**: `VerificationController` & `MonthlyReportController::validateReport`.
-- **Alur**: 
-  1. Admin memeriksa lampiran foto bukti.
-  2. Gunakan `PUT /api/reports/monthly/{report}/validate` untuk menyetujui atau menolak laporan.
-  3. Jika disetujui, sistem secara otomatis menyiapkan basis data untuk penerbitan SKRD/Billing.
+## 🔎 Fase 2: Verifikasi & Penetapan (Assessment)
+- **Proses**: Admin memverifikasi SPTPD atau melakukan penetapan jabatan (Official Assessment).
+- **Output**: Penerbitan **SKPD** (Pajak), **SKRD** (Retribusi), atau **SPPT** (PBB) sebagai dokumen tagihan resmi.
+- **Kurang Bayar**: Jika ada selisih audit, diterbitkan **SKPDKB**.
 
 ## 💳 Fase 3: Penetapan & Billing
 - **Proses**: Penerbitan tagihan secara massal atau individu melalui `POST /api/bills`.
@@ -27,11 +25,9 @@ Skill ini adalah jantung dari operasional MPAD, mengelola transisi dari laporan 
   - `unpaid`: Melewati jatuh tempo.
   - `paid`: Lunas.
 
-## 📑 Fase 4: Dokumen Resmi
-Output dari siklus ini adalah dokumen yang dapat diunduh:
-1. **SKRD**: Surat Ketetapan Retribusi Daerah.
-2. **SSPD**: Surat Setoran Pajak Daerah (setelah lunas).
-3. **SPPT**: Untuk PBB.
+## 📑 Fase 4: Pembayaran & Bukti Sah
+- **Bukti Bayar**: Setelah pelunasan di Bank atau melalui Petugas, sistem menerbitkan **SSPD** (Surat Setoran Pajak Daerah) atau **SSRD**.
+- **Dokumen Penagihan Aktif**: Jika menunggak, sistem menerbitkan **STPD**, **Surat Teguran**, hingga **SPMP** (Surat Paksa).
 
 ## 🤝 Fase 5: Rekonsiliasi & Settlement (Cash Orchestration)
 Fase ini memastikan uang tunai yang dipungut Petugas di lapangan benar-benar sampai ke kas negara melalui Admin.
