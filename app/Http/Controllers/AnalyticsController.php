@@ -163,7 +163,7 @@ class AnalyticsController extends Controller
 
                 return [
                     'id' => $obj->id,
-                    'name' => $obj->taxpayer->name . ' - ' . $obj->name,
+                    'name' => ($obj->taxpayer->name ?? 'WP N/A') . ' - ' . $obj->name,
                     'latitude' => (float)$obj->latitude,
                     'longitude' => (float)$obj->longitude,
                     'icon' => $obj->retributionType->icon ?? null,
@@ -202,5 +202,74 @@ class AnalyticsController extends Controller
                 'lng' => 122.6012
             ]
         ]);
+    }
+
+    /**
+     * Get detailed financial performance/achievement per tax object
+     */
+    public function getObjectPerformance(Request $request)
+    {
+        $year = $request->get('year', date('Y'));
+        $search = $request->get('q');
+        $retributionTypeId = $request->get('retribution_type_id');
+        $opdId = $request->get('opd_id');
+
+        $user = auth()->user();
+        if (!$user->isSuperAdmin()) {
+            $opdId = $user->opd_id;
+        }
+
+        // Subquery for total billed per object
+        $billedSub = DB::table('bills')
+            ->select('tax_object_id', DB::raw('SUM(amount) as total_target'))
+            ->whereYear('created_at', $year)
+            ->groupBy('tax_object_id');
+
+        // Subquery for total paid per object
+        $paidSub = DB::table('payments')
+            ->select('tax_object_id', DB::raw('SUM(amount) as total_realization'))
+            ->where('status', 'success')
+            ->whereYear('paid_at', $year)
+            ->groupBy('tax_object_id');
+
+        $query = DB::table('tax_objects as to')
+            ->join('taxpayers as tp', 'to.taxpayer_id', '=', 'tp.id')
+            ->leftJoin('retribution_classifications as rc', 'to.retribution_classification_id', '=', 'rc.id')
+            ->leftJoin('retribution_types as rt', 'to.retribution_type_id', '=', 'rt.id')
+            ->leftJoinSub($billedSub, 'b', 'to.id', '=', 'b.tax_object_id')
+            ->leftJoinSub($paidSub, 'p', 'to.id', '=', 'p.tax_object_id')
+            ->select(
+                'to.id',
+                'to.name',
+                'tp.name as taxpayer_name',
+                'rt.name as type_name',
+                'rc.name as classification_name',
+                DB::raw('COALESCE(b.total_target, 0) as target'),
+                DB::raw('COALESCE(p.total_realization, 0) as realization'),
+                DB::raw('CASE WHEN COALESCE(b.total_target, 0) > 0 
+                             THEN ROUND((COALESCE(p.total_realization, 0) / b.total_target) * 100, 2) 
+                             ELSE 0 END as percentage')
+            )
+            ->when($opdId, fn($q) => $q->where('to.opd_id', $opdId))
+            ->when($retributionTypeId, fn($q) => $q->where('to.retribution_type_id', $retributionTypeId))
+            ->when($search, function($q) use ($search) {
+                $q->where(function($sq) use ($search) {
+                    $sq->where('to.name', 'like', "%{$search}%")
+                       ->orWhere('tp.name', 'like', "%{$search}%");
+                });
+            });
+
+        // Filter out objects with no financial data for that year if not searched
+        if (!$search) {
+            $query->where(function($q) {
+                $q->whereNotNull('b.total_target')
+                  ->orWhereNotNull('p.total_realization');
+            });
+        }
+
+        $performance = $query->orderBy('percentage', 'desc')
+            ->paginate($request->get('limit', 15));
+
+        return response()->json($performance);
     }
 }

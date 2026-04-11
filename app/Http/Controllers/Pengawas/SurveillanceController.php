@@ -27,42 +27,47 @@ class SurveillanceController extends Controller
             $query->where('opd_id', $user->opd_id);
         }
 
-        $anomalies = $query->get()
+        $anomalies = $query->orderBy('updated_at', 'desc')
+            ->limit(200)
+            ->get()
             ->map(function ($obj) use ($threshold) {
-                // Simplified anomaly logic for demo
-                // If the latest payment is significantly lower than average or zero for long time
-                $lastPayment = Payment::where('tax_object_id', $obj->id)
-                    ->orderBy('created_at', 'desc')
-                    ->first();
-                
-                $billingService = app(\App\Services\BillingService::class);
-                $expected = $billingService->getPendingPeriods($obj);
-                $totalExpected = collect($expected)->sum('amount');
-                
-                $isAnomaly = false;
-                $reason = "";
-                
-                if (count($expected) > 3) {
-                    $isAnomaly = true;
-                    $reason = "Tunggakan di atas 3 periode";
-                }
+                try {
+                    // Simplified anomaly logic for demo
+                    // If the latest payment is significantly lower than average or zero for long time
+                    $lastPayment = Payment::where('tax_object_id', $obj->id)
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+                    
+                    $billingService = app(\App\Services\BillingService::class);
+                    $expected = $billingService->getPendingPeriods($obj);
+                    $totalExpected = collect($expected)->sum('amount');
+                    
+                    $isAnomaly = false;
+                    $reason = "";
+                    
+                    if (count($expected) > 3) {
+                        $isAnomaly = true;
+                        $reason = "Tunggakan di atas 3 periode";
+                    }
 
-                // Simulate Revenue Mismatch (Self-reporting vs Expected)
-                // In real system, this compares SPTPD table with Tapping Box table
-                if (!$isAnomaly && $obj->id % 7 == 0) {
-                    $isAnomaly = true;
-                    $reason = "Selisih Pelaporan >20%";
-                }
-                
-                if ($isAnomaly) {
-                    return [
-                        'tax_object_id' => $obj->id,
-                        'name' => $obj->name,
-                        'taxpayer' => $obj->taxpayer->name,
-                        'expected_revenue' => $totalExpected,
-                        'reason' => $reason,
-                        'is_anomaly' => true
-                    ];
+                    // Simulate Revenue Mismatch (Self-reporting vs Expected)
+                    if (!$isAnomaly && $obj->id % 7 == 0) {
+                        $isAnomaly = true;
+                        $reason = "Selisih Pelaporan >20%";
+                    }
+                    
+                    if ($isAnomaly) {
+                        return [
+                            'tax_object_id' => $obj->id,
+                            'name' => $obj->name,
+                            'taxpayer' => $obj->taxpayer->name ?? 'N/A',
+                            'expected_revenue' => $totalExpected,
+                            'reason' => $reason,
+                            'is_anomaly' => true
+                        ];
+                    }
+                } catch (\Exception $e) {
+                    \Log::error("Error processing anomaly for TaxObject {$obj->id}: " . $e->getMessage());
                 }
                 
                 return null;
