@@ -39,18 +39,18 @@ jobs:
           sed -i 's/DB_HOST=.*/DB_HOST=localhost/' .env
           sed -i 's/DB_DATABASE=.*/DB_DATABASE=retribusi_staging/' .env
           sed -i 's/DB_USERNAME=.*/DB_USERNAME=sipanda/' .env
-          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=MpadSecure2026!/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=Bapenda123#$/' .env
           
           # Map Legacy connection (required for SimpadKoneksiService / bills)
           sed -i 's/DB_HOST_LEGACY=.*/DB_HOST_LEGACY=localhost/' .env
           sed -i 's/DB_DATABASE_LEGACY=.*/DB_DATABASE_LEGACY=sw_patda/' .env
           sed -i 's/DB_USERNAME_LEGACY=.*/DB_USERNAME_LEGACY=sipanda/' .env
-          sed -i 's/DB_PASSWORD_LEGACY=.*/DB_PASSWORD_LEGACY=MpadSecure2026!/' .env
+          sed -i 's/DB_PASSWORD_LEGACY=.*/DB_PASSWORD_LEGACY=Bapenda123#$/' .env
           
           sed -i 's/APP_DEBUG=true/APP_DEBUG=false/' .env
           
           echo "--- Database Connectivity Check ---"
-          mysqladmin -u sipanda -pMpadSecure2026! ping || echo "MySQL Ping FAILED"
+          mysqladmin -u sipanda -pBapenda123#$ ping || echo "MySQL Ping FAILED"
           echo "----------------------------------"
           
           composer install --no-interaction --prefer-dist --optimize-autoloader
