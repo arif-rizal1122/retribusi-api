@@ -213,6 +213,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         
         Route::get('/analytics/realization', [AnalyticsController::class, 'getRealization']);
         Route::get('/analytics/heatmap', [AnalyticsController::class, 'getHeatmapData']);
+        Route::get('/analytics/object-performance', [AnalyticsController::class, 'getObjectPerformance']);
         Route::apiResource('retribution-types', RetributionTypeController::class);
         Route::get('/taxpayers/search/{nik}', [\App\Http\Controllers\TaxpayerSearchController::class, 'searchByNik']);
         Route::apiResource('taxpayers', TaxpayerController::class);
