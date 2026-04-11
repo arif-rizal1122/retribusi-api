@@ -37,11 +37,8 @@ class SimpadKoneksiService
     {
         $tableName = 'PATDA_' . strtoupper($type) . '_PROFIL';
         
-        // Some types might use _DOC instead of _PROFIL or join both
-        // For now, assume _PROFIL as the main source of truth for objects
         return DB::connection($this->connection)
-            ->table($tableName)
-            ->get();
+            ->table($tableName);
     }
 
     /**
