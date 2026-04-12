@@ -146,6 +146,49 @@ Route::post('/pbb/calculate', [PbbClassificationController::class, 'calculate'])
 // Public: PBB Bapenda Inquiry (cek tagihan tanpa login) - Throttled
 Route::post('/pbb/bapenda/inquiry', [PbbBapendaController::class, 'inquiry'])->middleware('throttle:10,1');
 
+// Tax Simulation (public, no auth needed)
+Route::post('/simulate-tax', function (Request $request) {
+    $request->validate([
+        'classification_id' => 'nullable|exists:retribution_classifications,id',
+        'calculation_formula' => 'nullable|string',
+        'variables' => 'required|array',
+    ]);
+    
+    $formula = $request->calculation_formula;
+    $name = 'Simulasi';
+    
+    if ($request->classification_id) {
+        $classification = \App\Models\RetributionClassification::findOrFail($request->classification_id);
+        if (!$formula) $formula = $classification->calculation_formula;
+        $name = $classification->name;
+    }
+    
+    if (!$formula) {
+        return response()->json(['error' => 'Rumus perhitungan tidak ditemukan.'], 422);
+    }
+    
+    $parser = new \App\Services\FormulaParserService();
+    $result = $parser->calculate($formula, $request->variables);
+    
+    return response()->json([
+        'classification' => $name,
+        'formula' => $formula,
+        'variables' => $request->variables,
+        'result' => $result,
+        'formatted' => 'Rp ' . number_format($result, 0, ',', '.'),
+    ]);
+});
+
+// Public: Get classifications with formulas for simulation
+Route::get('/tax-formulas', function () {
+    $classifications = \App\Models\RetributionClassification::whereNotNull('calculation_formula')
+        ->where('calculation_formula', '!=', '')
+        ->with('retributionType:id,name')
+        ->get(['id', 'name', 'code', 'calculation_formula', 'retribution_type_id', 'form_schema']);
+    
+    return response()->json(['data' => $classifications]);
+});
+
 // Protected routes
 Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     // Shared Routes (Admin, Petugas, Citizen)
@@ -155,6 +198,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::post('/user/password', [AuthController::class, 'changePassword']);
     Route::put('/user/location', [AuthController::class, 'updateLocation']);
     Route::post('/upload', [\App\Http\Controllers\UploadController::class, 'uploadImage']);
+
+    // Me / Self Profile (New for Mobile & better control)
     Route::get('/me', [\App\Http\Controllers\MeController::class, 'show']);
     Route::post('/me/update', [\App\Http\Controllers\MeController::class, 'update']);
     
@@ -166,6 +211,15 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/{id}/register', [\App\Http\Controllers\CitizenServiceController::class, 'register']);
         Route::get('/{id}/bills', [\App\Http\Controllers\CitizenServiceController::class, 'bills']);
     });
+    
+    // Retribution Types (OPD-scoped)
+    Route::apiResource('retribution-types', RetributionTypeController::class);
+    
+    // Taxpayer Search (New)
+    Route::get('/taxpayers/search/{nik}', [\App\Http\Controllers\TaxpayerSearchController::class, 'searchByNik']);
+
+    // Taxpayers (OPD-scoped)
+    Route::apiResource('taxpayers', TaxpayerController::class);
 
     // Share Routes for Bills & TTE
     Route::get('/bills/{bill}', [BillController::class, 'show']);

@@ -75,6 +75,7 @@ class TaxObjectController extends Controller
     }
 
     /**
+<<<<<<< HEAD
      * Manually store a new tax object (useful for testing or direct Petugas API)
      */
     public function store(Request $request)
@@ -210,6 +211,80 @@ class TaxObjectController extends Controller
         ]);
 
         return response()->json([
+=======
+     * Update a pending tax object
+     */
+    public function update(Request $request, TaxObject $taxObject)
+    {
+        $user = $request->user();
+        
+        // Authorization: Only owner can edit (if user is a taxpayer)
+        if ($user->role === 'citizen') {
+            if ($taxObject->taxpayer_id !== $user->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+        } elseif ($user->role === 'opd') {
+            if ($taxObject->opd_id !== $user->opd_id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+        }
+
+        // Only allow editing if status is pending
+        if ($taxObject->status !== 'pending') {
+            return response()->json(['message' => 'Hanya objek dengan status pending yang dapat diedit.'], 422);
+        }
+
+        $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'address' => 'sometimes|string|max:255',
+            'metadata' => 'nullable',
+        ]);
+
+        $metadata = $taxObject->metadata ?? [];
+        $newMetadata = $request->input('metadata');
+        if ($newMetadata) {
+            if (is_string($newMetadata)) {
+                $newMetadata = json_decode($newMetadata, true) ?: [];
+            }
+            $metadata = array_merge($metadata, $newMetadata);
+        }
+
+        // Handle dynamic document uploads
+        $cloudinary = app(\App\Services\CloudinaryService::class);
+        $classification = $taxObject->classification;
+        $requirements = $classification->requirements ?? [];
+        $processedKeys = [];
+
+        foreach ($requirements as $req) {
+            $key = $req['key'] ?? null;
+            if ($key && $request->hasFile($key)) {
+                $metadata[$key] = $cloudinary->upload(
+                    $request->file($key), 
+                    'citizen/documents/' . $taxObject->retribution_type_id
+                );
+                $processedKeys[] = $key;
+            }
+        }
+
+        // Fallback files
+        $fallbacks = ['foto_lokasi_open_kamera', 'formulir_data_dukung'];
+        foreach ($fallbacks as $key) {
+            if (!in_array($key, $processedKeys) && $request->hasFile($key)) {
+                $metadata[$key] = $cloudinary->upload(
+                    $request->file($key), 
+                    'citizen/documents/' . $taxObject->retribution_type_id
+                );
+            }
+        }
+
+        $taxObject->update([
+            'name' => $request->input('name', $taxObject->name),
+            'address' => $request->input('address', $taxObject->address),
+            'metadata' => $metadata,
+        ]);
+
+        return response()->json([
+>>>>>>> 4fe827787745eafc96dec7695af1fbbe71bfdad4
             'message' => 'Data objek berhasil diperbarui',
             'data' => $taxObject
         ]);
@@ -224,9 +299,13 @@ class TaxObjectController extends Controller
         
         // Authorization: Only owner can delete (if user is a taxpayer)
         // If it's an OPD admin, they might have different rules, but here we focus on Citizen/Taxpayer
+<<<<<<< HEAD
         if (in_array($user->role, ['petugas', 'pengawas', 'kabid_pengawas', 'kasubid_pengawas'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         } elseif ($user->role === 'citizen' || $user->role === 'wajib_pajak') {
+=======
+        if ($user->role === 'citizen') {
+>>>>>>> 4fe827787745eafc96dec7695af1fbbe71bfdad4
             if ($taxObject->taxpayer_id !== $user->id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
