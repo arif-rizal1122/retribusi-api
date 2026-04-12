@@ -92,7 +92,7 @@ class BillController extends Controller
             'retribution_type_id' => 'required_without:tax_object_id|exists:retribution_types,id',
             'amount' => 'nullable|numeric|min:0',
             'period' => 'required|string',
-            'due_date' => 'required|date',
+            'due_date' => 'nullable|date',
             'metadata' => 'nullable|array',
         ]);
 
@@ -104,6 +104,32 @@ class BillController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
+            // [SECURITY] Prevent duplicate manual bills for the same object and period
+            $exists = Bill::where('tax_object_id', $taxObject->id)
+                ->where('period', $request->period)
+                ->whereIn('status', ['pending', 'overdue', 'lunas', 'paid'])
+                ->exists();
+            
+            if ($exists) {
+                return response()->json(['message' => "Tagihan untuk periode {$request->period} sudah ada di sistem. Mohon periksa kembali."], 422);
+            }
+
+            // [INTELLIGENCE] Auto-tag as manual audit result
+            $metadata = $request->metadata ?? [];
+            $metadata['is_manual'] = true;
+            $metadata['source'] = 'admin_input';
+            $metadata['created_at_role'] = $user->role;
+
+            // [INTELLIGENCE] Default due date to end of period if not provided
+            $dueDate = $request->due_date;
+            if (!$dueDate) {
+                try {
+                    $dueDate = \Carbon\Carbon::parse($request->period)->endOfMonth();
+                } catch (\Exception $e) {
+                    $dueDate = now()->addDays(30);
+                }
+            }
+
             $bill = Bill::create([
                 'user_id' => $user->id,
                 'taxpayer_id' => $taxObject->taxpayer_id,
@@ -112,11 +138,11 @@ class BillController extends Controller
                 'retribution_type_id' => $taxObject->retribution_type_id,
                 'retribution_classification_id' => $taxObject->retribution_classification_id,
                 'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
-                'amount' => $request->amount ?? $this->calculateAmount($taxObject, $request->metadata ?? []),
+                'amount' => $request->amount ?? $this->calculateAmount($taxObject, $metadata),
                 'status' => 'pending',
                 'period' => $request->period,
-                'metadata' => $request->metadata,
-                'due_date' => $request->due_date,
+                'metadata' => $metadata,
+                'due_date' => $dueDate,
             ]);
         } else {
             // Legacy flow: bill is linked to taxpayer + retribution type (no specific object)

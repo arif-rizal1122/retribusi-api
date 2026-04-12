@@ -120,10 +120,14 @@ class MigrateLegacyMass extends Command
             // B. Mapping to Official PBJT Classification
             $mapping = [
                 'restoran' => ['type_id' => 17, 'class_id' => 192],
-                'hotel' => ['type_id' => 17, 'class_id' => 193],
-                'hiburan' => ['type_id' => 17, 'class_id' => 194],
-                'parkir' => ['type_id' => 17, 'class_id' => 172],
-                'reklame' => ['type_id' => 16, 'class_id' => 188],
+                'hotel'    => ['type_id' => 17, 'class_id' => 193],
+                'hiburan'  => ['type_id' => 17, 'class_id' => 194],
+                'parkir'   => ['type_id' => 17, 'class_id' => 172],
+                'reklame'  => ['type_id' => 16, 'class_id' => 188],
+                'mblb'     => ['type_id' => 17, 'class_id' => 189],
+                'walet'    => ['type_id' => 17, 'class_id' => 190],
+                'abt'      => ['type_id' => 17, 'class_id' => 197],
+                'ppj'      => ['type_id' => 17, 'class_id' => 196],
             ];
 
             $target = $mapping[strtolower($type)] ?? ['type_id' => 17, 'class_id' => 192];
@@ -147,7 +151,13 @@ class MigrateLegacyMass extends Command
 
     protected function migrateLatestReport($legacyProfileId, $taxpayer, $taxObject, $type)
     {
-        $tableName = 'PATDA_' . strtoupper($type) . '_DOC';
+        $map = [
+            'mblb' => 'PATDA_MINERAL_DOC',
+            'abt'  => 'PATDA_AIRBAWAHTANAH_DOC',
+            'ppj'  => 'PATDA_JALAN_DOC',
+        ];
+
+        $tableName = $map[strtolower($type)] ?? 'PATDA_' . strtoupper($type) . '_DOC';
         
         $latestDoc = DB::connection('mysql_legacy')
             ->table($tableName)
@@ -159,11 +169,11 @@ class MigrateLegacyMass extends Command
         if ($latestDoc) {
             MonthlyReport::updateOrCreate(
                 [
-                    'taxpayer_id' => $taxpayer->id,
                     'tax_object_id' => $taxObject->id,
                     'period' => $latestDoc->CPM_MASA_PAJAK . '-' . $latestDoc->CPM_TAHUN_PAJAK
                 ],
                 [
+                    'taxpayer_id' => $taxpayer->id,
                     'turnover_amount' => $latestDoc->CPM_TOTAL_OMZET,
                     'tax_amount' => $latestDoc->CPM_TOTAL_PAJAK,
                     'status' => 'approved',
