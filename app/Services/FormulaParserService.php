@@ -101,7 +101,7 @@ class FormulaParserService
      *   - 'angsuran' / 'penundaan' / 'salah_hitung': 0.6%
      * @return float
      */
-    public function calculatePenalty(float $amount, int $monthsLate, string $type = 'stpd'): float
+    public function calculatePenalty(float $amount, $monthsLate, string $type = 'stpd'): float
     {
         $monthsLate = (int) $monthsLate;
         $monthsLate = min($monthsLate, 24);

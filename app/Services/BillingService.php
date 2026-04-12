@@ -26,10 +26,20 @@ class BillingService
         }
 
         $cycle = $type->billing_cycle ?? 'monthly';
+        $unit = $this->getCarbonUnit($cycle);
         
-        $startDate = $taxObject->created_at->startOf($this->getCarbonUnit($cycle));
-        $currentDate = Carbon::now()->startOf($this->getCarbonUnit($cycle));
+        $startDate = $taxObject->created_at->startOf($unit);
+        $currentDate = Carbon::now()->startOf($unit);
         
+        // [PERFORMANCE] Limit virtual arrears calculation to max 24 periods (e.g., 2 years)
+        // to prevent heavy processing for very old tax objects.
+        $performanceLimit = 24;
+        $earliestAllowed = $currentDate->copy()->subMonths($performanceLimit)->startOf($unit);
+        
+        if ($startDate->lt($earliestAllowed)) {
+            $startDate = $earliestAllowed;
+        }
+
         $periods = collect();
         $tempDate = $startDate->copy();
         

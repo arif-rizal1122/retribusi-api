@@ -35,7 +35,13 @@ class SimpadKoneksiService
      */
     public function getLegacyObjects($type)
     {
-        $tableName = 'PATDA_' . strtoupper($type) . '_PROFIL';
+        $map = [
+            'mblb' => 'PATDA_MINERAL_PROFIL',
+            'abt'  => 'PATDA_AIRBAWAHTANAH_PROFIL',
+            'ppj'  => 'PATDA_JALAN_PROFIL',
+        ];
+
+        $tableName = $map[strtolower($type)] ?? 'PATDA_' . strtoupper($type) . '_PROFIL';
         
         return DB::connection($this->connection)
             ->table($tableName);
