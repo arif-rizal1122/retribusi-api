@@ -10,6 +10,12 @@ use App\Traits\Auditable;
 class RetributionClassification extends Model
 {
     use HasFactory, Auditable;
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+    }
+
     protected $fillable = [
         'opd_id',
         'retribution_type_id',

@@ -67,7 +67,7 @@ jobs:
           sudo chmod -R 775 storage bootstrap/cache 2>/dev/null || true
           
           echo "--- Final Verification ---"
-          php artisan --version
+          bash testing/vps_infra_audit.sh > vps_infra_audit.log; cat vps_infra_audit.log
           echo "--------------------------"
           
           echo "✅ Deploy completed successfully!"
