@@ -10,13 +10,26 @@ STAGING_DOMAIN="api.mpad.online"
 PROD_ROOT="/home/sipanda/retribusi-api/public"
 STAGING_ROOT="/home/sipanda/retribusi-api-staging/public"
 
-# 3. NUCLEAR RESET OF CATCH-ALLS
-echo "Nuclear Reset: Checking for default_server and catch-alls..."
-# Find files with default_server or no server_name
-local catchalls=$(grep -rE "default_server|server_name _" /etc/nginx/sites-enabled/ -l)
-for f in $catchalls; do
-    echo "Disabling catch-all: $f"
-    sudo rm -f "$f"
+# 3. NUCLEAR RESET OF CATCH-ALLS & SSL OVERRIDES
+echo "Nuclear Reset: Checking for default_server, catch-alls, and SSL overrides..."
+# Find all enabled sites
+local sites=$(ls /etc/nginx/sites-enabled/)
+for f in $sites; do
+    local fpath="/etc/nginx/sites-enabled/$f"
+    # We strictly AVOID touching anything related to posmpad
+    if [[ "$f" == *"posmpad"* ]]; then
+        echo "Preserving POS config: $f"
+        continue
+    fi
+    
+    # If it's a default server or contains SSL for the target domains but is not our controlled file
+    if grep -qE "default_server|server_name _" "$fpath" || \
+       (grep -qE "ssl|listen 443" "$fpath" && grep -qE "$PROD_DOMAIN|adminmpad|petugasmpad" "$fpath"); then
+        if [[ "$f" != "retribusi-api-prod.conf" ]] && [[ "$f" != "retribusi-api-staging.conf" ]]; then
+            echo "Nuclear Removal: $f"
+            sudo rm -f "$fpath"
+        fi
+    fi
 done
 
 # 4. SURGICAL PURGE OF CONFLICTS (EXCLUDING POS)
@@ -25,6 +38,7 @@ purge_conflicts() {
     echo "Scanning sites-enabled for conflicts with $domain..."
     local files=$(grep -r "$domain" /etc/nginx/sites-enabled/ -l)
     for f in $files; do
+        if [[ "$f" == *"posmpad"* ]]; then continue; fi
         if [[ "$domain" == *"apimpad"* ]] || [[ "$domain" == *"adminmpad"* ]] || [[ "$domain" == *"petugasmpad"* ]]; then
             echo "Removing conflicting config: $f"
             sudo rm -f "$f"
@@ -37,7 +51,7 @@ purge_conflicts "adminmpad.baubaukota.go.id"
 purge_conflicts "petugasmpad.baubaukota.go.id"
 purge_conflicts "$STAGING_DOMAIN"
 
-# 5. RE-ESTABLISH CORRECT CONFIGS
+# 5. RE-ESTABLISH CORRECT CONFIGS (PORT 80 & 443 BRIDGE)
 fix_conf() {
     local domain=$1
     local target_root=$2
@@ -46,44 +60,29 @@ fix_conf() {
     
     local conf_path="/etc/nginx/sites-available/$conf_name"
     
-    # Force creation of a fresh, guaranteed config if missing or corrupted
-    if [ ! -f "$conf_path" ] || [ "$domain" == "$PROD_DOMAIN" ]; then
-        echo "Creating fresh config for $domain"
-        sudo bash -c "cat > $conf_path <<EOF
+    echo "Creating fresh config for $domain at $conf_path"
+    sudo bash -c "cat > $conf_path <<EOF
 server {
     listen 80;
     listen [::]:80;
     server_name $domain;
     root $target_root;
 
-    add_header X-Frame-Options \"SAMEORIGIN\";
-    add_header X-XSS-Protection \"1; mode=block\";
-    add_header X-Content-Type-Options \"nosniff\";
-
-    index index.php;
+    # Basic catch-all for this domain on port 80
+    index index.php index.html;
     charset utf-8;
 
     location / {
         try_files \\\$uri \\\$uri/ /index.php?\\\$query_string;
     }
 
-    location = /favicon.ico { access_log off; log_not_found off; }
-    location = /robots.txt  { access_log off; log_not_found off; }
-
-    error_page 404 /index.php;
-
     location ~ \.php$ {
         fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
         fastcgi_param SCRIPT_FILENAME \\\$realpath_root\\\$fastcgi_script_name;
         include fastcgi_params;
     }
-
-    location ~ /\.(?!well-known).* {
-        deny all;
-    }
 }
 EOF"
-    fi
     
     sudo ln -sf "$conf_path" "/etc/nginx/sites-enabled/$conf_name"
 }
