@@ -23,6 +23,15 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT }}
           script: |
+            echo "--- FIND AND DESTROY LANDING PAGE ---"
+            # Find any index.html containing "Soft Launching" and delete it
+            find /home/sipanda -name "index.html" -exec grep -l "Soft Launching" {} + | while read f; do
+              echo "Destroying landing page: \$f"
+              sudo rm -v "\$f"
+            done
+
+            [ -f /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh ] && bash /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh
+            
             echo "--- VERBOSE NGINX DUMP ---"
             ls -la /etc/nginx/sites-enabled/
             for f in /etc/nginx/sites-enabled/*; do
@@ -30,11 +39,6 @@ jobs:
               cat "\$f"
               echo "--------------------------"
             done
-            echo "--- SEARCHING FOR INDEX.HTML ---"
-            find /home/sipanda/retribusi-api/public -name "index.html"
-            sudo rm -v /home/sipanda/retribusi-api/public/index.html || echo "No index.html found"
-
-            [ -f /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh ] && bash /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh
 
             set -e
             echo "--- STARTING ATOMIC REPAIR ---"
