@@ -1,4 +1,4 @@
-# Timestamp: 2026-04-13 20:16
+# Timestamp: 2026-04-13 20:18
 name: Deploy Production VPS (Master Repair)
 
 on:
@@ -40,12 +40,14 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- CHECKING OTHER CONFIG DIRS ---"
-            ls -la /etc/nginx/conf.d/
-            sudo grep -r "apimpad" /etc/nginx/conf.d/
+            echo "--- LISTING ALL ENABLED SITES ---"
+            ls -la /etc/nginx/sites-enabled/
             
-            echo "--- CHECKING MAIN NGINX.CONF ---"
-            cat /etc/nginx/nginx.conf
+            echo "--- LISTING ALL CONF.D FILES ---"
+            ls -la /etc/nginx/conf.d/
+            
+            echo "--- SEARCHING FOR APIMPAD STRING ON DISK ---"
+            sudo grep -l -r "apimpad" /etc/nginx | xargs ls -la
             
             echo "--- TESTING NGINX CONFIG ---"
             sudo nginx -t
