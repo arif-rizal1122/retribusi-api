@@ -1,4 +1,4 @@
-<?php die("--- PATH AUDIT --- " . getcwd()); ?><?php die("--- PATH AUDIT --- " . getcwd()); ?><?php
+<?php
 
 use Illuminate\Http\Request;
 

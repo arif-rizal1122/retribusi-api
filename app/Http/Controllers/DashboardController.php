@@ -22,7 +22,12 @@ class DashboardController extends Controller
         if (in_array($user->role, ['citizen', 'wajib_pajak'])) {
             return response()->json(['message' => 'Unauthorized Access'], 403);
         }
-        $opdId = !$user->isSuperAdmin() ? $user->opd_id : null;
+        // Allow Super Admin to filter by opd_id query parameter
+        // Non-SuperAdmin users are restricted to their own opd_id
+        $opdId = $request->query('opd_id');
+        if (!$user->isSuperAdmin()) {
+            $opdId = $user->opd_id;
+        }
 
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
@@ -76,7 +81,7 @@ class DashboardController extends Controller
                      ->count(),
                  'total_amount' => (float)Payment::where('approved_by', $user->id)
                      ->whereBetween('paid_at', [$start->startOfDay(), $end->endOfDay()])
-                     ->sum('amount'),
+                     ->sum('payments.amount'),
                  'taxpayers_registered' => \App\Models\Taxpayer::where('created_by', $user->id)
                      ->whereBetween('created_at', [$start->startOfDay(), $end->endOfDay()])
                      ->count(),
@@ -121,7 +126,7 @@ class DashboardController extends Controller
                 ->groupBy('retribution_types.name')
                 ->get(),
             'revenue_by_classification' => Payment::join('bills', 'payments.bill_id', '=', 'bills.id')
-                ->join('retribution_classifications', 'bills.retribution_classification_id', '=', 'retribution_classifications.id')
+                ->leftJoin('retribution_classifications', 'bills.retribution_classification_id', '=', 'retribution_classifications.id')
                 ->when($opdId, fn($q) => $q->where('bills.opd_id', $opdId))
                 ->when($user->retribution_type_id && in_array($user->role, ['admin', 'pengawas']), fn($q) => $q->where('bills.retribution_type_id', $user->retribution_type_id))
                 ->when($user->role === 'petugas', function($q) use ($user) {
@@ -142,8 +147,11 @@ class DashboardController extends Controller
                     }
                 })
                 ->whereBetween('payments.paid_at', [$start->startOfDay(), $end->endOfDay()])
-                ->select('retribution_classifications.name', DB::raw('SUM(payments.amount) as total'))
-                ->groupBy('retribution_classifications.name')
+                ->select(
+                    DB::raw('COALESCE(retribution_classifications.name, "Lainnya/Belum Terklasifikasi") as name'),
+                    DB::raw('SUM(payments.amount) as total')
+                )
+                ->groupBy('name')
                 ->get()
         ]);
     }
@@ -182,7 +190,7 @@ class DashboardController extends Controller
                 }
             })
             ->whereBetween('paid_at', [$start->startOfDay(), $end->endOfDay()])
-            ->sum('amount');
+            ->sum('payments.amount');
     }
 
     private function getPendingCount($opdId, $start, $end)
@@ -236,7 +244,12 @@ class DashboardController extends Controller
         if (in_array($user->role, ['citizen', 'wajib_pajak'])) {
             return response()->json(['message' => 'Unauthorized Access'], 403);
         }
-        $opdId = !$user->isSuperAdmin() ? $user->opd_id : null;
+        // Allow Super Admin to filter by opd_id query parameter
+        // Non-SuperAdmin users are restricted to their own opd_id
+        $opdId = $request->query('opd_id');
+        if (!$user->isSuperAdmin()) {
+            $opdId = $user->opd_id;
+        }
 
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
@@ -320,7 +333,12 @@ class DashboardController extends Controller
         if (in_array($user->role, ['citizen', 'wajib_pajak'])) {
             return response()->json(['message' => 'Unauthorized Access'], 403);
         }
-        $opdId = !$user->isSuperAdmin() ? $user->opd_id : null;
+        // Allow Super Admin to filter by opd_id query parameter
+        // Non-SuperAdmin users are restricted to their own opd_id
+        $opdId = $request->query('opd_id');
+        if (!$user->isSuperAdmin()) {
+            $opdId = $user->opd_id;
+        }
         
         // 1. Get Zones (Potentials)
         $zones = \App\Models\Zone::with(['opd', 'retributionType'])
