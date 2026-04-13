@@ -34,7 +34,7 @@ Auth::login($admin);
 
 $sampleTp = Taxpayer::first();
 $sampleTo = TaxObject::first();
-$sampleBill = Bill::first();
+$sampleBill = Bill::whereNotNull('retribution_type_id')->first() ?? Bill::first();
 if ($sampleBill) {
     if ($sampleBill->status !== 'paid' && $sampleBill->status !== 'lunas') {
         $sampleBill->status = 'paid';

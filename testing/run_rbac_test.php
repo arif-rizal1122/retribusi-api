@@ -25,13 +25,13 @@ $md .= "Pengujian ini menembak API lokal menggunakan Token Sanctum murni untuk m
 // Function untuk cURL Request
 // Function untuk internal handler Request
 function sendApiRequest($method, $uri, $user = null, $data = []) {
-    Auth::forgetUser();
+    Auth::guard('sanctum')->forgetUser();
     
     $request = Request::create($uri, $method, $data);
     $request->headers->set('Accept', 'application/json');
     if ($user) {
         $request->setUserResolver(fn() => $user);
-        Auth::setUser($user);
+        Auth::guard('sanctum')->setUser($user);
     }
     
     $response = app()->handle($request);
