@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 21:30
-name: Deploy Production VPS (Local Loopback)
+# Timestamp: 2026-04-13 21:40
+name: Deploy Production VPS (Nginx Dump Audit)
 
 on:
   push:
@@ -40,15 +40,16 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- LOCAL LOOPBACK CHECK ---"
-            echo "Curling localhost:80 (HTTP):"
-            curl -I http://localhost/ || echo "Localhost 80 failed"
+            echo "--- NGINX FULL CONFIG DUMP ---"
+            sudo nginx -T > /tmp/nginx_full_dump.txt
+            echo "Searching dump for 'Soft Launching':"
+            grep -i "Soft Launching" /tmp/nginx_full_dump.txt || echo "Not found in dump"
             
-            echo "Curling localhost:80 with Host Header (apimpad):"
-            curl -I -H "Host: apimpad.baubaukota.go.id" http://localhost/ || echo "Localhost Host header failed"
+            echo "Searching dump for 'server {' blocks:"
+            grep -n "server {" /tmp/nginx_full_dump.txt
             
-            echo "--- SEARCHING FOR 7596 BYTE FILE (AGGRESSIVE) ---"
-            sudo find / -type f -size 7596c 2>/dev/null || echo "Not found on disk"
+            echo "--- FILE SYSTEM SEARCH (TIMESTAMP) ---"
+            sudo find / -type f -newermt "2026-03-03 05:37:00" ! -newermt "2026-03-03 05:38:00" 2>/dev/null || echo "No files match timestamp"
             
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               chmod +x testing/vps_master_nginx_reset.sh
