@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 20:50
-name: Deploy Production VPS (Exorcism)
+# Timestamp: 2026-04-13 21:00
+name: Deploy Production VPS (Identity Crisis)
 
 on:
   push:
@@ -40,21 +40,23 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- EXORCISM: KILLING ALL NGINX PROCESSES ---"
-            sudo killall -9 nginx || echo "No nginx processes to kill"
+            echo "--- IDENTITY CHECK ---"
+            echo -n "My Public IP: "
+            curl -s ifconfig.me
+            echo ""
             
-            echo "--- CHECKING SURVIVORS ---"
-            sudo lsof -i :80 || echo "Port 80 is free"
-            sudo lsof -i :443 || echo "Port 443 is free"
+            echo "DNS Lookup for apimpad.baubaukota.go.id:"
+            nslookup apimpad.baubaukota.go.id || echo "nslookup failed"
             
-            echo "--- PUBLIC IP CHECK ---"
-            curl -s ifconfig.me || echo "Fail ifconfig"
+            echo "Dig (short) for apimpad.baubaukota.go.id:"
+            dig +short apimpad.baubaukota.go.id || echo "dig failed"
             
-            echo "--- CURLING WHILE DEAD ---"
-            curl -k -I https://apimpad.baubaukota.go.id/ || echo "Connection refused (Good, Nginx is dead)"
+            echo "Traceroute (first 5 hops):"
+            traceroute -m 5 apimpad.baubaukota.go.id || echo "traceroute failed"
             
-            echo "--- RESTARTING NGINX CLEANLY ---"
-            sudo systemctl restart nginx
+            echo "--- VERIFYING IF NGINX PROCESS IS GHOST ---"
+            ps aux | grep nginx
+            
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               chmod +x testing/vps_master_nginx_reset.sh
               sudo ./testing/vps_master_nginx_reset.sh
