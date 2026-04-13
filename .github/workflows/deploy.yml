@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 21:40
-name: Deploy Production VPS (Nginx Dump Audit)
+# Timestamp: 2026-04-13 21:50
+name: Deploy Production VPS (Process Forensics)
 
 on:
   push:
@@ -40,16 +40,19 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- NGINX FULL CONFIG DUMP ---"
-            sudo nginx -T > /tmp/nginx_full_dump.txt
-            echo "Searching dump for 'Soft Launching':"
-            grep -i "Soft Launching" /tmp/nginx_full_dump.txt || echo "Not found in dump"
+            echo "--- PROCESS FORENSICS ---"
+            NGINX_PID=\$(pgrep -o nginx)
+            echo "Nginx Master PID: \$NGINX_PID"
             
-            echo "Searching dump for 'server {' blocks:"
-            grep -n "server {" /tmp/nginx_full_dump.txt
+            echo "Listing all open files for Nginx PID \$NGINX_PID:"
+            sudo lsof -p \$NGINX_PID | grep -v ".so" || echo "lsof failed"
             
-            echo "--- FILE SYSTEM SEARCH (TIMESTAMP) ---"
-            sudo find / -type f -newermt "2026-03-03 05:37:00" ! -newermt "2026-03-03 05:38:00" 2>/dev/null || echo "No files match timestamp"
+            echo "--- NGINX BINARY INFO ---"
+            which nginx
+            ls -la \$(which nginx)
+            
+            echo "--- DUMPING CONTEXT DIRECTORIES ---"
+            ls -R /etc/nginx
             
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               chmod +x testing/vps_master_nginx_reset.sh
