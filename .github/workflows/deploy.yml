@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 20:35
-name: Deploy Production VPS (Digital Trojan)
+# Timestamp: 2026-04-13 20:38
+name: Deploy Production VPS (Targeted Audit)
 
 on:
   push:
@@ -40,29 +40,23 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- PREPARING DIGITAL TROJAN ---"
-            INFO_FILE="/home/sipanda/retribusi-api/public/info.txt"
-            echo "Date: \$(date)" > \$INFO_FILE
-            echo "Listening Processes:" >> \$INFO_FILE
-            sudo netstat -tulpn | grep -E ":80|:443" >> \$INFO_FILE || echo "Netstat failed" >> \$INFO_FILE
-            echo "--- SITES ENABLED ---" >> \$INFO_FILE
-            ls -la /etc/nginx/sites-enabled/ >> \$INFO_FILE
-            echo "--- APIMPAD CONFLICT SEARCH ---" >> \$INFO_FILE
-            sudo grep -r "apimpad" /etc/nginx >> \$INFO_FILE
-            echo "--- GLOBAL SIZE SEARCH FOR 7596 ---" >> \$INFO_FILE
-            sudo find / -type f -size 7596c 2>/dev/null | xargs ls -la >> \$INFO_FILE || echo "No 7596c files found" >> \$INFO_FILE
-            echo "--- NGINX.CONF ---" >> \$INFO_FILE
-            cat /etc/nginx/nginx.conf >> \$INFO_FILE
-            chmod 644 \$INFO_FILE
+            echo "--- TARGETED AUDIT ---"
+            echo "Port 80 Listener:"
+            sudo lsof -i :80 || echo "No listener on 80"
+            echo "Port 443 Listener:"
+            sudo lsof -i :443 || echo "No listener on 443"
+            
+            echo "--- GLOBAL NGINX SEARCH FOR LANDING PAGE ---"
+            sudo grep -r "Soft Launching" /etc/nginx || echo "Not found in /etc/nginx"
+            
+            echo "--- NGINX.CONF SERVER BLOCKS ---"
+            cat /etc/nginx/nginx.conf | grep -i "server {" -A 20 || echo "No server blocks in nginx.conf"
             
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               echo "--- EXECUTING NUCLEAR RESET ---"
               chmod +x testing/vps_master_nginx_reset.sh
               sudo ./testing/vps_master_nginx_reset.sh
             fi
-            
-            echo "--- VERIFYING DIGITAL TROJAN ---"
-            curl -k -s https://apimpad.baubaukota.go.id/info.txt || echo "Trojan failed to load"
 
             set -e
             echo "--- STARTING ATOMIC REPAIR ---"
