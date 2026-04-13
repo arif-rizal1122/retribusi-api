@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 20:40
-name: Deploy Production VPS (Total Wipeout)
+# Timestamp: 2026-04-13 20:45
+name: Deploy Production VPS (Ghost Hunt)
 
 on:
   push:
@@ -40,12 +40,21 @@ jobs:
               echo "Reset script missing!"
             fi
             
+            echo "--- GHOST HUNT: STOPPING NGINX ---"
+            sudo systemctl stop nginx || echo "Failed to stop nginx"
+            
+            echo "--- CURLING WHILE NGINX IS STOPPED ---"
+            curl -k -I https://apimpad.baubaukota.go.id/ || echo "Connection refused (Good, it was Nginx)"
+            
+            echo "--- CHECKING FOR OTHER LISTENING PROCESSES ON 80/443 ---"
+            sudo lsof -i :80 || echo "Port 80 is free"
+            sudo lsof -i :443 || echo "Port 443 is free"
+            
+            echo "--- RESTARTING NGINX AND RUNNING TOTAL WIPEOUT ---"
+            sudo systemctl start nginx
             if [ -f testing/vps_master_nginx_reset.sh ]; then
-              echo "--- EXECUTING TOTAL WIPEOUT ---"
               chmod +x testing/vps_master_nginx_reset.sh
               sudo ./testing/vps_master_nginx_reset.sh
-            else
-              echo "Reset script missing!"
             fi
 
             set -e
