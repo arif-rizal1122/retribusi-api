@@ -67,7 +67,7 @@ jobs:
           sudo chmod -R 775 storage bootstrap/cache 2>/dev/null || true
           
           echo "--- Final Verification ---"
-          bash testing/vps_infra_audit.sh > vps_infra_audit.log; cat vps_infra_audit.log
+          bash testing/find_nginx_roots.sh > vps_audit_nginx.log; cat vps_audit_nginx.log
           echo "--------------------------"
           
           echo "✅ Deploy completed successfully!"
