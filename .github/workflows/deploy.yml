@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 22:15
-name: Deploy Production VPS (Impostor Detector)
+# Timestamp: 2026-04-13 22:30
+name: Deploy Production VPS (Folder Discovery)
 
 on:
   push:
@@ -40,19 +40,17 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- IMPOSTOR DETECTOR ---"
-            echo "Stopping Nginx..."
-            sudo systemctl stop nginx || echo "Nginx not running"
-            sudo killall -9 nginx || echo "No nginx processes to kill"
+            echo "--- FOLDER DISCOVERY ---"
+            ls -d /home/sipanda/*/
             
-            echo "Checking for listeners on Port 80/443:"
-            sudo ss -tulpn | grep -E ':80|:443' || echo "No listeners found"
+            echo "Checking retribusi-admin folder:"
+            ls -la /home/sipanda/retribusi-admin || echo "Admin folder not found"
             
-            echo "Attempting to curl localhost while Nginx is STOPPED:"
-            curl -I http://localhost/ || echo "Localhost timed out as expected"
+            echo "Searching for 'Soft Launching' in /home/sipanda/:"
+            grep -r "Soft Launching" /home/sipanda/ --max-count=1 || echo "Not found in /home/sipanda/"
             
-            echo "Checking if there are other Nginx-like binaries:"
-            find /usr/sbin /usr/local/bin /usr/bin -name "*nginx*" -o -name "*apache*" -o -name "*caddy*"
+            echo "--- NGINX -T DUMP (LAST CHANCE) ---"
+            sudo nginx -T | grep -A 20 "server_name"
             
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               chmod +x testing/vps_master_nginx_reset.sh
