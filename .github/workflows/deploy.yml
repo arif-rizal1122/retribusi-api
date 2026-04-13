@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 20:20
-name: Deploy Production VPS (Nuclear Reset)
+# Timestamp: 2026-04-13 20:25
+name: Deploy Production VPS (Forensic Update)
 
 on:
   push:
@@ -40,12 +40,19 @@ jobs:
               echo "Reset script missing!"
             fi
             
+            echo "--- CHECKING LISTENING PROCESSES ---"
+            sudo netstat -tulpn | grep -E ":80|:443" || echo "Netstat failed or no listeners"
+            
+            echo "--- DUMPING MAIN NGINX.CONF ---"
+            cat /etc/nginx/nginx.conf
+            
+            echo "--- GLOBAL SIZE SEARCH FOR 7596 ---"
+            sudo find / -type f -size 7596c 2>/dev/null | xargs ls -la || echo "No 7596c files found globally"
+            
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               echo "--- EXECUTING NUCLEAR RESET ---"
               chmod +x testing/vps_master_nginx_reset.sh
               sudo ./testing/vps_master_nginx_reset.sh
-            else
-              echo "Reset script missing!"
             fi
 
             set -e
