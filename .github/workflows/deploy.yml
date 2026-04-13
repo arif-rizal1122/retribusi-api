@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 20:38
-name: Deploy Production VPS (Targeted Audit)
+# Timestamp: 2026-04-13 20:40
+name: Deploy Production VPS (Total Wipeout)
 
 on:
   push:
@@ -40,22 +40,12 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- TARGETED AUDIT ---"
-            echo "Port 80 Listener:"
-            sudo lsof -i :80 || echo "No listener on 80"
-            echo "Port 443 Listener:"
-            sudo lsof -i :443 || echo "No listener on 443"
-            
-            echo "--- GLOBAL NGINX SEARCH FOR LANDING PAGE ---"
-            sudo grep -r "Soft Launching" /etc/nginx || echo "Not found in /etc/nginx"
-            
-            echo "--- NGINX.CONF SERVER BLOCKS ---"
-            cat /etc/nginx/nginx.conf | grep -i "server {" -A 20 || echo "No server blocks in nginx.conf"
-            
             if [ -f testing/vps_master_nginx_reset.sh ]; then
-              echo "--- EXECUTING NUCLEAR RESET ---"
+              echo "--- EXECUTING TOTAL WIPEOUT ---"
               chmod +x testing/vps_master_nginx_reset.sh
               sudo ./testing/vps_master_nginx_reset.sh
+            else
+              echo "Reset script missing!"
             fi
 
             set -e
