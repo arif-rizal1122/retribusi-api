@@ -1,4 +1,4 @@
-# Timestamp: 2026-04-13 20:02
+# Timestamp: 2026-04-13 20:08
 name: Deploy Production VPS (Master Repair)
 
 on:
@@ -40,8 +40,8 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- POST-RESET NGINX STATUS ---"
-            sudo nginx -T | grep -E "server_name|root" | grep -v "#"
+            echo "--- DUMPING ACTIVE NGINX CONFIG ---"
+            sudo nginx -T
 
             set -e
             echo "--- STARTING ATOMIC REPAIR ---"
