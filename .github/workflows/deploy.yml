@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 22:00
-name: Deploy Production VPS (Direct Config Dump)
+# Timestamp: 2026-04-13 22:15
+name: Deploy Production VPS (Impostor Detector)
 
 on:
   push:
@@ -40,20 +40,19 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- DIRECT CONFIG DUMP: nginx.conf ---"
-            cat /etc/nginx/nginx.conf
+            echo "--- IMPOSTOR DETECTOR ---"
+            echo "Stopping Nginx..."
+            sudo systemctl stop nginx || echo "Nginx not running"
+            sudo killall -9 nginx || echo "No nginx processes to kill"
             
-            echo "--- DIRECT CONFIG DUMP: sites-enabled ---"
-            for f in /etc/nginx/sites-enabled/*; do
-              echo "FILE: \$f"
-              cat "\$f"
-            done
+            echo "Checking for listeners on Port 80/443:"
+            sudo ss -tulpn | grep -E ':80|:443' || echo "No listeners found"
             
-            echo "--- DIRECT CONFIG DUMP: conf.d ---"
-            for f in /etc/nginx/conf.d/*; do
-              echo "FILE: \$f"
-              cat "\$f"
-            done
+            echo "Attempting to curl localhost while Nginx is STOPPED:"
+            curl -I http://localhost/ || echo "Localhost timed out as expected"
+            
+            echo "Checking if there are other Nginx-like binaries:"
+            find /usr/sbin /usr/local/bin /usr/bin -name "*nginx*" -o -name "*apache*" -o -name "*caddy*"
             
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               chmod +x testing/vps_master_nginx_reset.sh
