@@ -1,4 +1,4 @@
-# Timestamp: 2026-04-13 20:14
+# Timestamp: 2026-04-13 20:16
 name: Deploy Production VPS (Master Repair)
 
 on:
@@ -40,11 +40,12 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- SCANNING FOR APIMPAD CONFLICTS ---"
-            sudo grep -r "apimpad" /etc/nginx
+            echo "--- CHECKING OTHER CONFIG DIRS ---"
+            ls -la /etc/nginx/conf.d/
+            sudo grep -r "apimpad" /etc/nginx/conf.d/
             
-            echo "--- SCANNING FOR 7596 IN CONFIGS ---"
-            sudo grep -r "7596" /etc/nginx 2>/dev/null || echo "No direct size match in config"
+            echo "--- CHECKING MAIN NGINX.CONF ---"
+            cat /etc/nginx/nginx.conf
             
             echo "--- TESTING NGINX CONFIG ---"
             sudo nginx -t
