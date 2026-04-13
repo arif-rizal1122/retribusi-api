@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 20:18
-name: Deploy Production VPS (Master Repair)
+# Timestamp: 2026-04-13 20:20
+name: Deploy Production VPS (Nuclear Reset)
 
 on:
   push:
@@ -40,20 +40,13 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- LISTING ALL ENABLED SITES ---"
-            ls -la /etc/nginx/sites-enabled/
-            
-            echo "--- LISTING ALL CONF.D FILES ---"
-            ls -la /etc/nginx/conf.d/
-            
-            echo "--- SEARCHING FOR APIMPAD STRING ON DISK ---"
-            sudo grep -l -r "apimpad" /etc/nginx | xargs ls -la
-            
-            echo "--- TESTING NGINX CONFIG ---"
-            sudo nginx -t
-            
-            echo "--- FORCING NGINX RESTART ---"
-            sudo systemctl restart nginx
+            if [ -f testing/vps_master_nginx_reset.sh ]; then
+              echo "--- EXECUTING NUCLEAR RESET ---"
+              chmod +x testing/vps_master_nginx_reset.sh
+              sudo ./testing/vps_master_nginx_reset.sh
+            else
+              echo "Reset script missing!"
+            fi
 
             set -e
             echo "--- STARTING ATOMIC REPAIR ---"

@@ -1,76 +1,55 @@
 #!/bin/bash
-# Master Nginx Purge & Reset Script (Surgical Version)
-# This script eliminates conflicting server blocks for M-PAD domains
+# True Nuclear Nginx Reset Script
+# This script WIPES ALL CONFIGS except POS to ensure a clean state.
 
-echo "--- STARTING SURGICAL NGINX PURGE ---"
+echo "--- STARTING NUCLEAR NGINX RESET ---"
 
-# 1. DEFINE STANDARDS
-PROD_DOMAIN="apimpad.baubaukota.go.id"
-STAGING_DOMAIN="api.mpad.online"
-PROD_ROOT="/home/sipanda/retribusi-api/public"
-STAGING_ROOT="/home/sipanda/retribusi-api-staging/public"
+# 1. PRESERVE POS
+POS_TARGET=""
+if [ -L /etc/nginx/sites-enabled/posmpad ]; then
+    POS_TARGET=$(readlink -f /etc/nginx/sites-enabled/posmpad)
+    echo "Preserving POS target: $POS_TARGET"
+elif [ -f /etc/nginx/sites-enabled/posmpad ]; then
+    echo "POS is a regular file, backing it up..."
+    sudo cp /etc/nginx/sites-enabled/posmpad /tmp/posmpad_backup
+fi
 
-# 3. NUCLEAR RESET OF CATCH-ALLS & SSL OVERRIDES
-echo "Nuclear Reset: Checking for default_server, catch-alls, and SSL overrides..."
-# Find all enabled sites
-local sites=$(ls /etc/nginx/sites-enabled/)
-for f in $sites; do
-    local fpath="/etc/nginx/sites-enabled/$f"
-    # We strictly AVOID touching anything related to posmpad
-    if [[ "$f" == *"posmpad"* ]]; then
-        echo "Preserving POS config: $f"
-        continue
-    fi
-    
-    # If it's a default server or contains SSL for the target domains but is not our controlled file
-    if grep -qE "default_server|server_name _" "$fpath" || \
-       (grep -qE "ssl|listen 443" "$fpath" && grep -qE "$PROD_DOMAIN|adminmpad|petugasmpad" "$fpath"); then
-        if [[ "$f" != "retribusi-api-prod.conf" ]] && [[ "$f" != "retribusi-api-staging.conf" ]]; then
-            echo "Nuclear Removal: $f"
-            sudo rm -f "$fpath"
-        fi
-    fi
-done
+# 2. WHIPE EVERYTHING ENABLED
+echo "Wiping sites-enabled and conf.d..."
+sudo rm -rf /etc/nginx/sites-enabled/*
+sudo rm -rf /etc/nginx/conf.d/*
 
-# 4. SURGICAL PURGE OF CONFLICTS (EXCLUDING POS)
-purge_conflicts() {
-    local domain=$1
-    echo "Scanning sites-enabled for conflicts with $domain..."
-    local files=$(grep -r "$domain" /etc/nginx/sites-enabled/ -l)
-    for f in $files; do
-        if [[ "$f" == *"posmpad"* ]]; then continue; fi
-        if [[ "$domain" == *"apimpad"* ]] || [[ "$domain" == *"adminmpad"* ]] || [[ "$domain" == *"petugasmpad"* ]]; then
-            echo "Removing conflicting config: $f"
-            sudo rm -f "$f"
-        fi
-    done
-}
+# 3. RESTORE POS
+if [ ! -z "$POS_TARGET" ]; then
+    sudo ln -sf "$POS_TARGET" /etc/nginx/sites-enabled/posmpad
+    echo "POS symlink restored."
+elif [ -f /tmp/posmpad_backup ]; then
+    sudo cp /tmp/posmpad_backup /etc/nginx/sites-enabled/posmpad
+    echo "POS file restored from backup."
+fi
 
-purge_conflicts "$PROD_DOMAIN"
-purge_conflicts "adminmpad.baubaukota.go.id"
-purge_conflicts "petugasmpad.baubaukota.go.id"
-purge_conflicts "$STAGING_DOMAIN"
+# 4. DEFINE NEW CLEAN PROD CONFIG
+PROD_CONF="/etc/nginx/sites-available/retribusi-api-prod.conf"
+echo "Creating unified production config at $PROD_CONF"
 
-# 5. RE-ESTABLISH CORRECT CONFIGS (PORT 80 & 443 BRIDGE)
-fix_conf() {
-    local domain=$1
-    local target_root=$2
-    local conf_name="retribusi-api-prod.conf"
-    [ "$domain" == "$STAGING_DOMAIN" ] && conf_name="retribusi-api-staging.conf"
-    
-    local conf_path="/etc/nginx/sites-available/$conf_name"
-    
-    echo "Creating fresh config for $domain at $conf_path"
-    sudo bash -c "cat > $conf_path <<EOF
+sudo bash -c "cat > $PROD_CONF <<EOF
 server {
     listen 80;
-    listen [::]:80;
-    server_name $domain;
-    root $target_root;
+    server_name apimpad.baubaukota.go.id adminmpad.baubaukota.go.id petugasmpad.baubaukota.go.id;
+    return 301 https://\\\$host\\\$request_uri;
+}
 
-    # Basic catch-all for this domain on port 80
+server {
+    listen 443 ssl;
+    server_name apimpad.baubaukota.go.id adminmpad.baubaukota.go.id petugasmpad.baubaukota.go.id;
+    root /home/sipanda/retribusi-api/public;
+
     index index.php index.html;
     charset utf-8;
+
+    # SSL (Using existing certificates if available, or placeholder)
+    ssl_certificate /etc/letsencrypt/live/apimpad.baubaukota.go.id/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/apimpad.baubaukota.go.id/privkey.pem;
 
     location / {
         try_files \\\$uri \\\$uri/ /index.php?\\\$query_string;
@@ -83,18 +62,38 @@ server {
     }
 }
 EOF"
-    
-    sudo ln -sf "$conf_path" "/etc/nginx/sites-enabled/$conf_name"
+
+# 5. DEFINE STAGING CONFIG
+STAGING_CONF="/etc/nginx/sites-available/retribusi-api-staging.conf"
+echo "Creating staging config at $STAGING_CONF"
+sudo bash -c "cat > $STAGING_CONF <<EOF
+server {
+    listen 80;
+    server_name api.mpad.online admin.mpad.online petugas.mpad.online;
+    root /home/sipanda/retribusi-api-staging/public;
+    index index.php index.html;
+    location / {
+        try_files \\\$uri \\\$uri/ /index.php?\\\$query_string;
+    }
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME \\\$realpath_root\\\$fastcgi_script_name;
+        include fastcgi_params;
+    }
 }
+EOF"
 
-fix_conf "$PROD_DOMAIN" "$PROD_ROOT"
-fix_conf "$STAGING_DOMAIN" "$STAGING_ROOT"
+# 6. ENABLE NEW CONFIGS
+sudo ln -sf "$PROD_CONF" /etc/nginx/sites-enabled/retribusi-api-prod.conf
+sudo ln -sf "$STAGING_CONF" /etc/nginx/sites-enabled/retribusi-api-staging.conf
 
-# 6. FINAL PERMISSIONS & RELOAD
-sudo chown -R www-data:www-data "$PROD_ROOT/.."
-sudo chown -R www-data:www-data "$STAGING_ROOT/.."
-echo "Current sites-enabled:"
+# 7. FINAL CHOWN & RESTART
+sudo chown -R www-data:www-data /home/sipanda/retribusi-api/public
+sudo chown -R www-data:www-data /home/sipanda/retribusi-api-staging/public
+
+echo "Final sites-enabled listing:"
 ls -la /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
 
-echo "--- SURGICAL RESET COMPLETED ---"
+sudo nginx -t && sudo systemctl restart nginx
+
+echo "--- NUCLEAR RESET COMPLETED ---"
