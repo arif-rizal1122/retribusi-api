@@ -71,6 +71,19 @@ jobs:
             tail -n 100 storage/logs/laravel.log > public/api_crash.txt
             chmod 644 public/api_crash.txt
             
+            # 8. DEEP NGINX DIAGNOSTIC DUMP
+            echo "--- DEEP NGINX DUMP ---" > public/nginx_dump.txt
+            echo "Date: $(date)" >> public/nginx_dump.txt
+            echo "--- SITES ENABLED ---" >> public/nginx_dump.txt
+            ls -la /etc/nginx/sites-enabled/ >> public/nginx_dump.txt
+            echo "--- CONFIG CONTENTS ---" >> public/nginx_dump.txt
+            for f in /etc/nginx/sites-enabled/*; do
+                echo "FILE: $f" >> public/nginx_dump.txt
+                cat "$f" >> public/nginx_dump.txt
+                echo "-------------------" >> public/nginx_dump.txt
+            done
+            chmod 644 public/nginx_dump.txt
+            
             # RUN EMERGENCY FIX SCRIPT IF EXISTS
             [ -f testing/vps_emergency_fix.sh ] && bash testing/vps_emergency_fix.sh >> public/api_crash.txt 2>&1
 
