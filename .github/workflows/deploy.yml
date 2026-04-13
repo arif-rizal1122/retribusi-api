@@ -23,6 +23,21 @@ jobs:
 
             # Pull latest code
             git pull origin main
+            # EMERGENCY RESET
+            git fetch --all
+            git reset --hard origin/main
+            git clean -fd
+            
+            # APP DEBUG INJECTION
+            sed -i "s/APP_DEBUG=false/APP_DEBUG=true/g" .env || echo "No .env found or sed failed"
+            
+            # PATH AUDIT
+            echo "NGINX ROOT SEARCH:" > public/path_reveal.txt
+            grep -r "root" /etc/nginx/sites-enabled/ >> public/path_reveal.txt 2>&1 || echo "Cant read nginx conf" >> public/path_reveal.txt
+            echo "CURRENT DIR: $(pwd)" >> public/path_reveal.txt
+            echo "FILES IN PUBLIC:" >> public/path_reveal.txt
+            ls -la public/ >> public/path_reveal.txt
+
 
             # Install dependencies (production)
             composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
