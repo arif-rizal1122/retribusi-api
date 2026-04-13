@@ -23,22 +23,17 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            echo "--- FIND AND DESTROY LANDING PAGE ---"
-            # Find any index.html containing "Soft Launching" and delete it
-            find /home/sipanda -name "index.html" -exec grep -l "Soft Launching" {} + | while read f; do
-              echo "Destroying landing page: \$f"
-              sudo rm -v "\$f"
+            echo "--- DEEP FORENSIC SEARCH ---"
+            # Find any index.html modified roughly on March 3rd 2026
+            sudo find / -name "index.html" -newermt "2026-03-02" ! -newermt "2026-03-04" 2>/dev/null | while read f; do
+              echo "Found potential landing page: \$f"
+              ls -la "\$f"
             done
-
-            [ -f /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh ] && bash /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh
             
-            echo "--- VERBOSE NGINX DUMP ---"
-            ls -la /etc/nginx/sites-enabled/
-            for f in /etc/nginx/sites-enabled/*; do
-              echo "FILE: \$f"
-              cat "\$f"
-              echo "--------------------------"
-            done
+            echo "--- SEARCHING FOR MITRA-TEXT ---"
+            sudo grep -r "mitra-text" /etc/nginx /var/www /home/sipanda 2>/dev/null | head -n 20
+            
+            [ -f /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh ] && bash /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh
 
             set -e
             echo "--- STARTING ATOMIC REPAIR ---"
