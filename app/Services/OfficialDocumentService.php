@@ -96,13 +96,14 @@ class OfficialDocumentService
      */
     public function generateSKRD(Bill $bill)
     {
+        $bill->load(['retributionType', 'taxpayer']);
         $total = (float) $bill->amount + (float) $bill->penalty_amount + (float) $bill->fixed_fine_amount + (float) $bill->surcharge_amount;
 
         return [
-            'title' => $bill->retributionType->name,
+            'title' => $bill->retributionType?->name ?? 'Retribusi Daerah',
             'number' => $bill->bill_number,
-            'taxpayer' => $bill->taxpayer->name,
-            'address' => $bill->taxpayer->address ?? 'Kota Baubau',
+            'taxpayer' => $bill->taxpayer?->name ?? 'N/A',
+            'address' => $bill->taxpayer?->address ?? 'Kota Baubau',
             'amount' => $bill->amount,
             'penalty_amount' => $bill->penalty_amount,
             'fixed_fine_amount' => $bill->fixed_fine_amount,
@@ -121,13 +122,14 @@ class OfficialDocumentService
      */
     public function generateSKPD(Bill $bill)
     {
+        $bill->load(['retributionType', 'taxpayer']);
         $total = (float) $bill->amount + (float) $bill->penalty_amount + (float) $bill->fixed_fine_amount + (float) $bill->surcharge_amount;
 
         return [
-            'title' => $bill->retributionType->name,
+            'title' => $bill->retributionType?->name ?? 'Pajak Daerah',
             'number' => $bill->bill_number,
-            'taxpayer' => $bill->taxpayer->name,
-            'address' => $bill->taxpayer->address ?? 'Kota Baubau',
+            'taxpayer' => $bill->taxpayer?->name ?? 'N/A',
+            'address' => $bill->taxpayer?->address ?? 'Kota Baubau',
             'amount' => $bill->amount,
             'penalty_amount' => $bill->penalty_amount,
             'fixed_fine_amount' => $bill->fixed_fine_amount,
@@ -146,6 +148,7 @@ class OfficialDocumentService
      */
     public function generateSSPD(Bill $bill)
     {
+        $bill->load(['retributionType', 'taxpayer', 'payments']);
         if ($bill->status !== 'paid' && $bill->status !== 'lunas') {
             throw new \Exception("Hanya tagihan LUNAS yang bisa mencetak SSPD.");
         }
@@ -153,10 +156,10 @@ class OfficialDocumentService
         $total = (float) $bill->amount + (float) $bill->penalty_amount + (float) $bill->fixed_fine_amount + (float) $bill->surcharge_amount;
 
         return [
-            'title' => $bill->retributionType->name,
+            'title' => $bill->retributionType?->name ?? 'Pajak Daerah',
             'number' => $bill->bill_number,
-            'taxpayer' => $bill->taxpayer->name,
-            'address' => $bill->taxpayer->address ?? 'Kota Baubau',
+            'taxpayer' => $bill->taxpayer?->name ?? 'N/A',
+            'address' => $bill->taxpayer?->address ?? 'Kota Baubau',
             'amount' => $bill->amount,
             'penalty_amount' => $bill->penalty_amount,
             'fixed_fine_amount' => $bill->fixed_fine_amount,
@@ -164,7 +167,7 @@ class OfficialDocumentService
             'total_amount' => $total,
             'terbilang' => self::terbilang($total) . " Rupiah",
             'period' => $bill->period,
-            'paid_at' => $bill->payments->first()->paid_at ?? now(),
+            'paid_at' => $bill->payments->first()?->paid_at ?? now(),
             'qr_url' => url("/api/verify/payment/{$bill->bill_number}"),
         ];
     }
