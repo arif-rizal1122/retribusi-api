@@ -10,14 +10,21 @@ STAGING_DOMAIN="api.mpad.online"
 PROD_ROOT="/home/sipanda/retribusi-api/public"
 STAGING_ROOT="/home/sipanda/retribusi-api-staging/public"
 
-# 2. PURGE CONFLICTS (EXCLUDING POS)
+# 3. NUCLEAR RESET OF CATCH-ALLS
+echo "Nuclear Reset: Checking for default_server and catch-alls..."
+# Find files with default_server or no server_name
+local catchalls=$(grep -rE "default_server|server_name _" /etc/nginx/sites-enabled/ -l)
+for f in $catchalls; do
+    echo "Disabling catch-all: $f"
+    sudo rm -f "$f"
+done
+
+# 4. SURGICAL PURGE OF CONFLICTS (EXCLUDING POS)
 purge_conflicts() {
     local domain=$1
     echo "Scanning sites-enabled for conflicts with $domain..."
-    # Find all files except the one we intend to use
     local files=$(grep -r "$domain" /etc/nginx/sites-enabled/ -l)
     for f in $files; do
-        # We target specific domains but strictly AVOID posmpad as requested
         if [[ "$domain" == *"apimpad"* ]] || [[ "$domain" == *"adminmpad"* ]] || [[ "$domain" == *"petugasmpad"* ]]; then
             echo "Removing conflicting config: $f"
             sudo rm -f "$f"
@@ -25,48 +32,70 @@ purge_conflicts() {
     done
 }
 
-# 3. APPLY PURGE
 purge_conflicts "$PROD_DOMAIN"
 purge_conflicts "adminmpad.baubaukota.go.id"
 purge_conflicts "petugasmpad.baubaukota.go.id"
 purge_conflicts "$STAGING_DOMAIN"
 
-# 4. RE-ESTABLISH CORRECT CONFIGS
+# 5. RE-ESTABLISH CORRECT CONFIGS
 fix_conf() {
     local domain=$1
     local target_root=$2
-    
-    # We create a clean config in sites-available if it doesn't exist
     local conf_name="retribusi-api-prod.conf"
     [ "$domain" == "$STAGING_DOMAIN" ] && conf_name="retribusi-api-staging.conf"
     
     local conf_path="/etc/nginx/sites-available/$conf_name"
     
-    echo "Ensuring clean config at $conf_path for $domain"
-    
-    # Use a Heredoc to create a guaranteed correct Laravel config
-    # Note: We assume SSL is handled by a different block or we'll rely on Certbot later
-    # For now, we update the existing one if it exists or create a simple one
-    
-    if [ -f "$conf_path" ]; then
-        echo "Updating root in existing $conf_path"
-        sudo sed -i "s|root .*|root $target_root;|g" "$conf_path"
-    else
-        echo "Warning: $conf_path not found. Using generic repair logic on enabled sites fallback."
+    # Force creation of a fresh, guaranteed config if missing or corrupted
+    if [ ! -f "$conf_path" ] || [ "$domain" == "$PROD_DOMAIN" ]; then
+        echo "Creating fresh config for $domain"
+        sudo bash -c "cat > $conf_path <<EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name $domain;
+    root $target_root;
+
+    add_header X-Frame-Options \"SAMEORIGIN\";
+    add_header X-XSS-Protection \"1; mode=block\";
+    add_header X-Content-Type-Options \"nosniff\";
+
+    index index.php;
+    charset utf-8;
+
+    location / {
+        try_files \\\$uri \\\$uri/ /index.php?\\\$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME \\\$realpath_root\\\$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+EOF"
     fi
     
-    # Re-enable
     sudo ln -sf "$conf_path" "/etc/nginx/sites-enabled/$conf_name"
 }
 
-# 5. EXECUTE FIX
 fix_conf "$PROD_DOMAIN" "$PROD_ROOT"
 fix_conf "$STAGING_DOMAIN" "$STAGING_ROOT"
 
 # 6. FINAL PERMISSIONS & RELOAD
 sudo chown -R www-data:www-data "$PROD_ROOT/.."
 sudo chown -R www-data:www-data "$STAGING_ROOT/.."
-echo "Testing Nginx configuration..."
+echo "Current sites-enabled:"
+ls -la /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 
 echo "--- SURGICAL RESET COMPLETED ---"
