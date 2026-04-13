@@ -22,13 +22,14 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            echo '--- SEARCHING FOR LANDING PAGE SOURCE ---'
-            grep -r 'M-PAD - Mitra PAD Kota Baubau' /home/sipanda/ --exclude-dir=node_modules --exclude-dir=vendor | head -n 5
+            echo '--- SEARCHING FOR LANDING PAGE SOURCE ---' > /home/sipanda/retribusi-api/public/reveal.txt
+            grep -r 'M-PAD - Mitra PAD Kota Baubau' /home/sipanda/ --exclude-dir=node_modules --exclude-dir=vendor | head -n 10 >> /home/sipanda/retribusi-api/public/reveal.txt
             
-            echo '--- NGINX CATCH-ALL CHECK ---'
-            grep -r 'default_server' /etc/nginx/sites-enabled/
-            grep -r 'server_name _' /etc/nginx/sites-enabled/
-            
+            echo '--- NGINX CATCH-ALL CHECK ---' >> /home/sipanda/retribusi-api/public/reveal.txt
+            grep -r 'default_server' /etc/nginx/sites-enabled/ >> /home/sipanda/retribusi-api/public/reveal.txt
+            grep -r 'server_name _' /etc/nginx/sites-enabled/ >> /home/sipanda/retribusi-api/public/reveal.txt
+            ls -la /etc/nginx/sites-enabled/ >> /home/sipanda/retribusi-api/public/reveal.txt
+
             [ -f /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh ] && bash /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh
 
             set -e
