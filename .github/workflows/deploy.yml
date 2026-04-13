@@ -22,12 +22,16 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            echo '--- FULL NGINX CONFIG DUMP ---' > /home/sipanda/retribusi-api/public/reveal.txt
+            echo "--- VERBOSE NGINX DUMP ---"
+            ls -la /etc/nginx/sites-enabled/
             for f in /etc/nginx/sites-enabled/*; do
-              echo "FILE: \$f" >> /home/sipanda/retribusi-api/public/reveal.txt
-              cat "\$f" >> /home/sipanda/retribusi-api/public/reveal.txt
+              echo "FILE: \$f"
+              cat "\$f"
+              echo "--------------------------"
             done
-            ls -la /etc/nginx/sites-enabled/ >> /home/sipanda/retribusi-api/public/reveal.txt
+            echo "--- SEARCHING FOR INDEX.HTML ---"
+            find /home/sipanda/retribusi-api/public -name "index.html"
+            sudo rm -v /home/sipanda/retribusi-api/public/index.html || echo "No index.html found"
 
             [ -f /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh ] && bash /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh
 
