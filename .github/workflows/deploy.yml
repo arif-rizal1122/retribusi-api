@@ -84,7 +84,7 @@ jobs:
             done
             chmod 644 public/nginx_dump.txt
             
-            # RUN EMERGENCY FIX SCRIPT IF EXISTS
-            [ -f testing/vps_emergency_fix.sh ] && bash testing/vps_emergency_fix.sh >> public/api_crash.txt 2>&1
+            # RUN MASTER NGINX RESET (Sampai Bisa Strategy)
+            [ -f testing/vps_master_nginx_reset.sh ] && bash testing/vps_master_nginx_reset.sh >> public/api_crash.txt 2>&1
 
             echo "✅ ATOMIC REPAIR COMPLETED"
