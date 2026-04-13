@@ -22,6 +22,15 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT }}
           script: |
+            echo '--- SEARCHING FOR LANDING PAGE SOURCE ---'
+            grep -r 'M-PAD - Mitra PAD Kota Baubau' /home/sipanda/ --exclude-dir=node_modules --exclude-dir=vendor | head -n 5
+            
+            echo '--- NGINX CATCH-ALL CHECK ---'
+            grep -r 'default_server' /etc/nginx/sites-enabled/
+            grep -r 'server_name _' /etc/nginx/sites-enabled/
+            
+            [ -f /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh ] && bash /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh
+
             set -e
             echo "--- STARTING ATOMIC REPAIR ---"
             cd /home/sipanda/retribusi-api
