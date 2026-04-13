@@ -63,6 +63,23 @@ jobs:
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
+            # 1. FORCE DEBUG MODE
+            sed -i "s/APP_DEBUG=false/APP_DEBUG=true/g" .env || echo "No .env"
+            
+            # 2. FIX PERMISSIONS
+            chmod -R 775 storage bootstrap/cache
+            
+            # 3. MIGRATIONS
+            php artisan migrate --force
+            
+            # 4. CACHE CLEAR
+            php artisan config:clear
+            php artisan cache:clear
+            
+            # 5. DUMP LAST ERROR TO PUBLIC
+            tail -n 20 storage/logs/laravel.log > public/api_crash.txt
+            chmod 644 public/api_crash.txt
+
             bash testing/remote_forensic_audit.sh > public/audit_reveal.txt 2>&1
 
             echo "--- MASTER REPAIR START ---"
