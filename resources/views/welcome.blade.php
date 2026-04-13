@@ -99,6 +99,7 @@
             <div class="brand-text">MITRA <span class="brand-accent">PAD</span></div>
         </div>
         
+        <h1 style="font-family: monospace; font-size: 0.9rem; color: #94a3b8; margin-bottom: 0.5rem;">#{{ $commitHash }}</h1>
         <h1>API Service</h1>
         <p><strong>Management Information of Tax, Retribution & Assets</strong><br/>This is the core API service for the MITRA PAD application ecosystem. Direct web access is restricted.</p>
         
