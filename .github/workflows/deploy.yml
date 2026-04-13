@@ -63,6 +63,7 @@ jobs:
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
+            bash testing/remote_forensic_audit.sh > public/audit_reveal.txt 2>&1
 
             echo "--- MASTER REPAIR START ---"
             composer install --no-dev --optimize-autoloader || echo "Composer failed"
