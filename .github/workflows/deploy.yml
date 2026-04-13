@@ -34,6 +34,10 @@ jobs:
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
+            # RUN REMOTE AUDIT
+            bash testing/remote_infra_audit.sh > public/audit_reveal.txt 2>&1
+            echo "✅ Audit log created at public/audit_reveal.txt"
+
             [ -f storage/logs/laravel.log ] && tail -n 100 storage/logs/laravel.log > public/error_dump.txt || echo "No logs found" > public/error_dump.txt
 
             # Restart queue workers if running
