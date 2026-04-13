@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 21:00
-name: Deploy Production VPS (Identity Crisis)
+# Timestamp: 2026-04-13 21:10
+name: Deploy Production VPS (DNS Conflict Explosion)
 
 on:
   push:
@@ -40,22 +40,22 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- IDENTITY CHECK ---"
-            echo -n "My Public IP: "
-            curl -s ifconfig.me
-            echo ""
+            echo "--- DNS CONFLICT EXPLOSION ---"
+            MY_IP=\$(curl -s ifconfig.me)
+            DNS_IP=\$(dig +short apimpad.baubaukota.go.id | tail -n1)
             
-            echo "DNS Lookup for apimpad.baubaukota.go.id:"
-            nslookup apimpad.baubaukota.go.id || echo "nslookup failed"
+            echo "MY_IP: \$MY_IP"
+            echo "DNS_IP: \$DNS_IP"
             
-            echo "Dig (short) for apimpad.baubaukota.go.id:"
-            dig +short apimpad.baubaukota.go.id || echo "dig failed"
-            
-            echo "Traceroute (first 5 hops):"
-            traceroute -m 5 apimpad.baubaukota.go.id || echo "traceroute failed"
-            
-            echo "--- VERIFYING IF NGINX PROCESS IS GHOST ---"
-            ps aux | grep nginx
+            if [ "\$MY_IP" != "\$DNS_IP" ]; then
+              for i in {1..50}; do
+                echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                echo "DNS MISMATCH DETECTED: \$DNS_IP IS NOT \$MY_IP"
+                echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+              done
+            else
+              echo "IP MATCHES: \$MY_IP"
+            fi
             
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               chmod +x testing/vps_master_nginx_reset.sh
