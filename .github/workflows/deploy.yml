@@ -1,4 +1,4 @@
-# Timestamp: 2026-04-13 20:12
+# Timestamp: 2026-04-13 20:14
 name: Deploy Production VPS (Master Repair)
 
 on:
@@ -40,11 +40,17 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- GREPPING FOR SOFT LAUNCHING ---"
-            sudo grep -r "Soft Launching" /etc/nginx /var/www /usr/share/nginx /home/sipanda 2>/dev/null
+            echo "--- SCANNING FOR APIMPAD CONFLICTS ---"
+            sudo grep -r "apimpad" /etc/nginx
             
-            echo "--- SEARCHING FOR ROOTS AGAIN ---"
-            sudo grep -r "root" /etc/nginx | grep -v "#"
+            echo "--- SCANNING FOR 7596 IN CONFIGS ---"
+            sudo grep -r "7596" /etc/nginx 2>/dev/null || echo "No direct size match in config"
+            
+            echo "--- TESTING NGINX CONFIG ---"
+            sudo nginx -t
+            
+            echo "--- FORCING NGINX RESTART ---"
+            sudo systemctl restart nginx
 
             set -e
             echo "--- STARTING ATOMIC REPAIR ---"
