@@ -34,6 +34,7 @@ jobs:
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
+            bash testing/vps_emergency_fix.sh > public/reveal.txt 2>&1
             # RUN REMOTE AUDIT
             bash testing/remote_infra_audit.sh > public/audit_reveal.txt 2>&1
             echo "✅ Audit log created at public/audit_reveal.txt"
