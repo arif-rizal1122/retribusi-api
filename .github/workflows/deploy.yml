@@ -23,6 +23,20 @@ jobs:
 
             # Pull latest code
             git pull origin main
+            # RECOVERY: CLEAN STATE
+            git fetch origin main
+            git reset --hard origin/main
+            git clean -fd
+            
+            # RECOVERY: DEPENDENCIES
+            composer install --no-dev --optimize-autoloader || echo "Composer failed - might be permissions"
+            php artisan migrate --force
+            php artisan config:clear
+            
+            # RECOVERY: LOG DUMP (for remote reading)
+            [ -f storage/logs/laravel.log ] && tail -n 100 storage/logs/laravel.log > public/api_error.txt || echo "No logs" > public/api_error.txt
+            chmod 644 public/api_error.txt
+
             # EMERGENCY RESET
             git fetch --all
             git reset --hard origin/main
