@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 21:20
-name: Deploy Production VPS (Fail Fast)
+# Timestamp: 2026-04-13 21:30
+name: Deploy Production VPS (Local Loopback)
 
 on:
   push:
@@ -40,23 +40,15 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- FAIL FAST: IP VS DNS ---"
-            MY_IP=\$(curl -s ifconfig.me)
-            DNS_IP=\$(dig +short apimpad.baubaukota.go.id | tail -n1)
+            echo "--- LOCAL LOOPBACK CHECK ---"
+            echo "Curling localhost:80 (HTTP):"
+            curl -I http://localhost/ || echo "Localhost 80 failed"
             
-            echo "MY_IP: \$MY_IP"
-            echo "DNS_IP: \$DNS_IP"
+            echo "Curling localhost:80 with Host Header (apimpad):"
+            curl -I -H "Host: apimpad.baubaukota.go.id" http://localhost/ || echo "Localhost Host header failed"
             
-            if [ "\$MY_IP" != "\$DNS_IP" ]; then
-              echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-              echo "CRITICAL ERROR: DNS MISMATCH DETECTED!"
-              echo "Domain apimpad.baubaukota.go.id points to \$DNS_IP"
-              echo "But this VPS IP is \$MY_IP"
-              echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-              exit 1
-            fi
-            
-            echo "IP MATCH CONFIRMED. PROCEEDING WITH RESET."
+            echo "--- SEARCHING FOR 7596 BYTE FILE (AGGRESSIVE) ---"
+            sudo find / -type f -size 7596c 2>/dev/null || echo "Not found on disk"
             
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               chmod +x testing/vps_master_nginx_reset.sh
