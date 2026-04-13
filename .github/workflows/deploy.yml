@@ -1,4 +1,4 @@
-# Timestamp: 2026-04-13 20:10
+# Timestamp: 2026-04-13 20:12
 name: Deploy Production VPS (Master Repair)
 
 on:
@@ -40,14 +40,11 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- TARGETED SIZE SEARCH ---"
-            # size 7596c is the apimpad landing page
-            sudo find / -type f -size 7596c 2>/dev/null | xargs ls -la
-            sudo find / -type f -size 7596c 2>/dev/null | xargs head -n 5
+            echo "--- GREPPING FOR SOFT LAUNCHING ---"
+            sudo grep -r "Soft Launching" /etc/nginx /var/www /usr/share/nginx /home/sipanda 2>/dev/null
             
-            echo "--- CHECKING NGINX FOR 7596 ---"
-            sudo nginx -T | grep -C 10 "/var/www"
-            sudo nginx -T | grep -C 10 "/usr/share/nginx"
+            echo "--- SEARCHING FOR ROOTS AGAIN ---"
+            sudo grep -r "root" /etc/nginx | grep -v "#"
 
             set -e
             echo "--- STARTING ATOMIC REPAIR ---"
