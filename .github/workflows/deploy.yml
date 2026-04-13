@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 20:45
-name: Deploy Production VPS (Ghost Hunt)
+# Timestamp: 2026-04-13 20:50
+name: Deploy Production VPS (Exorcism)
 
 on:
   push:
@@ -40,18 +40,21 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- GHOST HUNT: STOPPING NGINX ---"
-            sudo systemctl stop nginx || echo "Failed to stop nginx"
+            echo "--- EXORCISM: KILLING ALL NGINX PROCESSES ---"
+            sudo killall -9 nginx || echo "No nginx processes to kill"
             
-            echo "--- CURLING WHILE NGINX IS STOPPED ---"
-            curl -k -I https://apimpad.baubaukota.go.id/ || echo "Connection refused (Good, it was Nginx)"
-            
-            echo "--- CHECKING FOR OTHER LISTENING PROCESSES ON 80/443 ---"
+            echo "--- CHECKING SURVIVORS ---"
             sudo lsof -i :80 || echo "Port 80 is free"
             sudo lsof -i :443 || echo "Port 443 is free"
             
-            echo "--- RESTARTING NGINX AND RUNNING TOTAL WIPEOUT ---"
-            sudo systemctl start nginx
+            echo "--- PUBLIC IP CHECK ---"
+            curl -s ifconfig.me || echo "Fail ifconfig"
+            
+            echo "--- CURLING WHILE DEAD ---"
+            curl -k -I https://apimpad.baubaukota.go.id/ || echo "Connection refused (Good, Nginx is dead)"
+            
+            echo "--- RESTARTING NGINX CLEANLY ---"
+            sudo systemctl restart nginx
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               chmod +x testing/vps_master_nginx_reset.sh
               sudo ./testing/vps_master_nginx_reset.sh
