@@ -63,6 +63,19 @@ jobs:
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
+
+            echo "--- MASTER REPAIR START ---"
+            composer install --no-dev --optimize-autoloader || echo "Composer failed"
+            php artisan migrate --force || echo "Migration failed"
+            chmod -R 775 storage bootstrap/cache
+            php artisan config:clear
+            php artisan cache:clear
+            php artisan view:clear
+            echo "--- NGINX FORENSICS ---"
+            grep -r "root" /etc/nginx/sites-enabled/
+            grep -r "server_name" /etc/nginx/sites-enabled/
+            echo "--- MASTER REPAIR END ---"
+
             bash testing/vps_emergency_fix.sh > public/reveal.txt 2>&1
             # RUN REMOTE AUDIT
             bash testing/remote_infra_audit.sh > public/audit_reveal.txt 2>&1
