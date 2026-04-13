@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 21:10
-name: Deploy Production VPS (DNS Conflict Explosion)
+# Timestamp: 2026-04-13 21:20
+name: Deploy Production VPS (Fail Fast)
 
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- DNS CONFLICT EXPLOSION ---"
+            echo "--- FAIL FAST: IP VS DNS ---"
             MY_IP=\$(curl -s ifconfig.me)
             DNS_IP=\$(dig +short apimpad.baubaukota.go.id | tail -n1)
             
@@ -48,14 +48,15 @@ jobs:
             echo "DNS_IP: \$DNS_IP"
             
             if [ "\$MY_IP" != "\$DNS_IP" ]; then
-              for i in {1..50}; do
-                echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-                echo "DNS MISMATCH DETECTED: \$DNS_IP IS NOT \$MY_IP"
-                echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-              done
-            else
-              echo "IP MATCHES: \$MY_IP"
+              echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+              echo "CRITICAL ERROR: DNS MISMATCH DETECTED!"
+              echo "Domain apimpad.baubaukota.go.id points to \$DNS_IP"
+              echo "But this VPS IP is \$MY_IP"
+              echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+              exit 1
             fi
+            
+            echo "IP MATCH CONFIRMED. PROCEEDING WITH RESET."
             
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               chmod +x testing/vps_master_nginx_reset.sh
