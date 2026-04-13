@@ -23,15 +23,16 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            echo "--- DEEP FORENSIC SEARCH ---"
-            # Find any index.html modified roughly on March 3rd 2026
-            sudo find / -name "index.html" -newermt "2026-03-02" ! -newermt "2026-03-04" 2>/dev/null | while read f; do
-              echo "Found potential landing page: \$f"
+            echo "--- SEARCH BY SIZE ---"
+            # sizes from curl: 7596, 676, 833
+            sudo find / -type f \( -size 7596c -o -size 676c -o -size 833c \) 2>/dev/null | while read f; do
+              echo "Matched size file: \$f"
               ls -la "\$f"
+              head -n 5 "\$f"
             done
             
-            echo "--- SEARCHING FOR MITRA-TEXT ---"
-            sudo grep -r "mitra-text" /etc/nginx /var/www /home/sipanda 2>/dev/null | head -n 20
+            echo "--- SEARCHING FOR ROOTS ---"
+            sudo grep -r "root" /etc/nginx 2>/dev/null | head -n 50
             
             [ -f /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh ] && bash /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh
 
