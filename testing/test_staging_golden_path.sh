@@ -4,12 +4,12 @@
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-API_URL="https://api.sipanda.online/api"
+API_URL="https://api.mpad.online/api"
 
 echo "Starting Golden Path (E2E) on $API_URL..."
 
 # Step 1: Login Admin
-ADMIN_RESP=$(curl -s -X POST "$API_URL/login" -H "Content-Type: application/json" -d '{"email":"bapenda@baubaukota.go.id", "password":"password123"}')
+ADMIN_RESP=$(curl -s -X POST "$API_URL/login" -H "Content-Type: application/json" -H "Accept: application/json" -d '{"email":"admin.main@sipanda.online", "password":"password123"}')
 ADMIN_TOKEN=$(echo "$ADMIN_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 echo "Step 1: Admin Logged In."
 
@@ -27,8 +27,8 @@ BILL_RESP=$(curl -s -X POST "$API_URL/bills" \
 BILL_ID=$(echo "$BILL_RESP" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
 echo "Step 3: Created temporary Bill ID $BILL_ID."
 
-# Step 4: Login Petugas (manual discover or use default)
-PETUGAS_RESP=$(curl -s -X POST "$API_URL/login" -H "Content-Type: application/json" -d '{"email":"petugas@bapenda.go.id", "password":"password123"}')
+# Step 4: Login Petugas
+PETUGAS_RESP=$(curl -s -X POST "$API_URL/login" -H "Content-Type: application/json" -H "Accept: application/json" -d '{"email":"petugas.main@sipanda.online", "password":"password123"}')
 PETUGAS_TOKEN=$(echo "$PETUGAS_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 echo "Step 4: Petugas Logged In."
 
