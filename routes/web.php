@@ -3,7 +3,8 @@
 use App\Http\Controllers\DocumentationController;
 
 Route::get('/', function () {
-    return view('welcome');
+    $commitHash = trim(exec('git rev-parse --short HEAD') ?: 'unknown');
+    return view('welcome', compact('commitHash'));
 })->middleware('throttle:60,1');
 
 Route::get('/login', function () {
