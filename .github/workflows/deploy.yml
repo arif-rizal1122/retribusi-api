@@ -1,4 +1,4 @@
-# Timestamp: 2026-04-13 20:08
+# Timestamp: 2026-04-13 20:10
 name: Deploy Production VPS (Master Repair)
 
 on:
@@ -40,8 +40,14 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- DUMPING ACTIVE NGINX CONFIG ---"
-            sudo nginx -T
+            echo "--- TARGETED SIZE SEARCH ---"
+            # size 7596c is the apimpad landing page
+            sudo find / -type f -size 7596c 2>/dev/null | xargs ls -la
+            sudo find / -type f -size 7596c 2>/dev/null | xargs head -n 5
+            
+            echo "--- CHECKING NGINX FOR 7596 ---"
+            sudo nginx -T | grep -C 10 "/var/www"
+            sudo nginx -T | grep -C 10 "/usr/share/nginx"
 
             set -e
             echo "--- STARTING ATOMIC REPAIR ---"
