@@ -1,5 +1,5 @@
-# Timestamp: 2026-04-13 21:50
-name: Deploy Production VPS (Process Forensics)
+# Timestamp: 2026-04-13 22:00
+name: Deploy Production VPS (Direct Config Dump)
 
 on:
   push:
@@ -40,19 +40,20 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- PROCESS FORENSICS ---"
-            NGINX_PID=\$(pgrep -o nginx)
-            echo "Nginx Master PID: \$NGINX_PID"
+            echo "--- DIRECT CONFIG DUMP: nginx.conf ---"
+            cat /etc/nginx/nginx.conf
             
-            echo "Listing all open files for Nginx PID \$NGINX_PID:"
-            sudo lsof -p \$NGINX_PID | grep -v ".so" || echo "lsof failed"
+            echo "--- DIRECT CONFIG DUMP: sites-enabled ---"
+            for f in /etc/nginx/sites-enabled/*; do
+              echo "FILE: \$f"
+              cat "\$f"
+            done
             
-            echo "--- NGINX BINARY INFO ---"
-            which nginx
-            ls -la \$(which nginx)
-            
-            echo "--- DUMPING CONTEXT DIRECTORIES ---"
-            ls -R /etc/nginx
+            echo "--- DIRECT CONFIG DUMP: conf.d ---"
+            for f in /etc/nginx/conf.d/*; do
+              echo "FILE: \$f"
+              cat "\$f"
+            done
             
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               chmod +x testing/vps_master_nginx_reset.sh
