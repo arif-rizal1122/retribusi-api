@@ -29,16 +29,8 @@ PETUGAS_ROOT=$(get_path $PETUGAS_BASE)
 
 # 3. GENERATE TEST CONFIG
 TEMP_CONF="/tmp/mpad_test.conf"
-{
-  echo "server {"
-  echo "    listen 80 default_server;"
-  echo "    server_name _;"
-  echo "    root $PETUGAS_ROOT;"
-  echo "    index index.html;"
-  echo "    location / { try_files \$uri \$uri/ /index.html; }"
-  echo "}"
 
-  generate_block() {
+generate_block() {
     local domain=$1
     local root=$2
     local is_php=$3
@@ -49,7 +41,7 @@ TEMP_CONF="/tmp/mpad_test.conf"
     echo "server {"
     echo "    listen 80;"
     echo "    server_name $domain;"
-    if [ -f "$ssl_cert" ]; then
+    if [ -f "$ssl_cert" ] && [ -f "$ssl_key" ]; then
         echo "    listen 443 ssl;"
         echo "    ssl_certificate $ssl_cert;"
         echo "    ssl_certificate_key $ssl_key;"
@@ -70,7 +62,16 @@ TEMP_CONF="/tmp/mpad_test.conf"
         echo "    }"
     fi
     echo "}"
-  }
+}
+
+{
+  echo "server {"
+  echo "    listen 80 default_server;"
+  echo "    server_name _;"
+  echo "    root $PETUGAS_ROOT;"
+  echo "    index index.html;"
+  echo "    location / { try_files \$uri \$uri/ /index.html; }"
+  echo "}"
 
   generate_block "$API_DOMAIN" "$API_ROOT" "true"
   generate_block "$ADMIN_DOMAIN" "$ADMIN_ROOT" "false"
@@ -78,11 +79,14 @@ TEMP_CONF="/tmp/mpad_test.conf"
 } > $TEMP_CONF
 
 # 4. PRE-FLIGHT VALIDATION
+echo "--- GENERATED CONFIG START ---"
+cat $TEMP_CONF
+echo "--- GENERATED CONFIG END ---"
+
 echo "Validating new Nginx configuration..."
-# We test by temporarily swapping a sentinel file or using nginx -t on a custom file if supported
-# Actually, the safest is to copy it to sites-available and test it there
 sudo cp $TEMP_CONF /etc/nginx/sites-available/mpad-preflight.conf
-if sudo nginx -t; then
+VALIDATION_OUT=$(sudo nginx -t 2>&1)
+if [ $? -eq 0 ]; then
     echo "Validation Success. Applying Atomic Swap..."
     sudo rm -rf /etc/nginx/sites-enabled/*
     sudo ln -sf /etc/nginx/sites-available/mpad-preflight.conf /etc/nginx/sites-enabled/mpad-production.conf
@@ -90,7 +94,7 @@ if sudo nginx -t; then
     echo "NGINX RESTORED SUCCESSFULLY."
 else
     echo "CRITICAL VALIDATION FAILURE!"
-    sudo nginx -t 2>&1
+    echo "$VALIDATION_OUT"
     echo "Keeping existing configuration to prevent blackout."
     exit 1
 fi
