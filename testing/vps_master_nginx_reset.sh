@@ -1,8 +1,8 @@
 #!/bin/bash
 # High-Fidelity Nginx Recovery & Subdomain Partitioning
-# ROBUST VERSION: Checks for existence of certs and paths before applying.
+# ROBUST VERSION: Correct domains and auto-cert discovery.
 
-echo "--- STARTING ROBUST PARTITIONED NGINX RECOVERY ---"
+echo "--- STARTING DOMAIN-CORRECTED NGINX RECOVERY ---"
 
 # 1. DEFINE PATHS
 API_ROOT="/home/sipanda/retribusi-api"
@@ -52,14 +52,25 @@ echo "API: $API_ROOT"
 echo "Admin: $ADMIN_PATH"
 echo "Petugas: $PETUGAS_PATH"
 
-# 7. HELPER TO GENERATE SERVER BLOCK
+# 7. HELPER TO FIND BEST CERT
+find_cert() {
+    local domain=$1
+    local cert="/etc/letsencrypt/live/$domain/fullchain.pem"
+    # Fallback to a common cert if domain-specific one is missing
+    if [ ! -f "$cert" ]; then
+        cert=$(ls /etc/letsencrypt/live/*/fullchain.pem 2>/dev/null | head -n 1)
+    fi
+    echo "$cert"
+}
+
+# 8. HELPER TO GENERATE SERVER BLOCK
 generate_server_block() {
     local name=$1
     local domain=$2
     local root=$3
     local type=$4 # 'php' or 'static'
-    local cert="/etc/letsencrypt/live/apimpad.baubaukota.go.id/fullchain.pem"
-    local key="/etc/letsencrypt/live/apimpad.baubaukota.go.id/privkey.pem"
+    local cert=$(find_cert "$domain")
+    local key="${cert/fullchain.pem/privkey.pem}"
 
     echo "# --- $name SUBDOMAIN ---"
     echo "server {"
@@ -94,7 +105,7 @@ generate_server_block() {
             echo "    }"
         fi
     elif [ -d "$root" ]; then
-        echo "    # Fallback to HTTP because SSL cert or directory missing"
+        echo "    # Fallback to HTTP because SSL cert ($cert) or directory missing"
         echo "    root $root;"
         if [ "$type" == "php" ]; then
             echo "    index index.php;"
@@ -114,15 +125,15 @@ generate_server_block() {
     echo "}"
 }
 
-# 8. CREATE PARTITIONED CONFIGS
+# 9. CREATE PARTITIONED CONFIGS
 PROD_CONF="/etc/nginx/sites-available/mpad-production.conf"
 {
-    generate_server_block "API" "apimpad.baubaukota.go.id" "$API_ROOT/public" "php"
+    generate_server_block "API" "api.sipanda.online" "$API_ROOT/public" "php"
     generate_server_block "ADMIN" "adminmpad.baubaukota.go.id" "$ADMIN_PATH" "static"
     generate_server_block "PETUGAS" "petugasmpad.baubaukota.go.id" "$PETUGAS_PATH" "static"
 } | sudo tee $PROD_CONF > /dev/null
 
-# 9. ENABLE & RESTART
+# 10. ENABLE & RESTART
 sudo ln -sf "$PROD_CONF" /etc/nginx/sites-enabled/mpad-production.conf
 sudo nginx -t && sudo systemctl restart nginx
 

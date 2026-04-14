@@ -42,7 +42,7 @@ jobs:
             
             echo "--- IDENTITY CRISIS: DNS vs VPS ---"
             MY_IP=$(curl -s https://ifconfig.me)
-            DNS_IP=$(dig +short apimpad.baubaukota.go.id | tail -n1)
+            DNS_IP=$(dig +short api.sipanda.online | tail -n1)
             echo "VPS Public IP: $MY_IP"
             echo "DNS Record IP: $DNS_IP"
             
@@ -53,7 +53,7 @@ jobs:
 
             echo "--- FINAL HEALTH CHECK & VERIFICATION ---"
             echo "API Status:"
-            curl -k -I https://apimpad.baubaukota.go.id/
+            curl -k -I https://api.sipanda.online/
             
             echo "Admin Status:"
             curl -k -I https://adminmpad.baubaukota.go.id/
