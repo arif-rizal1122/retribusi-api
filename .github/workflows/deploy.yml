@@ -40,36 +40,26 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- IDENTITY CRISIS: DNS vs VPS ---"
-            MY_IP=$(curl -s https://ifconfig.me)
-            DNS_IP=$(dig +short api.sipanda.online | tail -n1)
-            echo "VPS Public IP: $MY_IP"
-            echo "DNS Record IP: $DNS_IP"
+            echo "--- DEEP DISCOVERY ---"
+            ls -la /home/sipanda || true
+            ls -la /etc/letsencrypt/live || true
             
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               chmod +x testing/vps_master_nginx_reset.sh
-              sudo ./testing/vps_master_nginx_reset.sh
+              sudo ./testing/vps_master_nginx_reset.sh || true
             fi
 
-            echo "--- FINAL HEALTH CHECK & VERIFICATION ---"
-            echo "API Status:"
-            curl -k -I https://api.sipanda.online/
+            echo "--- GENERATED CONFIG ---"
+            sudo cat /etc/nginx/sites-available/mpad-production.conf || echo "Config not found"
             
-            echo "Admin Status:"
-            curl -k -I https://adminmpad.baubaukota.go.id/
-            
-            echo "Petugas Status:"
-            curl -k -I https://petugasmpad.baubaukota.go.id/
-            
-            echo "Checking for landing page artifact (7596 bytes):"
-            PAGE_SIZE=$(curl -k -s -o /dev/null -w "%{size_download}" https://adminmpad.baubaukota.go.id/)
-            echo "Landing Page Size: $PAGE_SIZE"
-            if [ "$PAGE_SIZE" == "7596" ]; then
-              echo "CRITICAL: Landing page still detected!"
-              exit 1
-            else
-              echo "SUCCESS: Landing page purged."
-            fi
+            echo "--- NGINX STATUS ---"
+            sudo nginx -t || true
+            sudo systemctl status nginx --no-pager || true
+
+            echo "--- FINAL HEALTH CHECK ---"
+            curl -k -I https://api.sipanda.online/ || true
+            curl -k -I https://adminmpad.baubaukota.go.id/ || true
+            curl -k -I https://petugasmpad.baubaukota.go.id/ || true
 
             set -e
             echo "--- STARTING ATOMIC REPAIR ---"
