@@ -1,8 +1,8 @@
 #!/bin/bash
 # High-Fidelity Nginx Recovery & Subdomain Partitioning
-# This script eliminates the "Soft Launching" override and restores partitioned M-PAD services.
+# ROBUST VERSION: Checks for existence of certs and paths before applying.
 
-echo "--- STARTING PARTITIONED NGINX RECOVERY ---"
+echo "--- STARTING ROBUST PARTITIONED NGINX RECOVERY ---"
 
 # 1. DEFINE PATHS
 API_ROOT="/home/sipanda/retribusi-api"
@@ -18,7 +18,7 @@ fi
 
 # 3. WIPE STATIC OVERRIDES & ROGUE ASSETS
 echo "Cleaning web roots..."
-sudo rm -f $API_ROOT/public/index.html
+[ -f $API_ROOT/public/index.html ] && sudo rm -f $API_ROOT/public/index.html
 sudo rm -rf /var/www/html/*
 sudo rm -rf /usr/share/nginx/html/*
 
@@ -47,80 +47,82 @@ get_frontend_root() {
 ADMIN_PATH=$(get_frontend_root $ADMIN_ROOT)
 PETUGAS_PATH=$(get_frontend_root $PETUGAS_ROOT)
 
-echo "Admin Path: $ADMIN_PATH"
-echo "Petugas Path: $PETUGAS_PATH"
+echo "Detected paths:"
+echo "API: $API_ROOT"
+echo "Admin: $ADMIN_PATH"
+echo "Petugas: $PETUGAS_PATH"
 
-# 7. CREATE PARTITIONED CONFIGS
+# 7. HELPER TO GENERATE SERVER BLOCK
+generate_server_block() {
+    local name=$1
+    local domain=$2
+    local root=$3
+    local type=$4 # 'php' or 'static'
+    local cert="/etc/letsencrypt/live/apimpad.baubaukota.go.id/fullchain.pem"
+    local key="/etc/letsencrypt/live/apimpad.baubaukota.go.id/privkey.pem"
+
+    echo "# --- $name SUBDOMAIN ---"
+    echo "server {"
+    echo "    listen 80;"
+    echo "    server_name $domain;"
+    
+    if [ -f "$cert" ] && [ -d "$root" ]; then
+        echo "    return 301 https://\$host\$request_uri;"
+        echo "}"
+        echo ""
+        echo "server {"
+        echo "    listen 443 ssl;"
+        echo "    server_name $domain;"
+        echo "    root $root;"
+        echo "    ssl_certificate $cert;"
+        echo "    ssl_certificate_key $key;"
+        
+        if [ "$type" == "php" ]; then
+            echo "    index index.php;"
+            echo "    location / {"
+            echo "        try_files \$uri \$uri/ /index.php?\$query_string;"
+            echo "    }"
+            echo "    location ~ \.php$ {"
+            echo "        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;"
+            echo "        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;"
+            echo "        include fastcgi_params;"
+            echo "    }"
+        else
+            echo "    index index.html;"
+            echo "    location / {"
+            echo "        try_files \$uri \$uri/ /index.html;"
+            echo "    }"
+        fi
+    elif [ -d "$root" ]; then
+        echo "    # Fallback to HTTP because SSL cert or directory missing"
+        echo "    root $root;"
+        if [ "$type" == "php" ]; then
+            echo "    index index.php;"
+            echo "    location / {"
+            echo "        try_files \$uri \$uri/ /index.php?\$query_string;"
+            echo "    }"
+        else
+            echo "    index index.html;"
+            echo "    location / {"
+            echo "        try_files \$uri \$uri/ /index.html;"
+            echo "    }"
+        fi
+    else
+         echo "    # Directory $root NOT FOUND. Skipping content delivery."
+         echo "    return 404;"
+    fi
+    echo "}"
+}
+
+# 8. CREATE PARTITIONED CONFIGS
 PROD_CONF="/etc/nginx/sites-available/mpad-production.conf"
-sudo bash -c "cat > $PROD_CONF <<EOF
-# --- API SUBDOMAIN ---
-server {
-    listen 80;
-    server_name apimpad.baubaukota.go.id;
-    return 301 https://\\\$host\\\$request_uri;
-}
+{
+    generate_server_block "API" "apimpad.baubaukota.go.id" "$API_ROOT/public" "php"
+    generate_server_block "ADMIN" "adminmpad.baubaukota.go.id" "$ADMIN_PATH" "static"
+    generate_server_block "PETUGAS" "petugasmpad.baubaukota.go.id" "$PETUGAS_PATH" "static"
+} | sudo tee $PROD_CONF > /dev/null
 
-server {
-    listen 443 ssl;
-    server_name apimpad.baubaukota.go.id;
-    root $API_ROOT/public;
-    index index.php;
-    ssl_certificate /etc/letsencrypt/live/apimpad.baubaukota.go.id/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/apimpad.baubaukota.go.id/privkey.pem;
-
-    location / {
-        try_files \\\$uri \\\$uri/ /index.php?\\\$query_string;
-    }
-
-    location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \\\$realpath_root\\\$fastcgi_script_name;
-        include fastcgi_params;
-    }
-}
-
-# --- ADMIN SUBDOMAIN ---
-server {
-    listen 80;
-    server_name adminmpad.baubaukota.go.id;
-    return 301 https://\\\$host\\\$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name adminmpad.baubaukota.go.id;
-    root $ADMIN_PATH;
-    index index.html;
-    ssl_certificate /etc/letsencrypt/live/apimpad.baubaukota.go.id/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/apimpad.baubaukota.go.id/privkey.pem;
-
-    location / {
-        try_files \\\$uri \\\$uri/ /index.html;
-    }
-}
-
-# --- PETUGAS SUBDOMAIN ---
-server {
-    listen 80;
-    server_name petugasmpad.baubaukota.go.id;
-    return 301 https://\\\$host\\\$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name petugasmpad.baubaukota.go.id;
-    root $PETUGAS_PATH;
-    index index.html;
-    ssl_certificate /etc/letsencrypt/live/apimpad.baubaukota.go.id/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/apimpad.baubaukota.go.id/privkey.pem;
-
-    location / {
-        try_files \\\$uri \\\$uri/ /index.html;
-    }
-}
-EOF"
-
-# 8. ENABLE & RESTART
+# 9. ENABLE & RESTART
 sudo ln -sf "$PROD_CONF" /etc/nginx/sites-enabled/mpad-production.conf
 sudo nginx -t && sudo systemctl restart nginx
 
