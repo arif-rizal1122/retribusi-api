@@ -35,6 +35,9 @@ return [
         'https://adminmpad.baubaukota.go.id',
         'https://petugasmpad.baubaukota.go.id',
         'https://mpad.baubaukota.go.id',
+        'https://admin.mpad.online',
+        'https://petugas.mpad.online',
+        'https://mpad.online',
         env('FRONTEND_URL', 'http://localhost:3000'),
     ],
 
