@@ -13,7 +13,7 @@ ORIGIN="https://sipanda.online"
 # Handle environment argument
 if [ "$1" == "prod" ]; then
   echo -e "${YELLOW}Mode: PRODUCTION${NC}"
-  API="https://apimpad.baubaukota.go.id/api"
+  API="https://api.sipanda.online/api"
   ORIGIN="https://mpad.baubaukota.go.id"
 elif [ "$1" == "staging" ]; then
   echo -e "${YELLOW}Mode: STAGING (sipanda.online)${NC}"
