@@ -13,22 +13,7 @@ API_ROOT="/home/sipanda/retribusi-api"
 ADMIN_ROOT="/home/sipanda/retribusi-admin"
 PETUGAS_ROOT="/home/sipanda/retribusi-petugas"
 
-# 2. PRESERVE POS
-POS_TARGET=""
-if [ -L /etc/nginx/sites-enabled/posmpad ]; then
-    POS_TARGET=$(readlink -f /etc/nginx/sites-enabled/posmpad)
-fi
-
-# 3. WIPE STATIC OVERRIDES
-sudo rm -rf /var/www/html/*
-sudo rm -rf /usr/share/nginx/html/*
-sudo rm -rf /etc/nginx/sites-enabled/*
-sudo rm -rf /etc/nginx/conf.d/*
-
-# 4. RESTORE POS
-[ ! -z "$POS_TARGET" ] && sudo ln -sf "$POS_TARGET" /etc/nginx/sites-enabled/posmpad
-
-# 5. DETECT ROOTS
+# 2. DETECT ROOTS
 get_root() {
     local base=$1
     [ -d "$base/dist" ] && echo "$base/dist" && return
@@ -41,20 +26,7 @@ API_PATH=$(get_root $API_ROOT)
 ADMIN_PATH=$(get_root $ADMIN_ROOT)
 PETUGAS_PATH=$(get_root $PETUGAS_ROOT)
 
-# 6. SSL ISSUANCE (CRITICAL FOR CONNECTION REFUSED)
-issue_ssl() {
-    local domain=$1
-    if [ ! -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
-        echo "Attempting to issue SSL for $domain..."
-        sudo certbot certonly --nginx -d "$domain" --non-interactive --agree-tos -m admin@sipanda.online || echo "SSL issuance failed for $domain"
-    fi
-}
-
-issue_ssl "$API_DOMAIN"
-issue_ssl "$ADMIN_DOMAIN"
-issue_ssl "$PETUGAS_DOMAIN"
-
-# 7. GENERATE CONFIG
+# 3. GENERATE CONFIG (FIRST, TO ENSURE NO WIPE-FAILURE)
 generate_block() {
     local domain=$1
     local root=$2
@@ -67,23 +39,18 @@ generate_block() {
     echo "    server_name $domain;"
     
     if [ -f "$cert" ]; then
-        echo "    return 301 https://\$host\$request_uri;"
-        echo "}"
-        echo "server {"
         echo "    listen 443 ssl;"
-        echo "    server_name $domain;"
-        echo "    root $root;"
         echo "    ssl_certificate $cert;"
         echo "    ssl_certificate_key $key;"
-    else
-        echo "    root $root;"
     fi
 
+    echo "    root $root;"
     echo "    index index.php index.html;"
+    
     echo "    location / {"
-    echo "        try_files \$uri \$uri/ /index.php?\$query_string;"
-    if [ "$is_php" != "true" ]; then
-        echo "        # Static override for react/vite"
+    if [ "$is_php" == "true" ]; then
+        echo "        try_files \$uri \$uri/ /index.php?\$query_string;"
+    else
         echo "        try_files \$uri \$uri/ /index.html;"
     fi
     echo "    }"
@@ -97,14 +64,20 @@ generate_block() {
     echo "}"
 }
 
-CONF="/etc/nginx/sites-available/mpad-restoration.conf"
+CONF_TMP="/tmp/mpad-fail-safe.conf"
 {
     generate_block "$API_DOMAIN" "$API_PATH" "true"
     generate_block "$ADMIN_DOMAIN" "$ADMIN_PATH" "false"
     generate_block "$PETUGAS_DOMAIN" "$PETUGAS_PATH" "false"
-} | sudo tee $CONF > /dev/null
+} > $CONF_TMP
 
-sudo ln -sf $CONF /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl restart nginx
+# 4. ATOMIC SWAP
+echo "Atomic Swapping Nginx Config..."
+sudo rm -rf /etc/nginx/sites-enabled/*
+sudo cp $CONF_TMP /etc/nginx/sites-available/mpad-production.conf
+sudo ln -sf /etc/nginx/sites-available/mpad-production.conf /etc/nginx/sites-enabled/
+
+# 5. RESTART
+sudo nginx -t && sudo systemctl restart nginx || echo "Nginx Restart Failed - Check Logs"
 
 echo "--- PARTITIONED RECOVERY COMPLETED ---"
