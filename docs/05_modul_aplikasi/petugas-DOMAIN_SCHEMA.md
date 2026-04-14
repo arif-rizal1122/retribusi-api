@@ -9,7 +9,7 @@ Domain resmi yang digunakan untuk operasional publik dan internal.
 | :--- | :--- | :--- |
 | **Portal Utama** | `mpad.baubaukota.go.id` | Pintu masuk utama aplikasi/Landing page |
 | **Dashboard Admin** | `adminmpad.baubaukota.go.id` | Panel manajemen untuk Bapenda & OPD |
-| **Backend API** | `apimpad.baubaukota.go.id` | Endpoint layanan data (Core API) |
+| **Backend API** | `api.sipanda.online` | Endpoint layanan data (Core API) |
 | **Interface Petugas** | `petugasmpad.baubaukota.go.id` | Akses petugas lapangan (Mobile/Web) |
 
 ## 2. Lingkungan Staging / Development (VPS)

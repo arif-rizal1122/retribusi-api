@@ -47,7 +47,7 @@ Dokumen ini menjelaskan **lokasi penyimpanan** kredensial tanpa mencantumkan nil
 - **Admin Web** (Super Admin, OPD, Pengawas): [https://adminmpad.baubaukota.go.id](https://adminmpad.baubaukota.go.id)
 - **Petugas Web** (Dashboard Petugas): [https://petugasmpad.baubaukota.go.id](https://petugasmpad.baubaukota.go.id)
 - **Mobile Web** (Wajib Retribusi & Quick Access): [https://mpad.baubaukota.go.id](https://mpad.baubaukota.go.id)
-- **API Server**: [https://apimpad.baubaukota.go.id](https://apimpad.baubaukota.go.id)
+- **API Server**: [https://api.sipanda.online](https://api.sipanda.online)
 
 ---
 ## 5. File `.env` (Source of Truth)
