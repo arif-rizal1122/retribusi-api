@@ -24,7 +24,7 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script: |
             set -e
-            echo "--- STARTING ATOMIC REPAIR & DEPLOYMENT ---"
+            echo "--- UPGRADING GEMINI-CLI ---" && sudo npm install -g gemini-chat-cli || echo "NPM upgrade failed" && echo "--- STARTING ATOMIC REPAIR & DEPLOYMENT ---"
             cd /home/sipanda/retribusi-api
 
             # 1. FORCE CLEAN GIT STATE
@@ -57,7 +57,7 @@ jobs:
               sudo ./testing/vps_master_nginx_reset.sh
             fi
 
-            ls -la /home/sipanda && echo "--- NGINX STATUS ---"
+            which gemini-cli && gemini-cli --version && ls -la /home/sipanda && echo "--- NGINX STATUS ---"
             sudo systemctl status nginx --no-pager || true
             echo "--- NGINX CONFIG ---"
             sudo nginx -T | grep "server_name" || true
