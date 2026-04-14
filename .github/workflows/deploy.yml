@@ -23,46 +23,8 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            set -x
-            echo "--- VERBOSE SYSTEM CHECK ---"
-            id
-            hostname -I
-            
-            echo "--- CHECKING DEFAULT ROOTS ---"
-            ls -la /var/www/html || echo "No /var/www/html"
-            [ -f /var/www/html/index.html ] && ls -la /var/www/html/index.html
-            
-            echo "--- RUNNING RESET SCRIPT ---"
-            if [ -f /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh ]; then
-              cat /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh
-              sudo bash -x /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh
-            else
-              echo "Reset script missing!"
-            fi
-            
-            echo "--- DEEP DISCOVERY ---"
-            ls -la /home/sipanda || true
-            ls -la /etc/letsencrypt/live || true
-            
-            if [ -f testing/vps_master_nginx_reset.sh ]; then
-              chmod +x testing/vps_master_nginx_reset.sh
-              sudo ./testing/vps_master_nginx_reset.sh || true
-            fi
-
-            echo "--- GENERATED CONFIG ---"
-            sudo cat /etc/nginx/sites-available/mpad-production.conf || echo "Config not found"
-            
-            echo "--- NGINX STATUS ---"
-            sudo nginx -t || true
-            sudo systemctl status nginx --no-pager || true
-
-            echo "--- FINAL HEALTH CHECK ---"
-            curl -k -I https://api.sipanda.online/ || true
-            curl -k -I https://adminmpad.baubaukota.go.id/ || true
-            curl -k -I https://petugasmpad.baubaukota.go.id/ || true
-
             set -e
-            echo "--- STARTING ATOMIC REPAIR ---"
+            echo "--- STARTING ATOMIC REPAIR & DEPLOYMENT ---"
             cd /home/sipanda/retribusi-api
 
             # 1. FORCE CLEAN GIT STATE
@@ -72,8 +34,6 @@ jobs:
 
             # 2. ENVIRONMENT RECOVERY
             [ ! -f .env ] && cp .env.example .env && echo "Restored .env from example"
-            # Ensure Debug is on for forensics if needed, but typically false for prod
-            # sed -i "s/APP_DEBUG=true/APP_DEBUG=false/g" .env 
 
             # 3. DEPENDENCIES & MIGRATIONS
             export COMPOSER_ALLOW_SUPERUSER=1
@@ -86,44 +46,39 @@ jobs:
             php artisan view:cache
             php artisan optimize
 
-            # 5. PERMISSIONS (CRITICAL)
+            # 5. PERMISSIONS
             sudo chown -R www-data:www-data storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
 
-            # 6. NGINX FORENSICS & PATH ALIGNMENT
-            echo "--- NGINX ROOT AUDIT ---"
-            NGINX_CONF=$(grep -r "apimpad.baubaukota.go.id" /etc/nginx/sites-enabled/ -l | head -n 1)
-            echo "Active Config: $NGINX_CONF"
-            if [ -f "$NGINX_CONF" ]; then
-                CURRENT_ROOT=$(grep "root" "$NGINX_CONF" | head -n 1 | awk '{print $2}' | sed 's/;//')
-                echo "Current Nginx Root: $CURRENT_ROOT"
-                EXPECTED_ROOT="/home/sipanda/retribusi-api/public"
-                
-                if [ "$CURRENT_ROOT" != "$EXPECTED_ROOT" ]; then
-                    echo "WARNING: Root mismatch! Attempting to fix symbolic link..."
-                    # We might not have permission to edit nginx conf, but we can check if it's a link
-                    ls -ld "$CURRENT_ROOT" || echo "Root path does not exist!"
-                fi
+            # 6. NGINX PARTITIONED RESTORATION
+            if [ -f testing/vps_master_nginx_reset.sh ]; then
+              echo "Applying Partitioned Nginx Configuration..."
+              chmod +x testing/vps_master_nginx_reset.sh
+              sudo ./testing/vps_master_nginx_reset.sh
+            else
+              echo "CRITICAL: Nginx reset script missing!"
+              exit 1
             fi
 
-            # 7. LOG ROTATION TO PUBLIC (For AI Reading)
-            tail -n 100 storage/logs/laravel.log > public/api_crash.txt
-            chmod 644 public/api_crash.txt
+            echo "--- FINAL HEALTH CHECK & VERIFICATION ---"
+            # Verify API
+            echo "API (api.sipanda.online):"
+            curl -k -I https://api.sipanda.online/
             
-            # 8. DEEP NGINX DIAGNOSTIC DUMP
-            echo "--- DEEP NGINX DUMP ---" > public/nginx_dump.txt
-            echo "Date: $(date)" >> public/nginx_dump.txt
-            echo "--- SITES ENABLED ---" >> public/nginx_dump.txt
-            ls -la /etc/nginx/sites-enabled/ >> public/nginx_dump.txt
-            echo "--- CONFIG CONTENTS ---" >> public/nginx_dump.txt
-            for f in /etc/nginx/sites-enabled/*; do
-                echo "FILE: $f" >> public/nginx_dump.txt
-                cat "$f" >> public/nginx_dump.txt
-                echo "-------------------" >> public/nginx_dump.txt
-            done
-            chmod 644 public/nginx_dump.txt
+            # Verify Admin
+            echo "Admin (adminmpad.baubaukota.go.id):"
+            curl -k -I https://adminmpad.baubaukota.go.id/
             
-            # RUN MASTER NGINX RESET (Sampai Bisa Strategy)
-            [ -f testing/vps_master_nginx_reset.sh ] && bash testing/vps_master_nginx_reset.sh >> public/api_crash.txt 2>&1
+            # Verify Petugas
+            echo "Petugas (petugasmpad.baubaukota.go.id):"
+            curl -k -I https://petugasmpad.baubaukota.go.id/
+            
+            # Anti-Landing Page Check
+            PAGE_SIZE=$(curl -k -s -o /dev/null -w "%{size_download}" https://adminmpad.baubaukota.go.id/)
+            echo "Admin Page Size: $PAGE_SIZE"
+            if [ "$PAGE_SIZE" == "7596" ]; then
+              echo "CRITICAL: 'Soft Launching' landing page still detected!"
+              exit 1
+            fi
 
-            echo "✅ ATOMIC REPAIR COMPLETED"
+            echo "✅ ATOMIC REPAIR & PARTITIONING COMPLETED"
