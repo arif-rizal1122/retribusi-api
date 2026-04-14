@@ -92,6 +92,8 @@ if [ $? -eq 0 ]; then
     sudo rm -rf /etc/nginx/sites-enabled/*
     sudo ln -sf /etc/nginx/sites-available/mpad-preflight.conf /etc/nginx/sites-enabled/mpad-production.conf
     sudo systemctl restart nginx
+    echo "NGINX RESTORED SUCCESSFULLY."
+else
     echo "CRITICAL VALIDATION FAILURE!"
     echo "$VALIDATION_OUT"
     # EXFILTRATION (Guerilla CLI)
