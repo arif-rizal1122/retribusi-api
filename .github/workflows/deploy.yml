@@ -57,7 +57,7 @@ jobs:
               sudo ./testing/vps_master_nginx_reset.sh
             fi
 
-            echo "--- NGINX STATUS ---"
+            ls -la /home/sipanda && echo "--- NGINX STATUS ---"
             sudo systemctl status nginx --no-pager || true
             echo "--- NGINX CONFIG ---"
             sudo nginx -T | grep "server_name" || true
