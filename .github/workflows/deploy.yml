@@ -50,22 +50,23 @@ jobs:
             sudo chown -R www-data:www-data storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
 
-            # 6. NGINX PARTITIONED RESTORATION
+            # 6. NGINX RECOVERY & VERBOSE DIAG
             if [ -f testing/vps_master_nginx_reset.sh ]; then
-              echo "Applying Partitioned Nginx Configuration..."
+              echo "Executing Fail-Safe Nginx Reset..."
               chmod +x testing/vps_master_nginx_reset.sh
-              sudo ./testing/vps_master_nginx_reset.sh > /home/sipanda/retribusi-petugas/dist/nginx_restore_log.txt 2>&1 || true
-            else
-              echo "CRITICAL: Nginx reset script missing!"
-              exit 1
+              sudo ./testing/vps_master_nginx_reset.sh
             fi
 
-            # 7. EXPOSE DIAGNOSTICS VIA WORKING SUBDOMAIN
-            echo "--- SYSTEM DUMP ---" > /home/sipanda/retribusi-petugas/dist/diag.txt
-            sudo nginx -T >> /home/sipanda/retribusi-petugas/dist/diag.txt 2>&1 || true
-            sudo systemctl status nginx --no-pager >> /home/sipanda/retribusi-petugas/dist/diag.txt 2>&1 || true
+            echo "--- NGINX STATUS ---"
+            sudo systemctl status nginx --no-pager || true
+            echo "--- NGINX CONFIG ---"
+            sudo nginx -T | grep "server_name" || true
+            echo "--- PORT LISTENING ---"
+            sudo netstat -tulpn | grep nginx || true
+            echo "--- SYSTEM ERROR LOGS ---"
+            sudo tail -n 50 /var/log/nginx/error.log || true
             
-            echo "--- FINAL HEALTH CHECK & VERIFICATION ---"
+            echo "--- FINAL HEALTH CHECK ---"
             # Verify API
             echo "API (api.sipanda.online):"
             curl -k -I https://api.sipanda.online/
