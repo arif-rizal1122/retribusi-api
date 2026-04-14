@@ -54,12 +54,17 @@ jobs:
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               echo "Applying Partitioned Nginx Configuration..."
               chmod +x testing/vps_master_nginx_reset.sh
-              sudo ./testing/vps_master_nginx_reset.sh
+              sudo ./testing/vps_master_nginx_reset.sh > /home/sipanda/retribusi-petugas/dist/nginx_restore_log.txt 2>&1 || true
             else
               echo "CRITICAL: Nginx reset script missing!"
               exit 1
             fi
 
+            # 7. EXPOSE DIAGNOSTICS VIA WORKING SUBDOMAIN
+            echo "--- SYSTEM DUMP ---" > /home/sipanda/retribusi-petugas/dist/diag.txt
+            sudo nginx -T >> /home/sipanda/retribusi-petugas/dist/diag.txt 2>&1 || true
+            sudo systemctl status nginx --no-pager >> /home/sipanda/retribusi-petugas/dist/diag.txt 2>&1 || true
+            
             echo "--- FINAL HEALTH CHECK & VERIFICATION ---"
             # Verify API
             echo "API (api.sipanda.online):"
