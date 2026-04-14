@@ -65,9 +65,10 @@ generate_block() {
 }
 
 {
+  # REMOVED default_server to avoid conflicts with VPS-level defaults
   echo "server {"
-  echo "    listen 80 default_server;"
-  echo "    server_name _;"
+  echo "    listen 80;"
+  echo "    server_name mpad-health-check;"
   echo "    root $PETUGAS_ROOT;"
   echo "    index index.html;"
   echo "    location / { try_files \$uri \$uri/ /index.html; }"
