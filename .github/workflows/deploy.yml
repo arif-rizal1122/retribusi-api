@@ -40,21 +40,35 @@ jobs:
               echo "Reset script missing!"
             fi
             
-            echo "--- FOLDER DISCOVERY ---"
-            ls -d /home/sipanda/*/
-            
-            echo "Checking retribusi-admin folder:"
-            ls -la /home/sipanda/retribusi-admin || echo "Admin folder not found"
-            
-            echo "Searching for 'Soft Launching' in /home/sipanda/:"
-            grep -r "Soft Launching" /home/sipanda/ --max-count=1 || echo "Not found in /home/sipanda/"
-            
-            echo "--- NGINX -T DUMP (LAST CHANCE) ---"
-            sudo nginx -T | grep -A 20 "server_name"
+            echo "--- IDENTITY CRISIS: DNS vs VPS ---"
+            MY_IP=$(curl -s https://ifconfig.me)
+            DNS_IP=$(dig +short apimpad.baubaukota.go.id | tail -n1)
+            echo "VPS Public IP: $MY_IP"
+            echo "DNS Record IP: $DNS_IP"
             
             if [ -f testing/vps_master_nginx_reset.sh ]; then
               chmod +x testing/vps_master_nginx_reset.sh
               sudo ./testing/vps_master_nginx_reset.sh
+            fi
+
+            echo "--- FINAL HEALTH CHECK & VERIFICATION ---"
+            echo "API Status:"
+            curl -k -I https://apimpad.baubaukota.go.id/
+            
+            echo "Admin Status:"
+            curl -k -I https://adminmpad.baubaukota.go.id/
+            
+            echo "Petugas Status:"
+            curl -k -I https://petugasmpad.baubaukota.go.id/
+            
+            echo "Checking for landing page artifact (7596 bytes):"
+            PAGE_SIZE=$(curl -k -s -o /dev/null -w "%{size_download}" https://adminmpad.baubaukota.go.id/)
+            echo "Landing Page Size: $PAGE_SIZE"
+            if [ "$PAGE_SIZE" == "7596" ]; then
+              echo "CRITICAL: Landing page still detected!"
+              exit 1
+            else
+              echo "SUCCESS: Landing page purged."
             fi
 
             set -e
