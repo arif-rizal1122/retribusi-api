@@ -16,7 +16,7 @@ class TaxpayerController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = Taxpayer::with(['opd', 'retributionTypes', 'retributionClassifications', 'creator']);
+        $query = Taxpayer::with(['opd', 'retributionTypes', 'retributionClassifications', 'creator', 'taxObjects']);
 
         // Admin OPD and Petugas only see their own OPD's taxpayers
         if ($user && in_array($user->role, ['opd', 'petugas'])) {
@@ -313,8 +313,17 @@ class TaxpayerController extends Controller
 
             // Update retribution types if provided
             if ($request->has('retribution_type_ids')) {
-                $opdId = $taxpayer->opd_id;
                 $typeIds = (array)$request->retribution_type_ids;
+                $opdId = $taxpayer->opd_id;
+
+                // If taxpayer has no OPD (orphaned legacy data), derive it from the first retribution type
+                if (!$opdId && !empty($typeIds)) {
+                    $firstType = RetributionType::find($typeIds[0]);
+                    if ($firstType) {
+                        $opdId = $firstType->opd_id;
+                        $taxpayer->update(['opd_id' => $opdId]);
+                    }
+                }
                 
                 // Validate that retribution types belong to the same OPD
                 $validTypes = RetributionType::where('opd_id', $opdId)
