@@ -1,7 +1,18 @@
 # Daftar Lengkap: API Endpoints, FE Routes & Komponen
-**Terakhir diperbarui**: 16 Maret 2026
+**Terakhir diperbarui**: 14 April 2026 (Audit Antigravity)
 
 ---
+
+> [!IMPORTANT]
+> **Source of Truth**: Dokumen ini merupakan basis data teknis untuk **Cycle 2 (Route Mapping)** dalam [Master Testing Plan](file:///Users/pondokit/Herd/retribusi-api/tests/MASTER_TESTING_PLAN.md). Semua pengujian endpoint wajib divalidasi silang dengan daftar di bawah ini.
+
+## 0. INFRASTRUKTUR & DOMAIN
+Seluruh endpoint di bawah ini diakses melalui domain produksi yang sudah dipartisi:
+- **API**: [api.sipanda.online](https://api.sipanda.online)
+- **Admin**: [adminmpad.baubaukota.go.id](https://adminmpad.baubaukota.go.id)
+- **Petugas**: [petugasmpad.baubaukota.go.id](https://petugasmpad.baubaukota.go.id)
+
+Lihat [INFRASTRUCTURE_MAP.md](file:///Users/pondokit/Herd/retribusi-api/INFRASTRUCTURE_MAP.md) untuk detail kredensial dan folder VPS.
 
 ## 1. BACKEND — `retribusi-api`
 
@@ -364,7 +375,8 @@ testing/
 │   ├── 11-Filter-Wajib-Pajak-Petugas.md
 │   ├── 12-Error-History-Mitigation-Registry.md
 │   ├── 13-Workspace-Master-Testing-Protocol.md
-│   └── 14-Master-Data-Testing-Schema.md
+│   ├── 14-Master-Data-Testing-Schema.md
+│   └── 🚀 MASTER_TESTING_PLAN.md (Strategi Utama 10-Check Audit) ⭐
 │
 ├── 🔧 Scripts
 │   ├── run_kalkulator_test.php        (PHP — Seluruh formula pajak)
@@ -398,87 +410,212 @@ testing/
     └── role_e2e_test_results.txt
 ```
 
-### Pemetaan Endpoint → Test Coverage
+### 5.3 TABEL MASTER: RENTETAN PENGUJIAN SELURUH ROUTE (188 ITEMS)
 
-Tabel berikut menunjukkan endpoint API mana yang sudah ter-cover oleh skrip test yang ada.
+Tabel berikut memetakan seluruh rute aktif aplikasi ke dalam fase pengujian masing-masing untuk memastikan cakupan 100%.
 
-#### Fase 1: Autentikasi & User
-| Endpoint | Method | Test Script | Fase |
-|----------|--------|-------------|------|
-| `/api/login` | POST | `test_api_crud.sh`, `run_role_e2e_test.php` | Auth |
-| `/api/citizen/login` | POST | `run_role_e2e_test.php` | Auth |
-| `/api/citizen/register` | POST | `run_role_e2e_test.php` | Auth |
-| `/api/logout` | POST | `run_role_e2e_test.php` | Auth |
-| `/api/user` | GET | `test_api_crud.sh` | Auth |
-| `/api/me` | GET | `run_role_e2e_test.php` | Auth |
-| `/api/users` | CRUD | `run_rbac_test.php` | RBAC |
+| # | Method | URI | Test Script / Fase |
+|---|--------|-----|-------------------|
+| 1 | GET|HEAD | / | General / API |
+| 2 | GET|HEAD | api/amnesty | General / API |
+| 3 | POST | api/amnesty | General / API |
+| 4 | POST | api/amnesty/{id}/approve | General / API |
+| 5 | GET|HEAD | api/amnesty/{id}/document | General / API |
+| 6 | POST | api/amnesty/{id}/reject | General / API |
+| 7 | GET|HEAD | api/analytics/classification-performance | General / API |
+| 8 | GET|HEAD | api/analytics/heatmap | General / API |
+| 9 | GET|HEAD | api/analytics/object-performance | General / API |
+| 10 | GET|HEAD | api/analytics/realization | General / API |
+| 11 | POST | api/billboards/{taxObject}/photo | Fase 4: Billing |
+| 12 | POST | api/billboards/{taxObject}/verify | Fase 4: Billing |
+| 13 | GET|HEAD | api/bills | Fase 4: Billing |
+| 14 | POST | api/bills | Fase 4: Billing |
+| 15 | GET|HEAD | api/bills/{bill} | Fase 4: Billing |
+| 16 | POST | api/bills/{bill}/pay | Fase 4: Billing |
+| 17 | GET|HEAD | api/bills/{bill}/skrd | Fase 4: Billing |
+| 18 | GET|HEAD | api/bills/{bill}/sppt | Fase 4: Billing |
+| 19 | GET|HEAD | api/bills/{bill}/sspd | Fase 4: Billing |
+| 20 | GET|HEAD | api/citizen/bills | Fase 4: Billing |
+| 21 | POST | api/citizen/complaints | General / API |
+| 22 | GET|HEAD | api/citizen/complaints | General / API |
+| 23 | POST | api/citizen/login | Fase 1: Auth |
+| 24 | POST | api/citizen/register | General / API |
+| 25 | POST | api/citizen/reports | General / API |
+| 26 | GET|HEAD | api/citizen/reports | General / API |
+| 27 | GET|HEAD | api/citizen/services | General / API |
+| 28 | GET|HEAD | api/citizen/services/pending-periods | General / API |
+| 29 | GET|HEAD | api/citizen/services/{id} | General / API |
+| 30 | GET|HEAD | api/citizen/services/{id}/bills | Fase 4: Billing |
+| 31 | POST | api/citizen/services/{id}/register | General / API |
+| 32 | GET|HEAD | api/complaints | General / API |
+| 33 | GET|HEAD | api/complaints/{complaint} | General / API |
+| 34 | PUT | api/complaints/{complaint}/status | General / API |
+| 35 | GET|HEAD | api/dashboard/map-potentials | General / API |
+| 36 | GET|HEAD | api/dashboard/revenue-trend | General / API |
+| 37 | GET|HEAD | api/dashboard/stats | General / API |
+| 38 | GET|HEAD | api/documents/lkok/{taxObjectId} | General / API |
+| 39 | GET|HEAD | api/documents/skpd/{billId} | Fase 4: Billing |
+| 40 | POST | api/documents/skpdkbt/{billId} | Fase 4: Billing |
+| 41 | POST | api/documents/skpdn/{billId} | Fase 4: Billing |
+| 42 | GET|HEAD | api/documents/skrd/{billId} | Fase 4: Billing |
+| 43 | GET|HEAD | api/documents/skt/{taxpayerId} | Fase 3: WP |
+| 44 | GET|HEAD | api/documents/spmp/{noticeId} | General / API |
+| 45 | GET|HEAD | api/documents/spp/{noticeId} | General / API |
+| 46 | GET|HEAD | api/documents/sppt/{billId} | Fase 4: Billing |
+| 47 | GET|HEAD | api/documents/sspd/{billId} | Fase 4: Billing |
+| 48 | GET|HEAD | api/documents/ssrd/{billId} | Fase 4: Billing |
+| 49 | GET|HEAD | api/documents/strd/{billId} | Fase 4: Billing |
+| 50 | POST | api/login | Fase 1: Auth |
+| 51 | POST | api/logout | General / API |
+| 52 | GET|HEAD | api/me | General / API |
+| 53 | POST | api/me/update | General / API |
+| 54 | POST | api/opd/register | General / API |
+| 55 | GET|HEAD | api/opds | General / API |
+| 56 | POST | api/opds | General / API |
+| 57 | GET|HEAD | api/opds/{opd} | General / API |
+| 58 | PUT|PATCH | api/opds/{opd} | General / API |
+| 59 | DELETE | api/opds/{opd} | General / API |
+| 60 | GET|HEAD | api/payments | Fase 4: Billing |
+| 61 | POST | api/payments | Fase 4: Billing |
+| 62 | PUT | api/payments/{payment}/status | Fase 4: Billing |
+| 63 | GET|HEAD | api/pbb/bapenda/download-sppt | General / API |
+| 64 | POST | api/pbb/bapenda/inquiry | General / API |
+| 65 | POST | api/pbb/bapenda/link-nop | General / API |
+| 66 | GET|HEAD | api/pbb/bapenda/my-objects | General / API |
+| 67 | GET|HEAD | api/pbb/bapenda/my-transactions | General / API |
+| 68 | POST | api/pbb/bapenda/pay | General / API |
+| 69 | POST | api/pbb/bapenda/reversal | General / API |
+| 70 | GET|HEAD | api/pbb/bapenda/stats | General / API |
+| 71 | POST | api/pbb/bapenda/sync-all | General / API |
+| 72 | GET|HEAD | api/pbb/bapenda/transactions | General / API |
+| 73 | DELETE | api/pbb/bapenda/unlink-nop/{id} | General / API |
+| 74 | POST | api/pbb/calculate | General / API |
+| 75 | GET|HEAD | api/pbb/classifications | General / API |
+| 76 | GET|HEAD | api/pbb/classifications/{type}/{code} | General / API |
+| 77 | POST | api/pbb/lookup-class | General / API |
+| 78 | GET|HEAD | api/pengawas/anomalies | Fase 6: Pengawasan |
+| 79 | GET|HEAD | api/pengawas/audit-logs | Fase 6: Pengawasan |
+| 80 | GET|HEAD | api/pengawas/compliance-stats | Fase 6: Pengawasan |
+| 81 | GET|HEAD | api/pengawas/enforcements | Fase 6: Pengawasan |
+| 82 | POST | api/pengawas/enforcements | Fase 6: Pengawasan |
+| 83 | GET|HEAD | api/pengawas/enforcements/history/{tax_object_id} | Fase 6: Pengawasan |
+| 84 | POST | api/pengawas/enforcements/{id} | Fase 6: Pengawasan |
+| 85 | POST | api/pengawas/enforcements/{id}/approve | Fase 6: Pengawasan |
+| 86 | GET|HEAD | api/pengawas/enforcements/{id}/pdf | Fase 6: Pengawasan |
+| 87 | POST | api/pengawas/enforcements/{id}/reject | Fase 6: Pengawasan |
+| 88 | GET|HEAD | api/pengawas/penindakan | Fase 6: Pengawasan |
+| 89 | POST | api/pengawas/penindakan/issue-skpdkb | Fase 6: Pengawasan |
+| 90 | GET|HEAD | api/pengawas/petugas-locations | Fase 6: Pengawasan |
+| 91 | GET|HEAD | api/petugas-tasks | General / API |
+| 92 | POST | api/petugas-tasks | General / API |
+| 93 | GET|HEAD | api/petugas-tasks/{petugas_task} | General / API |
+| 94 | PUT|PATCH | api/petugas-tasks/{petugas_task} | General / API |
+| 95 | DELETE | api/petugas-tasks/{petugas_task} | General / API |
+| 96 | GET|HEAD | api/public/pdf/npwpd/{id} | General / API |
+| 97 | GET|HEAD | api/public/pdf/skpd/{billId} | Fase 4: Billing |
+| 98 | GET|HEAD | api/public/pdf/skrd/{billId} | Fase 4: Billing |
+| 99 | GET|HEAD | api/public/pdf/sppt/{billId} | Fase 4: Billing |
+| 100 | GET|HEAD | api/public/pdf/sspd/{billId} | Fase 4: Billing |
+| 101 | GET|HEAD | api/public/pdf/surat-teguran/{noticeId} | General / API |
+| 102 | GET|HEAD | api/reports/bpk | General / API |
+| 103 | GET|HEAD | api/reports/monthly | General / API |
+| 104 | PUT | api/reports/monthly/{report}/validate | General / API |
+| 105 | GET|HEAD | api/reports/petugas-performance | General / API |
+| 106 | GET|HEAD | api/reports/recent | General / API |
+| 107 | GET|HEAD | api/reports/sipd | General / API |
+| 108 | GET|HEAD | api/reports/summary | General / API |
+| 109 | GET|HEAD | api/retribution-classifications | Fase 2: Master |
+| 110 | POST | api/retribution-classifications | Fase 2: Master |
+| 111 | GET|HEAD | api/retribution-classifications/{retribution_classification} | Fase 2: Master |
+| 112 | PUT|PATCH | api/retribution-classifications/{retribution_classification} | Fase 2: Master |
+| 113 | DELETE | api/retribution-classifications/{retribution_classification} | Fase 2: Master |
+| 114 | GET|HEAD | api/retribution-rates | Fase 2: Master |
+| 115 | POST | api/retribution-rates | Fase 2: Master |
+| 116 | GET|HEAD | api/retribution-rates/{retribution_rate} | Fase 2: Master |
+| 117 | PUT|PATCH | api/retribution-rates/{retribution_rate} | Fase 2: Master |
+| 118 | DELETE | api/retribution-rates/{retribution_rate} | Fase 2: Master |
+| 119 | GET|HEAD | api/retribution-types | Fase 2: Master |
+| 120 | POST | api/retribution-types | Fase 2: Master |
+| 121 | GET|HEAD | api/retribution-types/{retribution_type} | Fase 2: Master |
+| 122 | PUT|PATCH | api/retribution-types/{retribution_type} | Fase 2: Master |
+| 123 | DELETE | api/retribution-types/{retribution_type} | Fase 2: Master |
+| 124 | GET|HEAD | api/simpad-koneksi/objects/{type} | General / API |
+| 125 | GET|HEAD | api/simpad-koneksi/officers | General / API |
+| 126 | POST | api/simpad-koneksi/sync-object | General / API |
+| 127 | GET|HEAD | api/simpad-koneksi/taxpayers/{npwpd} | Fase 3: WP |
+| 128 | POST | api/simulate-tax | General / API |
+| 129 | GET|HEAD | api/spot-checks | General / API |
+| 130 | POST | api/spot-checks | General / API |
+| 131 | GET|HEAD | api/spot-checks/tax-object/{id}/estimation | General / API |
+| 132 | PATCH | api/spot-checks/{id}/status | General / API |
+| 133 | GET|HEAD | api/spot-checks/{spot_check} | General / API |
+| 134 | PUT|PATCH | api/spot-checks/{spot_check} | General / API |
+| 135 | DELETE | api/spot-checks/{spot_check} | General / API |
+| 136 | GET|HEAD | api/tax-educations | General / API |
+| 137 | POST | api/tax-educations | General / API |
+| 138 | POST | api/tax-educations/{taxEducation}/broadcast | General / API |
+| 139 | GET|HEAD | api/tax-educations/{tax_education} | General / API |
+| 140 | PUT|PATCH | api/tax-educations/{tax_education} | General / API |
+| 141 | DELETE | api/tax-educations/{tax_education} | General / API |
+| 142 | GET|HEAD | api/tax-formulas | General / API |
+| 143 | GET|HEAD | api/tax-objects | General / API |
+| 144 | POST | api/tax-objects | General / API |
+| 145 | GET|HEAD | api/tax-objects/{taxObject}/pending-periods | General / API |
+| 146 | GET|HEAD | api/tax-objects/{tax_object} | General / API |
+| 147 | PUT|PATCH | api/tax-objects/{tax_object} | General / API |
+| 148 | DELETE | api/tax-objects/{tax_object} | General / API |
+| 149 | GET|HEAD | api/taxpayers | Fase 3: WP |
+| 150 | POST | api/taxpayers | Fase 3: WP |
+| 151 | GET|HEAD | api/taxpayers/search/{nik} | Fase 3: WP |
+| 152 | GET|HEAD | api/taxpayers/{taxpayer} | Fase 3: WP |
+| 153 | PUT|PATCH | api/taxpayers/{taxpayer} | Fase 3: WP |
+| 154 | DELETE | api/taxpayers/{taxpayer} | Fase 3: WP |
+| 155 | GET|HEAD | api/tte/documents | General / API |
+| 156 | POST | api/tte/sign | General / API |
+| 157 | GET|HEAD | api/tte/verify/{number} | General / API |
+| 158 | POST | api/upload | General / API |
+| 159 | GET|HEAD | api/user | General / API |
+| 160 | PUT | api/user/location | General / API |
+| 161 | POST | api/user/password | General / API |
+| 162 | PUT | api/user/profile | General / API |
+| 163 | GET|HEAD | api/users | General / API |
+| 164 | POST | api/users | General / API |
+| 165 | GET|HEAD | api/users/{user} | General / API |
+| 166 | PUT|PATCH | api/users/{user} | General / API |
+| 167 | DELETE | api/users/{user} | General / API |
+| 168 | GET|HEAD | api/verifications | General / API |
+| 169 | POST | api/verifications | General / API |
+| 170 | GET|HEAD | api/verifications/{verification} | General / API |
+| 171 | PUT | api/verifications/{verification}/status | General / API |
+| 172 | GET|HEAD | api/verify/bill/{number} | Fase 4: Billing |
+| 173 | GET|HEAD | api/verify/payment/{number} | Fase 4: Billing |
+| 174 | GET|HEAD | api/zones | General / API |
+| 175 | POST | api/zones | General / API |
+| 176 | GET|HEAD | api/zones/{zone} | General / API |
+| 177 | PUT|PATCH | api/zones/{zone} | General / API |
+| 178 | DELETE | api/zones/{zone} | General / API |
+| 179 | GET|HEAD | docs | General / API |
+| 180 | GET|HEAD | docs/assets/{filename} | General / API |
+| 181 | GET|HEAD | docs/{page} | General / API |
+| 182 | GET|HEAD | login | Fase 1: Auth |
+| 183 | GET|HEAD | sanctum/csrf-cookie | General / API |
+| 184 | GET|HEAD | storage/{path} | General / API |
+| 185 | GET|HEAD | up | General / API |
 
-#### Fase 2: Master Data
-| Endpoint | Method | Test Script | Fase |
-|----------|--------|-------------|------|
-| `/api/retribution-types` | CRUD | `test_api_crud.sh`, `run_role_e2e_test.php` | Master |
-| `/api/retribution-classifications` | CRUD | `test_api_crud.sh` | Master |
-| `/api/retribution-rates` | CRUD | `test_api_crud.sh` | Master |
-| `/api/zones` | CRUD | `test_api_crud.sh`, `run_role_e2e_test.php` | Master |
-| `/api/opds` | CRUD | `run_rbac_test.php` | Master |
+### 5.4 STRATEGI PENGUJIAN 10-FASE (ULTIMATE MASTER PLAN)
 
-#### Fase 3: Wajib Pajak & Objek Pajak
-| Endpoint | Method | Test Script | Fase |
-|----------|--------|-------------|------|
-| `/api/taxpayers` | CRUD | `test_api_crud.sh`, `run_role_e2e_test.php` | WP |
-| `/api/taxpayers/search/{nik}` | GET | `test_api_crud.sh` | WP |
-| `/api/tax-objects` | CRUD | `test_api_crud.sh`, `run_role_e2e_test.php` | Objek |
-| `/api/verifications` | CRUD | `run_role_e2e_test.php` | Verifikasi |
+Audit teknis dilakukan dalam 10 siklus bertahap sesuai [MASTER_TESTING_PLAN.md](file:///Users/pondokit/Herd/retribusi-api/tests/MASTER_TESTING_PLAN.md):
 
-#### Fase 4: Billing & Pembayaran
-| Endpoint | Method | Test Script | Fase |
-|----------|--------|-------------|------|
-| `/api/bills` | GET/POST | `run_role_e2e_test.php` | Billing |
-| `/api/bills/{bill}` | GET | `run_role_e2e_test.php` | Billing |
-| `/api/bills/{bill}/pay` | POST | `run_role_e2e_test.php` | Payment |
-| `/api/payments` | GET/POST | ⚠️ **Baru** — Perlu ditambahkan | Payment |
-| `/api/payments/{id}/status` | PUT | ⚠️ **Baru** — Perlu ditambahkan | Verifikasi |
-| `/api/tax-objects/{id}/pending-periods` | GET | `run_role_e2e_test.php` | Billing |
-
-#### Fase 5: Kalkulasi & Simulasi
-| Endpoint | Method | Test Script | Fase |
-|----------|--------|-------------|------|
-| `/api/simulate-tax` | POST | `run_kalkulator_test.php` | Kalkulasi |
-| `/api/tax-formulas` | GET | `run_kalkulator_test.php` | Kalkulasi |
-| `/api/pbb/calculate` | POST | `run_kalkulator_test.php` | PBB |
-| `/api/pbb/classifications` | GET | `run_kalkulator_test.php` | PBB |
-| `/api/pbb/bapenda/inquiry` | POST | `test_api_crud.sh` | PBB |
-
-#### Fase 6: Pengawasan & Penindakan
-| Endpoint | Method | Test Script | Fase |
-|----------|--------|-------------|------|
-| `/api/pengawas/audit-logs` | GET | `run_rbac_test.php` | Pengawasan |
-| `/api/pengawas/anomalies` | GET | `run_rbac_test.php` | Pengawasan |
-| `/api/pengawas/enforcements` | GET/POST | `run_rbac_test.php` | Penindakan |
-| `/api/pengawas/enforcements/{id}/reject` | POST | `test_vtax_parity.php` | Penindakan ⭐ |
-| `/api/pengawas/enforcements/{id}/pdf` | GET | `test_vtax_parity.php` | Dokumen ⭐ |
-| `/api/pengawas/penindakan` | GET | `run_rbac_test.php` | Penindakan |
-| `/api/amnesty` | GET/POST | `run_rbac_test.php` | Amnesti |
-
-#### Fase 7: Reporting & Dokumen
-| Endpoint | Method | Test Script | Fase |
-|----------|--------|-------------|------|
-| `/api/reports/bpk` | GET | `run_role_e2e_test.php` | Report |
-| `/api/reports/summary` | GET | `run_role_e2e_test.php` | Report |
-| `/api/dashboard/stats` | GET | `run_role_e2e_test.php` | Dashboard |
-| `/api/documents/skrd/{id}` | GET | `run_role_e2e_test.php` | Dokumen |
-| `/api/documents/sspd/{id}` | GET | `run_role_e2e_test.php` | Dokumen |
-| `/api/documents/sppt/{id}` | GET | `run_role_e2e_test.php` | Dokumen |
-| `/api/documents/skt/{id}` | GET | `run_role_e2e_test.php` | Dokumen |
-
-#### Fase 8: Keamanan
-| Endpoint | Method | Test Script | Fase |
-|----------|--------|-------------|------|
-| Semua endpoint | — | `test_penetration.sh` | SQL Injection |
-| Semua endpoint | — | `test_penetration.sh` | XSS |
-| Semua endpoint | — | `test_penetration.sh` | IDOR |
-| `.env`, `debug` | — | `test_production_ready.sh` | File sensitif |
-| CORS headers | — | `test_production_cors.sh` | CORS |
+1. **Cycle 1**: Infrastruktur & Domain Deep-Dive.
+2. **Cycle 2**: Route Mapping & API Discovery.
+3. **Cycle 3**: Audit Logic & Konsistensi Formula.
+4. **Cycle 4**: Audit Parity Database (MariaDB).
+5. **Cycle 5**: Pentest Keamanan & Perimeter RBAC.
+6. **Cycle 6**: Validasi Integritas Asset & Cloudinary.
+7. **Cycle 7**: Parity Environment & Konfigurasi PHP.
+8. **Cycle 8**: Test Persistensi State CRUD.
+9. **Cycle 9**: Stress Test Restorasi Atomik & Fail-Safe.
+10. **Cycle 10**: Vonis Readiness Akhir (End-to-End Signature).
 
 ### ⚠️ Endpoint Belum Ter-Test
 

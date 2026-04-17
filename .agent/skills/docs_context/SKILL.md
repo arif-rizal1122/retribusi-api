@@ -31,6 +31,7 @@ Jika user memberikan tugas kompleks, bagi ke dalam kategori:
 2. **Logika Bisnis/Pajak**: Aktifkan `reporting_billing` atau `regulatory_logic`.
 3. **Security/QA**: Aktifkan `qa_error_registry` & `omni_workspace_tester`.
 4. **Dokumen Resmi/TTE**: Aktifkan `tte_documents`.
+5. **Manajemen Dokumen/Drive**: Aktifkan `docs_sync_management`.
 
 ## Aturan Pembaruan Dokumentasi
 1. Jika Anda mengubah struktur Database, perbarui `docs/04-database-schema.md`.
