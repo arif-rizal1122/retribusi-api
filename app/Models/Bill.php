@@ -39,6 +39,9 @@ class Bill extends Model
         'admin_fee',
         'postponed_at',
         'reason_postponed',
+        'bank_code',
+        'expiry_time',
+        'penalty_at_payment',
     ];
 
     protected $casts = [
@@ -52,6 +55,8 @@ class Bill extends Model
         'waived_penalty_amount' => 'decimal:2',
         'admin_fee' => 'decimal:2',
         'postponed_at' => 'datetime',
+        'expiry_time' => 'datetime',
+        'penalty_at_payment' => 'decimal:2',
     ];
 
     protected $appends = [
