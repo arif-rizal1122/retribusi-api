@@ -285,6 +285,11 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::post('/sync-all', [PbbBapendaController::class, 'syncAllObjects']);
         });
 
+        // Bank H2H Monitoring Logs
+        Route::prefix('bank-h2h')->group(function () {
+            Route::get('/logs', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'logs']);
+        });
+
         // Official BAPENDA Documents
         Route::prefix('documents')->group(function () {
             // Pendaftaran
@@ -320,4 +325,13 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/complaints/{complaint}', [ComplaintController::class, 'show']);
         Route::put('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus']);
     });
+});
+
+// ------------------------------------------------------------------------
+// BANK H2H GATEWAY (Restricted by BankSecurityCheck middleware)
+// ------------------------------------------------------------------------
+Route::middleware('bank_h2h')->prefix('v1/bank')->group(function () {
+    Route::post('/inquiry', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'inquiry']);
+    Route::post('/payment', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'payment']);
+    Route::post('/reversal', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'reversal']);
 });
