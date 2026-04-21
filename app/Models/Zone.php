@@ -23,6 +23,11 @@ class Zone extends Model
         'coordinates' => 'array',
     ];
 
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+    }
+
     public function opd()
     {
         return $this->belongsTo(Opd::class);

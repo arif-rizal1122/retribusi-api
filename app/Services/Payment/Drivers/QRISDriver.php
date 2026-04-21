@@ -151,4 +151,41 @@ class QRISDriver implements PaymentGatewayInterface
     {
         return ['status' => 'error', 'message' => 'QRIS does not support automated reversal', 'code' => 405];
     }
+
+    /**
+     * Get account details (QR String) for a bill
+     */
+    public function getAccountDetail(string $billNumber): array
+    {
+        return $this->inquiry($billNumber);
+    }
+
+    /**
+     * Reconcile daily transactions with QRIS aggregate report
+     */
+    public function reconcile(array $transactions): array
+    {
+        $results = ['matched' => 0, 'mismatch' => 0, 'details' => []];
+
+        foreach ($transactions as $tx) {
+            $rrn = $tx['rrn'] ?? $tx['transaction_id'] ?? null;
+            $amount = (float) ($tx['amount'] ?? 0);
+            
+            $payment = Payment::where('reference_number', $rrn)->first();
+            
+            if ($payment && abs((float)$payment->amount - $amount) < 0.01) {
+                $results['matched']++;
+            } else {
+                $results['mismatch']++;
+                $results['details'][] = [
+                    'rrn' => $rrn,
+                    'report_amount' => $amount,
+                    'system_amount' => $payment ? $payment->amount : 0,
+                    'status' => $payment ? 'Nominal Berbeda' : 'Tidak Ditemukan'
+                ];
+            }
+        }
+
+        return ['status' => 'success', 'data' => $results];
+    }
 }

@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\TaxObject;
 use App\Models\User;
 use App\Models\RetributionClassification;
+use App\Models\Zone;
 
 class RetributionTypeScope implements Scope
 {
@@ -69,7 +70,7 @@ class RetributionTypeScope implements Scope
                 $q->where('retribution_type_id', $typeId);
             });
         } 
-        elseif ($model instanceof Bill || $model instanceof TaxObject || $model instanceof RetributionClassification) {
+        elseif ($model instanceof Bill || $model instanceof TaxObject || $model instanceof RetributionClassification || $model instanceof Zone) {
             $builder->where('retribution_type_id', $typeId);
         }
         elseif ($model instanceof Payment) {

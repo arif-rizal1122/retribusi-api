@@ -38,8 +38,8 @@ class DashboardController extends Controller
             $endDate = Carbon::now()->endOfMonth()->toDateString();
         }
 
-        $start = Carbon::parse($startDate);
-        $end = Carbon::parse($endDate);
+        $start = Carbon::parse($startDate)->startOfDay();
+        $end = Carbon::parse($endDate)->endOfDay();
         
         // Previous period for trend calculation
         $diff = $start->diffInDays($end) + 1;
@@ -359,7 +359,9 @@ class DashboardController extends Controller
                         }
                     });
                 }
-                // If no assignments, show all OPD data (no extra filter)
+            })
+            ->when($user->retribution_type_id && in_array($user->role, ['admin', 'pengawas']), function($q) use ($user) {
+                $q->where('retribution_type_id', $user->retribution_type_id);
             })
             ->get()
             ->map(function($obj) {
@@ -377,6 +379,9 @@ class DashboardController extends Controller
 
         // 2. Get Taxpayers (Tax Objects)
         $taxObjects = \App\Models\TaxObject::with(['taxpayer', 'retributionType', 'opd', 'classification'])
+            ->withCount(['bills as pending_bills_count' => function($q) {
+                $q->whereNotIn('status', ['paid', 'lunas']);
+            }])
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
@@ -394,27 +399,24 @@ class DashboardController extends Controller
                         }
                     });
                 }
-                // If no assignments, show all OPD data (no extra filter)
+            })
+            ->when($user->retribution_type_id && in_array($user->role, ['admin', 'pengawas']), function($q) use ($user) {
+                $q->where('retribution_type_id', $user->retribution_type_id);
             })
             ->get()
             ->map(function($obj) {
-                // Check if there are any unpaid bills for this tax object
-                $hasUnpaidBills = \App\Models\Bill::where('tax_object_id', $obj->id)
-                    ->whereNotIn('status', ['paid', 'lunas'])
-                    ->exists();
-
                 return [
                     'position' => [(float)$obj->latitude, (float)$obj->longitude],
                     'tax_object_id' => $obj->id,
-                    'name' => $obj->taxpayer->name . ' - ' . $obj->name,
+                    'name' => ($obj->taxpayer->name ?? 'N/A') . ' - ' . $obj->name,
                     'agency' => $obj->opd->name ?? 'N/A',
                     'address' => $obj->address,
                     'status' => 'taxpayer',
-                    'is_paid' => !$hasUnpaidBills, // If no pending bills, consider it paid (lunas)
+                    'is_paid' => $obj->pending_bills_count === 0,
                     'classification_name' => $obj->classification->name ?? 'N/A',
                     'classification_icon' => $obj->classification->icon ?? null,
                     'taxpayer_photo' => $obj->taxpayer->metadata['foto_lokasi_open_kamera'] ?? null,
-                    'icon' => null, // We will use user icon in frontend
+                    'icon' => null,
                     'retribution_type_id' => $obj->retribution_type_id,
                     'retribution_classification_id' => $obj->retribution_classification_id,
                     'opd_id' => $obj->opd_id,

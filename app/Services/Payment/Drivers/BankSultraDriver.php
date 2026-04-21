@@ -87,19 +87,28 @@ class BankSultraDriver implements PaymentGatewayInterface
             return ['status' => 'error', 'message' => 'Invalid payload', 'code' => 400];
         }
 
+        // 1. Idempotency check: Check if NTB already exists in payments
+        $exists = Payment::where('reference_number', $ntb)->exists();
+        if ($exists) {
+            return [
+                'status' => 'success', 
+                'message' => 'Transaksi duplikat (Idempotent Success)', 
+                'code' => 200,
+                'data' => [
+                    'ntpd' => Payment::where('reference_number', $ntb)->first()->receipt_number ?? 'N/A',
+                    'status' => 'LUNAS'
+                ]
+            ];
+        }
+
         $bill = Bill::where('bill_number', $billNumber)->first();
         if (!$bill) {
             return ['status' => 'error', 'message' => 'Tagihan tidak ditemukan', 'code' => 404];
         }
 
+        // 2. Bill status check
         if ($bill->status === 'lunas') {
             return ['status' => 'error', 'message' => 'Tagihan sudah lunas', 'code' => 422];
-        }
-
-        // Idempotency check: Check if NTB already exists in payments
-        $exists = Payment::where('reference_number', $ntb)->exists();
-        if ($exists) {
-            return ['status' => 'error', 'message' => 'Transaksi duplikat (NTB sudah terdaftar)', 'code' => 409];
         }
 
         return DB::transaction(function () use ($bill, $amountPaid, $ntb, $payload) {
@@ -198,7 +207,7 @@ class BankSultraDriver implements PaymentGatewayInterface
 
             $payment->update([
                 'status' => 'failed',
-                'metadata' => array_merge($payment->metadata ?? [], [
+                'raw_callback_data' => array_merge($payment->raw_callback_data ?? [], [
                     'reversal_at' => Carbon::now()->toDateTimeString(),
                     'reversal_reason' => $payload['reason'] ?? 'Reversal by Bank'
                 ])
@@ -210,5 +219,62 @@ class BankSultraDriver implements PaymentGatewayInterface
                 'message' => 'Reversal berhasil diproses'
             ];
         });
+    }
+
+    /**
+     * Get account details (VA number) for a bill
+     */
+    public function getAccountDetail(string $billNumber): array
+    {
+        $bill = Bill::where('bill_number', $billNumber)->first();
+        if (!$bill) {
+            return ['status' => 'error', 'message' => 'Tagihan tidak ditemukan', 'code' => 404];
+        }
+
+        // Logic: Format VA Sultra (Example: 99 + Bill Number)
+        return [
+            'status' => 'success',
+            'data' => [
+                'bank_name' => 'Bank Sultra',
+                'va_number' => '99' . $bill->bill_number,
+                'bill_info' => $this->inquiry($billNumber)['data'] ?? []
+            ]
+        ];
+    }
+
+    /**
+     * Reconcile daily transactions with bank report
+     */
+    public function reconcile(array $transactions): array
+    {
+        $results = [
+            'matched' => 0,
+            'mismatch' => 0,
+            'details' => []
+        ];
+
+        foreach ($transactions as $tx) {
+            $ntb = $tx['ntb'] ?? null;
+            $amount = (float) ($tx['amount'] ?? 0);
+            
+            $payment = Payment::where('reference_number', $ntb)->first();
+            
+            if ($payment && abs((float)$payment->amount - $amount) < 0.01) {
+                $results['matched']++;
+            } else {
+                $results['mismatch']++;
+                $results['details'][] = [
+                    'ntb' => $ntb,
+                    'bank_amount' => $amount,
+                    'system_amount' => $payment ? $payment->amount : 0,
+                    'status' => $payment ? 'Nominal Berbeda' : 'Tidak Ditemukan'
+                ];
+            }
+        }
+
+        return [
+            'status' => 'success',
+            'data' => $results
+        ];
     }
 }

@@ -19,6 +19,10 @@ elif [ "$1" == "dev" ]; then
   echo -e "${YELLOW}Mode: DEVELOPMENT (sipanda.online)${NC}"
   API_URL="https://api-dev.sipanda.online"
   FRONTEND="https://dev.sipanda.online"
+elif [ "$1" == "local" ]; then
+  echo -e "${YELLOW}Mode: LOCAL (localhost:8000)${NC}"
+  API_URL="http://localhost:8000"
+  FRONTEND="http://localhost:3001"
 fi
 
 RESULTS_FILE="results/13_Penetration_Test_$(date +%Y%m%d_%H%M%S).md"

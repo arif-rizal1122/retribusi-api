@@ -274,4 +274,35 @@ class BillingService
     {
         return (float) $bill->total_amount;
     }
+
+    /**
+     * Settle a bill (Mark as Lunas, record snapshot penalty, and trigger TTE)
+     */
+    public function settleBill(\App\Models\Bill $bill, float $currentPenalty, string $bankCode = 'AUTO'): bool
+    {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($bill, $currentPenalty, $bankCode) {
+            // 1. Update Bill Status
+            $bill->update([
+                'status' => 'lunas',
+                'penalty_at_payment' => $currentPenalty,
+                'bank_code' => $bankCode
+            ]);
+
+            // 2. Trigger TTE Hook for Receipt (SSPD/SSRD)
+            try {
+                $signer = \App\Models\User::whereIn('role', ['super_admin', 'admin', 'kabid_pengawas'])->first();
+                if ($signer) {
+                    $docService = app(\App\Services\OfficialDocumentService::class);
+                    $docService->signDocument('bill', $bill->id, $signer, "Signed automatically via {$bankCode} H2H Integration");
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('BillingService Settle Hook Failed:', [
+                    'bill' => $bill->bill_number,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            return true;
+        });
+    }
 }

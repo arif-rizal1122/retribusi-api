@@ -104,18 +104,25 @@ class BankH2HController extends Controller
      */
     private function logActivity(Request $request, array $result)
     {
+        app(\App\Services\PaymentAuditService::class)->record($request, $result);
+    }
+
+    /**
+     * Reconcile transactions with bank data
+     */
+    public function reconcile(Request $request)
+    {
+        $request->validate([
+            'driver' => 'required|string',
+            'transactions' => 'required|array'
+        ]);
+
         try {
-            \App\Models\PaymentGatewayLog::create([
-                'bill_number' => $request->bill_number,
-                'endpoint' => $request->fullUrl(),
-                'method' => $request->method(),
-                'payload_in' => $request->all(),
-                'payload_out' => $result,
-                'ip_address' => $request->ip(),
-                'status_code' => $result['code'] ?? 200
-            ]);
+            $result = $this->paymentManager->driver($request->driver)->reconcile($request->transactions);
+            return response()->json($result);
         } catch (\Exception $e) {
-            Log::error('Failed to log H2H activity:', ['msg' => $e->getMessage()]);
+            Log::error('H2H Reconciliation Error:', ['msg' => $e->getMessage()]);
+            return response()->json(['status' => 'error', 'message' => 'Gagal melakukan rekonsiliasi'], 500);
         }
     }
 }

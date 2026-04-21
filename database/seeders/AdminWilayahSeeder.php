@@ -20,13 +20,15 @@ class AdminWilayahSeeder extends Seeder
             return;
         }
 
-        $wilayahI = RetributionType::where('name', 'Wilayah I')->first();
-        $wilayahII = RetributionType::where('name', 'Wilayah II')->first();
-
-        if (!$wilayahI || !$wilayahII) {
-            $this->command->error('Wilayah I or Wilayah II RetributionType not found.');
-            return;
-        }
+        $wilayahI = RetributionType::firstOrCreate(
+            ['name' => 'Wilayah I'],
+            ['opd_id' => $bapenda->id, 'category' => 'Pajak', 'is_active' => true]
+        );
+        
+        $wilayahII = RetributionType::firstOrCreate(
+            ['name' => 'Wilayah II'],
+            ['opd_id' => $bapenda->id, 'category' => 'Pajak', 'is_active' => true]
+        );
 
         // 1. Admin Wilayah I
         User::updateOrCreate(
