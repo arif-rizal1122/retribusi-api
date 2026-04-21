@@ -204,10 +204,39 @@ class BillController extends Controller
         }
 
         $objects = $query->get();
+        
+        // [OPTIMIZATION] Pre-fetch all rates for this type to avoid N+1 queries in the loop
+        $rates = RetributionRate::where('retribution_type_id', $type->id)
+            ->where('is_active', true)
+            ->get();
+            
+        // [OPTIMIZATION] Pre-fetch classifications
+        $classifications = RetributionClassification::where('retribution_type_id', $type->id)->get()->keyBy('id');
 
-        $createdCount = 0;
+        $billsData = [];
+        $now = now();
         foreach ($objects as $obj) {
-            Bill::create([
+            $rate = $rates->where('retribution_classification_id', $obj->retribution_classification_id)
+                ->filter(function($r) use ($obj) {
+                    if ($obj->zone_id) {
+                        return $r->zone_id == $obj->zone_id;
+                    }
+                    return is_null($r->zone_id);
+                })
+                ->first();
+
+            $amount = 0;
+            if ($rate) {
+                $amount = $rate->amount;
+                // Add formula parsing if needed (simplified for batch)
+                if ($rate->calculation_formula) {
+                    $amount = $this->formulaParser->calculate($rate->calculation_formula, array_merge($obj->metadata ?? [], ['amount' => $rate->amount]));
+                }
+            } else {
+                $amount = $type->base_amount;
+            }
+
+            $billsData[] = [
                 'user_id' => $user->id,
                 'taxpayer_id' => $obj->taxpayer_id,
                 'tax_object_id' => $obj->id,
@@ -215,13 +244,21 @@ class BillController extends Controller
                 'retribution_type_id' => $type->id,
                 'retribution_classification_id' => $obj->retribution_classification_id,
                 'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
-                'amount' => $this->calculateAmount($obj, $request->metadata ?? []), 
+                'amount' => $amount,
                 'status' => 'pending',
                 'period' => $request->period,
                 'due_date' => $request->due_date,
-            ]);
-            $createdCount++;
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
         }
+
+        if (!empty($billsData)) {
+            // [BATCH] Use insert for high-speed database entry
+            Bill::insert($billsData);
+        }
+
+        $createdCount = count($billsData);
 
         return response()->json([
             'message' => "Berhasil generate {$createdCount} tagihan",
@@ -268,7 +305,7 @@ class BillController extends Controller
                 $q->where('nik', $request->nik);
             })
             ->latest()
-            ->get();
+            ->paginate($request->get('per_page', 10)); // [OPTIMIZATION] Added pagination
 
         return response()->json([
             'data' => $bills

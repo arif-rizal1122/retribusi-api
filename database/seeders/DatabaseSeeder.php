@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'superadmin@sipanda.online'],
             [
                 'name' => 'Dev Super Admin',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('Mpad123#'),
                 'role' => 'super_admin',
                 'status' => 'active',
             ]

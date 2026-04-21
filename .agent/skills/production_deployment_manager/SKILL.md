@@ -3,43 +3,36 @@ name: Production Deployment Manager
 description: Skill khusus untuk manajemen deployment, monitoring, dan emergency recovery pada lingkungan production Pemkot Baubau (*.baubaukota.go.id & sipanda.online).
 ---
 
-# 🏛️ Production Deployment Manager
+# 🚀 Production Deployment Manager
 
-Skill ini adalah standar operasional untuk menjaga kestabilan sistem MPAD di lingkungan live (Production).
+Skill ini adalah gerbang terakhir sebelum kode dipublikasikan ke masyarakat luas. Anda wajib menggunakan skill ini untuk memastikan transisi dari Staging ke Production berjalan mulus.
 
-## 📋 Ekosistem Production
-| Service | Domain | Branch | Target Folder VPS |
-| :--- | :--- | :--- | :--- |
-| **Backend API** | `https://api.sipanda.online` | `main` | `/home/sipanda/retribusi-api` |
-| **Citizen App** | `https://mpad.baubaukota.go.id` | `main` | `/home/sipanda/retribusi-mobile` |
-| **Admin Panel** | `https://adminmpad.baubaukota.go.id` | `main` | `/home/sipanda/retribusi-admin` |
-| **Officer App** | `https://petugasmpad.baubaukota.go.id` | `main` | `/home/sipanda/retribusi-petugas` |
+## 📋 Tugas Utama & Alur Kerja
+Ikuti alur kerja ini untuk setiap deployment ke Production:
 
-## 🛠️ Protokol Pengecekan Kesehatan (Production Health Check)
+1. **Pre-Deployment Audit**:
+   - Baca `docs/07_testing_kualitas/PRODUCTION_READY_CHECKLIST.md`.
+   - Jalankan `php testing/qa7_ultimate_mpad_audit.php` di lingkungan Staging.
+2. **Main Branch Locking**:
+   - Pastikan seluruh pengujian di Staging berstatus Lulus.
+   - Lakukan merge dari `dev` ke `main`.
+3. **Execution Safety**:
+   - Jangan pernah menjalankan `migrate:fresh` atau `truncate` di Production.
+   - Hanya gunakan `php artisan migrate` untuk penambahan skema.
+4. **Post-Deployment Monitoring**:
+   - Verifikasi endpoint `/api/health` (jika ada) atau hit `/api/user` untuk memastikan server up.
 
-Lakukan pengecekan berkala menggunakan `curl` untuk memastikan layanan publik tidak terganggu:
+## 🛡️ Aturan Keamanan (Hard Rules)
+- **Database Isolation**: Dilarang menyalin data user atau transaksi dari lingkungan testing ke Production.
+- **Credential Protection**: Jangan pernah melakukan commit file `.env` atau kunci API ke repositori.
+- **Rollback Readiness**: Selalu identifikasi commit ID terakhir yang stabil sebelum melakukan push terbaru.
 
-1.  **API Status**: 
-    - Perintah: `curl -I https://api.sipanda.online/up`
-    - Ekspektasi: `200 OK`
-2.  **Frontend Availability**:
-    - Periksa ketiga domain `.baubaukota.go.id`.
-    - Pastikan SSL Sertifikat valid dan HTTPS aktif.
-3.  **CORS Guard (Regression)**:
-    - Pastikan domain `baubaukota.go.id` terdaftar di whitelist `config/cors.php` pada server API agar frontend bisa berkomunikasi.
+## 🧠 Cara Kerja & Mekanisme Maksimal
+Skill ini bekerja dengan menggabungkan audit statis (pembacaan dokumen) dan audit dinamis (eksekusi script). Untuk mendapatkan hasil maksimal:
+1. **Berikan Konteks**: Sebelum memulai deployment, beri tahu agen: *"Lakukan audit kesiapan produksi untuk fitur [Nama Fitur]"*.
+2. **Verifikasi Bertahap**: Agen akan memeriksa apakah testing lokal dan staging sudah dilakukan.
+3. **Konfirmasi Destruktif**: Agen akan meminta konfirmasi eksplisit sebelum melakukan perintah yang mengubah database production.
 
-## 🚀 Prosedur Deployment Aman (Safe Deploy)
-
-1.  **Staging First**: Selalu uji coba di domain `*.sipanda.online` (Staging) sebelum melakukan merge ke branch `main`.
-2.  **Migration Watch**: Jika ada migrasi database, pastikan tidak ada perubahan destruktif (drop column) tanpa koordinasi. CI/CD akan menjalankan `php artisan migrate --force`.
-3.  **Assets Optimization**: CI/CD frontend akan menjalankan `npm run build` yang secara otomatis mengarahkan `VITE_API_URL` ke `https://api.sipanda.online`.
-
-## ⚠️ Penanganan Keadaan Darurat (Critical Incident)
-
-Jika terjadi 500 Error atau sistem hang di Production:
-1.  **Log Analysis**: SSH ke VPS, cek `/home/sipanda/retribusi-api/storage/logs/laravel.log`.
-2.  **Service Restart**: Jika diperlukan, restart layanan web server (Nginx/Apache) atau Queue worker.
-3.  **Rollback Strategy**: Jika deployment terbaru menyebabkan kegagalan fatal, segera revert commit di branch `main` atau lakukan `git reset --hard` ke tag versi stabil sebelumnya di VPS.
-
-## 📡 Monitoring Sentry
-Pantau error secara real-time melalui Dashboard Sentry yang dikonfigurasi pada file `.env.production`.
+## 🛠️ Tooling
+- `testing/production_verify_remote.php`: Verifikasi integritas file di server production.
+- `testing/stg1_health_check.php`: Health check menyeluruh.

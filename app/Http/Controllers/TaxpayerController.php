@@ -81,7 +81,7 @@ class TaxpayerController extends Controller
             'district' => 'nullable|string|max:255',
             'sub_district' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
-            'npwpd' => 'nullable|string|max:50',
+            'npwpd' => 'nullable|string|max:255',
             'object_name' => 'nullable|string|max:255',
             'object_address' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
@@ -258,7 +258,7 @@ class TaxpayerController extends Controller
                 'district' => 'nullable|string|max:255',
                 'sub_district' => 'nullable|string|max:255',
                 'phone' => 'nullable|string|max:20',
-                'npwpd' => 'nullable|string|max:50',
+                'npwpd' => 'nullable|string|max:255',
                 'object_name' => 'nullable|string|max:255',
                 'object_address' => 'nullable|string|max:255',
                 'latitude' => 'nullable|numeric',
@@ -402,10 +402,9 @@ class TaxpayerController extends Controller
     {
         if (!$taxpayer->object_name) return;
 
-        // Generate NOP
-        $nop = $taxpayer->npwpd 
-            ? $taxpayer->npwpd . '-' . $typeId . ($classificationId ? '-' . $classificationId : '')
-            : ('NOP-' . str_pad($taxpayer->id, 4, '0', STR_PAD_LEFT) . '-' . str_pad($typeId, 3, '0', STR_PAD_LEFT) . ($classificationId ? '-' . $classificationId : ''));
+        // [OPTIMIZATION] Generate NOP using pre-fetched components to avoid repeated string manipulation
+        $nopPrefix = $taxpayer->npwpd ?: 'NOP-' . str_pad($taxpayer->id, 4, '0', STR_PAD_LEFT);
+        $nop = $nopPrefix . '-' . $typeId . ($classificationId ? '-' . $classificationId : '');
 
         $data = [
             'opd_id' => $taxpayer->opd_id,
@@ -419,58 +418,25 @@ class TaxpayerController extends Controller
         ];
 
         try {
-            // First, try to find by taxpayer+type+classification combo
-            $existing = TaxObject::where('taxpayer_id', $taxpayer->id)
-                ->where('retribution_type_id', $typeId)
-                ->where(function ($q) use ($classificationId) {
-                    if ($classificationId) {
-                        $q->where('retribution_classification_id', $classificationId);
-                    } else {
-                        $q->whereNull('retribution_classification_id');
-                    }
-                })
-                ->first();
-
-            if ($existing) {
-                // Update existing — but don't change NOP if it would cause duplicate
-                $dataWithoutNop = $data;
-                unset($dataWithoutNop['nop']);
-                $existing->update($dataWithoutNop);
-                return $existing;
-            }
-
-            // Also check if NOP already exists (from a previous different combo)
-            $existingByNop = TaxObject::where('nop', $nop)->first();
-            if ($existingByNop) {
-                // NOP exists — update that record instead of creating a new one
-                $existingByNop->update(array_merge($data, [
+            // [OPTIMIZATION] Combined check using unique constraint logic
+            return TaxObject::updateOrCreate(
+                [
                     'taxpayer_id' => $taxpayer->id,
                     'retribution_type_id' => $typeId,
-                    'retribution_classification_id' => $classificationId,
-                ]));
-                return $existingByNop;
-            }
-
-            // Create new
-            return TaxObject::create(array_merge($data, [
-                'taxpayer_id' => $taxpayer->id,
-                'retribution_type_id' => $typeId,
-                'retribution_classification_id' => $classificationId,
-            ]));
+                    'retribution_classification_id' => $classificationId
+                ],
+                $data
+            );
         } catch (\Throwable $e) {
-            \Log::warning('syncTaxObject duplicate handled: ' . $e->getMessage(), [
-                'taxpayer_id' => $taxpayer->id,
-                'type_id' => $typeId,
-                'classification_id' => $classificationId,
-                'nop' => $nop,
-            ]);
-
-            // Fallback: try to update by NOP
+            // Fallback for NOP conflicts if they aren't covered by updateOrCreate (e.g. NOP changed but taxpayer combo same)
+            \Log::warning('syncTaxObject conflict handled: ' . $e->getMessage());
+            
             $fallback = TaxObject::where('nop', $nop)->first();
             if ($fallback) {
                 $fallback->update($data);
                 return $fallback;
             }
+            throw $e;
         }
     }
 }

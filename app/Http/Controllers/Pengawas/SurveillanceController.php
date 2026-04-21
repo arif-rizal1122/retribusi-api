@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Pengawas;
 use App\Http\Controllers\Controller;
 use App\Models\TaxObject;
 use App\Models\Payment;
+use App\Models\RetributionClassification;
+use App\Models\Zone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -25,6 +27,11 @@ class SurveillanceController extends Controller
 
         if (!$user->isSuperAdmin()) {
             $query->where('opd_id', $user->opd_id);
+            
+            // [ISOLATION] Filter for Admin/Pengawas Wilayah
+            if ($user->retribution_type_id && in_array($user->role, ['admin', 'pengawas'])) {
+                $query->where('retribution_type_id', $user->retribution_type_id);
+            }
         }
 
         $anomalies = $query->orderBy('updated_at', 'desc')
@@ -85,6 +92,11 @@ class SurveillanceController extends Controller
         
         if (!$user->isSuperAdmin()) {
             $query->where('opd_id', $user->opd_id);
+            
+            // [ISOLATION] Filter for Admin/Pengawas Wilayah
+            if ($user->retribution_type_id && in_array($user->role, ['admin', 'pengawas'])) {
+                $query->where('retribution_type_id', $user->retribution_type_id);
+            }
         }
 
         $totalObjects = $query->count();
@@ -123,6 +135,18 @@ class SurveillanceController extends Controller
 
         if ($opdId) {
             $query->where('opd_id', $opdId);
+        }
+
+        // [ISOLATION] Filter for Admin/Pengawas Wilayah (Find officers in the same territory)
+        if (!$user->isSuperAdmin() && $user->retribution_type_id && in_array($user->role, ['admin', 'pengawas'])) {
+            $query->where(function($q) use ($user) {
+                // Officer has same direct type
+                $q->where('retribution_type_id', $user->retribution_type_id)
+                  // OR officer has an assignment for this type
+                  ->orWhereHas('assignments', function($sq) use ($user) {
+                      $sq->where('retribution_type_id', $user->retribution_type_id);
+                  });
+            });
         }
 
         $petugas = $query->with('opd:id,name')

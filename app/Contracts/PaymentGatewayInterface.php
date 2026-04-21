@@ -18,4 +18,14 @@ interface PaymentGatewayInterface
      * Process a reversal request from bank
      */
     public function reversal(array $payload): array;
+
+    /**
+     * Get account details (VA number, QR, etc) for a bill
+     */
+    public function getAccountDetail(string $billNumber): array;
+
+    /**
+     * Reconcile daily transactions with bank report
+     */
+    public function reconcile(array $transactions): array;
 }

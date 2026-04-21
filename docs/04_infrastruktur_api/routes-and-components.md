@@ -108,6 +108,9 @@ Lihat [INFRASTRUCTURE_MAP.md](file:///Users/pondokit/Herd/retribusi-api/INFRASTR
 
 | Method | URI | Controller | Keterangan |
 |--------|-----|------------|------------|
+| `POST` | `/api/v1/bank/inquiry` | `BankH2HController::inquiry` | Inquiry Bank H2H |
+| `POST` | `/api/v1/bank/payment` | `BankH2HController::payment` | Payment Bank H2H |
+| `POST` | `/api/v1/bank/reversal` | `BankH2HController::reversal` | Reversal Bank H2H |
 | `GET` | `/api/analytics/realization` | `AnalyticsController::getRealization` | Data realisasi |
 | `GET` | `/api/analytics/heatmap` | `AnalyticsController::getHeatmapData` | Heatmap potensi |
 | `GET/POST/PUT/DELETE` | `/api/retribution-types` | `RetributionTypeController` | CRUD Jenis Retribusi |
@@ -193,21 +196,31 @@ Lihat [INFRASTRUCTURE_MAP.md](file:///Users/pondokit/Herd/retribusi-api/INFRASTR
 | 7 | `/dashboard` | `Dashboard` | `Dashboard.tsx` | super_admin, opd, verifikator, petugas, viewer, pengawas, kabid/kasubid, walikota |
 | 8 | `/surveillance` | `Dashboard` | `Dashboard.tsx` | super_admin, pengawas, kabid/kasubid |
 | 9 | `/pengawas/dashboard` | `PengawasDashboard` | `PengawasDashboard.tsx` | super_admin, pengawas, kabid/kasubid |
-| 10 | `/spot-checks` | `SpotCheckList` | `SpotCheckList.tsx` | super_admin, pengawas, kabid/kasubid |
-| 11 | `/spot-checks/create` | `SpotCheckForm` | `SpotCheckForm.tsx` | super_admin, pengawas, kabid/kasubid |
-| 17 | `/billing` | `Billing` | `Billing.tsx` | super_admin, opd, petugas |
-| 18 | `/verification` | `Verification` | `Verification.tsx` | super_admin, opd, verifikator |
-| 19 | `/reporting` | `Reporting` | `Reporting.tsx` | super_admin, opd, viewer |
-| 20 | `/master-data` | `MasterData` | `MasterData.tsx` | super_admin, opd, verifikator, petugas, viewer, kabid/kasubid |
-| 21 | `/system` | `SystemAdmin` | `SystemAdmin.tsx` | super_admin |
-| 22 | `/opds` | `OpdManagement` | `OpdManagement.tsx` | super_admin |
-| 23 | `/profile` | `Profile` | `Profile.tsx` | All auth roles |
-| 24 | `/user-guide` | `UserGuide` | `UserGuide.tsx` | All (no auth) |
-| 25 | `/pbb-bapenda` | `PbbManagement` | `PbbManagement.tsx` | super_admin, opd |
-| 26 | `/presentation` | `Presentation` | `Presentation.tsx` | Public |
-| 27 | `/download` | `DownloadApp` | `DownloadApp.tsx` | Public |
-| 29 | `/verify/:number` | `ERegistry` | `ERegistry.tsx` | Public |
-| 30 | `/verify` | `ERegistry` | `ERegistry.tsx` | Public |
+| 10 | `/pengawas/maps` | `PengawasMaps` | `PengawasMaps.tsx` | super_admin, pengawas |
+| 11 | `/pengawas/audit-logs` | `AuditLogs` | `AuditLogs.tsx` | super_admin, pengawas |
+| 12 | `/pengawas/complaints` | `ComplaintManagement` | `ComplaintManagement.tsx` | super_admin, pengawas |
+| 13 | `/pengawas/enforcements` | `Enforcement` | `Enforcement.tsx` | super_admin, pengawas |
+| 14 | `/pengawas/amnesty` | `Amnesty` | `Amnesty.tsx` | super_admin, pengawas |
+| 15 | `/pengawas/field-force` | `FieldForce` | `FieldForce.tsx` | super_admin, pengawas |
+| 16 | `/performance/objects` | `ObjectAchievement` | `ObjectAchievement.tsx` | super_admin, pengawas |
+| 17 | `/performance/classifications` | `ClassificationAchievement` | `ClassificationAchievement.tsx` | super_admin, pengawas |
+| 18 | `/spot-checks` | `SpotCheckList` | `SpotCheckList.tsx` | super_admin, pengawas, kabid/kasubid |
+| 19 | `/spot-checks/create` | `SpotCheckForm` | `SpotCheckForm.tsx` | super_admin, pengawas, kabid/kasubid |
+| 20 | `/billing` | `Billing` | `Billing.tsx` | super_admin, opd, petugas |
+| 21 | `/verification` | `Verification` | `Verification.tsx` | super_admin, opd, verifikator |
+| 22 | `/reporting` | `Reporting` | `Reporting.tsx` | super_admin, opd, viewer |
+| 23 | `/master-data` | `MasterData` | `MasterData.tsx` | super_admin, opd, verifikator, petugas, viewer, kabid/kasubid |
+| 24 | `/system` | `SystemAdmin` | `SystemAdmin.tsx` | super_admin |
+| 25 | `/system/h2h-logs` | `H2HLogs` | `H2HLogs.tsx` | super_admin |
+| 26 | `/opds` | `OpdManagement` | `OpdManagement.tsx` | super_admin |
+| 27 | `/profile` | `Profile` | `Profile.tsx` | All auth roles |
+| 28 | `/user-guide` | `UserGuide` | `UserGuide.tsx` | All (no auth) |
+| 29 | `/about` | `About` | `About.tsx` | Public |
+| 30 | `/pbb-bapenda` | `PbbManagement` | `PbbManagement.tsx` | super_admin, opd |
+| 31 | `/presentation` | `Presentation` | `Presentation.tsx` | Public |
+| 32 | `/download` | `DownloadApp` | `DownloadApp.tsx` | Public |
+| 33 | `/verify/:number` | `ERegistry` | `ERegistry.tsx` | Public |
+| 34 | `/verify` | `ERegistry` | `ERegistry.tsx` | Public |
 
 ### Components
 
@@ -240,16 +253,19 @@ Lihat [INFRASTRUCTURE_MAP.md](file:///Users/pondokit/Herd/retribusi-api/INFRASTR
 | 10 | `/taxpayers` | `TaxpayerManagement` | `TaxpayerManagement.tsx` | super_admin, opd, petugas |
 | 11 | `/taxpayers/:id` | `TaxpayerDetail` | `TaxpayerDetail.tsx` | super_admin, opd, petugas |
 | 12 | `/billing` | `Billing` | `Billing.tsx` | super_admin, opd, petugas |
-| 13 | `/verification` | `PaymentVerification` | `PaymentVerification.tsx` | super_admin, opd, petugas |
-| 14 | `/reporting` | `Reporting` | `Reporting.tsx` | super_admin, opd, viewer, petugas |
-| 15 | `/master-data` | `MasterData` | `MasterData.tsx` | super_admin, opd, verifikator, petugas, viewer |
-| 16 | `/calculator` | `TaxCalculator` | `TaxCalculator.tsx` | super_admin, opd, petugas |
-| 17 | `/pbb-bapenda` | `PbbBapenda` | `PbbBapenda.tsx` | super_admin, opd, petugas |
-| 18 | `/profile` | `Profile` | `Profile.tsx` | All auth roles |
-| 19 | `/user-guide` | `UserGuide` | `UserGuide.tsx` | Public |
-| 20 | `/download` | `DownloadApp` | `DownloadApp.tsx` | Public |
-| 21 | `/unduh` | `DownloadApp` | `DownloadApp.tsx` | Public |
-| 22 | `/presentation` | `Presentation` | `Presentation.tsx` | Public |
+| 13 | `/tasks` | `DaftarTugas` | `DaftarTugas.tsx` | super_admin, opd, petugas |
+| 14 | `/verification` | `PaymentVerification` | `PaymentVerification.tsx` | super_admin, opd, petugas |
+| 15 | `/reporting` | `Reporting` | `Reporting.tsx` | super_admin, opd, viewer, petugas |
+| 16 | `/master-data` | `MasterData` | `MasterData.tsx` | super_admin, opd, verifikator, petugas, viewer |
+| 17 | `/skpd/create` | `CreateSKPD` | `CreateSKPD.tsx` | super_admin, opd, petugas |
+| 18 | `/calculator` | `TaxCalculator` | `TaxCalculator.tsx` | super_admin, opd, petugas |
+| 19 | `/pbb-bapenda` | `PbbBapenda` | `PbbBapenda.tsx` | super_admin, opd, petugas |
+| 20 | `/profile` | `Profile` | `Profile.tsx` | All auth roles |
+| 21 | `/about` | `About` | `About.tsx` | Public |
+| 22 | `/user-guide` | `UserGuide` | `UserGuide.tsx` | Public |
+| 23 | `/download` | `DownloadApp` | `DownloadApp.tsx` | Public |
+| 24 | `/unduh` | `DownloadApp` | `DownloadApp.tsx` | Public |
+| 25 | `/presentation` | `Presentation` | `Presentation.tsx` | Public |
 
 ### Components
 
