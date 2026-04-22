@@ -336,3 +336,8 @@ Route::middleware('bank_h2h')->prefix('v1/bank')->group(function () {
     Route::post('/payment', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'payment']);
     Route::post('/reversal', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'reversal']);
 });
+
+// ------------------------------------------------------------------------
+// DEPLOY HOOK (Staging only - protected by X-Deploy-Secret header)
+// ------------------------------------------------------------------------
+Route::post('/admin/deploy-hook', [\App\Http\Controllers\Admin\DeployHookController::class, 'handle']);
