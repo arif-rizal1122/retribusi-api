@@ -16,52 +16,52 @@ Dokumen ini menjelaskan **lokasi penyimpanan** kredensial tanpa mencantumkan nil
   - API Key & Secret tersedia di dashboard Cloudinary.
 - **Sentry (Error Logs):** 
   - DSN String diatur di `.env` (Laravel) dan `vite.config.ts` (Mobile).
-- **GitHub Token:** Dikelola via SSH Key (`~/.ssh/`) di komputer pengembang dan Action Token di GitHub.
+- **GitHub Token:** Dikelola via SSH Key (~/.ssh/) di komputer pengembang dan Action Token di GitHub.
 
 ## 3. Akun Sistem (Aplikasi)
 
 ### Super Admin (Akses Penuh)
-- **Email**: `admin@retribusi.id` / `superadmin@baubaukota.go.id`
-- **Password**: `Bapenda123#$` / `Bapenda123#$` (untuk Dev)
-- **Role**: `super_admin`
+- **Email**: admin@retribusi.id / superadmin@baubaukota.go.id
+- **Password**: [REDACTED] / [REDACTED] (untuk Dev)
+- **Role**: super_admin
 
 ### Admin OPD (Dinas Terkait)
-- **Email**: `bapenda@baubaukota.go.id`, `dishub@retribusi.id`, `disperindag@retribusi.id`, `dlh@retribusi.id`
-- **Password**: `Bapenda123#$`
-- **Role**: `opd`
+- **Email**: bapenda@baubaukota.go.id, dishub@retribusi.id, disperindag@retribusi.id, dlh@retribusi.id
+- **Password**: [REDACTED]
+- **Role**: opd
 
 ### Pengawas (Approval & Penindakan)
-- **Email**: `kabid@retribusi.id` / `pengawas@baubaukota.go.id`
-- **Password**: `Bapenda123#$`
-- **Role**: `pengawas`
+- **Email**: kabid@retribusi.id / pengawas@baubaukota.go.id
+- **Password**: [REDACTED]
+- **Role**: pengawas
 - **Wewenang**: Full Approval SPP, SKRD, SSPD, dan Penerbitan SKPDKB.
 
 ### Petugas (Mobile Quick Scan / Patroli)
-- **Email**: `petugas@bapenda.go.id` / `petugasrbac@test.com`
-- **Password**: `Bapenda123#$`
-- **Role**: `petugas`
+- **Email**: petugas@bapenda.go.id / petugasrbac@test.com
+- **Password**: [REDACTED]
+- **Role**: petugas
 
 ---
 ## 4. Link Production
 
-- **Admin Web** (Super Admin, OPD, Pengawas): [https://adminmpad.baubaukota.go.id](https://adminmpad.baubaukota.go.id)
-- **Petugas Web** (Dashboard Petugas): [https://petugasmpad.baubaukota.go.id](https://petugasmpad.baubaukota.go.id)
-- **Mobile Web** (Wajib Retribusi & Quick Access): [https://mpad.baubaukota.go.id](https://mpad.baubaukota.go.id)
+- **Admin Web**: [https://adminmpad.baubaukota.go.id](https://adminmpad.baubaukota.go.id)
+- **Petugas Web**: [https://petugasmpad.baubaukota.go.id](https://petugasmpad.baubaukota.go.id)
+- **Mobile Web**: [https://mpad.baubaukota.go.id](https://mpad.baubaukota.go.id)
 - **API Server**: [https://api.sipanda.online](https://api.sipanda.online)
 
 ---
-## 5. File `.env` (Source of Truth)
-Setiap lingkungan memiliki file `.env` yang **tidak masuk Git**:
-- **Production:** `/home/mpad/retribusi-api/.env`
-- **Development:** `/home/mpad/retribusi-api-dev/.env`
+## 5. File .env (Source of Truth)
+Setiap lingkungan memiliki file .env yang **tidak masuk Git**:
+- **Production:** /home/mpad/retribusi-api/.env
+- **Development:** /home/mpad/retribusi-api-dev/.env
 - **Local:** Terletak di root masing-masing folder repo.
 
 ## 6. Cara Rotasi Kredensial
 Jika terjadi kebocoran keamanan:
-1. Update password user `mpad` di VPS.
+1. Update password user mpad di VPS.
 2. Update **Actions Secrets** di Settings GitHub Repositori.
-3. Update variabel terkait di file `.env` server.
-4. Jalankan `php artisan config:cache` (Production) untuk memuat nilai baru.
+3. Update variabel terkait di file .env server.
+4. Jalankan php artisan config:cache (Production) untuk memuat nilai baru.
 
 ---
 > [!CAUTION]
