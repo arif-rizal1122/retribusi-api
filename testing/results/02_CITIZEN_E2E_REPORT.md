@@ -2,7 +2,7 @@
 
 ### 1. Profiling & Service Discovery
 - [x] GET `/api/me`: 200 OK
-- [x] GET `/api/citizen/services`: Found 17 available services.
+- [x] GET `/api/citizen/services`: Found 34 available services.
 
 ### 2. SPTPD Reporting Simulation
 - [ ] ⚠️ No classification with formula found for testing.
