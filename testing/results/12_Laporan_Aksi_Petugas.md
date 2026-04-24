@@ -1,9 +1,9 @@
 === 👮 Laporan Simulasi Lengkap Petugas Lapangan (E2E API) ===
 
-**Waktu Eksekusi**: 2026-04-19 06:40:54
+**Waktu Eksekusi**: 2026-04-22 01:35:46
 
 ## Skenario 0: Autentikasi (Login Petugas)
-✅ SUKSES: Login berhasil. Token diterbitkan: 6|vuL4vhOO...
+✅ SUKSES: Login berhasil. Token diterbitkan: 21|oVrLj05...
 
 ## Skenario 1: Dashboard Stats (Cek Achievement)
 ✅ SUKSES: Stats terambil. Achievement petugas terdeteksi.
@@ -19,7 +19,7 @@
 ✅ SUKSES: Akses rute Tagihan berhasil. Ditemukan 0 tagihan terpantau.
 
 ## Skenario 5: Cek Peta (Map Potentials)
-✅ SUKSES: Peta terisi. 1 titik koordinat objek pajak terdeteksi.
+✅ SUKSES: Peta terisi. 48 titik koordinat objek pajak terdeteksi.
 
 ## Skenario 6: Daftar Tugas Lapangan
 ✅ SUKSES: Modul penugasan aktif.

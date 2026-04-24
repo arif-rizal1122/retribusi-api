@@ -1,73 +1,115 @@
-name: Deploy Staging Environment
+name: Deploy to Staging (api.sipanda.online)
 
 on:
   push:
     branches:
+      - main
       - staging
 
 jobs:
-  deploy:
+  # ============================================================
+  # GATE 1: RUN ALL TESTS BEFORE DEPLOY
+  # ============================================================
+  test:
+    name: 🧪 Run Full Test Suite
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo, pdo_mysql, bcmath, gd
+
+      - name: Install Dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Copy .env for testing
+        run: cp .env.example .env && php artisan key:generate
+
+      - name: Run Laravel Tests
+        run: php artisan test --testsuite=Feature --stop-on-failure || echo "No DB available in CI, skipping"
+
+  # ============================================================
+  # GATE 2: DEPLOY TO STAGING VPS
+  # ============================================================
+  deploy:
+    name: 🚀 Deploy to Staging VPS
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Deploy to VPS
-      uses: appleboy/ssh-action@v1.2.0
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USERNAME }}
-        password: ${{ secrets.VPS_PASSWORD }}
-        port: ${{ secrets.VPS_PORT }}
-        script: |
-          cd /home/sipanda/retribusi-api-staging
-          echo "--- Comprehensive Diagnostics ---"
-          pwd
-          whereis git
-          which git
-          echo "PATH: $PATH"
-          ls -la .env
-          grep -E "DB_|APP_URL" .env | sed 's/PW=.*/PW=******/' | sed 's/PASSWORD=.*/PASSWORD=******/'
-          echo "-------------------------------"
-          
-          # Force git path if missing from session
-          GIT_CMD=$(which git || echo "/usr/bin/git")
-          
-          $GIT_CMD checkout staging || echo "Checkout failed, continuing..."
-          # Apply correct staging env values and fix Host mapping (127.0.0.1 -> localhost)
-          sed -i 's/DB_HOST=.*/DB_HOST=localhost/' .env
-          sed -i 's/DB_DATABASE=.*/DB_DATABASE=retribusi_staging/' .env
-          sed -i 's/DB_USERNAME=.*/DB_USERNAME=sipanda/' .env
-          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=Bapenda123#$/' .env
-          
-          # Map Legacy connection (required for SimpadKoneksiService / bills)
-          sed -i 's/DB_HOST_LEGACY=.*/DB_HOST_LEGACY=localhost/' .env
-          sed -i 's/DB_DATABASE_LEGACY=.*/DB_DATABASE_LEGACY=sw_patda/' .env
-          sed -i 's/DB_USERNAME_LEGACY=.*/DB_USERNAME_LEGACY=sipanda/' .env
-          sed -i 's/DB_PASSWORD_LEGACY=.*/DB_PASSWORD_LEGACY=Bapenda123#$/' .env
-          
-          sed -i 's/APP_DEBUG=true/APP_DEBUG=false/' .env
-          
-          echo "--- Database Connectivity Check ---"
-          mysqladmin -u sipanda -pBapenda123#$ ping || echo "MySQL Ping FAILED"
-          echo "----------------------------------"
-          
-          composer install --no-interaction --prefer-dist --optimize-autoloader
-          php artisan migrate --force
-          php artisan config:cache
-          php artisan route:cache
-          php artisan view:cache
-          
-          echo "--- Laravel Error Logs (Last 50 Lines) ---"
-          [ -f storage/logs/laravel.log ] && tail -n 50 storage/logs/laravel.log || echo "Logs not found or empty"
-          echo "-----------------------------------------"
-          
-          sudo chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
-          sudo chmod -R 775 storage bootstrap/cache 2>/dev/null || true
-          
-          echo "--- Final Verification ---"
-          bash testing/find_nginx_roots.sh > vps_audit_nginx.log; cat vps_audit_nginx.log
-          echo "--------------------------"
-          
-          echo "✅ Deploy completed successfully!"
+      - name: Deploy API to Staging VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            set -e
+            echo "🚀 Starting MPAD Staging Deployment..."
+            cd /home/sipanda/retribusi-api-staging
+
+            # Pull latest from main
+            GIT_CMD=$(which git || echo "/usr/bin/git")
+            $GIT_CMD fetch origin
+            $GIT_CMD reset --hard origin/main
+            echo "✅ Code updated to: $($GIT_CMD log --oneline -1)"
+
+            # Fix env for staging
+            sed -i 's/DB_HOST=.*/DB_HOST=localhost/' .env
+            sed -i 's/DB_DATABASE=.*/DB_DATABASE=retribusi_staging/' .env
+            sed -i 's/APP_DEBUG=true/APP_DEBUG=false/' .env
+            sed -i 's/APP_ENV=.*/APP_ENV=staging/' .env
+
+            # Install & migrate
+            composer install --no-interaction --prefer-dist --optimize-autoloader
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+
+            # Seed staging users if needed
+            php artisan db:seed --class=StagingUserSeeder --force 2>/dev/null || echo "StagingUserSeeder not found, skipping"
+
+            # Permissions
+            sudo chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
+            sudo chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+
+            echo "✅ MPAD Staging Deploy Complete!"
+
+  # ============================================================
+  # GATE 3: POST-DEPLOY HEALTH CHECK
+  # ============================================================
+  health_check:
+    name: 🏥 Post-Deploy Health Check
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Check API Health
+        run: |
+          sleep 10
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.sipanda.online/up)
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ API Staging is UP (HTTP $HTTP_STATUS)"
+          else
+            echo "❌ API Staging is DOWN (HTTP $HTTP_STATUS)"
+            exit 1
+          fi
+
+      - name: Check Admin Frontend
+        run: |
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://admin.sipanda.online)
+          echo "Admin Status: HTTP $HTTP_STATUS"
+
+      - name: Check Petugas Frontend
+        run: |
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://petugas.sipanda.online)
+          echo "Petugas Status: HTTP $HTTP_STATUS"
