@@ -134,9 +134,14 @@ class TaxpayerController extends Controller
             $taxpayer = Taxpayer::where('nik', $request->nik)->first();
         }
 
+        // Resolve NPWPD automatically if not provided
+        $npwpd = $request->npwpd ?: Taxpayer::resolveNpwpd($request->nik);
+
         if ($taxpayer) {
             // Update existing taxpayer basic info if provided
-            $updateData = $request->only(['name', 'address', 'district', 'sub_district', 'phone', 'npwpd']);
+            $updateData = $request->only(['name', 'address', 'district', 'sub_district', 'phone']);
+            $updateData['npwpd'] = $npwpd; // Use resolved NPWPD
+            
             if ($request->filled('password')) {
                 $updateData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
             }
@@ -158,7 +163,7 @@ class TaxpayerController extends Controller
                 'district' => $request->district,
                 'sub_district' => $request->sub_district,
                 'phone' => $request->phone,
-                'npwpd' => $request->npwpd,
+                'npwpd' => $npwpd, // Use resolved NPWPD
                 'object_name' => $request->object_name,
                 'object_address' => $request->object_address,
                 'latitude' => $request->latitude,
@@ -284,9 +289,16 @@ class TaxpayerController extends Controller
         }
 
         $data = $request->only([
-            'nik', 'name', 'address', 'district', 'sub_district', 'phone', 'npwpd', 
+            'nik', 'name', 'address', 'district', 'sub_district', 'phone', 
             'object_name', 'object_address', 'latitude', 'longitude', 'is_active'
         ]);
+
+        // Resolve NPWPD if not provided and not currently set, or if explicitly requested to update
+        if ($request->has('npwpd')) {
+            $data['npwpd'] = $request->npwpd;
+        } elseif (!$taxpayer->npwpd) {
+            $data['npwpd'] = Taxpayer::resolveNpwpd($request->nik ?: $taxpayer->nik);
+        }
 
         if ($request->filled('password')) {
             $data['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
