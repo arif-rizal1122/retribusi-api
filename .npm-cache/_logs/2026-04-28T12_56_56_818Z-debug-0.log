@@ -1,0 +1,848 @@
+0 verbose cli C:\nvm4w\nodejs\node.exe C:\Users\HP\AppData\Roaming\npm\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.4.2
+2 info using node@v22.17.0
+3 silly config load:file:C:\Users\HP\AppData\Roaming\npm\node_modules\npm\npmrc
+4 silly config load:file:D:\Projects\RETRIBUSI\retribusi-api\.npmrc
+5 silly config load:file:C:\Users\HP\.npmrc
+6 silly config load:file:C:\Users\HP\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install
+8 verbose argv "install"
+9 verbose logfile logs-max:10 dir:D:\Projects\RETRIBUSI\retribusi-api\.npm-cache\_logs\2026-04-28T12_56_56_818Z-
+10 verbose logfile D:\Projects\RETRIBUSI\retribusi-api\.npm-cache\_logs\2026-04-28T12_56_56_818Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 silly idealTree buildDeps
+14 http fetch GET https://registry.npmjs.org/npm attempt 1 failed with EACCES
+15 silly reify mark retired [
+15 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\autoprefixer'
+15 silly reify ]
+16 silly reify mark retired [ 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\axios' ]
+17 silly reify mark retired [ 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\esbuild' ]
+18 silly reify mark retired [ 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\form-data' ]
+19 silly reify mark retired [ 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\fraction.js' ]
+20 silly reify mark retired [ 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\fsevents' ]
+21 silly reify mark retired [
+21 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\laravel-vite-plugin'
+21 silly reify ]
+22 silly reify mark retired [ 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\jiti' ]
+23 silly reify mark retired [ 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\pirates' ]
+24 silly reify mark retired [ 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\postcss-js' ]
+25 silly reify mark retired [
+25 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\postcss-load-config'
+25 silly reify ]
+26 silly reify mark retired [ 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\rollup' ]
+27 silly reify mark retired [ 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\sucrase' ]
+28 silly reify mark retired [ 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\tailwindcss' ]
+29 silly reify mark retired [ 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\vite' ]
+30 silly reify mark retired [
+30 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\aix-ppc64'
+30 silly reify ]
+31 silly reify mark retired [
+31 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\android-arm'
+31 silly reify ]
+32 silly reify mark retired [
+32 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\android-arm64'
+32 silly reify ]
+33 silly reify mark retired [
+33 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\android-x64'
+33 silly reify ]
+34 silly reify mark retired [
+34 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\darwin-arm64'
+34 silly reify ]
+35 silly reify mark retired [
+35 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\darwin-x64'
+35 silly reify ]
+36 silly reify mark retired [
+36 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\freebsd-arm64'
+36 silly reify ]
+37 silly reify mark retired [
+37 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\freebsd-x64'
+37 silly reify ]
+38 silly reify mark retired [
+38 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-arm'
+38 silly reify ]
+39 silly reify mark retired [
+39 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-arm64'
+39 silly reify ]
+40 silly reify mark retired [
+40 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-ia32'
+40 silly reify ]
+41 silly reify mark retired [
+41 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-loong64'
+41 silly reify ]
+42 silly reify mark retired [
+42 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-mips64el'
+42 silly reify ]
+43 silly reify mark retired [
+43 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-ppc64'
+43 silly reify ]
+44 silly reify mark retired [
+44 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-riscv64'
+44 silly reify ]
+45 silly reify mark retired [
+45 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-s390x'
+45 silly reify ]
+46 silly reify mark retired [
+46 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-x64'
+46 silly reify ]
+47 silly reify mark retired [
+47 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\netbsd-arm64'
+47 silly reify ]
+48 silly reify mark retired [
+48 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\netbsd-x64'
+48 silly reify ]
+49 silly reify mark retired [
+49 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\openbsd-arm64'
+49 silly reify ]
+50 silly reify mark retired [
+50 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\openbsd-x64'
+50 silly reify ]
+51 silly reify mark retired [
+51 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\openharmony-arm64'
+51 silly reify ]
+52 silly reify mark retired [
+52 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\sunos-x64'
+52 silly reify ]
+53 silly reify mark retired [
+53 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\win32-arm64'
+53 silly reify ]
+54 silly reify mark retired [
+54 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\win32-ia32'
+54 silly reify ]
+55 silly reify mark retired [
+55 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\win32-x64'
+55 silly reify ]
+56 silly reify mark retired [
+56 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-android-arm-eabi'
+56 silly reify ]
+57 silly reify mark retired [
+57 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-android-arm64'
+57 silly reify ]
+58 silly reify mark retired [
+58 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-darwin-arm64'
+58 silly reify ]
+59 silly reify mark retired [
+59 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-darwin-x64'
+59 silly reify ]
+60 silly reify mark retired [
+60 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-freebsd-arm64'
+60 silly reify ]
+61 silly reify mark retired [
+61 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-arm-gnueabihf'
+61 silly reify ]
+62 silly reify mark retired [
+62 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-freebsd-x64'
+62 silly reify ]
+63 silly reify mark retired [
+63 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-arm-musleabihf'
+63 silly reify ]
+64 silly reify mark retired [
+64 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-arm64-gnu'
+64 silly reify ]
+65 silly reify mark retired [
+65 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-arm64-musl'
+65 silly reify ]
+66 silly reify mark retired [
+66 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-loong64-gnu'
+66 silly reify ]
+67 silly reify mark retired [
+67 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-loong64-musl'
+67 silly reify ]
+68 silly reify mark retired [
+68 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-ppc64-gnu'
+68 silly reify ]
+69 silly reify mark retired [
+69 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-ppc64-musl'
+69 silly reify ]
+70 silly reify mark retired [
+70 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-riscv64-gnu'
+70 silly reify ]
+71 silly reify mark retired [
+71 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-riscv64-musl'
+71 silly reify ]
+72 silly reify mark retired [
+72 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-s390x-gnu'
+72 silly reify ]
+73 silly reify mark retired [
+73 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-x64-gnu'
+73 silly reify ]
+74 silly reify mark retired [
+74 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-x64-musl'
+74 silly reify ]
+75 silly reify mark retired [
+75 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-openbsd-x64'
+75 silly reify ]
+76 silly reify mark retired [
+76 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-openharmony-arm64'
+76 silly reify ]
+77 silly reify mark retired [
+77 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-win32-arm64-msvc'
+77 silly reify ]
+78 silly reify mark retired [
+78 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-win32-ia32-msvc'
+78 silly reify ]
+79 silly reify mark retired [
+79 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-win32-x64-gnu'
+79 silly reify ]
+80 silly reify mark retired [
+80 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-win32-x64-msvc'
+80 silly reify ]
+81 silly reify mark retired [
+81 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\baseline-browser-mapping',
+81 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\baseline-browser-mapping',
+81 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\baseline-browser-mapping.cmd',
+81 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\baseline-browser-mapping.ps1'
+81 silly reify ]
+82 silly reify mark retired [
+82 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\browserslist',
+82 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\browserslist',
+82 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\browserslist.cmd',
+82 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\browserslist.ps1'
+82 silly reify ]
+83 silly reify mark retired [
+83 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\cssesc',
+83 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\cssesc',
+83 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\cssesc.cmd',
+83 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\cssesc.ps1'
+83 silly reify ]
+84 silly reify mark retired [
+84 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\concurrently',
+84 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\concurrently',
+84 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\concurrently.cmd',
+84 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\concurrently.ps1',
+84 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\conc',
+84 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\conc.cmd',
+84 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\conc.ps1'
+84 silly reify ]
+85 silly reify mark retired [
+85 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\nanoid',
+85 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\nanoid',
+85 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\nanoid.cmd',
+85 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\nanoid.ps1'
+85 silly reify ]
+86 silly reify mark retired [
+86 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\resolve',
+86 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\resolve',
+86 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\resolve.cmd',
+86 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\resolve.ps1'
+86 silly reify ]
+87 silly reify mark retired [
+87 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\tree-kill',
+87 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\tree-kill',
+87 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\tree-kill.cmd',
+87 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\tree-kill.ps1'
+87 silly reify ]
+88 silly reify mark retired [
+88 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\update-browserslist-db',
+88 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\update-browserslist-db',
+88 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\update-browserslist-db.cmd',
+88 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\update-browserslist-db.ps1'
+88 silly reify ]
+89 silly reify moves {
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\autoprefixer': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.autoprefixer-96cL1yRi',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\axios': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.axios-KNWGOpqN',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\esbuild': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.esbuild-LfJ7MfdO',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\form-data': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.form-data-eixXFRQY',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\fraction.js': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.fraction.js-zRPQrpDm',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\fsevents': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.fsevents-lJoBvzzr',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\laravel-vite-plugin': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.laravel-vite-plugin-zFN1IFVo',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\jiti': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.jiti-4ILYU1i5',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\pirates': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.pirates-lXcvAYtr',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\postcss-js': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.postcss-js-EJzPUDG8',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\postcss-load-config': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.postcss-load-config-RhdLL5yl',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\rollup': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.rollup-yveMjKid',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\sucrase': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.sucrase-auB7H88G',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\tailwindcss': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.tailwindcss-QzZJDBZl',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\vite': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.vite-WE0SMpLY',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\aix-ppc64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.aix-ppc64-7T9lo6Ho',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\android-arm': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.android-arm-0vZJVyoD',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\android-arm64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.android-arm64-HgiETQiD',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\android-x64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.android-x64-wjIz50AK',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\darwin-arm64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.darwin-arm64-texaQ4jP',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\darwin-x64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.darwin-x64-RJf61sYU',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\freebsd-arm64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.freebsd-arm64-XIlzzQ5g',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\freebsd-x64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.freebsd-x64-6gWSydRL',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-arm': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.linux-arm-IZsObyz4',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-arm64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.linux-arm64-izmo7Hvu',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-ia32': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.linux-ia32-icBX2dWr',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-loong64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.linux-loong64-O74CJO1v',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-mips64el': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.linux-mips64el-HeVwG3TQ',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-ppc64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.linux-ppc64-MWkmozCL',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-riscv64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.linux-riscv64-iXBifxbJ',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-s390x': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.linux-s390x-n1Tnce4Q',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-x64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.linux-x64-1bv73GC7',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\netbsd-arm64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.netbsd-arm64-BtEAnDNF',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\netbsd-x64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.netbsd-x64-JwsGWMmK',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\openbsd-arm64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.openbsd-arm64-dgULlNKT',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\openbsd-x64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.openbsd-x64-klbNttbd',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\openharmony-arm64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.openharmony-arm64-7yqrX3B4',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\sunos-x64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.sunos-x64-JXdAAY5c',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\win32-arm64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.win32-arm64-ayAWujbT',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\win32-ia32': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.win32-ia32-WauIZzbZ',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\win32-x64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\.win32-x64-RNUI9qUd',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-android-arm-eabi': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-android-arm-eabi-l6ana1vd',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-android-arm64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-android-arm64-Jfminevl',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-darwin-arm64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-darwin-arm64-mx1FqNJF',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-darwin-x64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-darwin-x64-a648l96n',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-freebsd-arm64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-freebsd-arm64-EuTCteuY',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-arm-gnueabihf': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-linux-arm-gnueabihf-lrHHSGEv',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-freebsd-x64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-freebsd-x64-aMYAClLE',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-arm-musleabihf': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-linux-arm-musleabihf-E5uXVMTe',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-arm64-gnu': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-linux-arm64-gnu-xxcpVH86',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-arm64-musl': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-linux-arm64-musl-WxPqIUNX',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-loong64-gnu': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-linux-loong64-gnu-7RxFsDOF',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-loong64-musl': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-linux-loong64-musl-Ztwfm01E',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-ppc64-gnu': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-linux-ppc64-gnu-Vf1gKpNo',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-ppc64-musl': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-linux-ppc64-musl-LXo0rDxj',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-riscv64-gnu': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-linux-riscv64-gnu-BTiTXcqj',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-riscv64-musl': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-linux-riscv64-musl-0yhum8Vt',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-s390x-gnu': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-linux-s390x-gnu-ZiOv0gra',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-x64-gnu': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-linux-x64-gnu-emqmcYzv',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-x64-musl': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-linux-x64-musl-on0nphDo',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-openbsd-x64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-openbsd-x64-3FTPZUMe',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-openharmony-arm64': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-openharmony-arm64-OnRdDgvN',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-win32-arm64-msvc': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-win32-arm64-msvc-I4Wnm1WI',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-win32-ia32-msvc': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-win32-ia32-msvc-Mrw3O6gE',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-win32-x64-gnu': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-win32-x64-gnu-hSPUyTQs',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-win32-x64-msvc': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\.rollup-win32-x64-msvc-U5ucW1wD',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\baseline-browser-mapping': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.baseline-browser-mapping-tM7Ur5hC',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\baseline-browser-mapping': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.baseline-browser-mapping-jIBUmGmi',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\baseline-browser-mapping.cmd': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.baseline-browser-mapping.cmd-waVYIryx',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\baseline-browser-mapping.ps1': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.baseline-browser-mapping.ps1-YFHzIB2c',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\browserslist': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.browserslist-CJn5xHdL',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\browserslist': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.browserslist-IHG2WnMS',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\browserslist.cmd': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.browserslist.cmd-IhDdtmd8',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\browserslist.ps1': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.browserslist.ps1-Zlz2V1hW',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\cssesc': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.cssesc-Nf4NfgMj',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\cssesc': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.cssesc-1qmspTc5',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\cssesc.cmd': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.cssesc.cmd-nlycTviN',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\cssesc.ps1': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.cssesc.ps1-P0AsT9Ft',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\concurrently': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.concurrently-BbGXLuDx',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\concurrently': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.concurrently-OZYHT9AO',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\concurrently.cmd': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.concurrently.cmd-8gR08hz8',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\concurrently.ps1': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.concurrently.ps1-UvUpwhuI',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\conc': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.conc-oi4qngQr',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\conc.cmd': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.conc.cmd-QQ4qj7XG',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\conc.ps1': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.conc.ps1-H76Cv11b',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\nanoid': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.nanoid-od85IsMs',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\nanoid': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.nanoid-ih1JNr4e',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\nanoid.cmd': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.nanoid.cmd-LZEZzbSZ',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\nanoid.ps1': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.nanoid.ps1-VE5wb57y',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\resolve': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.resolve-l3l2BXx2',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\resolve': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.resolve-yniP06f2',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\resolve.cmd': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.resolve.cmd-OpjM24rx',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\resolve.ps1': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.resolve.ps1-XjrSGqK6',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\tree-kill': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.tree-kill-Pj04Dpbv',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\tree-kill': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.tree-kill-MbmqFiN0',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\tree-kill.cmd': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.tree-kill.cmd-KymrCTVJ',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\tree-kill.ps1': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.tree-kill.ps1-hRIIALLK',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\update-browserslist-db': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.update-browserslist-db-GLPISRDG',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\update-browserslist-db': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.update-browserslist-db-4bdTcEEg',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\update-browserslist-db.cmd': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.update-browserslist-db.cmd-S51sD9aG',
+89 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\update-browserslist-db.ps1': 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\.bin\\.update-browserslist-db.ps1-MDYT8bXm'
+89 silly reify }
+90 silly audit bulk request {
+90 silly audit   '@alloc/quick-lru': [ '5.2.0' ],
+90 silly audit   '@esbuild/aix-ppc64': [ '0.25.12' ],
+90 silly audit   '@esbuild/android-arm': [ '0.25.12' ],
+90 silly audit   '@esbuild/android-arm64': [ '0.25.12' ],
+90 silly audit   '@esbuild/android-x64': [ '0.25.12' ],
+90 silly audit   '@esbuild/darwin-arm64': [ '0.25.12' ],
+90 silly audit   '@esbuild/darwin-x64': [ '0.25.12' ],
+90 silly audit   '@esbuild/freebsd-arm64': [ '0.25.12' ],
+90 silly audit   '@esbuild/freebsd-x64': [ '0.25.12' ],
+90 silly audit   '@esbuild/linux-arm': [ '0.25.12' ],
+90 silly audit   '@esbuild/linux-arm64': [ '0.25.12' ],
+90 silly audit   '@esbuild/linux-ia32': [ '0.25.12' ],
+90 silly audit   '@esbuild/linux-loong64': [ '0.25.12' ],
+90 silly audit   '@esbuild/linux-mips64el': [ '0.25.12' ],
+90 silly audit   '@esbuild/linux-ppc64': [ '0.25.12' ],
+90 silly audit   '@esbuild/linux-riscv64': [ '0.25.12' ],
+90 silly audit   '@esbuild/linux-s390x': [ '0.25.12' ],
+90 silly audit   '@esbuild/linux-x64': [ '0.25.12' ],
+90 silly audit   '@esbuild/netbsd-arm64': [ '0.25.12' ],
+90 silly audit   '@esbuild/netbsd-x64': [ '0.25.12' ],
+90 silly audit   '@esbuild/openbsd-arm64': [ '0.25.12' ],
+90 silly audit   '@esbuild/openbsd-x64': [ '0.25.12' ],
+90 silly audit   '@esbuild/openharmony-arm64': [ '0.25.12' ],
+90 silly audit   '@esbuild/sunos-x64': [ '0.25.12' ],
+90 silly audit   '@esbuild/win32-arm64': [ '0.25.12' ],
+90 silly audit   '@esbuild/win32-ia32': [ '0.25.12' ],
+90 silly audit   '@esbuild/win32-x64': [ '0.25.12' ],
+90 silly audit   '@jridgewell/gen-mapping': [ '0.3.13' ],
+90 silly audit   '@jridgewell/resolve-uri': [ '3.1.2' ],
+90 silly audit   '@jridgewell/sourcemap-codec': [ '1.5.5' ],
+90 silly audit   '@jridgewell/trace-mapping': [ '0.3.31' ],
+90 silly audit   '@nodelib/fs.scandir': [ '2.1.5' ],
+90 silly audit   '@nodelib/fs.stat': [ '2.0.5' ],
+90 silly audit   '@nodelib/fs.walk': [ '1.2.8' ],
+90 silly audit   '@rollup/rollup-android-arm-eabi': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-android-arm64': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-darwin-arm64': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-darwin-x64': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-freebsd-arm64': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-freebsd-x64': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-linux-arm-gnueabihf': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-linux-arm-musleabihf': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-linux-arm64-gnu': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-linux-arm64-musl': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-linux-loong64-gnu': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-linux-loong64-musl': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-linux-ppc64-gnu': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-linux-ppc64-musl': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-linux-riscv64-gnu': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-linux-riscv64-musl': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-linux-s390x-gnu': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-linux-x64-gnu': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-linux-x64-musl': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-openbsd-x64': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-openharmony-arm64': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-win32-arm64-msvc': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-win32-ia32-msvc': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-win32-x64-gnu': [ '4.57.1' ],
+90 silly audit   '@rollup/rollup-win32-x64-msvc': [ '4.57.1' ],
+90 silly audit   '@types/estree': [ '1.0.8' ],
+90 silly audit   'ansi-regex': [ '5.0.1' ],
+90 silly audit   'ansi-styles': [ '4.3.0' ],
+90 silly audit   'any-promise': [ '1.3.0' ],
+90 silly audit   anymatch: [ '3.1.3' ],
+90 silly audit   arg: [ '5.0.2' ],
+90 silly audit   asynckit: [ '0.4.0' ],
+90 silly audit   autoprefixer: [ '10.4.24' ],
+90 silly audit   axios: [ '1.13.5' ],
+90 silly audit   'baseline-browser-mapping': [ '2.9.19' ],
+90 silly audit   'binary-extensions': [ '2.3.0' ],
+90 silly audit   braces: [ '3.0.3' ],
+90 silly audit   browserslist: [ '4.28.1' ],
+90 silly audit   'call-bind-apply-helpers': [ '1.0.2' ],
+90 silly audit   'camelcase-css': [ '2.0.1' ],
+90 silly audit   'caniuse-lite': [ '1.0.30001770' ],
+90 silly audit   chalk: [ '4.1.2' ],
+90 silly audit   'supports-color': [ '7.2.0', '8.1.1' ],
+90 silly audit   chokidar: [ '3.6.0' ],
+90 silly audit   'glob-parent': [ '5.1.2', '6.0.2' ],
+90 silly audit   cliui: [ '8.0.1' ],
+90 silly audit   'color-convert': [ '2.0.1' ],
+90 silly audit   'color-name': [ '1.1.4' ],
+90 silly audit   'combined-stream': [ '1.0.8' ],
+90 silly audit   commander: [ '4.1.1' ],
+90 silly audit   concurrently: [ '9.2.1' ],
+90 silly audit   cssesc: [ '3.0.0' ],
+90 silly audit   'delayed-stream': [ '1.0.0' ],
+90 silly audit   didyoumean: [ '1.2.2' ],
+90 silly audit   dlv: [ '1.1.3' ],
+90 silly audit   'dunder-proto': [ '1.0.1' ],
+90 silly audit   'electron-to-chromium': [ '1.5.286' ],
+90 silly audit   'emoji-regex': [ '8.0.0' ],
+90 silly audit   'es-define-property': [ '1.0.1' ],
+90 silly audit   'es-errors': [ '1.3.0' ],
+90 silly audit   'es-object-atoms': [ '1.1.1' ],
+90 silly audit   'es-set-tostringtag': [ '2.1.0' ],
+90 silly audit   esbuild: [ '0.25.12' ],
+90 silly audit   escalade: [ '3.2.0' ],
+90 silly audit   'fast-glob': [ '3.3.3' ],
+90 silly audit   fastq: [ '1.20.1' ],
+90 silly audit   'fill-range': [ '7.1.1' ],
+90 silly audit   'follow-redirects': [ '1.15.11' ],
+90 silly audit   'form-data': [ '4.0.5' ],
+90 silly audit   'fraction.js': [ '5.3.4' ],
+90 silly audit   fsevents: [ '2.3.3' ],
+90 silly audit   'function-bind': [ '1.1.2' ],
+90 silly audit   'get-caller-file': [ '2.0.5' ],
+90 silly audit   'get-intrinsic': [ '1.3.0' ],
+90 silly audit   'get-proto': [ '1.0.1' ],
+90 silly audit   gopd: [ '1.2.0' ],
+90 silly audit   'has-flag': [ '4.0.0' ],
+90 silly audit   'has-symbols': [ '1.1.0' ],
+90 silly audit   'has-tostringtag': [ '1.0.2' ],
+90 silly audit   hasown: [ '2.0.2' ],
+90 silly audit   'is-binary-path': [ '2.1.0' ],
+90 silly audit   'is-core-module': [ '2.16.1' ],
+90 silly audit   'is-extglob': [ '2.1.1' ],
+90 silly audit   'is-fullwidth-code-point': [ '3.0.0' ],
+90 silly audit   'is-glob': [ '4.0.3' ],
+90 silly audit   'is-number': [ '7.0.0' ],
+90 silly audit   jiti: [ '1.21.7' ],
+90 silly audit   'laravel-vite-plugin': [ '1.3.0' ],
+90 silly audit   lilconfig: [ '3.1.3' ],
+90 silly audit   'lines-and-columns': [ '1.2.4' ],
+90 silly audit   'math-intrinsics': [ '1.1.0' ],
+90 silly audit   merge2: [ '1.4.1' ],
+90 silly audit   micromatch: [ '4.0.8' ],
+90 silly audit   'mime-db': [ '1.52.0' ],
+90 silly audit   'mime-types': [ '2.1.35' ],
+90 silly audit   mz: [ '2.7.0' ],
+90 silly audit   nanoid: [ '3.3.11' ],
+90 silly audit   'node-releases': [ '2.0.27' ],
+90 silly audit   'normalize-path': [ '3.0.0' ],
+90 silly audit   'object-assign': [ '4.1.1' ],
+90 silly audit   'object-hash': [ '3.0.0' ],
+90 silly audit   'path-parse': [ '1.0.7' ],
+90 silly audit   picocolors: [ '1.1.1' ],
+90 silly audit   picomatch: [ '2.3.1', '4.0.3' ],
+90 silly audit   pify: [ '2.3.0' ],
+90 silly audit   pirates: [ '4.0.7' ],
+90 silly audit   postcss: [ '8.5.6' ],
+90 silly audit   'postcss-import': [ '15.1.0' ],
+90 silly audit   'postcss-js': [ '4.1.0' ],
+90 silly audit   'postcss-load-config': [ '6.0.1' ],
+90 silly audit   'postcss-nested': [ '6.2.0' ],
+90 silly audit   'postcss-selector-parser': [ '6.1.2' ],
+90 silly audit   'postcss-value-parser': [ '4.2.0' ],
+90 silly audit   'proxy-from-env': [ '1.1.0' ],
+90 silly audit   'queue-microtask': [ '1.2.3' ],
+90 silly audit   'read-cache': [ '1.0.0' ],
+90 silly audit   readdirp: [ '3.6.0' ],
+90 silly audit   'require-directory': [ '2.1.1' ],
+90 silly audit   resolve: [ '1.22.11' ],
+90 silly audit   reusify: [ '1.1.0' ],
+90 silly audit   rollup: [ '4.57.1' ],
+90 silly audit   'run-parallel': [ '1.2.0' ],
+90 silly audit   rxjs: [ '7.8.2' ],
+90 silly audit   'shell-quote': [ '1.8.3' ],
+90 silly audit   'source-map-js': [ '1.2.1' ],
+90 silly audit   'string-width': [ '4.2.3' ],
+90 silly audit   'strip-ansi': [ '6.0.1' ],
+90 silly audit   sucrase: [ '3.35.1' ],
+90 silly audit   'supports-preserve-symlinks-flag': [ '1.0.0' ],
+90 silly audit   tailwindcss: [ '3.4.19' ],
+90 silly audit   thenify: [ '3.3.1' ],
+90 silly audit   'thenify-all': [ '1.6.0' ],
+90 silly audit   tinyglobby: [ '0.2.15' ],
+90 silly audit   fdir: [ '6.5.0' ],
+90 silly audit   'to-regex-range': [ '5.0.1' ],
+90 silly audit   'tree-kill': [ '1.2.2' ],
+90 silly audit   'ts-interface-checker': [ '0.1.13' ],
+90 silly audit   tslib: [ '2.8.1' ],
+90 silly audit   'update-browserslist-db': [ '1.2.3' ],
+90 silly audit   'util-deprecate': [ '1.0.2' ],
+90 silly audit   vite: [ '6.4.1' ],
+90 silly audit   'vite-plugin-full-reload': [ '1.2.0' ],
+90 silly audit   'wrap-ansi': [ '7.0.0' ],
+90 silly audit   y18n: [ '5.0.8' ],
+90 silly audit   yargs: [ '17.7.2' ],
+90 silly audit   'yargs-parser': [ '21.1.1' ]
+90 silly audit }
+91 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-win32-ia32-msvc
+92 silly reify mark deleted [
+92 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-win32-ia32-msvc'
+92 silly reify ]
+93 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-win32-arm64-msvc
+94 silly reify mark deleted [
+94 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-win32-arm64-msvc'
+94 silly reify ]
+95 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-openharmony-arm64
+96 silly reify mark deleted [
+96 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-openharmony-arm64'
+96 silly reify ]
+97 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-openbsd-x64
+98 silly reify mark deleted [
+98 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-openbsd-x64'
+98 silly reify ]
+99 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-linux-x64-musl
+100 silly reify mark deleted [
+100 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-x64-musl'
+100 silly reify ]
+101 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-linux-x64-gnu
+102 silly reify mark deleted [
+102 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-x64-gnu'
+102 silly reify ]
+103 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-linux-s390x-gnu
+104 silly reify mark deleted [
+104 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-s390x-gnu'
+104 silly reify ]
+105 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-linux-riscv64-musl
+106 silly reify mark deleted [
+106 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-riscv64-musl'
+106 silly reify ]
+107 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-linux-riscv64-gnu
+108 silly reify mark deleted [
+108 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-riscv64-gnu'
+108 silly reify ]
+109 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-linux-ppc64-musl
+110 silly reify mark deleted [
+110 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-ppc64-musl'
+110 silly reify ]
+111 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-linux-ppc64-gnu
+112 silly reify mark deleted [
+112 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-ppc64-gnu'
+112 silly reify ]
+113 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-linux-loong64-musl
+114 silly reify mark deleted [
+114 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-loong64-musl'
+114 silly reify ]
+115 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-linux-loong64-gnu
+116 silly reify mark deleted [
+116 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-loong64-gnu'
+116 silly reify ]
+117 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-linux-arm64-musl
+118 silly reify mark deleted [
+118 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-arm64-musl'
+118 silly reify ]
+119 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-linux-arm64-gnu
+120 silly reify mark deleted [
+120 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-arm64-gnu'
+120 silly reify ]
+121 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-linux-arm-musleabihf
+122 silly reify mark deleted [
+122 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-arm-musleabihf'
+122 silly reify ]
+123 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-freebsd-x64
+124 silly reify mark deleted [
+124 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-freebsd-x64'
+124 silly reify ]
+125 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-linux-arm-gnueabihf
+126 silly reify mark deleted [
+126 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-linux-arm-gnueabihf'
+126 silly reify ]
+127 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-freebsd-arm64
+128 silly reify mark deleted [
+128 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-freebsd-arm64'
+128 silly reify ]
+129 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-darwin-x64
+130 silly reify mark deleted [
+130 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-darwin-x64'
+130 silly reify ]
+131 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-darwin-arm64
+132 silly reify mark deleted [
+132 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-darwin-arm64'
+132 silly reify ]
+133 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-android-arm64
+134 silly reify mark deleted [
+134 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-android-arm64'
+134 silly reify ]
+135 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-android-arm-eabi
+136 silly reify mark deleted [
+136 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-android-arm-eabi'
+136 silly reify ]
+137 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\win32-ia32
+138 silly reify mark deleted [
+138 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\win32-ia32'
+138 silly reify ]
+139 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\win32-arm64
+140 silly reify mark deleted [
+140 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\win32-arm64'
+140 silly reify ]
+141 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\sunos-x64
+142 silly reify mark deleted [
+142 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\sunos-x64'
+142 silly reify ]
+143 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\openharmony-arm64
+144 silly reify mark deleted [
+144 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\openharmony-arm64'
+144 silly reify ]
+145 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\openbsd-x64
+146 silly reify mark deleted [
+146 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\openbsd-x64'
+146 silly reify ]
+147 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\openbsd-arm64
+148 silly reify mark deleted [
+148 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\openbsd-arm64'
+148 silly reify ]
+149 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\netbsd-x64
+150 silly reify mark deleted [
+150 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\netbsd-x64'
+150 silly reify ]
+151 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\netbsd-arm64
+152 silly reify mark deleted [
+152 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\netbsd-arm64'
+152 silly reify ]
+153 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\linux-x64
+154 silly reify mark deleted [
+154 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-x64'
+154 silly reify ]
+155 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\linux-s390x
+156 silly reify mark deleted [
+156 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-s390x'
+156 silly reify ]
+157 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\linux-riscv64
+158 silly reify mark deleted [
+158 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-riscv64'
+158 silly reify ]
+159 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\linux-ppc64
+160 silly reify mark deleted [
+160 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-ppc64'
+160 silly reify ]
+161 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\linux-mips64el
+162 silly reify mark deleted [
+162 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-mips64el'
+162 silly reify ]
+163 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\linux-loong64
+164 silly reify mark deleted [
+164 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-loong64'
+164 silly reify ]
+165 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\linux-ia32
+166 silly reify mark deleted [
+166 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-ia32'
+166 silly reify ]
+167 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\linux-arm64
+168 silly reify mark deleted [
+168 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-arm64'
+168 silly reify ]
+169 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\linux-arm
+170 silly reify mark deleted [
+170 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\linux-arm'
+170 silly reify ]
+171 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\freebsd-x64
+172 silly reify mark deleted [
+172 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\freebsd-x64'
+172 silly reify ]
+173 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\freebsd-arm64
+174 silly reify mark deleted [
+174 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\freebsd-arm64'
+174 silly reify ]
+175 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\darwin-x64
+176 silly reify mark deleted [
+176 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\darwin-x64'
+176 silly reify ]
+177 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\darwin-arm64
+178 silly reify mark deleted [
+178 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\darwin-arm64'
+178 silly reify ]
+179 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\android-x64
+180 silly reify mark deleted [
+180 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\android-x64'
+180 silly reify ]
+181 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\android-arm64
+182 silly reify mark deleted [
+182 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\android-arm64'
+182 silly reify ]
+183 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\android-arm
+184 silly reify mark deleted [
+184 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\android-arm'
+184 silly reify ]
+185 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\aix-ppc64
+186 silly reify mark deleted [
+186 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\aix-ppc64'
+186 silly reify ]
+187 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\fsevents
+188 silly reify mark deleted [ 'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\fsevents' ]
+189 http cache resolve@https://registry.npmjs.org/resolve/-/resolve-1.22.11.tgz 1ms (cache hit)
+190 http cache update-browserslist-db@https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.2.3.tgz 0ms (cache hit)
+191 http cache nanoid@https://registry.npmjs.org/nanoid/-/nanoid-3.3.11.tgz 0ms (cache hit)
+192 http cache concurrently@https://registry.npmjs.org/concurrently/-/concurrently-9.2.1.tgz 0ms (cache hit)
+193 http cache tree-kill@https://registry.npmjs.org/tree-kill/-/tree-kill-1.2.2.tgz 0ms (cache hit)
+194 http cache cssesc@https://registry.npmjs.org/cssesc/-/cssesc-3.0.0.tgz 0ms (cache hit)
+195 http cache browserslist@https://registry.npmjs.org/browserslist/-/browserslist-4.28.1.tgz 0ms (cache hit)
+196 http cache baseline-browser-mapping@https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.9.19.tgz 0ms (cache hit)
+197 http cache @esbuild/win32-x64@https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.12.tgz 0ms (cache hit)
+198 http cache @rollup/rollup-win32-x64-msvc@https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.57.1.tgz 0ms (cache hit)
+199 http cache @rollup/rollup-win32-x64-gnu@https://registry.npmjs.org/@rollup/rollup-win32-x64-gnu/-/rollup-win32-x64-gnu-4.57.1.tgz 0ms (cache hit)
+200 http cache vite@https://registry.npmjs.org/vite/-/vite-6.4.1.tgz 0ms (cache hit)
+201 http cache tailwindcss@https://registry.npmjs.org/tailwindcss/-/tailwindcss-3.4.19.tgz 0ms (cache hit)
+202 http cache sucrase@https://registry.npmjs.org/sucrase/-/sucrase-3.35.1.tgz 0ms (cache hit)
+203 http cache rollup@https://registry.npmjs.org/rollup/-/rollup-4.57.1.tgz 0ms (cache hit)
+204 http cache postcss-js@https://registry.npmjs.org/postcss-js/-/postcss-js-4.1.0.tgz 0ms (cache hit)
+205 http cache pirates@https://registry.npmjs.org/pirates/-/pirates-4.0.7.tgz 0ms (cache hit)
+206 http cache laravel-vite-plugin@https://registry.npmjs.org/laravel-vite-plugin/-/laravel-vite-plugin-1.3.0.tgz 0ms (cache hit)
+207 http cache jiti@https://registry.npmjs.org/jiti/-/jiti-1.21.7.tgz 0ms (cache hit)
+208 http cache postcss-load-config@https://registry.npmjs.org/postcss-load-config/-/postcss-load-config-6.0.1.tgz 0ms (cache hit)
+209 http cache fraction.js@https://registry.npmjs.org/fraction.js/-/fraction.js-5.3.4.tgz 0ms (cache hit)
+210 http cache esbuild@https://registry.npmjs.org/esbuild/-/esbuild-0.25.12.tgz 0ms (cache hit)
+211 http cache form-data@https://registry.npmjs.org/form-data/-/form-data-4.0.5.tgz 0ms (cache hit)
+212 silly tarball no local data for resolve@https://registry.npmjs.org/resolve/-/resolve-1.22.11.tgz. Extracting by manifest.
+213 silly tarball no local data for update-browserslist-db@https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.2.3.tgz. Extracting by manifest.
+214 silly tarball no local data for nanoid@https://registry.npmjs.org/nanoid/-/nanoid-3.3.11.tgz. Extracting by manifest.
+215 silly tarball no local data for concurrently@https://registry.npmjs.org/concurrently/-/concurrently-9.2.1.tgz. Extracting by manifest.
+216 silly tarball no local data for tree-kill@https://registry.npmjs.org/tree-kill/-/tree-kill-1.2.2.tgz. Extracting by manifest.
+217 silly tarball no local data for cssesc@https://registry.npmjs.org/cssesc/-/cssesc-3.0.0.tgz. Extracting by manifest.
+218 http cache axios@https://registry.npmjs.org/axios/-/axios-1.13.5.tgz 0ms (cache hit)
+219 silly tarball no local data for browserslist@https://registry.npmjs.org/browserslist/-/browserslist-4.28.1.tgz. Extracting by manifest.
+220 silly tarball no local data for baseline-browser-mapping@https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.9.19.tgz. Extracting by manifest.
+221 silly tarball no local data for @esbuild/win32-x64@https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.12.tgz. Extracting by manifest.
+222 silly tarball no local data for @rollup/rollup-win32-x64-msvc@https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.57.1.tgz. Extracting by manifest.
+223 silly tarball no local data for @rollup/rollup-win32-x64-gnu@https://registry.npmjs.org/@rollup/rollup-win32-x64-gnu/-/rollup-win32-x64-gnu-4.57.1.tgz. Extracting by manifest.
+224 silly tarball no local data for vite@https://registry.npmjs.org/vite/-/vite-6.4.1.tgz. Extracting by manifest.
+225 silly tarball no local data for tailwindcss@https://registry.npmjs.org/tailwindcss/-/tailwindcss-3.4.19.tgz. Extracting by manifest.
+226 silly tarball no local data for sucrase@https://registry.npmjs.org/sucrase/-/sucrase-3.35.1.tgz. Extracting by manifest.
+227 silly tarball no local data for rollup@https://registry.npmjs.org/rollup/-/rollup-4.57.1.tgz. Extracting by manifest.
+228 silly tarball no local data for postcss-js@https://registry.npmjs.org/postcss-js/-/postcss-js-4.1.0.tgz. Extracting by manifest.
+229 silly tarball no local data for pirates@https://registry.npmjs.org/pirates/-/pirates-4.0.7.tgz. Extracting by manifest.
+230 silly tarball no local data for laravel-vite-plugin@https://registry.npmjs.org/laravel-vite-plugin/-/laravel-vite-plugin-1.3.0.tgz. Extracting by manifest.
+231 silly tarball no local data for jiti@https://registry.npmjs.org/jiti/-/jiti-1.21.7.tgz. Extracting by manifest.
+232 silly tarball no local data for postcss-load-config@https://registry.npmjs.org/postcss-load-config/-/postcss-load-config-6.0.1.tgz. Extracting by manifest.
+233 http cache autoprefixer@https://registry.npmjs.org/autoprefixer/-/autoprefixer-10.4.24.tgz 0ms (cache hit)
+234 silly tarball no local data for fraction.js@https://registry.npmjs.org/fraction.js/-/fraction.js-5.3.4.tgz. Extracting by manifest.
+235 silly tarball no local data for esbuild@https://registry.npmjs.org/esbuild/-/esbuild-0.25.12.tgz. Extracting by manifest.
+236 silly tarball no local data for form-data@https://registry.npmjs.org/form-data/-/form-data-4.0.5.tgz. Extracting by manifest.
+237 silly tarball no local data for axios@https://registry.npmjs.org/axios/-/axios-1.13.5.tgz. Extracting by manifest.
+238 silly tarball no local data for autoprefixer@https://registry.npmjs.org/autoprefixer/-/autoprefixer-10.4.24.tgz. Extracting by manifest.
+239 verbose audit error FetchError: request to https://registry.npmjs.org/-/npm/v1/security/advisories/bulk failed, reason: 
+239 verbose audit error     at ClientRequest.<anonymous> (C:\Users\HP\AppData\Roaming\npm\node_modules\npm\node_modules\minipass-fetch\lib\index.js:130:14)
+239 verbose audit error     at ClientRequest.emit (node:events:518:28)
+239 verbose audit error     at emitErrorEvent (node:_http_client:104:11)
+239 verbose audit error     at _destroy (node:_http_client:898:9)
+239 verbose audit error     at onSocketNT (node:_http_client:918:5)
+239 verbose audit error     at process.processTicksAndRejections (node:internal/process/task_queues:91:21) {
+239 verbose audit error   code: 'EACCES',
+239 verbose audit error   errno: 'EACCES',
+239 verbose audit error   type: 'system'
+239 verbose audit error }
+240 silly audit error undefined
+241 silly audit report null
+242 http fetch GET https://registry.npmjs.org/resolve/-/resolve-1.22.11.tgz attempt 1 failed with EACCES
+243 http fetch GET https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.2.3.tgz attempt 1 failed with EACCES
+244 http fetch GET https://registry.npmjs.org/nanoid/-/nanoid-3.3.11.tgz attempt 1 failed with EACCES
+245 http fetch GET https://registry.npmjs.org/concurrently/-/concurrently-9.2.1.tgz attempt 1 failed with EACCES
+246 http fetch GET https://registry.npmjs.org/tree-kill/-/tree-kill-1.2.2.tgz attempt 1 failed with EACCES
+247 http fetch GET https://registry.npmjs.org/cssesc/-/cssesc-3.0.0.tgz attempt 1 failed with EACCES
+248 http fetch GET https://registry.npmjs.org/browserslist/-/browserslist-4.28.1.tgz attempt 1 failed with EACCES
+249 http fetch GET https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.9.19.tgz attempt 1 failed with EACCES
+250 http fetch GET https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.12.tgz attempt 1 failed with EACCES
+251 http fetch GET https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.57.1.tgz attempt 1 failed with EACCES
+252 http fetch GET https://registry.npmjs.org/@rollup/rollup-win32-x64-gnu/-/rollup-win32-x64-gnu-4.57.1.tgz attempt 1 failed with EACCES
+253 http fetch GET https://registry.npmjs.org/vite/-/vite-6.4.1.tgz attempt 1 failed with EACCES
+254 http fetch GET https://registry.npmjs.org/tailwindcss/-/tailwindcss-3.4.19.tgz attempt 1 failed with EACCES
+255 http fetch GET https://registry.npmjs.org/sucrase/-/sucrase-3.35.1.tgz attempt 1 failed with EACCES
+256 http fetch GET https://registry.npmjs.org/npm attempt 2 failed with EACCES
+257 http fetch GET https://registry.npmjs.org/resolve/-/resolve-1.22.11.tgz attempt 2 failed with EACCES
+258 http fetch GET https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.2.3.tgz attempt 2 failed with EACCES
+259 http fetch GET https://registry.npmjs.org/nanoid/-/nanoid-3.3.11.tgz attempt 2 failed with EACCES
+260 http fetch GET https://registry.npmjs.org/concurrently/-/concurrently-9.2.1.tgz attempt 2 failed with EACCES
+261 http fetch GET https://registry.npmjs.org/tree-kill/-/tree-kill-1.2.2.tgz attempt 2 failed with EACCES
+262 http fetch GET https://registry.npmjs.org/cssesc/-/cssesc-3.0.0.tgz attempt 2 failed with EACCES
+263 http fetch GET https://registry.npmjs.org/browserslist/-/browserslist-4.28.1.tgz attempt 2 failed with EACCES
+264 http fetch GET https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.9.19.tgz attempt 2 failed with EACCES
+265 http fetch GET https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.12.tgz attempt 2 failed with EACCES
+266 http fetch GET https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.57.1.tgz attempt 2 failed with EACCES
+267 http fetch GET https://registry.npmjs.org/@rollup/rollup-win32-x64-gnu/-/rollup-win32-x64-gnu-4.57.1.tgz attempt 2 failed with EACCES
+268 http fetch GET https://registry.npmjs.org/vite/-/vite-6.4.1.tgz attempt 2 failed with EACCES
+269 http fetch GET https://registry.npmjs.org/tailwindcss/-/tailwindcss-3.4.19.tgz attempt 2 failed with EACCES
+270 http fetch GET https://registry.npmjs.org/sucrase/-/sucrase-3.35.1.tgz attempt 2 failed with EACCES
+271 http fetch GET https://registry.npmjs.org/npm attempt 3 failed with EACCES
+272 http fetch GET https://registry.npmjs.org/resolve/-/resolve-1.22.11.tgz attempt 3 failed with EACCES
+273 http fetch GET https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.2.3.tgz attempt 3 failed with EACCES
+274 http fetch GET https://registry.npmjs.org/nanoid/-/nanoid-3.3.11.tgz attempt 3 failed with EACCES
+275 http fetch GET https://registry.npmjs.org/concurrently/-/concurrently-9.2.1.tgz attempt 3 failed with EACCES
+276 http fetch GET https://registry.npmjs.org/tree-kill/-/tree-kill-1.2.2.tgz attempt 3 failed with EACCES
+277 http fetch GET https://registry.npmjs.org/cssesc/-/cssesc-3.0.0.tgz attempt 3 failed with EACCES
+278 http fetch GET https://registry.npmjs.org/browserslist/-/browserslist-4.28.1.tgz attempt 3 failed with EACCES
+279 http fetch GET https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.9.19.tgz attempt 3 failed with EACCES
+280 http fetch GET https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.12.tgz attempt 3 failed with EACCES
+281 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@esbuild\win32-x64
+282 silly reify mark deleted [
+282 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@esbuild\\win32-x64'
+282 silly reify ]
+283 http fetch GET https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.57.1.tgz attempt 3 failed with EACCES
+284 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-win32-x64-msvc
+285 silly reify mark deleted [
+285 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-win32-x64-msvc'
+285 silly reify ]
+286 http fetch GET https://registry.npmjs.org/@rollup/rollup-win32-x64-gnu/-/rollup-win32-x64-gnu-4.57.1.tgz attempt 3 failed with EACCES
+287 verbose reify failed optional dependency D:\Projects\RETRIBUSI\retribusi-api\node_modules\@rollup\rollup-win32-x64-gnu
+288 silly reify mark deleted [
+288 silly reify   'D:\\Projects\\RETRIBUSI\\retribusi-api\\node_modules\\@rollup\\rollup-win32-x64-gnu'
+288 silly reify ]
+289 http fetch GET https://registry.npmjs.org/vite/-/vite-6.4.1.tgz attempt 3 failed with EACCES
+290 http fetch GET https://registry.npmjs.org/tailwindcss/-/tailwindcss-3.4.19.tgz attempt 3 failed with EACCES
+291 http fetch GET https://registry.npmjs.org/sucrase/-/sucrase-3.35.1.tgz attempt 3 failed with EACCES
+292 verbose cwd D:\Projects\RETRIBUSI\retribusi-api
+293 verbose os Windows_NT 10.0.26200
+294 verbose node v22.17.0
+295 verbose npm  v11.4.2
+296 error Exit handler never called!
+297 error This is an error with npm itself. Please report this error at:
+298 error   <https://github.com/npm/cli/issues>
+299 verbose exit 1
+300 verbose code 1
+301 error A complete log of this run can be found in: D:\Projects\RETRIBUSI\retribusi-api\.npm-cache\_logs\2026-04-28T12_56_56_818Z-debug-0.log
