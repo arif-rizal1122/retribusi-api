@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 class CloudinaryService
 {
     /**
-     * Upload a file to Cloudinary
+     * Upload a file to Cloudinary, or local public storage when Cloudinary is not configured.
      *
      * @param UploadedFile $file
      * @param string $folder
@@ -16,6 +16,10 @@ class CloudinaryService
      */
     public function upload(UploadedFile $file, string $folder = 'retribusi'): string
     {
+        if (!$this->hasCloudinaryConfig()) {
+            return $this->uploadLocal($file, $folder);
+        }
+
         try {
             /** @var \Cloudinary\Cloudinary $cloudinary */
             $cloudinary = app(\Cloudinary\Cloudinary::class);
@@ -32,12 +36,36 @@ class CloudinaryService
                 'mime' => $file->getMimeType(),
                 'size' => $file->getSize(),
             ]);
+
+            if (app()->environment(['local', 'development', 'testing'])) {
+                return $this->uploadLocal($file, $folder);
+            }
+
             throw new \Exception('Gagal upload file: ' . $e->getMessage());
         }
     }
 
+    private function hasCloudinaryConfig(): bool
+    {
+        $disk = config('filesystems.disks.cloudinary', []);
+
+        return !empty($disk['url']) || (
+            !empty($disk['cloud']) &&
+            !empty($disk['key']) &&
+            !empty($disk['secret'])
+        );
+    }
+
+    private function uploadLocal(UploadedFile $file, string $folder): string
+    {
+        $folder = trim($folder, '/\\') ?: 'retribusi';
+        $path = $file->store($folder, 'public');
+
+        return url('/storage/' . ltrim($path, '/'));
+    }
+
     /**
-     * Delete a file from Cloudinary by URL
+     * Delete a file by URL from Cloudinary or local public storage.
      *
      * @param string|null $url
      * @return bool
@@ -45,6 +73,13 @@ class CloudinaryService
     public function delete(?string $url): bool
     {
         if (!$url) return false;
+
+        if (!str_contains($url, 'cloudinary')) {
+            $path = parse_url($url, PHP_URL_PATH);
+            $path = $path ? preg_replace('#^/storage/#', '', $path) : null;
+
+            return $path ? Storage::disk('public')->delete($path) : false;
+        }
 
         try {
             /** @var \Cloudinary\Cloudinary $cloudinary */

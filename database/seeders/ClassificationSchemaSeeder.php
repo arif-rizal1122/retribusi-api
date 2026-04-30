@@ -90,7 +90,7 @@ class ClassificationSchemaSeeder extends Seeder
 
         // 8. PBJT Tenaga Listrik
         $this->updateSchema('PBJT - Tenaga Listrik', [
-            ['key' => 'omset_bulanan', 'label' => 'Total Omzet Bulanan (Rp)', 'type' => 'number', 'required' => true],
+            ['key' => 'tagihan', 'label' => 'Nilai Tagihan Listrik (Rp)', 'type' => 'number', 'required' => true],
         ], [
             ['key' => 'nib_usaha', 'name' => 'NIB / Izin Usaha', 'required' => true],
         ]);

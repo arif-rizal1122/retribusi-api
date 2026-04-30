@@ -88,6 +88,31 @@ class TaxCalculationTest extends TestCase
         $this->assertEquals(3000000, $result);
     }
 
+    public function test_tenaga_listrik_simulation_uses_tagihan_variable()
+    {
+        $opd = Opd::factory()->create();
+        $type = RetributionType::factory()->create(['opd_id' => $opd->id]);
+        $cls = RetributionClassification::factory()->create([
+            'opd_id' => $opd->id,
+            'retribution_type_id' => $type->id,
+            'name' => 'Tenaga Listrik',
+            'code' => 'PBJT-PLN',
+            'calculation_formula' => 'tagihan * 0.1',
+            'form_schema' => [
+                ['key' => 'tagihan', 'label' => 'Nilai Tagihan Listrik (Rp)', 'type' => 'number', 'required' => true],
+            ],
+        ]);
+
+        $response = $this->postJson('/api/simulate-tax', [
+            'classification_id' => $cls->id,
+            'variables' => ['tagihan' => 7000000],
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('classification', 'Tenaga Listrik')
+            ->assertJsonPath('result', 700000);
+    }
+
     public function test_penalty_stpd_calculation()
     {
         $amount = 1000000;

@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\Taxpayer;
 use App\Models\Opd;
 use App\Models\TaxObject;
+use App\Support\SqlDate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -268,8 +269,9 @@ class DashboardController extends Controller
         // Dynamic grouping: If range <= 31 days, group by day; otherwise group by month
         if ($diffInDays <= 31) {
             // Daily grouping for short ranges (day/week/month view)
+            $dateSql = SqlDate::date('paid_at');
             $trend = Payment::select(
-                DB::raw('DATE(paid_at) as date_label'),
+                DB::raw("$dateSql as date_label"),
                 DB::raw('SUM(amount) as amount')
             )
             ->when($opdId, function ($q) use ($opdId) {
@@ -293,10 +295,11 @@ class DashboardController extends Controller
             });
         } else {
             // Monthly grouping for longer ranges (yearly view)
+            $yearSql = SqlDate::year('paid_at');
+            $monthSql = SqlDate::month('paid_at');
             $trend = Payment::select(
-                DB::raw('YEAR(paid_at) as year'),
-                DB::raw('MONTH(paid_at) as month_num'),
-                DB::raw('MONTHNAME(paid_at) as month_name'),
+                DB::raw("$yearSql as year"),
+                DB::raw("$monthSql as month_num"),
                 DB::raw('SUM(amount) as amount')
             )
             ->when($opdId, function ($q) use ($opdId) {
@@ -308,14 +311,14 @@ class DashboardController extends Controller
                 });
             })
             ->whereBetween('paid_at', [$start, $end])
-            ->groupBy('year', 'month_num', 'month_name')
-            ->orderBy('year', 'asc')
-            ->orderBy('month_num', 'asc')
+            ->groupByRaw("$yearSql, $monthSql")
+            ->orderByRaw("$yearSql asc")
+            ->orderByRaw("$monthSql asc")
             ->limit(12)
             ->get()
             ->map(function ($item) {
                 return [
-                    'month' => $item->month_name,
+                    'month' => Carbon::create((int) $item->year, (int) $item->month_num, 1)->format('F'),
                     'amount' => $item->amount,
                 ];
             });

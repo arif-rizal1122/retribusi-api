@@ -17,7 +17,7 @@ class Perda12024Seeder extends Seeder
         // 1. PBJT Formulas (Pajak Barang dan Jasa Tertentu)
         $pbjtClassifications = [
             'PBJT - Makan dan Minum' => 'omzet_penjualan * 0.1',
-            'PBJT - Tenaga Listrik' => 'nilai_jual_tenaga_listrik * 0.1',
+            'PBJT - Tenaga Listrik' => 'tagihan * 0.1',
             'PBJT - Jasa Perhotelan' => 'nilai_pembayaran * 0.1',
             'PBJT - Jasa Parkir' => 'nilai_pembayaran * 0.1',
             'PBJT - Jasa Kesenian dan Hiburan' => 'harga_tiket * 0.1',

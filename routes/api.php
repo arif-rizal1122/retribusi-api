@@ -194,6 +194,10 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/download-sppt', [PbbBapendaController::class, 'downloadSPPT']);
     });
 
+    // Citizen can edit/cancel their own pending service registration objects.
+    Route::match(['put', 'patch', 'post'], '/tax-objects/{taxObject}', [TaxObjectController::class, 'update']);
+    Route::delete('/tax-objects/{taxObject}', [TaxObjectController::class, 'destroy']);
+
     // ------------------------------------------------------------------------
     // Admin & Petugas ONLY (Restricted by EnsureAdmin middleware)
     // ------------------------------------------------------------------------

@@ -8,6 +8,7 @@ use App\Models\TaxObject;
 use App\Models\Bill;
 use App\Models\Verification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class CitizenServiceController extends Controller
@@ -154,48 +155,52 @@ class CitizenServiceController extends Controller
             }
         }
 
-        // Create the tax object
-        $taxObject = TaxObject::create([
-            'taxpayer_id' => $taxpayer->id,
-            'retribution_type_id' => $service->id,
-            'retribution_classification_id' => $classification->id,
-            'opd_id' => $service->opd_id,
-            'zone_id' => $request->zone_id,
-            'name' => $request->name,
-            'address' => $request->address,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'metadata' => $metadata,
-            'status' => 'pending',
-        ]);
+        [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata) {
+            // Create the tax object
+            $taxObject = TaxObject::create([
+                'taxpayer_id' => $taxpayer->id,
+                'retribution_type_id' => $service->id,
+                'retribution_classification_id' => $classification->id,
+                'opd_id' => $service->opd_id,
+                'zone_id' => $request->zone_id,
+                'name' => $request->name,
+                'address' => $request->address,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'metadata' => $metadata,
+                'status' => 'pending',
+            ]);
 
-        // Pick the first available file URL for the primary verification proof
-        $firstFileUrl = null;
-        foreach ($metadata as $val) {
-            if (is_string($val) && (str_starts_with($val, 'http') || str_contains($val, 'cloudinary'))) {
-                $firstFileUrl = $val;
-                break;
+            // Pick the first available file URL for the primary verification proof
+            $firstFileUrl = null;
+            foreach ($metadata as $val) {
+                if (is_string($val) && (str_starts_with($val, 'http') || str_contains($val, 'cloudinary'))) {
+                    $firstFileUrl = $val;
+                    break;
+                }
             }
-        }
 
-        // Create a verification record for the admin to review
-        $verification = Verification::create([
-            'opd_id' => $service->opd_id,
-            'taxpayer_id' => $taxpayer->id,
-            'tax_object_id' => $taxObject->id,
-            'document_number' => 'REG-' . strtoupper(uniqid()),
-            'taxpayer_name' => $taxpayer->name,
-            'type' => 'Pendaftaran Objek',
-            'amount' => 0,
-            'status' => 'pending',
-            'proof_file_url' => $firstFileUrl,
-            'submitted_at' => Carbon::now(),
-            'notes' => 'Pendaftaran unit baru (' . $classification->name . '): ' . $taxObject->name,
-        ]);
+            // Create a verification record for the admin to review
+            $verification = Verification::create([
+                'opd_id' => $service->opd_id,
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $taxObject->id,
+                'document_number' => 'REG-' . strtoupper(uniqid()),
+                'taxpayer_name' => $taxpayer->name,
+                'type' => 'Pendaftaran Objek',
+                'amount' => 0,
+                'status' => 'pending',
+                'proof_file_url' => $firstFileUrl,
+                'submitted_at' => Carbon::now(),
+                'notes' => 'Pendaftaran unit baru (' . $classification->name . '): ' . $taxObject->name,
+            ]);
 
-        if (!$taxpayer->opd_id) {
-            $taxpayer->update(['opd_id' => $service->opd_id]);
-        }
+            if (!$taxpayer->opd_id) {
+                $taxpayer->update(['opd_id' => $service->opd_id]);
+            }
+
+            return [$taxObject, $verification];
+        });
 
         return response()->json([
             'message' => 'Pendaftaran unit berhasil dikirim dan menunggu verifikasi',
