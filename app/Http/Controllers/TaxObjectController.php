@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Taxpayer;
 use App\Models\TaxObject;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class TaxObjectController extends Controller
@@ -142,17 +144,9 @@ class TaxObjectController extends Controller
      */
     public function update(Request $request, TaxObject $taxObject)
     {
-        $user = $request->user();
-        
-        // Authorization: Only owner can edit (if user is a taxpayer)
-        if ($user->role === 'citizen') {
-            if ($taxObject->taxpayer_id !== $user->id) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-        } elseif ($user->role === 'opd') {
-            if ($taxObject->opd_id !== $user->opd_id) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
+        $authorizationError = $this->authorizePendingObjectMutation($request, $taxObject);
+        if ($authorizationError) {
+            return $authorizationError;
         }
 
         // Only allow editing if status is pending
@@ -220,20 +214,9 @@ class TaxObjectController extends Controller
      */
     public function destroy(Request $request, TaxObject $taxObject)
     {
-        $user = $request->user();
-        
-        // Authorization: Only owner can delete (if user is a taxpayer)
-        // If it's an OPD admin, they might have different rules, but here we focus on Citizen/Taxpayer
-        if (in_array($user->role, ['petugas', 'pengawas', 'kabid_pengawas', 'kasubid_pengawas'])) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        } elseif ($user->role === 'citizen' || $user->role === 'wajib_pajak') {
-            if ($taxObject->taxpayer_id !== $user->id) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-        } elseif ($user->role === 'opd') {
-            if ($taxObject->opd_id !== $user->opd_id) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
+        $authorizationError = $this->authorizePendingObjectMutation($request, $taxObject);
+        if ($authorizationError) {
+            return $authorizationError;
         }
 
         // Only allow deletion if status is pending
@@ -248,5 +231,30 @@ class TaxObjectController extends Controller
         $taxObject->delete();
 
         return response()->json(['message' => 'Pengajuan objek berhasil dibatalkan dan dihapus']);
+    }
+
+    private function authorizePendingObjectMutation(Request $request, TaxObject $taxObject)
+    {
+        $user = $request->user();
+
+        if ($user instanceof Taxpayer) {
+            return (int) $taxObject->taxpayer_id === (int) $user->id
+                ? null
+                : response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if ($user instanceof User) {
+            if ($user->isSuperAdmin()) {
+                return null;
+            }
+
+            if ($user->role === User::ROLE_OPD) {
+                return (int) $taxObject->opd_id === (int) $user->opd_id
+                    ? null
+                    : response()->json(['message' => 'Unauthorized'], 403);
+            }
+        }
+
+        return response()->json(['message' => 'Unauthorized'], 403);
     }
 }

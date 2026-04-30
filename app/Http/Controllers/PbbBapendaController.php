@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TaxpayerPbbObject;
 use App\Models\TransactionPbb;
 use App\Services\PbbBapendaService;
+use App\Support\SqlDate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -439,12 +440,13 @@ class PbbBapendaController extends Controller
         $successTransactions = TransactionPbb::where('tahun', $year)->success()->count();
         $totalRevenue = TransactionPbb::where('tahun', $year)->success()->sum('total_bayar');
         $reversedCount = TransactionPbb::where('tahun', $year)->where('payment_status', 'reversed')->count();
+        $monthSql = SqlDate::month('created_at');
 
         $monthlyRevenue = TransactionPbb::where('tahun', $year)
             ->success()
-            ->selectRaw('MONTH(created_at) as bulan, SUM(total_bayar) as total')
-            ->groupByRaw('MONTH(created_at)')
-            ->orderByRaw('MONTH(created_at)')
+            ->selectRaw("$monthSql as bulan, SUM(total_bayar) as total")
+            ->groupByRaw($monthSql)
+            ->orderByRaw($monthSql)
             ->get();
 
         return response()->json([

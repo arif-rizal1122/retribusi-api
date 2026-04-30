@@ -109,7 +109,12 @@ class TaxHierarchySyncSeeder extends Seeder
         ]);
 
         $this->syncClassification($bapenda, $w2, 'PBJT - Tenaga Listrik', [
-            'code' => 'PBJT-LIS', 'icon' => self::ICON_INTERNET, 'formula' => 'tagihan * 0.10'
+            'code' => 'PBJT-LIS',
+            'icon' => self::ICON_INTERNET,
+            'formula' => 'tagihan * 0.10',
+            'schema' => [
+                ['key' => 'tagihan', 'label' => 'Nilai Tagihan Listrik (Rp)', 'type' => 'number', 'required' => true]
+            ],
         ]);
 
         $this->syncClassification($bapenda, $w2, 'Pajak Air Tanah', [
@@ -172,7 +177,7 @@ class TaxHierarchySyncSeeder extends Seeder
                 'calculation_formula' => $config['formula'],
                 'is_self_assessment' => str_contains($name, 'PBJT') || str_contains($name, 'MBLB'),
                 'requirements' => $this->commonReqs,
-                'form_schema' => [
+                'form_schema' => $config['schema'] ?? [
                     ['key' => 'omzet', 'label' => 'Total Omzet/Nilai', 'type' => 'number', 'required' => true]
                 ]
             ]

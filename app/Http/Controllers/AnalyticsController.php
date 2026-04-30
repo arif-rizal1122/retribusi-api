@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Bill;
 use App\Models\Payment;
 use App\Models\Opd;
+use App\Support\SqlDate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -70,7 +71,8 @@ class AnalyticsController extends Controller
             });
 
         // 3. Monthly realization trend
-        $monthlyTrend = Payment::select(DB::raw('MONTH(paid_at) as month'), DB::raw('SUM(amount) as total'))
+        $monthSql = SqlDate::month('paid_at');
+        $monthlyTrend = Payment::selectRaw("$monthSql as month, SUM(amount) as total")
             ->whereYear('paid_at', $year)
             ->where('payments.status', 'success')
             ->when($retributionTypeId, function($q) use ($retributionTypeId) {
@@ -81,7 +83,7 @@ class AnalyticsController extends Controller
                         ->where('bills.retribution_type_id', $retributionTypeId);
                 });
             })
-            ->groupBy('month')
+            ->groupByRaw($monthSql)
             ->get()
             ->pluck('total', 'month')
             ->all();

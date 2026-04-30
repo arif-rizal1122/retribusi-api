@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Bill;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\SqlDate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -152,6 +153,7 @@ class ReportController extends Controller
         $user = $request->user();
         $opdId = !$user->isSuperAdmin() ? $user->opd_id : $request->query('opd_id');
         $year = $request->query('year', Carbon::now()->year);
+        $monthSql = SqlDate::month('payments.paid_at');
 
         // Monthly breakdown per retribution type
         $monthlyData = Payment::join('bills', 'payments.bill_id', '=', 'bills.id')
@@ -162,11 +164,12 @@ class ReportController extends Controller
                 'retribution_types.id as type_id',
                 'retribution_types.name as type_name',
                 'retribution_types.category',
-                DB::raw('MONTH(payments.paid_at) as month'),
+                DB::raw("$monthSql as month"),
                 DB::raw('SUM(payments.amount) as realization'),
                 DB::raw('COUNT(payments.id) as tx_count')
             )
-            ->groupBy('retribution_types.id', 'retribution_types.name', 'retribution_types.category', DB::raw('MONTH(payments.paid_at)'))
+            ->groupBy('retribution_types.id', 'retribution_types.name', 'retribution_types.category')
+            ->groupByRaw($monthSql)
             ->get();
 
         // Aggregate target from bills (annual)

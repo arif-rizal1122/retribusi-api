@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
 class UploadController extends Controller
@@ -25,15 +25,13 @@ class UploadController extends Controller
             $folder = $request->input('folder', 'retribusi/general');
             
             if ($request->hasFile('image')) {
-                // Upload file to Cloudinary via Laravel Storage
-                $path = $request->file('image')->store($folder, 'cloudinary');
-                $url = Storage::disk('cloudinary')->url($path);
+                $url = app(CloudinaryService::class)->upload($request->file('image'), $folder);
 
                 return response()->json([
                     'success' => true,
                     'message' => 'Image uploaded successfully',
                     'url' => $url,
-                    'path' => $path
+                    'path' => parse_url($url, PHP_URL_PATH)
                 ], 200);
             }
 

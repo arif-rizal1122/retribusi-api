@@ -84,14 +84,24 @@ class BapendaMasterDataSeeder extends Seeder
         ];
 
         foreach ($pbjtSubs as $name => $code) {
+            $schema = $name === 'PBJT - Tenaga Listrik'
+                ? [['key' => 'tagihan', 'label' => 'Nilai Tagihan Listrik (Rp)', 'type' => 'number', 'required' => true]]
+                : $unifiedSchema;
+
+            $payload = [
+                'opd_id' => $bapenda->id,
+                'code' => $code,
+                'form_schema' => $schema,
+                'requirements' => $unifiedRequirements,
+            ];
+
+            if ($name === 'PBJT - Tenaga Listrik') {
+                $payload['calculation_formula'] = 'tagihan * 0.1';
+            }
+
             RetributionClassification::updateOrCreate(
                 ['retribution_type_id' => $typeModels['PBJT']->id, 'name' => $name],
-                [
-                    'opd_id' => $bapenda->id, 
-                    'code' => $code,
-                    'form_schema' => $unifiedSchema,
-                    'requirements' => $unifiedRequirements,
-                ]
+                $payload
             );
         }
 
