@@ -7,8 +7,10 @@ use App\Models\Taxpayer;
 use App\Models\TaxObject;
 use App\Models\Bill;
 use App\Models\Verification;
+use App\Services\RequirementFileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 
 class CitizenServiceController extends Controller
@@ -129,13 +131,26 @@ class CitizenServiceController extends Controller
             $metadata = json_decode($metadata, true) ?: [];
         }
 
+        $metadata = $this->applySchemaDefaults($classification->form_schema ?? [], $metadata);
+        $missingMetadata = $this->missingRequiredMetadata($classification->form_schema ?? [], $metadata);
+        if (!empty($missingMetadata)) {
+            throw ValidationException::withMessages($missingMetadata);
+        }
+
         // Handle dynamic document uploads based on requirements from this classification
         $requirements = $classification->requirements ?? [];
-        $processedKeys = [];
+        $missingFiles = $this->missingRequiredFiles($request, $requirements);
+        if (!empty($missingFiles)) {
+            throw ValidationException::withMessages($missingFiles);
+        }
 
-        foreach ($requirements as $req) {
+        $processedKeys = [];
+        $requirementFiles = app(RequirementFileService::class);
+
+        foreach ($requirements as $index => $req) {
             $key = $req['key'] ?? null;
             if ($key && $request->hasFile($key)) {
+                $request->validate([$key => $requirementFiles->rulesFor($req, $index)]);
                 $metadata[$key] = $cloudinary->upload(
                     $request->file($key), 
                     'citizen/documents/' . $service->id
@@ -148,6 +163,12 @@ class CitizenServiceController extends Controller
         $fallbacks = ['foto_lokasi_open_kamera', 'formulir_data_dukung'];
         foreach ($fallbacks as $key) {
             if (!in_array($key, $processedKeys) && $request->hasFile($key)) {
+                $request->validate([
+                    $key => $requirementFiles->rulesFor([
+                        'key' => $key,
+                        'type' => $key === 'foto_lokasi_open_kamera' ? 'image' : 'document',
+                    ])
+                ]);
                 $metadata[$key] = $cloudinary->upload(
                     $request->file($key), 
                     'citizen/documents/' . $service->id
@@ -209,6 +230,69 @@ class CitizenServiceController extends Controller
                 'verification_id' => $verification->id,
             ]
         ], 201);
+    }
+
+    private function applySchemaDefaults(array $schema, array $metadata): array
+    {
+        foreach ($schema as $field) {
+            $key = $field['key'] ?? null;
+            if (!$key || array_key_exists($key, $metadata)) {
+                continue;
+            }
+
+            if (array_key_exists('default_value', $field)) {
+                $metadata[$key] = $field['default_value'];
+            }
+        }
+
+        return $metadata;
+    }
+
+    private function missingRequiredMetadata(array $schema, array $metadata): array
+    {
+        $errors = [];
+
+        foreach ($schema as $field) {
+            if (!($field['required'] ?? false)) {
+                continue;
+            }
+
+            $key = $field['key'] ?? null;
+            if (!$key) {
+                continue;
+            }
+
+            $value = $metadata[$key] ?? null;
+            $missing = $value === null || (is_string($value) && trim($value) === '');
+
+            if ($missing) {
+                $label = $field['label'] ?? $key;
+                $errors["metadata.{$key}"] = "{$label} wajib diisi.";
+            }
+        }
+
+        return $errors;
+    }
+
+    private function missingRequiredFiles(Request $request, array $requirements): array
+    {
+        $errors = [];
+
+        foreach ($requirements as $requirement) {
+            if (!($requirement['required'] ?? false)) {
+                continue;
+            }
+
+            $key = $requirement['key'] ?? null;
+            if (!$key || $request->hasFile($key)) {
+                continue;
+            }
+
+            $label = $requirement['label'] ?? $requirement['name'] ?? $key;
+            $errors[$key] = "{$label} wajib diunggah.";
+        }
+
+        return $errors;
     }
 
     /**

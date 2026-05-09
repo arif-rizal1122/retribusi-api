@@ -17,6 +17,7 @@ class Bill extends Model
     }
 
     protected $fillable = [
+        'user_id',
         'taxpayer_id',
         'tax_object_id',
         'spot_check_id',

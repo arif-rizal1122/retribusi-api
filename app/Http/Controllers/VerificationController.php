@@ -3,20 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Verification;
-use App\Models\TaxObject;
-use App\Models\Bill;
 use App\Services\CloudinaryService;
+use App\Services\RegistrationVerificationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class VerificationController extends Controller
 {
     protected $cloudinary;
+    protected $registrationVerificationService;
 
-    public function __construct(CloudinaryService $cloudinary)
+    public function __construct(
+        CloudinaryService $cloudinary,
+        RegistrationVerificationService $registrationVerificationService
+    )
     {
         $this->cloudinary = $cloudinary;
+        $this->registrationVerificationService = $registrationVerificationService;
     }
 
     /**
@@ -131,61 +134,16 @@ class VerificationController extends Controller
                 'notes' => 'required_if:status,approved,rejected|nullable|string',
             ]);
 
-            $verification->update([
-                'status' => $request->status,
-                'notes' => $request->notes,
-                'verifier_id' => $user->id,
-                'verified_at' => in_array($request->status, ['approved', 'rejected']) ? Carbon::now() : null,
-            ]);
-
-            // If this is an object registration and it's approved, activate the object
-            if ($request->status === 'approved' && $verification->tax_object_id) {
-                $taxObject = TaxObject::with('retributionType')->find($verification->tax_object_id);
-                if ($taxObject) {
-                    $taxObject->update([
-                        'status' => 'active',
-                        'approved_at' => Carbon::now(),
-                    ]);
-
-                    // Calculate amount based on metadata if available
-                    $amount = $taxObject->retributionType->base_amount ?? 0;
-                    $metadata = $taxObject->metadata ?? [];
-                    
-                    // Simple logic for Hotel/Restaurant (e.g., room count or scale)
-                    // This is a "perfection" refinement: checking for common keys
-                    if (isset($metadata['jumlah_kamar']) && $amount > 0) {
-                        $amount = $amount * (int)$metadata['jumlah_kamar'];
-                    } elseif (isset($metadata['luas_m2']) && $amount > 0) {
-                        $amount = $amount * (float)$metadata['luas_m2'];
-                    }
-
-                    // Create initial bill automatically
-                    Bill::create([
-                        'user_id' => $user->id,
-                        'taxpayer_id' => $taxObject->taxpayer_id,
-                        'tax_object_id' => $taxObject->id,
-                        'opd_id' => $taxObject->opd_id,
-                        'retribution_type_id' => $taxObject->retribution_type_id,
-                        'retribution_classification_id' => $taxObject->retribution_classification_id,
-                        'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
-                        'amount' => $amount,
-                        'status' => 'pending',
-                        'period' => Carbon::now()->isoFormat('MMMM YYYY'),
-                        'due_date' => Carbon::now()->addDays(30),
-                    ]);
-                }
-            }
-
-            if ($request->status === 'rejected' && $verification->tax_object_id) {
-                $taxObject = TaxObject::find($verification->tax_object_id);
-                if ($taxObject) {
-                    $taxObject->update(['status' => 'rejected']);
-                }
-            }
+            $updatedVerification = $this->registrationVerificationService->updateStatus(
+                $verification,
+                $request->status,
+                $request->notes,
+                $user
+            );
 
             return response()->json([
                 'message' => "Dokumen berhasil di-{$request->status}",
-                'data' => $verification->load(['opd', 'submitter', 'verifier', 'taxObject'])
+                'data' => $updatedVerification
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;

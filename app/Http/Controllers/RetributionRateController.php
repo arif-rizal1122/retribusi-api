@@ -32,6 +32,7 @@ class RetributionRateController extends Controller
             'amount' => 'required|numeric|min:0',
             'unit' => 'required|string|max:50',
             'is_active' => 'boolean',
+            'calculation_formula' => 'nullable|string',
         ]);
 
         $opdId = in_array($user->role, ['opd', 'petugas']) ? $user->opd_id : $request->opd_id;
@@ -57,6 +58,7 @@ class RetributionRateController extends Controller
                 'amount' => $request->amount,
                 'unit' => $request->unit,
                 'is_active' => $request->boolean('is_active', true),
+                'calculation_formula' => $request->calculation_formula,
             ]);
 
             return response()->json([
@@ -94,10 +96,20 @@ class RetributionRateController extends Controller
             'amount' => 'sometimes|numeric|min:0',
             'unit' => 'sometimes|string|max:50',
             'is_active' => 'boolean',
+            'calculation_formula' => 'nullable|string',
         ]);
 
         try {
-            $retributionRate->update($request->all());
+            $retributionRate->update($request->only([
+                'retribution_type_id',
+                'retribution_classification_id',
+                'zone_id',
+                'name',
+                'amount',
+                'unit',
+                'is_active',
+                'calculation_formula',
+            ]));
 
             return response()->json([
                 'message' => 'Tarif berhasil diupdate',

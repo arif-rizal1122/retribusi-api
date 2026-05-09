@@ -4,22 +4,27 @@ namespace App\Http\Controllers;
 
 use App\Models\MonthlyReport;
 use App\Models\TaxObject;
-use App\Models\Bill;
 use App\Services\CloudinaryService;
-use App\Services\BillingService;
+use App\Services\BillCreationService;
+use App\Services\TaxCalculationService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use Illuminate\Support\Str;
 
 class MonthlyReportController extends Controller
 {
     protected $cloudinary;
-    protected $billingService;
+    protected $billCreationService;
+    protected $taxCalculationService;
 
-    public function __construct(CloudinaryService $cloudinary, BillingService $billingService)
+    public function __construct(
+        CloudinaryService $cloudinary,
+        BillCreationService $billCreationService,
+        TaxCalculationService $taxCalculationService
+    )
     {
         $this->cloudinary = $cloudinary;
-        $this->billingService = $billingService;
+        $this->billCreationService = $billCreationService;
+        $this->taxCalculationService = $taxCalculationService;
     }
 
     /**
@@ -38,7 +43,7 @@ class MonthlyReportController extends Controller
                 'notes' => 'nullable|string',
             ]);
 
-            $taxObject = TaxObject::with('retributionType')->findOrFail($request->tax_object_id);
+            $taxObject = TaxObject::with(['retributionType', 'classification'])->findOrFail($request->tax_object_id);
             $type = $taxObject->retributionType;
             $cycle = $type->billing_cycle ?? 'monthly';
 
@@ -68,9 +73,11 @@ class MonthlyReportController extends Controller
                 return response()->json(['message' => 'Laporan untuk periode ' . $request->period . ' sudah ada'], 422);
             }
 
-            // Calculate tax amount based on object's rate/formula
-            $rateValue = 0.1; // 10% default
-            $taxAmount = $request->turnover_amount * $rateValue;
+            $taxAmount = $this->taxCalculationService->calculateAmount($taxObject, [
+                'turnover_amount' => (float) $request->turnover_amount,
+                'omzet' => (float) $request->turnover_amount,
+                'period' => $request->period,
+            ]);
 
             $attachmentUrl = null;
             if ($request->hasFile('attachment')) {
@@ -161,30 +168,32 @@ class MonthlyReportController extends Controller
             // If approved, automatically create a bill
             if ($request->status === 'approved') {
                 $taxObject = $report->taxObject;
+                $taxObject->loadMissing(['retributionType', 'classification', 'taxpayer']);
 
-                $bill = Bill::create([
-                    'user_id' => $user->id,
-                    'taxpayer_id' => $report->taxpayer_id,
-                    'tax_object_id' => $report->tax_object_id,
-                    'opd_id' => $taxObject->opd_id,
-                    'retribution_type_id' => $taxObject->retribution_type_id,
-                    'retribution_classification_id' => $taxObject->retribution_classification_id,
-                    'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
-                    'amount' => $report->tax_amount,
-                    'status' => 'pending',
-                    'period' => $this->billingService->getPeriodLabel(Carbon::parse($report->period), $taxObject->retributionType->billing_cycle ?? 'monthly'),
-                    'due_date' => Carbon::now()->addDays(30),
-                    'metadata' => [
+                $bill = $this->billCreationService->createForTaxObject(
+                    $taxObject,
+                    $user,
+                    $report->period,
+                    [
+                        'turnover_amount' => (float) $report->turnover_amount,
+                        'omzet' => (float) $report->turnover_amount,
+                    ],
+                    [
                         'source' => 'monthly_report',
                         'report_id' => $report->id,
-                        'turnover_amount' => $report->turnover_amount
-                    ]
-                ]);
+                        'turnover_amount' => $report->turnover_amount,
+                    ],
+                    null,
+                    'monthly_report',
+                    (float) $report->tax_amount,
+                    true
+                );
 
                 // Notify taxpayer via WhatsApp
                 if ($taxpayer = $report->taxpayer) {
                     $waService = app(\App\Services\WhatsAppService::class);
-                    $message = "Halo {$taxpayer->name},\n\nLaporan SPTPD Anda untuk " . $bill->period . " telah DISETUJUI.\n\nNomor Tagihan: {$bill->bill_number}\nTotal: Rp " . number_format($bill->amount, 0, ',', '.') . "\nSilakan lakukan pembayaran sebelum " . Carbon::parse($bill->due_date)->isoFormat('D MMMM YYYY') . ".\n\nTerima kasih.";
+                    $periodLabel = $bill->metadata['period_label'] ?? $bill->period;
+                    $message = "Halo {$taxpayer->name},\n\nLaporan SPTPD Anda untuk " . $periodLabel . " telah DISETUJUI.\n\nNomor Tagihan: {$bill->bill_number}\nTotal: Rp " . number_format($bill->amount, 0, ',', '.') . "\nSilakan lakukan pembayaran sebelum " . Carbon::parse($bill->due_date)->isoFormat('D MMMM YYYY') . ".\n\nTerima kasih.";
                     $waService->sendMessage($taxpayer->phone ?? '', $message);
                 }
             }

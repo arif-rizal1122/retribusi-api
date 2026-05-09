@@ -91,9 +91,11 @@ Route::post('/simulate-tax', function (Request $request) {
         }
     }
 
-    if ($isPbb && !$request->calculation_formula) {
+    $vars = $request->variables;
+    $hasDirectPbbFormulaVariables = $isPbb && $formula && array_key_exists('njop', $vars);
+
+    if ($isPbb && !$request->calculation_formula && !$hasDirectPbbFormulaVariables) {
         $pbbService = app(\App\Services\PbbCalculationService::class);
-        $vars = $request->variables;
         $resultData = $pbbService->calculate(
             (float) ($vars['luas_bumi'] ?? $vars['luas_tanah'] ?? 0),
             (string) ($vars['kelas_bumi'] ?? ''),

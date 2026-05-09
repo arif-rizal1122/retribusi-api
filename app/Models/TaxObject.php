@@ -42,6 +42,7 @@ class TaxObject extends Model
         'installation_date',
         'last_photo_url',
         'is_verified_physically',
+        'is_active',
     ];
 
     protected $casts = [
@@ -52,6 +53,7 @@ class TaxObject extends Model
         'audit_status' => 'string',
         'installation_date' => 'date',
         'is_verified_physically' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     /**

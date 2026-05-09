@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Taxpayer;
 use App\Models\TaxObject;
 use App\Models\User;
+use App\Services\RequirementFileService;
 use Illuminate\Http\Request;
 
 class TaxObjectController extends Controller
@@ -119,8 +120,10 @@ class TaxObjectController extends Controller
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
             'nop' => $request->nop,
-            'status' => 'approved', // Manual creation -> assume approved for testing
+            'status' => 'active', // Manual creation is already verified by OPD/Petugas
             'is_active' => true,
+            'approved_at' => now(),
+            'approved_by' => $user->id,
             'metadata' => [],
         ]);
 
@@ -171,13 +174,15 @@ class TaxObjectController extends Controller
 
         // Handle dynamic document uploads
         $cloudinary = app(\App\Services\CloudinaryService::class);
+        $requirementFiles = app(RequirementFileService::class);
         $classification = $taxObject->classification;
         $requirements = $classification->requirements ?? [];
         $processedKeys = [];
 
-        foreach ($requirements as $req) {
+        foreach ($requirements as $index => $req) {
             $key = $req['key'] ?? null;
             if ($key && $request->hasFile($key)) {
+                $request->validate([$key => $requirementFiles->rulesFor($req, $index)]);
                 $metadata[$key] = $cloudinary->upload(
                     $request->file($key), 
                     'citizen/documents/' . $taxObject->retribution_type_id
@@ -190,6 +195,12 @@ class TaxObjectController extends Controller
         $fallbacks = ['foto_lokasi_open_kamera', 'formulir_data_dukung'];
         foreach ($fallbacks as $key) {
             if (!in_array($key, $processedKeys) && $request->hasFile($key)) {
+                $request->validate([
+                    $key => $requirementFiles->rulesFor([
+                        'key' => $key,
+                        'type' => $key === 'foto_lokasi_open_kamera' ? 'image' : 'document',
+                    ])
+                ]);
                 $metadata[$key] = $cloudinary->upload(
                     $request->file($key), 
                     'citizen/documents/' . $taxObject->retribution_type_id
