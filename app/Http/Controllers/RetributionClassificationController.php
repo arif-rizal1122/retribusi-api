@@ -46,9 +46,11 @@ class RetributionClassificationController extends Controller
             'code' => 'required|string|max:50',
             'description' => 'nullable|string',
             'icon' => 'nullable|image|max:2048',
-            'form_schema' => 'nullable|string',
-            'requirements' => 'nullable|string',
+            'form_schema' => 'nullable',
+            'requirements' => 'nullable',
+            'bank_accounts' => 'nullable',
             'calculation_formula' => 'nullable|string',
+            'is_self_assessment' => 'nullable|boolean',
         ]);
 
         $cloudinary = app(\App\Services\CloudinaryService::class);
@@ -70,15 +72,9 @@ class RetributionClassificationController extends Controller
             }
         }
 
-        $form_schema = $request->form_schema;
-        if (is_string($form_schema)) {
-            $form_schema = json_decode($form_schema, true);
-        }
-
-        $requirements = $request->requirements;
-        if (is_string($requirements)) {
-            $requirements = json_decode($requirements, true);
-        }
+        $form_schema = $this->decodeJsonField($request->form_schema, []);
+        $requirements = $this->decodeJsonField($request->requirements, []);
+        $bankAccounts = $this->decodeJsonField($request->bank_accounts, []);
 
         try {
             $classification = RetributionClassification::create([
@@ -90,7 +86,9 @@ class RetributionClassificationController extends Controller
                 'description' => $request->description,
                 'form_schema' => $form_schema,
                 'requirements' => $requirements,
+                'bank_accounts' => $bankAccounts,
                 'calculation_formula' => $request->calculation_formula,
+                'is_self_assessment' => $request->boolean('is_self_assessment', false),
             ]);
 
             return response()->json([
@@ -127,9 +125,11 @@ class RetributionClassificationController extends Controller
                 'code' => 'sometimes|string|max:50',
                 'description' => 'nullable|string',
                 'icon' => 'nullable', // Allow string (URL) or file
-                'form_schema' => 'nullable|string',
-                'requirements' => 'nullable|string',
+                'form_schema' => 'nullable',
+                'requirements' => 'nullable',
+                'bank_accounts' => 'nullable',
                 'calculation_formula' => 'nullable|string',
+                'is_self_assessment' => 'nullable|boolean',
             ]);
 
             if ($request->hasFile('icon')) {
@@ -147,10 +147,13 @@ class RetributionClassificationController extends Controller
         }
 
         if ($request->has('form_schema')) {
-            $data['form_schema'] = is_string($request->form_schema) ? json_decode($request->form_schema, true) : $request->form_schema;
+            $data['form_schema'] = $this->decodeJsonField($request->form_schema, []);
         }
         if ($request->has('requirements')) {
-            $data['requirements'] = is_string($request->requirements) ? json_decode($request->requirements, true) : $request->requirements;
+            $data['requirements'] = $this->decodeJsonField($request->requirements, []);
+        }
+        if ($request->has('bank_accounts')) {
+            $data['bank_accounts'] = $this->decodeJsonField($request->bank_accounts, []);
         }
 
         try {
@@ -180,5 +183,19 @@ class RetributionClassificationController extends Controller
 
         $retributionClassification->delete();
         return response()->json(['message' => 'Klasifikasi berhasil dihapus']);
+    }
+
+    private function decodeJsonField($value, array $default = []): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (is_string($value) && $value !== '') {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : $default;
+        }
+
+        return $default;
     }
 }

@@ -6,19 +6,23 @@ use App\Models\Bill;
 use App\Models\Taxpayer;
 use App\Models\TaxObject;
 use App\Models\RetributionType;
-use App\Models\RetributionRate;
-use App\Models\RetributionClassification;
-use App\Services\FormulaParserService;
+use App\Services\BillCreationService;
+use App\Services\BillPeriodService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class BillController extends Controller
 {
-    protected $formulaParser;
+    protected $billCreationService;
+    protected $periodService;
 
-    public function __construct(FormulaParserService $formulaParser)
+    public function __construct(
+        BillCreationService $billCreationService,
+        BillPeriodService $periodService
+    )
     {
-        $this->formulaParser = $formulaParser;
+        $this->billCreationService = $billCreationService;
+        $this->periodService = $periodService;
     }
     /**
      * List bills (OPD-scoped)
@@ -98,20 +102,10 @@ class BillController extends Controller
 
         if ($request->tax_object_id) {
             // New flow: bill is linked to a specific tax object
-            $taxObject = TaxObject::with('taxpayer')->find($request->tax_object_id);
+            $taxObject = TaxObject::with(['taxpayer', 'retributionType', 'classification'])->findOrFail($request->tax_object_id);
             
             if (!$user->isSuperAdmin() && $taxObject->opd_id !== $user->opd_id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
-            }
-
-            // [SECURITY] Prevent duplicate manual bills for the same object and period
-            $exists = Bill::where('tax_object_id', $taxObject->id)
-                ->where('period', $request->period)
-                ->whereIn('status', ['pending', 'overdue', 'lunas', 'paid'])
-                ->exists();
-            
-            if ($exists) {
-                return response()->json(['message' => "Tagihan untuk periode {$request->period} sudah ada di sistem. Mohon periksa kembali."], 422);
             }
 
             // [INTELLIGENCE] Auto-tag as manual audit result
@@ -120,30 +114,17 @@ class BillController extends Controller
             $metadata['source'] = 'admin_input';
             $metadata['created_at_role'] = $user->role;
 
-            // [INTELLIGENCE] Default due date to end of period if not provided
-            $dueDate = $request->due_date;
-            if (!$dueDate) {
-                try {
-                    $dueDate = \Carbon\Carbon::parse($request->period)->endOfMonth();
-                } catch (\Exception $e) {
-                    $dueDate = now()->addDays(30);
-                }
-            }
-
-            $bill = Bill::create([
-                'user_id' => $user->id,
-                'taxpayer_id' => $taxObject->taxpayer_id,
-                'tax_object_id' => $taxObject->id,
-                'opd_id' => $taxObject->opd_id,
-                'retribution_type_id' => $taxObject->retribution_type_id,
-                'retribution_classification_id' => $taxObject->retribution_classification_id,
-                'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
-                'amount' => $request->amount ?? $this->calculateAmount($taxObject, $metadata),
-                'status' => 'pending',
-                'period' => $request->period,
-                'metadata' => $metadata,
-                'due_date' => $dueDate,
-            ]);
+            $bill = $this->billCreationService->createForTaxObject(
+                $taxObject,
+                $user,
+                $request->period,
+                $metadata,
+                $metadata,
+                $request->due_date,
+                'admin_input',
+                $request->filled('amount') ? (float) $request->amount : null,
+                false
+            );
         } else {
             // Legacy flow: bill is linked to taxpayer + retribution type (no specific object)
             $taxpayer = Taxpayer::find($request->taxpayer_id);
@@ -153,6 +134,10 @@ class BillController extends Controller
             }
 
             $type = RetributionType::find($request->retribution_type_id);
+            $periodInfo = $this->periodService->resolve($request->period, $type->billing_cycle ?? 'monthly');
+            $metadata = $request->metadata ?? [];
+            $metadata['source'] = $metadata['source'] ?? 'legacy_admin_input';
+            $metadata['period_label'] = $periodInfo['label'];
 
             $bill = Bill::create([
                 'user_id' => $user->id,
@@ -163,9 +148,11 @@ class BillController extends Controller
                 'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
                 'amount' => $request->amount ?? $type->base_amount,
                 'status' => 'pending',
-                'period' => $request->period,
-                'metadata' => $request->metadata,
-                'due_date' => $request->due_date,
+                'period' => $periodInfo['period'],
+                'period_start' => $periodInfo['period_start'],
+                'period_end' => $periodInfo['period_end'],
+                'metadata' => $metadata,
+                'due_date' => $request->due_date ? \Carbon\Carbon::parse($request->due_date) : $periodInfo['due_date'],
             ]);
         }
 
@@ -197,7 +184,8 @@ class BillController extends Controller
 
         // Get all active tax objects for this type
         $query = TaxObject::where('retribution_type_id', $type->id)
-            ->where('status', 'active');
+            ->where('status', 'active')
+            ->with(['retributionType', 'classification', 'taxpayer']);
             
         if ($request->retribution_classification_id) {
             $query->where('retribution_classification_id', $request->retribution_classification_id);
@@ -205,60 +193,24 @@ class BillController extends Controller
 
         $objects = $query->get();
         
-        // [OPTIMIZATION] Pre-fetch all rates for this type to avoid N+1 queries in the loop
-        $rates = RetributionRate::where('retribution_type_id', $type->id)
-            ->where('is_active', true)
-            ->get();
-            
-        // [OPTIMIZATION] Pre-fetch classifications
-        $classifications = RetributionClassification::where('retribution_type_id', $type->id)->get()->keyBy('id');
-
-        $billsData = [];
-        $now = now();
+        $createdCount = 0;
         foreach ($objects as $obj) {
-            $rate = $rates->where('retribution_classification_id', $obj->retribution_classification_id)
-                ->filter(function($r) use ($obj) {
-                    if ($obj->zone_id) {
-                        return $r->zone_id == $obj->zone_id;
-                    }
-                    return is_null($r->zone_id);
-                })
-                ->first();
+            $bill = $this->billCreationService->createForTaxObject(
+                $obj,
+                $user,
+                $request->period,
+                $obj->metadata ?? [],
+                ['source' => 'bulk_admin_generate'],
+                $request->due_date,
+                'bulk_admin_generate',
+                null,
+                true
+            );
 
-            $amount = 0;
-            if ($rate) {
-                $amount = $rate->amount;
-                // Add formula parsing if needed (simplified for batch)
-                if ($rate->calculation_formula) {
-                    $amount = $this->formulaParser->calculate($rate->calculation_formula, array_merge($obj->metadata ?? [], ['amount' => $rate->amount]));
-                }
-            } else {
-                $amount = $type->base_amount;
+            if ($bill->wasRecentlyCreated) {
+                $createdCount++;
             }
-
-            $billsData[] = [
-                'user_id' => $user->id,
-                'taxpayer_id' => $obj->taxpayer_id,
-                'tax_object_id' => $obj->id,
-                'opd_id' => $type->opd_id,
-                'retribution_type_id' => $type->id,
-                'retribution_classification_id' => $obj->retribution_classification_id,
-                'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
-                'amount' => $amount,
-                'status' => 'pending',
-                'period' => $request->period,
-                'due_date' => $request->due_date,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
         }
-
-        if (!empty($billsData)) {
-            // [BATCH] Use insert for high-speed database entry
-            Bill::insert($billsData);
-        }
-
-        $createdCount = count($billsData);
 
         return response()->json([
             'message' => "Berhasil generate {$createdCount} tagihan",
@@ -308,7 +260,13 @@ class BillController extends Controller
             ->paginate($request->get('per_page', 10)); // [OPTIMIZATION] Added pagination
 
         return response()->json([
-            'data' => $bills
+            'data' => $bills->items(),
+            'meta' => [
+                'current_page' => $bills->currentPage(),
+                'last_page' => $bills->lastPage(),
+                'per_page' => $bills->perPage(),
+                'total' => $bills->total(),
+            ],
         ]);
     }
 
@@ -373,74 +331,6 @@ class BillController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message' => 'Gagal generate SPPT: ' . $e->getMessage()], 500);
         }
-    }
-
-    /**
-     * Helper to calculate bill amount based on tax object hierarchy and formulas
-     */
-    private function calculateAmount($taxObject, $inputData = [])
-    {
-        $type = $taxObject->retributionType;
-
-        // 0. Handle PBB-P2 Special Calculation
-        if (str_contains(strtolower($type->name), 'pbb') || str_contains(strtolower($type->category), 'pajak bumi')) {
-            $pbbService = app(\App\Services\PbbCalculationService::class);
-            $metadata = array_merge($taxObject->metadata ?? [], $inputData);
-            
-            $luasBumi = (float) ($metadata['luas_bumi'] ?? $metadata['luas_tanah'] ?? 0);
-            $kelasBumi = (string) ($metadata['kelas_bumi'] ?? '');
-            $luasBangunan = (float) ($metadata['luas_bangunan'] ?? 0);
-            $kelasBangunan = (string) ($metadata['kelas_bangunan'] ?? '');
-            
-            // Allow overrides from metadata for NJOPTKP and Tariff
-            $njoptkp = (float) ($metadata['njoptkp'] ?? 10000000);
-            $tariff = (float) ($metadata['tariff'] ?? 0.001);
-
-            $result = $pbbService->calculate($luasBumi, $kelasBumi, $luasBangunan, $kelasBangunan, $njoptkp, $tariff);
-            return (float) $result['pbb_terhutang'];
-        }
-
-        // 1. Try to find a specific rate for this classification and zone
-        $rate = \App\Models\RetributionRate::where('retribution_type_id', $taxObject->retribution_type_id)
-            ->where('retribution_classification_id', $taxObject->retribution_classification_id)
-            ->where(function($q) use ($taxObject) {
-                if ($taxObject->zone_id) {
-                    $q->where('zone_id', $taxObject->zone_id);
-                } else {
-                    $q->whereNull('zone_id');
-                }
-            })
-            ->where('is_active', true)
-            ->first();
-
-        // 2. Determine base variables for formula
-        $variables = array_merge(
-            $taxObject->metadata ?? [], 
-            $inputData,
-            [
-                'amount' => $rate ? $rate->amount : 0,
-                'tariff' => $rate ? ($rate->amount / 100) : 0, // Assume amount is percent for some cases
-            ]
-        );
-
-        // 3. Check for dynamic formula in Rate first
-        if ($rate && $rate->calculation_formula) {
-            return $this->formulaParser->calculate($rate->calculation_formula, $variables);
-        }
-
-        // 4. Check for dynamic formula in Classification
-        $classification = \App\Models\RetributionClassification::find($taxObject->retribution_classification_id);
-        if ($classification && $classification->calculation_formula) {
-            return $this->formulaParser->calculate($classification->calculation_formula, $variables);
-        }
-
-        // 5. Fallback to fixed rate amount
-        if ($rate) {
-            return $rate->amount;
-        }
-
-        // 6. Final fallback to base amount of the type
-        return $type ? $type->base_amount : 0;
     }
 
     public function signTTE(Request $request, \App\Services\OfficialDocumentService $docService)

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Bill;
 use App\Models\Payment;
 use App\Models\TaxObject;
+use App\Services\BillCreationService;
 use App\Services\BillingService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -13,10 +14,15 @@ use Illuminate\Support\Str;
 class PaymentController extends Controller
 {
     protected $billingService;
+    protected $billCreationService;
 
-    public function __construct(BillingService $billingService)
+    public function __construct(
+        BillingService $billingService,
+        BillCreationService $billCreationService
+    )
     {
         $this->billingService = $billingService;
+        $this->billCreationService = $billCreationService;
     }
 
     /**
@@ -122,6 +128,20 @@ class PaymentController extends Controller
                 $bill = Bill::where('tax_object_id', $taxObject->id)
                     ->where('period', $request->billing_period)
                     ->first();
+            }
+
+            if (!$bill) {
+                $bill = $this->billCreationService->createForTaxObject(
+                    $taxObject->loadMissing(['retributionType', 'classification', 'taxpayer']),
+                    $isCitizen ? null : $user,
+                    $request->billing_period,
+                    $taxObject->metadata ?? [],
+                    ['source' => $isCitizen ? 'citizen_payment_claim' : 'officer_payment_entry'],
+                    null,
+                    $isCitizen ? 'citizen_payment_claim' : 'officer_payment_entry',
+                    null,
+                    true
+                );
             }
 
             // --- Advanced Billing V2: Real-time Data Sync before Payment ---

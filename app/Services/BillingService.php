@@ -10,6 +10,17 @@ use Illuminate\Support\Collection;
 
 class BillingService
 {
+    private TaxCalculationService $taxCalculationService;
+    private BillPeriodService $periodService;
+
+    public function __construct(
+        ?TaxCalculationService $taxCalculationService = null,
+        ?BillPeriodService $periodService = null
+    ) {
+        $this->taxCalculationService = $taxCalculationService ?: app(TaxCalculationService::class);
+        $this->periodService = $periodService ?: app(BillPeriodService::class);
+    }
+
     /**
      * Calculate pending billing periods for a tax object
      * 
@@ -26,9 +37,9 @@ class BillingService
         }
 
         $cycle = $type->billing_cycle ?? 'monthly';
-        $unit = $this->getCarbonUnit($cycle);
+        $unit = $this->periodService->getCarbonUnit($cycle);
         
-        $startDate = $taxObject->created_at->startOf($unit);
+        $startDate = $taxObject->created_at->copy()->startOf($unit);
         $currentDate = Carbon::now()->startOf($unit);
         
         // [PERFORMANCE] Limit virtual arrears calculation to max 24 periods (e.g., 2 years)
@@ -66,7 +77,7 @@ class BillingService
             ->keyBy('period');
             
         while ($tempDate->lte($currentDate)) {
-            $periodString = $this->getPeriodString($tempDate, $cycle);
+            $periodString = $this->periodService->getPeriodString($tempDate, $cycle);
             
             if (!in_array($periodString, $paidPeriods)) {
                 $existingBill = $existingBills->get($periodString);
@@ -100,7 +111,7 @@ class BillingService
                     $isFromDB = true;
                 } else {
                     $amount = $this->calculateAmountForPeriod($taxObject, $tempDate, $report);
-                    $dueDate = $this->getDueDate($tempDate, $cycle);
+                    $dueDate = $this->periodService->getDueDate($tempDate, $cycle);
                     
                     $virtualPenalty = 0;
                     if (Carbon::now()->gt($dueDate)) {
@@ -131,7 +142,7 @@ class BillingService
                 ]);
             }
             
-            $this->incrementDate($tempDate, $cycle);
+            $this->periodService->incrementDate($tempDate, $cycle);
         }
 
         return $periods;
@@ -139,52 +150,27 @@ class BillingService
 
     private function getCarbonUnit(string $cycle): string
     {
-        return match ($cycle) {
-            'daily' => 'day',
-            'weekly' => 'week',
-            'yearly' => 'year',
-            default => 'month',
-        };
+        return $this->periodService->getCarbonUnit($cycle);
     }
 
     private function incrementDate(Carbon $date, string $cycle): void
     {
-        match ($cycle) {
-            'daily' => $date->addDay(),
-            'weekly' => $date->addWeek(),
-            'yearly' => $date->addYear(),
-            default => $date->addMonth(),
-        };
+        $this->periodService->incrementDate($date, $cycle);
     }
 
     private function getPeriodString(Carbon $date, string $cycle): string
     {
-        return match ($cycle) {
-            'daily' => $date->format('Y-m-d'),
-            'weekly' => $date->format('Y') . '-W' . $date->format('W'),
-            'yearly' => $date->format('Y'),
-            default => $date->format('Y-m'),
-        };
+        return $this->periodService->getPeriodString($date, $cycle);
     }
 
     public function getPeriodLabel(Carbon $date, string $cycle): string
     {
-        return match ($cycle) {
-            'daily' => $date->translatedFormat('d F Y'),
-            'weekly' => 'Minggu ke-' . $date->format('W') . ', ' . $date->format('Y'),
-            'yearly' => 'Tahun ' . $date->format('Y'),
-            default => $date->translatedFormat('F Y'),
-        };
+        return $this->periodService->getPeriodLabel($date, $cycle);
     }
 
     private function getDueDate(Carbon $date, string $cycle): Carbon
     {
-        return match ($cycle) {
-            'daily' => $date->copy()->endOfDay(),
-            'weekly' => $date->copy()->endOfWeek(),
-            'yearly' => $date->copy()->endOfYear(),
-            default => $date->copy()->endOfMonth(),
-        };
+        return $this->periodService->getDueDate($date, $cycle);
     }
 
     /**
@@ -196,75 +182,12 @@ class BillingService
             return (float) $report->tax_amount;
         }
 
-        $type = $taxObject->retributionType;
+        $cycle = $taxObject->retributionType->billing_cycle ?? 'monthly';
 
-        // Guard: return 0 if retributionType is null
-        if (!$type) {
-            return 0;
-        }
-
-        // 0. Handle PBB-P2 Special Calculation
-        if (str_contains(strtolower($type->name), 'pbb') || str_contains(strtolower($type->category ?? ''), 'pajak bumi')) {
-            $pbbService = app(\App\Services\PbbCalculationService::class);
-            $metadata = $taxObject->metadata ?? [];
-            
-            $luasBumi = (float) ($metadata['luas_bumi'] ?? $metadata['luas_tanah'] ?? 0);
-            $kelasBumi = (string) ($metadata['kelas_bumi'] ?? '');
-            $luasBangunan = (float) ($metadata['luas_bangunan'] ?? 0);
-            $kelasBangunan = (string) ($metadata['kelas_bangunan'] ?? '');
-            
-            // Allow overrides from metadata for NJOPTKP and Tariff
-            $njoptkp = (float) ($metadata['njoptkp'] ?? 10000000);
-            $tariff = (float) ($metadata['tariff'] ?? 0.001);
-
-            $result = $pbbService->calculate($luasBumi, $kelasBumi, $luasBangunan, $kelasBangunan, $njoptkp, $tariff);
-            return (float) $result['pbb_terhutang'];
-        }
-
-        $formulaParser = app(\App\Services\FormulaParserService::class);
-        
-        // 1. Try to find a specific rate for this classification and zone
-        $rate = \App\Models\RetributionRate::where('retribution_type_id', $taxObject->retribution_type_id)
-            ->where('retribution_classification_id', $taxObject->retribution_classification_id)
-            ->where(function($q) use ($taxObject) {
-                if ($taxObject->zone_id) {
-                    $q->where('zone_id', $taxObject->zone_id);
-                } else {
-                    $q->whereNull('zone_id');
-                }
-            })
-            ->where('is_active', true)
-            ->first();
-
-        // 2. Determine base variables for formula
-        $variables = array_merge(
-            $taxObject->metadata ?? [], 
-            [
-                'amount' => $rate ? $rate->amount : 0,
-                'tariff' => $rate ? ($rate->amount / 100) : 0,
-            ]
-        );
-
-        // 3. Check for dynamic formula in Rate first
-        if ($rate && $rate->calculation_formula) {
-            return $formulaParser->calculate($rate->calculation_formula, $variables);
-        }
-
-        // 4. Check for dynamic formula in Classification
-        $classification = $taxObject->classification;
-        if ($classification && $classification->calculation_formula) {
-            return $formulaParser->calculate($classification->calculation_formula, $variables);
-        }
-
-        // 5. Fallback to fixed rate amount
-        if ($rate) {
-            return $rate->amount;
-        }
-
-        // 6. Final fallback to base amount of the type
-        $baseAmount = (float) ($type->base_amount ?? 0);
-        
-        return $baseAmount;
+        return $this->taxCalculationService->calculateAmount($taxObject, [
+            'period' => $this->periodService->getPeriodString($date, $cycle),
+            'period_date' => $date->toDateString(),
+        ], $report);
     }
 
     /**
