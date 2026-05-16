@@ -20,6 +20,7 @@ class BillController extends Controller
     {
         $this->formulaParser = $formulaParser;
     }
+
     /**
      * List bills (OPD-scoped)
      */
@@ -250,7 +251,6 @@ class BillController extends Controller
     }
 
     /**
-<<<<<<< HEAD
      * Export/Preview SKRD
      */
     public function exportSKRD(Request $request, Bill $bill, \App\Services\OfficialDocumentService $docService)
@@ -340,14 +340,6 @@ class BillController extends Controller
 
         // 1. Try to find a specific rate for this classification and zone
         $rate = \App\Models\RetributionRate::where('retribution_type_id', $taxObject->retribution_type_id)
-=======
-     * Helper to calculate bill amount based on tax object hierarchy and formulas
-     */
-    private function calculateAmount($taxObject, $inputData = [])
-    {
-        // 1. Try to find a specific rate for this classification and zone
-        $rate = RetributionRate::where('retribution_type_id', $taxObject->retribution_type_id)
->>>>>>> 4fe827787745eafc96dec7695af1fbbe71bfdad4
             ->where('retribution_classification_id', $taxObject->retribution_classification_id)
             ->where(function($q) use ($taxObject) {
                 if ($taxObject->zone_id) {
@@ -375,11 +367,7 @@ class BillController extends Controller
         }
 
         // 4. Check for dynamic formula in Classification
-<<<<<<< HEAD
         $classification = \App\Models\RetributionClassification::find($taxObject->retribution_classification_id);
-=======
-        $classification = RetributionClassification::find($taxObject->retribution_classification_id);
->>>>>>> 4fe827787745eafc96dec7695af1fbbe71bfdad4
         if ($classification && $classification->calculation_formula) {
             return $this->formulaParser->calculate($classification->calculation_formula, $variables);
         }
@@ -390,10 +378,6 @@ class BillController extends Controller
         }
 
         // 6. Final fallback to base amount of the type
-<<<<<<< HEAD
-=======
-        $type = RetributionType::find($taxObject->retribution_type_id);
->>>>>>> 4fe827787745eafc96dec7695af1fbbe71bfdad4
         return $type ? $type->base_amount : 0;
     }
 
