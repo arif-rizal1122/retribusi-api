@@ -140,7 +140,7 @@ class TestingScenarioSeeder extends Seeder
                 'opd_id' => $dishub->id,
                 'retribution_type_id' => $parkirType->id ?? 1,
                 'amount' => 50000,
-                'status' => 'paid',
+                'status' => 'lunas',
                 'period' => '2025-01',
                 'due_date' => Carbon::now()->subMonth(),
             ]
@@ -152,7 +152,7 @@ class TestingScenarioSeeder extends Seeder
                 'taxpayer_id' => $budi->id,
                 'tax_object_id' => $parkirObject->id,
                 'amount' => 50000,
-                'payment_method' => 'VA_BCA',
+                'payment_method' => 'transfer',
                 'status' => 'success',
                 'billing_period' => '2025-01',
                 'paid_at' => Carbon::now()->subWeeks(2),

@@ -72,7 +72,7 @@ class PbbCalculationTest extends TestCase
             'status' => 'active'
         ]);
 
-        $billingService = new BillingService();
+        $billingService = app(\App\Services\BillingService::class);
         $periods = $billingService->getPendingPeriods($obj);
 
         $this->assertGreaterThan(0, $periods->count());

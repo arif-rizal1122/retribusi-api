@@ -90,11 +90,13 @@ class TaxObjectController extends Controller
             'taxpayer_id' => 'required|exists:taxpayers,id',
             'retribution_type_id' => 'required|exists:retribution_types,id',
             'retribution_classification_id' => 'nullable|exists:retribution_classifications,id',
+            'zone_id' => 'nullable|exists:zones,id',
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'nop' => 'nullable|string|max:50',
+            'metadata' => 'nullable|array',
         ]);
 
         // Ensure the retribution type belongs to the user's OPD
@@ -112,6 +114,7 @@ class TaxObjectController extends Controller
             'taxpayer_id' => $taxpayer->id,
             'retribution_type_id' => $type->id,
             'retribution_classification_id' => $request->retribution_classification_id,
+            'zone_id' => $request->zone_id,
             'name' => $request->name,
             'address' => $request->address,
             'latitude' => $request->latitude,
@@ -119,7 +122,7 @@ class TaxObjectController extends Controller
             'nop' => $request->nop,
             'status' => 'approved', // Manual creation -> assume approved for testing
             'is_active' => true,
-            'metadata' => [],
+            'metadata' => $request->metadata ?? [],
         ]);
 
         return response()->json([
