@@ -33,8 +33,8 @@ class FormulaParserService
         });
 
         foreach ($variables as $key => $value) {
-            if (is_numeric($value)) {
-                $numericValue = (float)$value;
+            $numericValue = $this->normalizeNumericVariable($value);
+            if ($numericValue !== null) {
                 $formattedValue = number_format($numericValue, 10, '.', '');
                 $formattedValue = rtrim(rtrim($formattedValue, '0'), '.');
                 $formula = str_ireplace($key, $formattedValue, $formula);
@@ -87,6 +87,39 @@ class FormulaParserService
             \Log::error("Formula calculation error: " . $e->getMessage() . " | Original: " . $formula . " | Sanitized: " . $sanitizedFormula);
             return 0.0;
         }
+    }
+
+    private function normalizeNumericVariable($value): ?float
+    {
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $normalizedValue = trim($value);
+        if ($normalizedValue === '') {
+            return null;
+        }
+
+        $isPercentage = str_contains($normalizedValue, '%');
+        $normalizedValue = str_replace([' ', '%'], '', $normalizedValue);
+
+        if (str_contains($normalizedValue, ',')) {
+            $normalizedValue = str_replace('.', '', $normalizedValue);
+            $normalizedValue = str_replace(',', '.', $normalizedValue);
+        } elseif (substr_count($normalizedValue, '.') > 1 || preg_match('/^-?\d{1,3}(\.\d{3})+$/', $normalizedValue)) {
+            $normalizedValue = str_replace('.', '', $normalizedValue);
+        }
+
+        if (!is_numeric($normalizedValue)) {
+            return null;
+        }
+
+        $numericValue = (float) $normalizedValue;
+        return $isPercentage ? $numericValue / 100 : $numericValue;
     }
 
     /**
