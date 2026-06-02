@@ -17,6 +17,7 @@ use App\Http\Controllers\RetributionRateController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaxObjectController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\MutationController;
 use App\Http\Controllers\PbbClassificationController;
 use App\Http\Controllers\PbbBapendaController;
 use App\Http\Controllers\TaxEducationController;
@@ -35,7 +36,9 @@ use App\Http\Controllers\Api\SimpadKoneksiController;
 Route::group(['middleware' => 'throttle:10,1'], function () {
     Route::post('/opd/register', [OpdController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/citizen/login', [AuthController::class, 'citizenLogin']);
+    Route::post('/citizen/login', [AuthController::class, 'citizenLogin']); // Keep for backward compatibility
+    Route::post('/citizen/request-otp', [AuthController::class, 'requestCitizenOtp']);
+    Route::post('/citizen/verify-otp', [AuthController::class, 'verifyCitizenOtp']);
     Route::post('/citizen/register', [AuthController::class, 'registerCitizen']);
 });
 
@@ -221,11 +224,17 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/analytics/heatmap', [AnalyticsController::class, 'getHeatmapData']);
         Route::get('/analytics/object-performance', [AnalyticsController::class, 'getObjectPerformance']);
         Route::get('/analytics/classification-performance', [AnalyticsController::class, 'getClassificationPerformance']);
+        Route::get('/analytics/lra-report', [AnalyticsController::class, 'getLraReport']);
         Route::apiResource('retribution-types', RetributionTypeController::class);
         Route::get('/taxpayers/search/{nik}', [\App\Http\Controllers\TaxpayerSearchController::class, 'searchByNik']);
         Route::apiResource('taxpayers', TaxpayerController::class);
         Route::apiResource('tax-objects', TaxObjectController::class);
         Route::apiResource('bills', BillController::class)->only(['index', 'store']);
+        Route::post('/bills/checkout', [BillController::class, 'checkout']);
+
+        // Mutasi Objek Pajak (Balik Nama / Transfer Aset)
+        Route::get('/mutations', [MutationController::class, 'index']);
+        Route::post('/mutations', [MutationController::class, 'store']);
         Route::get('/tax-objects/{taxObject}/pending-periods', [PaymentController::class, 'getPendingPeriods']);
         Route::get('/payments', [PaymentController::class, 'index']);
         Route::post('/payments', [PaymentController::class, 'store']);
