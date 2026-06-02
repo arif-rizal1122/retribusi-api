@@ -43,6 +43,8 @@ class ComplaintController extends Controller
             "rating" => "nullable|integer|min:1|max:5",
             "suggestion_text" => "nullable|string",
             "attachments" => "nullable|array",
+            "latitude" => "nullable|numeric|between:-90,90",
+            "longitude" => "nullable|numeric|between:-180,180",
         ]);
 
         $complaint = Complaint::create([
@@ -55,6 +57,8 @@ class ComplaintController extends Controller
             "rating" => $validated["rating"] ?? null,
             "suggestion_text" => $validated["suggestion_text"] ?? null,
             "attachments" => $validated["attachments"] ?? [],
+            "latitude" => $validated["latitude"] ?? null,
+            "longitude" => $validated["longitude"] ?? null,
             "status" => "pending",
         ]);
 

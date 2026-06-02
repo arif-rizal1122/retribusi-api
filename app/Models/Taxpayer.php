@@ -107,6 +107,14 @@ class Taxpayer extends Authenticatable
     }
 
     /**
+     * Get all PBB NOPs owned by this taxpayer
+     */
+    public function nops(): HasMany
+    {
+        return $this->hasMany(TaxpayerNop::class);
+    }
+
+    /**
      * Scope to get only active taxpayers
      */
     public function scopeActive($query)

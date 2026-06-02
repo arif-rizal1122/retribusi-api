@@ -20,6 +20,8 @@ class Complaint extends Model
         "rating",
         "suggestion_text",
         "attachments",
+        "latitude",
+        "longitude",
         "status",
         "admin_notes",
         "resolved_at",

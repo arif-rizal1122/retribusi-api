@@ -311,4 +311,93 @@ class AnalyticsController extends Controller
 
         return response()->json(['data' => $performance]);
     }
+
+    /**
+     * Get LRA (Laporan Realisasi Anggaran) data
+     * Used by Kepala Bapenda for real-time revenue tracking before EOD bank reconciliation
+     */
+    public function getLraReport(Request $request)
+    {
+        $year = $request->get('year', date('Y'));
+        $month = $request->get('month'); // Optional: filter by specific month
+        $user = auth()->user();
+        $retributionTypeId = $user->retribution_type_id;
+
+        $monthSql = SqlDate::month('payments.paid_at');
+        $yearSql = SqlDate::year('payments.paid_at');
+
+        // Main LRA query: Revenue grouped by retribution type and month
+        $query = Payment::join('bills', 'payments.bill_id', '=', 'bills.id')
+            ->join('retribution_types as rt', 'bills.retribution_type_id', '=', 'rt.id')
+            ->where('payments.status', 'success')
+            ->whereRaw("$yearSql = ?", [$year])
+            ->when($retributionTypeId, fn($q) => $q->where('bills.retribution_type_id', $retributionTypeId))
+            ->when($month, fn($q) => $q->whereRaw("$monthSql = ?", [$month]));
+
+        $lraData = $query->select(
+                'rt.id as retribution_type_id',
+                'rt.name as retribution_type_name',
+                DB::raw("$monthSql as bulan"),
+                DB::raw('COUNT(DISTINCT payments.id) as jumlah_transaksi'),
+                DB::raw('SUM(payments.amount) as realisasi')
+            )
+            ->groupBy('rt.id', 'rt.name', DB::raw($monthSql))
+            ->orderBy('rt.name')
+            ->orderBy(DB::raw($monthSql))
+            ->get();
+
+        // Target (billed) per retribution type for the year
+        $targets = Bill::join('retribution_types as rt', 'bills.retribution_type_id', '=', 'rt.id')
+            ->whereYear('bills.created_at', $year)
+            ->when($retributionTypeId, fn($q) => $q->where('bills.retribution_type_id', $retributionTypeId))
+            ->select(
+                'rt.id as retribution_type_id',
+                'rt.name as retribution_type_name',
+                DB::raw('SUM(bills.amount) as target_anggaran')
+            )
+            ->groupBy('rt.id', 'rt.name')
+            ->get()
+            ->keyBy('retribution_type_id');
+
+        // Grand totals
+        $grandRealisasi = $lraData->sum('realisasi');
+        $grandTarget = $targets->sum('target_anggaran');
+        $grandTransaksi = $lraData->sum('jumlah_transaksi');
+
+        // Group LRA by type for summary view
+        $summaryByType = $lraData->groupBy('retribution_type_id')->map(function ($items) use ($targets) {
+            $typeId = $items->first()->retribution_type_id;
+            $typeName = $items->first()->retribution_type_name;
+            $totalRealisasi = $items->sum('realisasi');
+            $targetAnggaran = (float) ($targets[$typeId]->target_anggaran ?? 0);
+
+            return [
+                'retribution_type_id' => $typeId,
+                'retribution_type_name' => $typeName,
+                'target_anggaran' => $targetAnggaran,
+                'realisasi' => $totalRealisasi,
+                'sisa' => $targetAnggaran - $totalRealisasi,
+                'persentase' => $targetAnggaran > 0 ? round(($totalRealisasi / $targetAnggaran) * 100, 2) : 0,
+                'jumlah_transaksi' => $items->sum('jumlah_transaksi'),
+                'monthly_breakdown' => $items->map(fn($i) => [
+                    'bulan' => (int) $i->bulan,
+                    'realisasi' => (float) $i->realisasi,
+                    'jumlah_transaksi' => (int) $i->jumlah_transaksi,
+                ])->values(),
+            ];
+        })->values();
+
+        return response()->json([
+            'tahun' => (int) $year,
+            'bulan_filter' => $month ? (int) $month : null,
+            'grand_total' => [
+                'target_anggaran' => (float) $grandTarget,
+                'realisasi' => (float) $grandRealisasi,
+                'sisa' => (float) ($grandTarget - $grandRealisasi),
+                'persentase' => $grandTarget > 0 ? round(($grandRealisasi / $grandTarget) * 100, 2) : 0,
+                'jumlah_transaksi' => (int) $grandTransaksi,
+            ],
+            'data' => $summaryByType,
+        ]);
+    }
 }

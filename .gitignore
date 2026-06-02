@@ -30,3 +30,9 @@ dist.tar.gz
 *.exp
 vps.txt
 vps_taxpayers.sql
+
+# Private SSH Keys and Credentials
+202600506-sipanda.key
+202600506-sipanda.key.pub
+docs/04_infrastruktur_api/VPS_ACCESS_MPAD.md
+

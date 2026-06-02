@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Cache;
+use App\Services\WaGatewayService;
 
 class AuthController extends Controller
 {
@@ -170,7 +172,99 @@ class AuthController extends Controller
     }
 
     /**
-     * Login citizen (taxpayer) using NIK and Password
+     * Request OTP for citizen login
+     */
+    public function requestCitizenOtp(Request $request, WaGatewayService $waGateway)
+    {
+        $request->validate([
+            'nik' => 'required|string|size:16',
+            'phone' => 'required|string',
+        ]);
+
+        $taxpayer = \App\Models\Taxpayer::where('nik', $request->nik)->first();
+
+        if (!$taxpayer) {
+            // Auto register taxpayer if not found? No, they should register, but for now we just return error
+            return response()->json([
+                'message' => 'NIK tidak terdaftar'
+            ], 404);
+        }
+
+        if (!$taxpayer->is_active) {
+            return response()->json([
+                'message' => 'Akun Wajib Pajak tidak aktif'
+            ], 403);
+        }
+
+        // Generate 6-digit OTP
+        $otp = (string) random_int(100000, 999999);
+        
+        // Save OTP to Cache for 5 minutes
+        Cache::put("otp_citizen_{$request->nik}", $otp, now()->addMinutes(5));
+
+        // Update phone if different
+        if ($taxpayer->phone !== $request->phone) {
+            $taxpayer->update(['phone' => $request->phone]);
+        }
+
+        // Send via WA
+        $sent = $waGateway->sendOtp($request->phone, $otp);
+
+        if (!$sent) {
+            return response()->json([
+                'message' => 'Gagal mengirim OTP via WhatsApp. Pastikan nomor aktif.'
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => 'OTP telah dikirim ke WhatsApp Anda'
+        ]);
+    }
+
+    /**
+     * Verify OTP and Login citizen
+     */
+    public function verifyCitizenOtp(Request $request)
+    {
+        $request->validate([
+            'nik' => 'required|string|size:16',
+            'otp' => 'required|string|size:6',
+        ]);
+
+        $cachedOtp = Cache::get("otp_citizen_{$request->nik}");
+
+        // Bypass for demo account logic (1234567890123456)
+        $isDemo = ($request->nik === '1234567890123456' || $request->nik === '1234567890123457') && $request->otp === '123456';
+
+        if (!$isDemo && (!$cachedOtp || $cachedOtp !== $request->otp)) {
+            return response()->json([
+                'message' => 'Kode OTP salah atau telah kedaluwarsa'
+            ], 401);
+        }
+
+        $taxpayer = \App\Models\Taxpayer::where('nik', $request->nik)->first();
+
+        if (!$taxpayer) {
+            return response()->json([
+                'message' => 'NIK tidak terdaftar'
+            ], 404);
+        }
+
+        // Clear OTP after successful login
+        Cache::forget("otp_citizen_{$request->nik}");
+
+        $token = $taxpayer->createToken('citizen_token')->plainTextToken;
+
+        return response()->json([
+            'user' => $taxpayer,
+            'token' => $token,
+            'token_type' => 'Bearer',
+            'message' => 'Login berhasil',
+        ]);
+    }
+
+    /**
+     * Login citizen (taxpayer) using NIK and Password (DEPRECATED - keep for backward compat)
      */
     public function citizenLogin(Request $request)
     {

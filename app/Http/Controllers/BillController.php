@@ -363,4 +363,59 @@ class BillController extends Controller
             return response()->json(['message' => 'Gagal menandatangani: ' . $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Calculate checkout total for selected bills (partial payment support)
+     * Mobile warga sends an array of bill_ids they want to pay
+     */
+    public function checkout(Request $request)
+    {
+        $request->validate([
+            'bill_ids' => 'required|array|min:1',
+            'bill_ids.*' => 'exists:bills,id',
+        ]);
+
+        $user = $request->user();
+
+        $query = Bill::with(['retributionType', 'taxObject'])
+            ->whereIn('id', $request->bill_ids)
+            ->where('status', 'pending');
+
+        // If citizen, restrict to their own bills
+        if ($user instanceof \App\Models\Taxpayer) {
+            $query->where('taxpayer_id', $user->id);
+        }
+
+        $bills = $query->get();
+
+        if ($bills->isEmpty()) {
+            return response()->json([
+                'message' => 'Tidak ada tagihan valid yang dipilih'
+            ], 422);
+        }
+
+        $subtotal = $bills->sum('amount');
+        $penaltyTotal = $bills->sum(fn($b) => (float) ($b->penalty_amount ?? 0));
+        $grandTotal = $subtotal + $penaltyTotal;
+
+        return response()->json([
+            'bills' => $bills->map(fn($b) => [
+                'id' => $b->id,
+                'bill_number' => $b->bill_number,
+                'retribution_type' => $b->retributionType->name ?? 'N/A',
+                'tax_object' => $b->taxObject->name ?? 'N/A',
+                'period' => $b->period,
+                'amount' => (float) $b->amount,
+                'penalty_amount' => (float) ($b->penalty_amount ?? 0),
+                'total' => (float) $b->amount + (float) ($b->penalty_amount ?? 0),
+            ]),
+            'summary' => [
+                'count' => $bills->count(),
+                'subtotal' => $subtotal,
+                'penalty_total' => $penaltyTotal,
+                'grand_total' => $grandTotal,
+                'formatted_total' => 'Rp ' . number_format($grandTotal, 0, ',', '.'),
+            ],
+        ]);
+    }
 }
