@@ -28,6 +28,8 @@ class DemoLoginSeeder extends Seeder
         $kios = $this->ensureType($disperindag, 'Retribusi Kios Pasar', 'Pasar', 'store', 150000);
         $sampah = $this->ensureType($dlh, 'Retribusi Persampahan', 'Kebersihan', 'trash', 30000);
         $pbb = $this->ensureType($bapenda, 'PBB-P2', 'Pajak Bumi dan Bangunan', 'home', 0);
+        $reklame = $this->ensureType($bapenda, 'Pajak Reklame', 'Pajak', 'image', 0);
+        $pbjt = $this->ensureType($bapenda, 'PBJT', 'Pajak', 'file', 0);
         $this->ensurePetugasAssignment('petugas@bapenda.go.id', $pbb);
         $petugas = User::where('email', 'petugas@bapenda.go.id')->first();
 
@@ -61,11 +63,21 @@ class DemoLoginSeeder extends Seeder
 
         $budiParkir = $this->ensureObject($budi, $dishub, $parkir, 'DEMO-PRK-BUDI', 'Lahan Parkir Toko Budi', 'Jl. Merdeka No. 5', -5.4633, 122.6012);
         $budiPbb = $this->ensureObject($budi, $bapenda, $pbb, 'DEMO-PBB-BUDI', 'Rumah Tinggal Budi', 'Jl. Wolter Monginsidi No. 12', -5.4645, 122.6025);
+        $budiReklame = $this->ensureObject($budi, $bapenda, $reklame, 'DEMO-RKL-BUDI', 'Papan Reklame Toko Budi', 'Jl. Merdeka No. 5', -5.4633, 122.6012);
+        $budiPbjt = $this->ensureObject($budi, $bapenda, $pbjt, 'DEMO-PBJT-BUDI', 'Warung Makan Budi', 'Jl. Wolter Monginsidi No. 12', -5.4645, 122.6025);
+        $budiKios = $this->ensureObject($budi, $disperindag, $kios, 'DEMO-KIO-BUDI', 'Kios Sentra Kuliner Budi', 'Pasar Karya No. 10', -5.4621, 122.6042);
+        $budiSampah = $this->ensureObject($budi, $dlh, $sampah, 'DEMO-SMP-BUDI', 'Ruko Budi (Sampah)', 'Jl. Ahmad Yani No. 8', -5.4633, 122.6012);
+
         $aniKios = $this->ensureObject($ani, $disperindag, $kios, 'DEMO-KIO-ANI', 'Kios Sembako Ani', 'Pasar Karya No. 10', -5.4621, 122.6042);
         $aniSampah = $this->ensureObject($ani, $dlh, $sampah, 'DEMO-SMP-ANI', 'Rumah Ani - Retribusi Sampah', 'Jl. Pahlawan No. 45', -5.4612, 122.6071);
 
         $this->ensureBill($budi, $budiParkir, $dishub, $parkir, 'DEMO-INV-PRK-BUDI-2026-01', 50000, 'Januari 2026', Carbon::create(2026, 1, 31));
         $this->ensureBill($budi, $budiPbb, $bapenda, $pbb, 'DEMO-INV-PBB-BUDI-2026', 750000, 'Tahun 2026', Carbon::create(2026, 9, 30));
+        $this->ensureBill($budi, $budiReklame, $bapenda, $reklame, 'DEMO-INV-RKL-BUDI-2026', 350000, 'Tahun 2026', Carbon::create(2026, 10, 31));
+        $this->ensureBill($budi, $budiPbjt, $bapenda, $pbjt, 'DEMO-INV-PBJT-BUDI-2026-01', 120000, 'Januari 2026', Carbon::create(2026, 1, 31));
+        $this->ensureBill($budi, $budiKios, $disperindag, $kios, 'DEMO-INV-KIO-BUDI-2026-01', 150000, 'Januari 2026', Carbon::create(2026, 1, 31));
+        $this->ensureBill($budi, $budiSampah, $dlh, $sampah, 'DEMO-INV-SMP-BUDI-2026-01', 25000, 'Januari 2026', Carbon::create(2026, 1, 31));
+
         $this->ensureBill($ani, $aniKios, $disperindag, $kios, 'DEMO-INV-KIO-ANI-2026-01', 150000, 'Januari 2026', Carbon::create(2026, 1, 31));
         $this->ensureBill($ani, $aniSampah, $dlh, $sampah, 'DEMO-INV-SMP-ANI-2026-01', 30000, 'Januari 2026', Carbon::create(2026, 1, 31));
 

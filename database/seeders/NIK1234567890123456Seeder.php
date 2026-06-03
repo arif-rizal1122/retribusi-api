@@ -99,6 +99,55 @@ class NIK1234567890123456Seeder extends Seeder
             ]
         );
 
+        // Object 4: Pajak Reklame (BAPENDA)
+        $reklameType = RetributionType::where('name', 'like', '%Reklame%')->first() ?? RetributionType::factory()->create(['name' => 'Pajak Reklame', 'opd_id' => $bapenda->id]);
+        $reklameObject = TaxObject::updateOrCreate(
+            ['nop' => 'RKL-74-123'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'retribution_type_id' => $reklameType->id,
+                'opd_id' => $bapenda->id,
+                'name' => 'Papan Reklame Toko Kelontong Budi',
+                'address' => 'Jl. Merdeka No. 5',
+                'status' => 'active',
+                'approved_at' => Carbon::now()->subMonths(3),
+            ]
+        );
+
+        // Object 5: PBJT - Makan dan Minum (BAPENDA)
+        $pbjtType = RetributionType::where('name', 'like', '%PBJT%')->first() ?? RetributionType::factory()->create(['name' => 'PBJT', 'opd_id' => $bapenda->id]);
+        $pbjtObject = TaxObject::updateOrCreate(
+            ['nop' => 'PBJT-74-123'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'retribution_type_id' => $pbjtType->id,
+                'opd_id' => $bapenda->id,
+                'name' => 'Warung Makan Budi',
+                'address' => 'Jl. Wolter Monginsidi No. 12',
+                'status' => 'active',
+                'approved_at' => Carbon::now()->subMonths(2),
+            ]
+        );
+
+        // Object 6: Retribusi Kios Pasar (DISPERINDAG)
+        $disperindag = Opd::where('code', 'DISPERINDAG')->first();
+        if (!$disperindag) {
+            $disperindag = Opd::create(['name' => 'DISPERINDAG', 'code' => 'DISPERINDAG']);
+        }
+        $kiosType = RetributionType::where('name', 'like', '%Kios%')->first() ?? RetributionType::factory()->create(['name' => 'Retribusi Kios Pasar', 'opd_id' => $disperindag->id]);
+        $kiosObject = TaxObject::updateOrCreate(
+            ['nop' => 'KIO-74-123'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'retribution_type_id' => $kiosType->id,
+                'opd_id' => $disperindag->id,
+                'name' => 'Kios Kelontong Budi',
+                'address' => 'Pasar Karya No. 10',
+                'status' => 'active',
+                'approved_at' => Carbon::now()->subMonths(4),
+            ]
+        );
+
         // 4. Create Bills - ALL PENDING (Belum Lunas)
         // ==========================================
         // PARKIR BILLS (Monthly - DISHUB)
@@ -264,6 +313,223 @@ class NIK1234567890123456Seeder extends Seeder
             ]
         );
 
-        $this->command->info('✅ Seeder NIK 1234567890123456: 3 objek pajak, 10 tagihan (semua BELUM LUNAS).');
+        // ==========================================
+        // REKLAME BILLS (Yearly - BAPENDA)
+        // ==========================================
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-2025-RKL-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $reklameObject->id,
+                'opd_id' => $bapenda->id,
+                'retribution_type_id' => $reklameType->id,
+                'amount' => 350000,
+                'status' => 'pending',
+                'period' => 'Tahun 2025',
+                'due_date' => Carbon::create(2025, 10, 31),
+            ]
+        );
+
+        // ==========================================
+        // PBJT BILLS (Monthly - BAPENDA)
+        // ==========================================
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202501-PBJT-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $pbjtObject->id,
+                'opd_id' => $bapenda->id,
+                'retribution_type_id' => $pbjtType->id,
+                'amount' => 120000,
+                'status' => 'pending',
+                'period' => 'Januari 2025',
+                'due_date' => Carbon::create(2025, 1, 31),
+            ]
+        );
+
+        // ==========================================
+        // KIOS BILLS (Monthly - DISPERINDAG)
+        // ==========================================
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202501-KIO-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $kiosObject->id,
+                'opd_id' => $disperindag->id,
+                'retribution_type_id' => $kiosType->id,
+                'amount' => 150000,
+                'status' => 'pending',
+                'period' => 'Januari 2025',
+                'due_date' => Carbon::create(2025, 1, 31),
+            ]
+        );
+
+        // ==========================================
+        // NEW BILLS FOR 2026 (April, Mei, Juni - Bulan ini & sebelumnya)
+        // ==========================================
+
+        // --- APRIL 2026 ---
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202604-PRK-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $parkirObject->id,
+                'opd_id' => $dishub->id,
+                'retribution_type_id' => $parkirType->id,
+                'amount' => 50000,
+                'status' => 'pending',
+                'period' => 'April 2026',
+                'due_date' => Carbon::create(2026, 4, 30),
+            ]
+        );
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202604-SMP-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $sampahObject->id,
+                'opd_id' => $dlh->id,
+                'retribution_type_id' => $sampahType->id,
+                'amount' => 25000,
+                'status' => 'pending',
+                'period' => 'April 2026',
+                'due_date' => Carbon::create(2026, 4, 30),
+            ]
+        );
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202604-PBJT-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $pbjtObject->id,
+                'opd_id' => $bapenda->id,
+                'retribution_type_id' => $pbjtType->id,
+                'amount' => 120000,
+                'status' => 'pending',
+                'period' => 'April 2026',
+                'due_date' => Carbon::create(2026, 4, 30),
+            ]
+        );
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202604-KIO-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $kiosObject->id,
+                'opd_id' => $disperindag->id,
+                'retribution_type_id' => $kiosType->id,
+                'amount' => 150000,
+                'status' => 'pending',
+                'period' => 'April 2026',
+                'due_date' => Carbon::create(2026, 4, 30),
+            ]
+        );
+
+        // --- MEI 2026 ---
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202605-PRK-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $parkirObject->id,
+                'opd_id' => $dishub->id,
+                'retribution_type_id' => $parkirType->id,
+                'amount' => 50000,
+                'status' => 'pending',
+                'period' => 'Mei 2026',
+                'due_date' => Carbon::create(2026, 5, 31),
+            ]
+        );
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202605-SMP-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $sampahObject->id,
+                'opd_id' => $dlh->id,
+                'retribution_type_id' => $sampahType->id,
+                'amount' => 25000,
+                'status' => 'pending',
+                'period' => 'Mei 2026',
+                'due_date' => Carbon::create(2026, 5, 31),
+            ]
+        );
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202605-PBJT-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $pbjtObject->id,
+                'opd_id' => $bapenda->id,
+                'retribution_type_id' => $pbjtType->id,
+                'amount' => 120000,
+                'status' => 'pending',
+                'period' => 'Mei 2026',
+                'due_date' => Carbon::create(2026, 5, 31),
+            ]
+        );
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202605-KIO-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $kiosObject->id,
+                'opd_id' => $disperindag->id,
+                'retribution_type_id' => $kiosType->id,
+                'amount' => 150000,
+                'status' => 'pending',
+                'period' => 'Mei 2026',
+                'due_date' => Carbon::create(2026, 5, 31),
+            ]
+        );
+
+        // --- JUNI 2026 (BULAN INI) ---
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202606-PRK-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $parkirObject->id,
+                'opd_id' => $dishub->id,
+                'retribution_type_id' => $parkirType->id,
+                'amount' => 50000,
+                'status' => 'pending',
+                'period' => 'Juni 2026',
+                'due_date' => Carbon::create(2026, 6, 30),
+            ]
+        );
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202606-SMP-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $sampahObject->id,
+                'opd_id' => $dlh->id,
+                'retribution_type_id' => $sampahType->id,
+                'amount' => 25000,
+                'status' => 'pending',
+                'period' => 'Juni 2026',
+                'due_date' => Carbon::create(2026, 6, 30),
+            ]
+        );
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202606-PBJT-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $pbjtObject->id,
+                'opd_id' => $bapenda->id,
+                'retribution_type_id' => $pbjtType->id,
+                'amount' => 120000,
+                'status' => 'pending',
+                'period' => 'Juni 2026',
+                'due_date' => Carbon::create(2026, 6, 30),
+            ]
+        );
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202606-KIO-001'],
+            [
+                'taxpayer_id' => $taxpayer->id,
+                'tax_object_id' => $kiosObject->id,
+                'opd_id' => $disperindag->id,
+                'retribution_type_id' => $kiosType->id,
+                'amount' => 150000,
+                'status' => 'pending',
+                'period' => 'Juni 2026',
+                'due_date' => Carbon::create(2026, 6, 30),
+            ]
+        );
+
+        $this->command->info('✅ Seeder NIK 1234567890123456: 6 objek pajak, 25 tagihan (semua BELUM LUNAS).');
     }
 }
