@@ -24,7 +24,7 @@ use App\Http\Controllers\TaxEducationController;
 use App\Http\Controllers\BillboardAuditController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\Api\SimpadKoneksiController;
-
+use App\Http\Controllers\PbbNopApplicationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -187,6 +187,10 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
         Route::post('/complaints', [ComplaintController::class, 'store']);
         Route::get('/complaints', [ComplaintController::class, 'index']);
+
+        // Pendaftaran NOP Mandiri (Warga)
+        Route::post('/pbb/nop-applications', [PbbNopApplicationController::class, 'store']);
+        Route::get('/pbb/nop-applications', [PbbNopApplicationController::class, 'index']);
     });
 
     // PBB Bapenda Citizen Actions
@@ -298,12 +302,24 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/transactions', [PbbBapendaController::class, 'transactions']);
             Route::get('/stats', [PbbBapendaController::class, 'stats']);
             Route::post('/sync-all', [PbbBapendaController::class, 'syncAllObjects']);
+
+            // Pendaftaran NOP
+            Route::get('/nop-applications', [PbbNopApplicationController::class, 'index']);
+            Route::get('/nop-applications/{id}', [PbbNopApplicationController::class, 'show']);
+            Route::post('/nop-applications/{id}/status', [PbbNopApplicationController::class, 'updateStatus']);
         });
 
         // Bank H2H Monitoring Logs
         Route::prefix('bank-h2h')->group(function () {
             Route::get('/logs', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'logs']);
             Route::post('/reconcile', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'reconcile']);
+        });
+
+        // H2H BPN / BPHTB
+        Route::prefix('h2h/bphtb')->group(function () {
+            Route::get('/mappings', [\App\Http\Controllers\H2HBphtbController::class, 'mappings']);
+            Route::post('/simulate', [\App\Http\Controllers\H2HBphtbController::class, 'simulate']);
+            Route::post('/submit', [\App\Http\Controllers\H2HBphtbController::class, 'submit']);
         });
 
         // Official BAPENDA Documents
