@@ -40,6 +40,7 @@ Route::group(['middleware' => 'throttle:10,1'], function () {
     Route::post('/citizen/request-otp', [AuthController::class, 'requestCitizenOtp']);
     Route::post('/citizen/verify-otp', [AuthController::class, 'verifyCitizenOtp']);
     Route::post('/citizen/register', [AuthController::class, 'registerCitizen']);
+    Route::post('/notaris/register', [AuthController::class, 'registerNotaris']);
 });
 
 // Other public routes
@@ -320,6 +321,13 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/mappings', [\App\Http\Controllers\H2HBphtbController::class, 'mappings']);
             Route::post('/simulate', [\App\Http\Controllers\H2HBphtbController::class, 'simulate']);
             Route::post('/submit', [\App\Http\Controllers\H2HBphtbController::class, 'submit']);
+        });
+
+        // Notaris / PPAT Approval
+        Route::prefix('notaris-approvals')->group(function () {
+            Route::get('/', [\App\Http\Controllers\NotarisApprovalController::class, 'index']);
+            Route::post('/{id}/approve', [\App\Http\Controllers\NotarisApprovalController::class, 'approve']);
+            Route::post('/{id}/reject', [\App\Http\Controllers\NotarisApprovalController::class, 'reject']);
         });
 
         // Official BAPENDA Documents

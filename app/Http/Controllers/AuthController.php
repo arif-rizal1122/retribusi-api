@@ -357,4 +357,51 @@ class AuthController extends Controller
             'message' => 'Password berhasil diubah'
         ]);
     }
+
+    /**
+     * Register a new Notaris/PPAT (Requires Ka.Bapenda approval)
+     */
+    public function registerNotaris(Request $request)
+    {
+        $request->validate([
+            'nik' => 'required|string|size:16|unique:users,nik',
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+            'phone' => 'required|string',
+            'address' => 'required|string',
+            'sk_dokumen' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        $cloudinary = app(\App\Services\CloudinaryService::class);
+        $skUrl = $cloudinary->upload(
+            $request->file('sk_dokumen'),
+            'retribusi/notaris_sk'
+        );
+
+        $user = \App\Models\User::create([
+            'name' => strip_tags($request->name),
+            'email' => strip_tags($request->email),
+            'nik' => strip_tags($request->nik),
+            'password' => Hash::make($request->password),
+            'phone' => strip_tags($request->phone),
+            'address' => strip_tags($request->address),
+            'role' => \App\Models\User::ROLE_NOTARIS,
+            'status' => 'pending', // Requires approval
+            'metadata' => [
+                'sk_dokumen_url' => $skUrl,
+                'registered_at' => now()->toIso8601String()
+            ]
+        ]);
+
+        return response()->json([
+            'message' => 'Pendaftaran berhasil. Akun Anda berstatus PENDING dan sedang menunggu proses verifikasi serta aktivasi oleh Kepala Bapenda.',
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'status' => $user->status,
+                'role' => $user->role
+            ]
+        ], 201);
+    }
 }

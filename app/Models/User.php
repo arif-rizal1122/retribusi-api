@@ -91,6 +91,8 @@ class User extends Authenticatable
     const ROLE_KASUBID_PENGAWAS = 'kasubid_pengawas';
     const ROLE_PETUGAS = 'petugas';
     const ROLE_WALIKOTA = 'walikota';
+    const ROLE_NOTARIS = 'notaris';
+    const ROLE_KEPALA_BAPENDA = 'kepala_bapenda';
 
     /**
      * Check if user is super admin or admin
@@ -142,6 +144,22 @@ class User extends Authenticatable
     public function isWalikota(): bool
     {
         return $this->role === self::ROLE_WALIKOTA;
+    }
+
+    /**
+     * Check if user is Notaris
+     */
+    public function isNotaris(): bool
+    {
+        return $this->role === self::ROLE_NOTARIS;
+    }
+
+    /**
+     * Check if user is Kepala Bapenda
+     */
+    public function isKepalaBapenda(): bool
+    {
+        return $this->role === self::ROLE_KEPALA_BAPENDA;
     }
 
     /**
