@@ -34,6 +34,8 @@ class EnsureAdmin
             \App\Models\User::ROLE_KASUBID_PENGAWAS,
             \App\Models\User::ROLE_PETUGAS,
             \App\Models\User::ROLE_WALIKOTA,
+            \App\Models\User::ROLE_KEPALA_BAPENDA,
+            \App\Models\User::ROLE_NOTARIS,
             'verifikator', // Legacy/other roles
             'viewer'
         ];
