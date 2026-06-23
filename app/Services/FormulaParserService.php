@@ -199,18 +199,19 @@ class FormulaParserService
     }
 
     /**
-     * Calculate BPHTB with hardcoded NPOPTKP deduction.
+     * Calculate BPHTB with hardcoded NPOPTKP deduction and ZNT comparison.
      * Formula: (NPOP - NPOPTKP) * 5%
      *
      * Locked Constants (UU HKPD / Perda):
      *   - NPOPTKP Umum: Rp 80.000.000
      *   - NPOPTKP Waris/Hibah Wasiat: Rp 300.000.000
      *
-     * @param float $npop Nilai Perolehan Objek Pajak
+     * @param float $npop Nilai Perolehan Objek Pajak (Nilai Transaksi Riil)
      * @param string $acquisitionType 'umum' | 'waris' | 'hibah_wasiat'
-     * @return array{npoptkp: float, taxable: float, tax: float, tariff: float}
+     * @param float|null $zntValue Nilai ZNT BPN sebagai batas bawah kewajaran
+     * @return array
      */
-    public function calculateBPHTB(float $npop, string $acquisitionType = 'umum'): array
+    public function calculateBPHTB(float $npop, string $acquisitionType = 'umum', ?float $zntValue = null): array
     {
         $tariff = 0.05; // 5%
 
@@ -219,14 +220,27 @@ class FormulaParserService
             default                          => 80000000.0,  // Rp 80 Juta
         };
 
-        $taxable = max(0, $npop - $npoptkp);
+        $statusFlag = 'VALID';
+        $finalNpop = $npop;
+
+        // M-PAD Logic: If reported transaction is below ZNT, flag it and use ZNT as base
+        if ($zntValue !== null && $npop < $zntValue) {
+            $finalNpop = $zntValue;
+            $statusFlag = 'UNDER_ZNT_FLAG';
+        }
+
+        $taxable = max(0, $finalNpop - $npoptkp);
         $tax = $taxable * $tariff;
 
         return [
-            'npoptkp' => $npoptkp,
-            'taxable' => round($taxable, 2),
-            'tax'     => round($tax, 2),
-            'tariff'  => $tariff,
+            'npop_reported' => $npop,
+            'znt_applied'   => $zntValue,
+            'final_npop'    => $finalNpop,
+            'status_flag'   => $statusFlag,
+            'npoptkp'       => $npoptkp,
+            'taxable'       => round($taxable, 2),
+            'tax'           => round($tax, 2),
+            'tariff'        => $tariff,
         ];
     }
 
