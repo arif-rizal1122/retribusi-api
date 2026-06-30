@@ -154,7 +154,6 @@ class TaxpayerController extends Controller
                 $taxpayer->save();
             }
         } else {
-            // Create new taxpayer
             $taxpayer = Taxpayer::create([
                 'opd_id' => $opdId,
                 'nik' => $request->nik,
@@ -320,6 +319,16 @@ class TaxpayerController extends Controller
 
         $data['metadata'] = $metadata;
 
+        // Auto-resolve NPWPD if not set or NIK changed
+        $nikChanged = isset($data['nik']) && $data['nik'] !== $taxpayer->nik;
+        $npwpdEmpty = empty($data['npwpd'] ?? $taxpayer->npwpd);
+        if ($nikChanged || $npwpdEmpty) {
+            $data['npwpd'] = Taxpayer::resolveNpwpd(
+                $data['nik'] ?? $taxpayer->nik,
+                $data['npwpd'] ?? $taxpayer->npwpd
+            );
+        }
+
         try {
             $taxpayer->update($data);
 
@@ -412,7 +421,15 @@ class TaxpayerController extends Controller
      */
     private function syncTaxObject(Taxpayer $taxpayer, $typeId, $classificationId = null, $metadata = [])
     {
-        if (!$taxpayer->object_name) return;
+        // Priority: 1. Specific name in metadata for this classification, 2. Global object_name
+        $specificName = null;
+        if ($classificationId && isset($metadata["_object_name_{$classificationId}"])) {
+            $specificName = $metadata["_object_name_{$classificationId}"];
+        }
+        
+        $name = $specificName ?: $taxpayer->object_name;
+
+        if (!$name) return;
 
         // [OPTIMIZATION] Generate NOP using pre-fetched components to avoid repeated string manipulation
         $nopPrefix = $taxpayer->npwpd ?: 'NOP-' . str_pad($taxpayer->id, 4, '0', STR_PAD_LEFT);
@@ -420,7 +437,7 @@ class TaxpayerController extends Controller
 
         $data = [
             'opd_id' => $taxpayer->opd_id,
-            'name' => $taxpayer->object_name,
+            'name' => $name,
             'address' => $taxpayer->object_address ?: $taxpayer->address,
             'latitude' => $taxpayer->latitude,
             'longitude' => $taxpayer->longitude,

@@ -129,4 +129,70 @@ class Taxpayer extends Authenticatable
     {
         return false;
     }
+
+    /**
+     * Resolve NPWPD for a taxpayer:
+     * 1. If a taxpayer with the same NIK already exists, return their NPWPD.
+     * 2. If a manual NPWPD is provided and unique, use it.
+     * 3. Otherwise, auto-generate a unique NPWPD.
+     *
+     * @param string|null $nik
+     * @param string|null $manualNpwpd
+     * @return string
+     */
+    public static function resolveNpwpd(?string $nik, ?string $manualNpwpd = null): string
+    {
+        // 1. Detect existing NPWPD by NIK
+        if ($nik) {
+            $existing = static::withoutGlobalScopes()
+                ->where('nik', $nik)
+                ->whereNotNull('npwpd')
+                ->where('npwpd', '!=', '')
+                ->first();
+
+            if ($existing) {
+                return $existing->npwpd;
+            }
+        }
+
+        // 2. Use manual NPWPD if provided and unique
+        if ($manualNpwpd) {
+            $isUnique = !static::withoutGlobalScopes()
+                ->where('npwpd', $manualNpwpd)
+                ->exists();
+
+            if ($isUnique) {
+                return $manualNpwpd;
+            }
+        }
+
+        // 3. Auto-generate NPWPD with format: P.YYYY.XXXXX
+        return static::generateNpwpd();
+    }
+
+    /**
+     * Generate a unique NPWPD with format P.YYYY.XXXXX
+     *
+     * @return string
+     */
+    public static function generateNpwpd(): string
+    {
+        $year = date('Y');
+        $prefix = "P.{$year}.";
+
+        // Find the last sequence number for the current year
+        $lastNpwpd = static::withoutGlobalScopes()
+            ->where('npwpd', 'like', $prefix . '%')
+            ->orderByRaw("CAST(SUBSTRING_INDEX(npwpd, '.', -1) AS UNSIGNED) DESC")
+            ->value('npwpd');
+
+        if ($lastNpwpd) {
+            $lastSeq = (int) substr($lastNpwpd, strlen($prefix));
+            $nextSeq = $lastSeq + 1;
+        } else {
+            $nextSeq = 1;
+        }
+
+        return $prefix . str_pad($nextSeq, 5, '0', STR_PAD_LEFT);
+    }
 }
