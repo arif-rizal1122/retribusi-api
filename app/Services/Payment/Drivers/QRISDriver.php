@@ -14,10 +14,12 @@ use Illuminate\Support\Str;
 class QRISDriver implements PaymentGatewayInterface
 {
     protected $billingService;
+    protected $config;
 
-    public function __construct(BillingService $billingService)
+    public function __construct(BillingService $billingService, array $config = [])
     {
         $this->billingService = $billingService;
+        $this->config = $config;
     }
 
     /**
