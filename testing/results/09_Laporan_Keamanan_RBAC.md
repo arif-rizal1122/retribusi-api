@@ -1,6 +1,6 @@
 # 🛡️ Laporan Hasil Uji Coba Keamanan Akses (RBAC)
 
-**Waktu Eksekusi**: 2026-06-23 14:35:46
+**Waktu Eksekusi**: 2026-06-30 06:33:38
 Pengujian ini menembak API lokal menggunakan Token Sanctum murni untuk membuktikan Sistem Isolasi Peran (Tenant Isolation & Authorization) berjalan sempurna.
 
 ### 1. Wajib Pajak Mengakses Endpoint Admin
