@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Taxpayer;
 use App\Models\TaxObject;
 use App\Models\User;
+use App\Models\Verification;
 use App\Services\RequirementFileService;
 use Illuminate\Http\Request;
 
@@ -78,7 +79,8 @@ class TaxObjectController extends Controller
     }
 
     /**
-     * Manually store a new tax object (useful for testing or direct Petugas API)
+     * Manually store a new tax object. Direct input still enters verification
+     * so billing only starts after approval.
      */
     public function store(Request $request)
     {
@@ -95,6 +97,8 @@ class TaxObjectController extends Controller
             'retribution_classification_id' => 'nullable|exists:retribution_classifications,id',
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:255',
+            'district' => 'nullable|string|max:255',
+            'sub_district' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'nop' => 'nullable|string|max:50',
@@ -117,18 +121,32 @@ class TaxObjectController extends Controller
             'retribution_classification_id' => $request->retribution_classification_id,
             'name' => $request->name,
             'address' => $request->address,
+            'district' => $request->district,
+            'sub_district' => $request->sub_district,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
             'nop' => $request->nop,
-            'status' => 'active', // Manual creation is already verified by OPD/Petugas
+            'status' => 'pending',
             'is_active' => true,
-            'approved_at' => now(),
-            'approved_by' => $user->id,
             'metadata' => [],
         ]);
 
+        Verification::create([
+            'opd_id' => $taxObject->opd_id,
+            'user_id' => $user->id,
+            'taxpayer_id' => $taxpayer->id,
+            'tax_object_id' => $taxObject->id,
+            'document_number' => 'REG-' . now()->format('YmdHis') . '-' . strtoupper(\Illuminate\Support\Str::random(6)),
+            'taxpayer_name' => $taxpayer->name,
+            'type' => 'Pendaftaran Objek',
+            'amount' => 0,
+            'status' => 'pending',
+            'submitted_at' => now(),
+            'notes' => 'Pengajuan objek dari input langsung menunggu verifikasi.',
+        ]);
+
         return response()->json([
-            'message' => 'Objek pajak berhasil ditambahkan.',
+            'message' => 'Objek pajak berhasil diajukan dan menunggu verifikasi.',
             'data' => $taxObject
         ], 201);
     }
@@ -160,6 +178,8 @@ class TaxObjectController extends Controller
         $request->validate([
             'name' => 'sometimes|string|max:255',
             'address' => 'sometimes|string|max:255',
+            'district' => 'sometimes|string|max:255',
+            'sub_district' => 'sometimes|string|max:255',
             'metadata' => 'nullable',
         ]);
 
@@ -211,6 +231,8 @@ class TaxObjectController extends Controller
         $taxObject->update([
             'name' => $request->input('name', $taxObject->name),
             'address' => $request->input('address', $taxObject->address),
+            'district' => $request->input('district', $taxObject->district),
+            'sub_district' => $request->input('sub_district', $taxObject->sub_district),
             'metadata' => $metadata,
         ]);
 

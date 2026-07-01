@@ -84,7 +84,7 @@ class VerificationController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = Verification::with(['opd', 'submitter', 'verifier', 'taxObject.classification']);
+        $query = Verification::with(['opd', 'submitter', 'verifier', 'taxObject.classification', 'taxObject.taxpayer']);
 
         if (!$user->isSuperAdmin() && $user->opd_id) {
             $query->where('opd_id', $user->opd_id);

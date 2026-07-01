@@ -148,6 +148,7 @@ class AnalyticsController extends Controller
         $taxObjects = \App\Models\TaxObject::with(['taxpayer', 'retributionType', 'classification'])
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
+            ->where('status', 'active')
             ->when($retributionTypeId, fn($q) => $q->where('retribution_type_id', $retributionTypeId))
             ->get()
             ->map(function($obj) use ($year) {
