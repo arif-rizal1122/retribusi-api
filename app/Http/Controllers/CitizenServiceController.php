@@ -119,6 +119,8 @@ class CitizenServiceController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string',
+            'district' => 'required|string|max:255',
+            'sub_district' => 'required|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'zone_id' => 'nullable|exists:zones,id',
@@ -186,6 +188,8 @@ class CitizenServiceController extends Controller
                 'zone_id' => $request->zone_id,
                 'name' => $request->name,
                 'address' => $request->address,
+                'district' => $request->district,
+                'sub_district' => $request->sub_district,
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
                 'metadata' => $metadata,
