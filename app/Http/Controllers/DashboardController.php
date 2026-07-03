@@ -62,13 +62,15 @@ class DashboardController extends Controller
         $prevCollectionRate = $this->getCollectionRate($opdId, $prevStart, $prevEnd);
         $rateTrend = $this->calculateTrend($collectionRate, $prevCollectionRate);
 
-        // Active Taxpayers (Usually total active, not necessarily by range, but let's stick to total for consistency with existing)
+        // Active taxpayers for operations are taxpayers with at least one approved object.
         $activeTaxpayersCount = Taxpayer::when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->where('is_active', true)
+            ->whereHas('taxObjects', fn($q) => $q->where('status', 'active'))
             ->count();
         
         $prevTaxpayersCount = Taxpayer::when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->where('is_active', true)
+            ->whereHas('taxObjects', fn($q) => $q->where('status', 'active'))
             ->where('created_at', '<', $start)
             ->count();
         $taxpayerTrend = $this->calculateTrend($activeTaxpayersCount, $prevTaxpayersCount);
@@ -347,6 +349,7 @@ class DashboardController extends Controller
         $zones = \App\Models\Zone::with(['opd', 'retributionType'])
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
+            ->where('status', 'active')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->when($user->role === 'petugas', function($q) use ($user) {
                 $assignments = $user->assignments ?? collect();
