@@ -1,0 +1,19 @@
+- [ ] **User Acceptance Testing (UAT) / QA Checklist**
+    - [ ] **Card: SPPT Online (PBB)**
+        - **Skenario**: Buka detail tagihan PBB -> Klik tombol/link Cetak SPPT -> Pastikan PDF terunduh dengan format yang benar.
+        - **Data**: Pastikan tagihan bertipe PBB-P2.
+    - [x] **Implementation: Expand API Docs**
+        - [x] Create `docs/README.md` (Main Index)
+        - [x] Document Public APIs (`simulate-tax`, `login`, `pbb`)
+        - [x] Document Protected APIs (`taxpayers`, `bills`, `payments`)
+        - [x] Document Surveillance & TTE APIs
+        - [x] Update SPOPD/PBB structure docs
+    - [ ] **Card: Perbaikan Foto Profil (Admin & Mobile)**
+        - **Skenario (Admin)**: Ke halaman Profil -> Klik ikon kamera -> Pilih foto -> Simpan -> Pastikan foto terupdate di header.
+        - **Skenario (Mobile)**: Buka Profil -> Ganti foto profil -> Simpan -> Pastikan tidak ada error 422 ("Unprocessable Content").
+    - [ ] **Card: Cetak Bluetooth (Petugas)**
+        - **Skenario**: Buka riwayat pembayaran -> Hubungkan printer bluetooth -> Klik Cetak -> Pastikan struk keluar.
+    - [ ] **Card: Sinkronisasi Pajak Wilayah II**
+        - **Skenario**: Verifikasi di dashboard atau form tagihan apakah PBJT-CAT dan PBJT-EVT sudah muncul untuk Wilayah II.
+    - [ ] **Card: Sinkronisasi Kontributor (README)**
+        - **Skenario**: Cek section "Contributors" di GitHub untuk semua repository.

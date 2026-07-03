@@ -1,1 +1,0 @@
-Pengujian Validasi Data Selesai. Laporan ditulis ke /Users/pondokit/Herd/retribusi-api/testing/results/10_Laporan_Validasi_Negatif.md
