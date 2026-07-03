@@ -27,6 +27,8 @@ class TaxObject extends Model
         'zone_id',
         'name',
         'address',
+        'district',
+        'sub_district',
         'latitude',
         'longitude',
         'nomor_formulir',

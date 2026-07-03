@@ -33,13 +33,18 @@ class RegistrationBillingFlowTest extends TestCase
             'retribution_type_id' => $type->id,
             'calculation_formula' => 'tagihan * 0.1',
         ]);
-        $taxpayer = Taxpayer::factory()->create(['opd_id' => $opd->id]);
+        $taxpayer = Taxpayer::factory()->create([
+            'opd_id' => $opd->id,
+            'district' => 'Murhum',
+            'sub_district' => 'Wajo',
+        ]);
         $taxObject = TaxObject::factory()->create([
             'opd_id' => $opd->id,
             'taxpayer_id' => $taxpayer->id,
             'retribution_type_id' => $type->id,
             'retribution_classification_id' => $classification->id,
             'status' => 'pending',
+            'address' => 'Jl. Sultan Dayanu Ikhsan',
             'metadata' => ['tagihan' => 2500000],
         ]);
         $admin = User::factory()->create([
@@ -94,5 +99,58 @@ class RegistrationBillingFlowTest extends TestCase
         $this->assertDatabaseCount('bills', 1);
 
         Carbon::setTestNow();
+    }
+
+    public function test_incomplete_registration_object_cannot_be_approved(): void
+    {
+        $opd = Opd::factory()->create();
+        $type = RetributionType::factory()->create(['opd_id' => $opd->id]);
+        $classification = RetributionClassification::factory()->create([
+            'opd_id' => $opd->id,
+            'retribution_type_id' => $type->id,
+        ]);
+        $taxpayer = Taxpayer::factory()->create(['opd_id' => $opd->id]);
+        $taxObject = TaxObject::factory()->create([
+            'opd_id' => $opd->id,
+            'taxpayer_id' => $taxpayer->id,
+            'retribution_type_id' => $type->id,
+            'retribution_classification_id' => $classification->id,
+            'status' => 'pending',
+            'address' => null,
+        ]);
+        $admin = User::factory()->create([
+            'opd_id' => $opd->id,
+            'role' => 'opd',
+            'status' => 'active',
+        ]);
+        $verification = Verification::create([
+            'opd_id' => $opd->id,
+            'taxpayer_id' => $taxpayer->id,
+            'tax_object_id' => $taxObject->id,
+            'document_number' => 'REG-INCOMPLETE',
+            'taxpayer_name' => $taxpayer->name,
+            'type' => 'Pendaftaran Objek',
+            'amount' => 0,
+            'status' => 'pending',
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->putJson("/api/verifications/{$verification->id}/status", [
+                'status' => 'approved',
+                'notes' => 'Data sesuai',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'tax_object.address',
+                'taxpayer.district',
+                'taxpayer.sub_district',
+            ]);
+
+        $this->assertDatabaseHas('tax_objects', [
+            'id' => $taxObject->id,
+            'status' => 'pending',
+        ]);
+        $this->assertDatabaseCount('bills', 0);
     }
 }

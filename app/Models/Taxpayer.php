@@ -163,18 +163,16 @@ class Taxpayer extends Authenticatable
         $year = date('Y');
         $prefix = "P.{$year}.";
 
-        // Find the last sequence number for the current year
-        $lastNpwpd = static::withoutGlobalScopes()
+        $lastSequence = static::withoutGlobalScopes()
             ->where('npwpd', 'like', $prefix . '%')
-            ->orderByRaw("CAST(SUBSTRING_INDEX(npwpd, '.', -1) AS UNSIGNED) DESC")
-            ->value('npwpd');
+            ->pluck('npwpd')
+            ->map(function ($npwpd) use ($prefix) {
+                $sequence = substr((string) $npwpd, strlen($prefix));
+                return ctype_digit($sequence) ? (int) $sequence : 0;
+            })
+            ->max() ?? 0;
 
-        if ($lastNpwpd) {
-            $lastSeq = (int) substr($lastNpwpd, strlen($prefix));
-            $nextSeq = $lastSeq + 1;
-        } else {
-            $nextSeq = 1;
-        }
+        $nextSeq = $lastSequence + 1;
 
         return $prefix . str_pad($nextSeq, 5, '0', STR_PAD_LEFT);
     }
