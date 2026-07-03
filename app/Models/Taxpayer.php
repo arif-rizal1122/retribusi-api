@@ -15,23 +15,6 @@ class Taxpayer extends Authenticatable
 {
     use HasFactory, HasApiTokens;
 
-    /**
-     * Get or Generate NPWPD for a taxpayer
-     */
-    public static function resolveNpwpd($nik = null)
-    {
-        // 1. Detect if NPWPD already exists for this NIK
-        if ($nik) {
-            $existing = self::where('nik', $nik)->whereNotNull('npwpd')->first();
-            if ($existing) {
-                return $existing->npwpd;
-            }
-        }
-
-        // 2. Generate automatically if not found
-        return 'NPWPD-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
-    }
-
     protected static function booted()
     {
         static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
