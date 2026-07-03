@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Complaint;
+use App\Models\Taxpayer;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class ComplaintController extends Controller
 {
@@ -19,6 +22,16 @@ class ComplaintController extends Controller
 
         if ($request->has("category")) {
             $query->where("category", $request->category);
+        }
+
+        if ($request->has("type")) {
+            if ($request->type === "rating") {
+                $query->whereNotNull("rating");
+            }
+
+            if ($request->type === "complaint") {
+                $query->whereNull("rating");
+            }
         }
 
         if ($request->has("search")) {
@@ -47,8 +60,8 @@ class ComplaintController extends Controller
             "longitude" => "nullable|numeric|between:-180,180",
         ]);
 
-        $complaint = Complaint::create([
-            "taxpayer_id" => $user->role === "citizen" ? $user->id : null,
+        $complaintData = [
+            "taxpayer_id" => $user instanceof Taxpayer ? $user->id : null,
             "name" => $user->name,
             "email" => $user->email,
             "phone" => $user->phone,
@@ -57,10 +70,29 @@ class ComplaintController extends Controller
             "rating" => $validated["rating"] ?? null,
             "suggestion_text" => $validated["suggestion_text"] ?? null,
             "attachments" => $validated["attachments"] ?? [],
-            "latitude" => $validated["latitude"] ?? null,
-            "longitude" => $validated["longitude"] ?? null,
             "status" => "pending",
-        ]);
+        ];
+
+        if (Schema::hasColumn("complaints", "latitude")) {
+            $complaintData["latitude"] = $validated["latitude"] ?? null;
+        }
+
+        if (Schema::hasColumn("complaints", "longitude")) {
+            $complaintData["longitude"] = $validated["longitude"] ?? null;
+        }
+
+        try {
+            $complaint = Complaint::create($complaintData);
+        } catch (\Throwable $e) {
+            Log::error("Complaint store failed", [
+                "user_id" => $user?->id,
+                "error" => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                "message" => "Pengaduan belum berhasil dikirim. Silakan coba lagi.",
+            ], 500);
+        }
 
         return response()->json(["message" => "Pengaduan berhasil dikirim", "data" => $complaint], 201);
     }
