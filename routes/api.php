@@ -23,6 +23,7 @@ use App\Http\Controllers\PbbBapendaController;
 use App\Http\Controllers\TaxEducationController;
 use App\Http\Controllers\BillboardAuditController;
 use App\Http\Controllers\ComplaintController;
+use App\Http\Controllers\PublicRegistrationController;
 use App\Http\Controllers\Api\SimpadKoneksiController;
 use App\Http\Controllers\PbbNopApplicationController;
 
@@ -56,6 +57,15 @@ Route::get('/public/pdf/skpd/{billId}', [\App\Http\Controllers\DocumentControlle
 Route::get('/public/pdf/sspd/{billId}', [\App\Http\Controllers\DocumentController::class, 'sspd']);
 Route::get('/public/pdf/sppt/{billId}', [\App\Http\Controllers\DocumentController::class, 'sppt']);
 Route::get('/public/pdf/surat-teguran/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'suratTeguran']);
+
+// Public self-registration portal
+Route::prefix('public')->group(function () {
+    Route::get('/retribution-types', [PublicRegistrationController::class, 'getTypes']);
+    Route::get('/retribution-classifications', [PublicRegistrationController::class, 'getClassifications']);
+    Route::get('/opds', [PublicRegistrationController::class, 'getOpds']);
+    Route::get('/taxpayers/check-nik/{nik}', [PublicRegistrationController::class, 'checkNik']);
+    Route::post('/register-taxpayer', [PublicRegistrationController::class, 'register']);
+});
 
 // Tax Simulation (public, no auth needed)
 Route::post('/simulate-tax', function (Request $request) {
