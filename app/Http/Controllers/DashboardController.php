@@ -390,6 +390,8 @@ class DashboardController extends Controller
             }])
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
+            ->where('status', 'active')
+            ->whereHas('taxpayer', fn($q) => $q->where('is_active', true))
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->when($user->role === 'petugas', function($q) use ($user) {
                 $assignments = $user->assignments ?? collect();
