@@ -8,6 +8,9 @@ use App\Models\User;
 use App\Models\Verification;
 use App\Services\RequirementFileService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class TaxObjectController extends Controller
 {
@@ -161,7 +164,7 @@ class TaxObjectController extends Controller
     }
 
     /**
-     * Update a pending tax object
+     * Update a pending object or resubmit a rejected object into verification.
      */
     public function update(Request $request, TaxObject $taxObject)
     {
@@ -170,9 +173,10 @@ class TaxObjectController extends Controller
             return $authorizationError;
         }
 
-        // Only allow editing if status is pending
-        if ($taxObject->status !== 'pending') {
-            return response()->json(['message' => 'Hanya objek dengan status pending yang dapat diedit.'], 422);
+        $isRejectedResubmission = $taxObject->status === 'rejected';
+
+        if (!in_array($taxObject->status, ['pending', 'rejected'], true)) {
+            return response()->json(['message' => 'Hanya objek dengan status pending atau rejected yang dapat diedit.'], 422);
         }
 
         $request->validate([
@@ -195,6 +199,7 @@ class TaxObjectController extends Controller
         // Handle dynamic document uploads
         $cloudinary = app(\App\Services\CloudinaryService::class);
         $requirementFiles = app(RequirementFileService::class);
+        $taxObject->loadMissing(['classification', 'taxpayer']);
         $classification = $taxObject->classification;
         $requirements = $classification->requirements ?? [];
         $processedKeys = [];
@@ -228,17 +233,42 @@ class TaxObjectController extends Controller
             }
         }
 
-        $taxObject->update([
+        if ($isRejectedResubmission) {
+            $missingMetadata = $this->missingRequiredMetadata($classification->form_schema ?? [], $metadata);
+            $missingFiles = $this->missingRequiredFiles($request, $requirements, $metadata);
+
+            if (!empty($missingMetadata) || !empty($missingFiles)) {
+                throw ValidationException::withMessages(array_merge($missingMetadata, $missingFiles));
+            }
+        }
+
+        $updateData = [
             'name' => $request->input('name', $taxObject->name),
             'address' => $request->input('address', $taxObject->address),
             'district' => $request->input('district', $taxObject->district),
             'sub_district' => $request->input('sub_district', $taxObject->sub_district),
             'metadata' => $metadata,
-        ]);
+        ];
+
+        if ($isRejectedResubmission) {
+            $updateData['status'] = 'pending';
+            $updateData['approved_at'] = null;
+            $updateData['approved_by'] = null;
+        }
+
+        DB::transaction(function () use ($request, $taxObject, $updateData, $metadata, $isRejectedResubmission) {
+            $taxObject->update($updateData);
+
+            if ($isRejectedResubmission) {
+                $this->createResubmissionVerification($request, $taxObject->fresh(['taxpayer']), $metadata);
+            }
+        });
 
         return response()->json([
-            'message' => 'Data objek berhasil diperbarui',
-            'data' => $taxObject
+            'message' => $isRejectedResubmission
+                ? 'Perbaikan data objek berhasil dikirim ulang dan menunggu verifikasi.'
+                : 'Data objek berhasil diperbarui',
+            'data' => $taxObject->fresh(['taxpayer', 'classification'])
         ]);
     }
 
@@ -289,5 +319,81 @@ class TaxObjectController extends Controller
         }
 
         return response()->json(['message' => 'Unauthorized'], 403);
+    }
+
+    private function missingRequiredMetadata(array $schema, array $metadata): array
+    {
+        $errors = [];
+
+        foreach ($schema as $field) {
+            if (!($field['required'] ?? false)) {
+                continue;
+            }
+
+            $key = $field['key'] ?? null;
+            if (!$key) {
+                continue;
+            }
+
+            $value = $metadata[$key] ?? null;
+            if ($value === null || (is_string($value) && trim($value) === '')) {
+                $label = $field['label'] ?? $key;
+                $errors["metadata.{$key}"] = "{$label} wajib diisi sebelum pengajuan dikirim ulang.";
+            }
+        }
+
+        return $errors;
+    }
+
+    private function missingRequiredFiles(Request $request, array $requirements, array $metadata): array
+    {
+        $errors = [];
+
+        foreach ($requirements as $requirement) {
+            if (!($requirement['required'] ?? false)) {
+                continue;
+            }
+
+            $key = $requirement['key'] ?? null;
+            if (!$key || $request->hasFile($key) || !empty($metadata[$key])) {
+                continue;
+            }
+
+            $label = $requirement['label'] ?? $requirement['name'] ?? $key;
+            $errors[$key] = "{$label} wajib diunggah sebelum pengajuan dikirim ulang.";
+        }
+
+        return $errors;
+    }
+
+    private function createResubmissionVerification(Request $request, TaxObject $taxObject, array $metadata): void
+    {
+        $user = $request->user();
+
+        Verification::create([
+            'opd_id' => $taxObject->opd_id,
+            'user_id' => $user instanceof User ? $user->id : null,
+            'taxpayer_id' => $taxObject->taxpayer_id,
+            'tax_object_id' => $taxObject->id,
+            'document_number' => 'REG-REV-' . now()->format('YmdHis') . '-' . strtoupper(Str::random(6)),
+            'taxpayer_name' => $taxObject->taxpayer?->name ?? 'Wajib Pajak',
+            'type' => 'Perbaikan Pendaftaran Objek',
+            'amount' => 0,
+            'status' => 'pending',
+            'proof_file_url' => $this->firstFileUrl($metadata),
+            'submitted_at' => now(),
+            'notes' => 'Perbaikan data setelah penolakan: ' . $taxObject->name,
+        ]);
+    }
+
+    private function firstFileUrl(array $metadata): ?string
+    {
+        foreach ($metadata as $value) {
+            if (is_string($value) && (str_starts_with($value, 'http') || str_starts_with($value, '/storage') || str_contains($value, 'cloudinary'))) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 }
