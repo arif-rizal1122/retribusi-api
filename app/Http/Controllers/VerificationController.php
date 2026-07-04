@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Verification;
+use App\Models\PetugasTask;
 use App\Services\CloudinaryService;
 use App\Services\RegistrationVerificationService;
 use Illuminate\Http\Request;
@@ -112,6 +113,7 @@ class VerificationController extends Controller
         }
 
         $verifications = $query->latest('submitted_at')->paginate($request->get('per_page', 15));
+        $this->attachVerificationTimeline($verifications->getCollection());
 
         return response()->json($verifications);
     }
@@ -140,6 +142,7 @@ class VerificationController extends Controller
                 $request->notes,
                 $user
             );
+            $this->attachVerificationTimeline(collect([$updatedVerification]));
 
             return response()->json([
                 'message' => "Dokumen berhasil di-{$request->status}",
@@ -173,8 +176,85 @@ class VerificationController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        $verification->load(['opd', 'submitter', 'verifier', 'taxObject.classification', 'taxObject.taxpayer', 'taxpayer']);
+        $this->attachVerificationTimeline(collect([$verification]));
+
         return response()->json([
-            'data' => $verification->load(['opd', 'submitter', 'verifier', 'taxObject', 'taxpayer'])
+            'data' => $verification
         ]);
+    }
+
+    private function attachVerificationTimeline($verifications): void
+    {
+        $objectIds = $verifications
+            ->pluck('tax_object_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($objectIds->isEmpty()) {
+            return;
+        }
+
+        $timelineByObject = Verification::whereIn('tax_object_id', $objectIds)
+            ->with('verifier:id,name')
+            ->orderBy('submitted_at')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('tax_object_id');
+
+        $surveyTasksByObject = PetugasTask::whereIn('tax_object_id', $objectIds)
+            ->where('task_type', 'field_survey')
+            ->with(['user:id,name', 'creator:id,name'])
+            ->orderBy('created_at')
+            ->get()
+            ->groupBy('tax_object_id');
+
+        $verifications->each(function (Verification $verification) use ($timelineByObject, $surveyTasksByObject) {
+            if (!$verification->taxObject) {
+                return;
+            }
+
+            $timeline = ($timelineByObject->get($verification->tax_object_id) ?? collect())
+                ->map(fn (Verification $item) => $this->formatVerificationTimelineItem($item))
+                ->values();
+
+            $verification->taxObject->setAttribute('verification_timeline', $timeline);
+
+            $surveyTasks = ($surveyTasksByObject->get($verification->tax_object_id) ?? collect())
+                ->map(fn (PetugasTask $task) => $this->formatFieldSurveyTask($task))
+                ->values();
+
+            $verification->taxObject->setAttribute('field_survey_tasks', $surveyTasks);
+            $verification->taxObject->setAttribute('latest_field_survey_task', $surveyTasks->last());
+        });
+    }
+
+    private function formatVerificationTimelineItem(Verification $verification): array
+    {
+        return [
+            'id' => $verification->id,
+            'document_number' => $verification->document_number,
+            'type' => $verification->type,
+            'status' => $verification->status,
+            'notes' => $verification->notes,
+            'submitted_at' => $verification->submitted_at,
+            'verified_at' => $verification->verified_at,
+            'verifier_name' => $verification->verifier?->name,
+        ];
+    }
+
+    private function formatFieldSurveyTask(PetugasTask $task): array
+    {
+        return [
+            'id' => $task->id,
+            'status' => $task->status,
+            'due_date' => $task->due_date,
+            'notes' => $task->notes,
+            'completed_at' => $task->completed_at,
+            'officer_name' => $task->user?->name,
+            'created_by_name' => $task->creator?->name,
+            'completion_photo_path' => $task->completion_photo_path,
+        ];
     }
 }

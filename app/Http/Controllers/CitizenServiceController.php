@@ -6,6 +6,7 @@ use App\Models\RetributionType;
 use App\Models\Taxpayer;
 use App\Models\TaxObject;
 use App\Models\Bill;
+use App\Models\PetugasTask;
 use App\Models\Verification;
 use App\Services\RequirementFileService;
 use Illuminate\Http\Request;
@@ -77,6 +78,39 @@ class CitizenServiceController extends Controller
             ->get();
         
         $objectIds = $objects->pluck('id');
+
+        $verificationsByObject = Verification::whereIn('tax_object_id', $objectIds)
+            ->with('verifier:id,name')
+            ->orderBy('submitted_at')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('tax_object_id');
+
+        $objects->each(function (TaxObject $object) use ($verificationsByObject) {
+            $timeline = ($verificationsByObject->get($object->id) ?? collect())
+                ->map(fn (Verification $verification) => $this->formatVerificationTimelineItem($verification))
+                ->values();
+            $latestVerification = $timeline->last();
+
+            $object->setAttribute('verification_timeline', $timeline);
+            $object->setAttribute('latest_verification', $latestVerification);
+        });
+
+        $tasksByObject = PetugasTask::whereIn('tax_object_id', $objectIds)
+            ->where('task_type', 'field_survey')
+            ->with('user:id,name')
+            ->orderBy('created_at')
+            ->get()
+            ->groupBy('tax_object_id');
+
+        $objects->each(function (TaxObject $object) use ($tasksByObject) {
+            $tasks = ($tasksByObject->get($object->id) ?? collect())
+                ->map(fn (PetugasTask $task) => $this->formatFieldSurveyTask($task))
+                ->values();
+
+            $object->setAttribute('field_survey_tasks', $tasks);
+            $object->setAttribute('latest_field_survey_task', $tasks->last());
+        });
         
         $bills = Bill::whereIn('tax_object_id', $objectIds)
             ->with(['opd:id,name', 'taxObject'])
@@ -250,6 +284,33 @@ class CitizenServiceController extends Controller
         }
 
         return $metadata;
+    }
+
+    private function formatVerificationTimelineItem(Verification $verification): array
+    {
+        return [
+            'id' => $verification->id,
+            'document_number' => $verification->document_number,
+            'type' => $verification->type,
+            'status' => $verification->status,
+            'notes' => $verification->notes,
+            'submitted_at' => $verification->submitted_at,
+            'verified_at' => $verification->verified_at,
+            'verifier_name' => $verification->verifier?->name,
+        ];
+    }
+
+    private function formatFieldSurveyTask(PetugasTask $task): array
+    {
+        return [
+            'id' => $task->id,
+            'status' => $task->status,
+            'due_date' => $task->due_date,
+            'notes' => $task->notes,
+            'completed_at' => $task->completed_at,
+            'officer_name' => $task->user?->name,
+            'completion_photo_path' => $task->completion_photo_path,
+        ];
     }
 
     private function missingRequiredMetadata(array $schema, array $metadata): array
