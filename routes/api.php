@@ -383,7 +383,21 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 Route::middleware('bank_h2h')->prefix('v1/bank')->group(function () {
     Route::post('/inquiry', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'inquiry']);
     Route::post('/payment', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'payment']);
-    Route::post('/reversal', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'reversal']);
+});
+
+// ------------------------------------------------------------------------
+// BANK H2H GATEWAY SNAP BI (BRI)
+// ------------------------------------------------------------------------
+Route::group(['prefix' => 'snap', 'namespace' => '\App\Http\Controllers\Api\V1\Payment'], function () {
+    // Auth (B2B Access Token)
+    Route::post('/v1.1/access-token/b2b', 'SnapBIController@getAccessToken');
+    
+    // QRIS
+    Route::post('/v1.1/qr/qr-mpm-notify', 'SnapBIController@qrisNotify');
+    
+    // BRIVA
+    Route::post('/v1.0/transfer-va/inquiry', 'SnapBIController@brivaInquiry');
+    Route::post('/v1.0/transfer-va/payment', 'SnapBIController@brivaPayment');
 });
 
 // ------------------------------------------------------------------------
