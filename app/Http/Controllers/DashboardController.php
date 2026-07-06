@@ -349,7 +349,6 @@ class DashboardController extends Controller
         $zones = \App\Models\Zone::with(['opd', 'retributionType'])
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
-            ->where('status', 'active')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->when($user->role === 'petugas', function($q) use ($user) {
                 $assignments = $user->assignments ?? collect();
