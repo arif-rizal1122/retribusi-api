@@ -9,10 +9,10 @@ Dokumen ini adalah referensi lengkap arsitektur sistem M-PAD yang mencakup selur
 
 | Repo | Stack | Deskripsi | Domain (Prod) |
 |------|-------|-----------|----------------|
-| `retribusi-api` | Laravel 11 + MySQL | Backend API | `api.sipanda.online` |
-| `retribusi-admin` | React + Vite + TS | Dashboard Admin/BAPENDA | `admin.sipanda.online` |
-| `retribusi-petugas` | React + Vite + TS | App Petugas Lapangan | `petugas.sipanda.online` |
-| `retribusi-mobile` | React + Vite + TS | App Warga (PWA) | `sipanda.online` |
+| `retribusi-api` | Laravel 11 + MySQL | Backend API | `apimpad.baubaukota.go.id` |
+| `retribusi-admin` | React + Vite + TS | Dashboard Admin/BAPENDA | `adminmpad.baubaukota.go.id` |
+| `retribusi-petugas` | React + Vite + TS | App Petugas Lapangan | `petugasmpad.baubaukota.go.id` |
+| `retribusi-mobile` | React + Vite + TS | App Warga (PWA) | `mpad.baubaukota.go.id` |
 
 ---
 

@@ -1,35 +1,38 @@
 # 🌐 Domain Schema & Subdomain Mapping
-## Arsitektur M-PAD (April 2026)
 
-Dokumentasi ini merinci pemetaan domain dan subdomain untuk sistem M-PAD (Mitra Pajak & Retribusi Daerah) Kota Baubau.
+Dokumentasi ini merinci pemetaan domain dan subdomain untuk sistem MPAD (Mitra Pajak & Retribusi Daerah) pada semua lingkungan deployment.
 
-## 1. Lingkungan Produksi (Pemerintah Kota Baubau)
-Domain resmi yang digunakan untuk operasional publik (Wajib Pajak) dan internal (Bapenda/Petugas).
-
-| Komponen | Domain | Deskripsi |
-| :--- | :--- | :--- |
-| **Portal Layanan WP** | `mpad.baubaukota.go.id` | PWA: Pendaftaran, Inkuiri NOP PBB, E-SPPT |
-| **Dashboard Admin** | `adminmpad.baubaukota.go.id` | Backoffice: Penetapan, Verifikasi, TTE Dokumen |
-| **Backend API** | `api.sipanda.online` | Centralized Logic: CRUD, Auth, Integrasi Bank |
-| **Portal Petugas** | `petugasmpad.baubaukota.go.id` | Lapangan: Spot Check, Audit Reklame, Live Tracking |
-| **E-Registry** | `verify.baubaukota.go.id` | Validasi QR-Code TTE (Publik) |
-
-## 2. Lingkungan Staging / Testing (VPS)
-Digunakan untuk validasi fitur baru (Hotfix & Minor/Major Releases).
+## 1. Lingkungan Development (Dev)
+Digunakan murni untuk pengembangan (eksperimen fitur) dengan lingkungan VPS/Server non-kritis.
+**Host IP:** `157.10.252.74`
 
 | Komponen | Domain | Deskripsi |
 | :--- | :--- | :--- |
-| **Main Entrance** | `sipanda.online` | Mobile/Citizen frontend staging |
-| **Admin Panel** | `admin.sipanda.online` | Admin dashboard staging |
-| **API Endpoint** | `api.sipanda.online` | Backend API staging |
-| **Officer Portal** | `petugas.sipanda.online` | Petugas field portal staging |
+| **Portal Utama** | `sipanda.online` | Aplikasi Warga / Landing page |
+| **Dashboard Admin** | `admin.sipanda.online` | Panel manajemen Bapenda & OPD |
+| **Interface Petugas** | `petugas.sipanda.online` | Akses petugas lapangan |
+| **Backend API** | `api.sipanda.online` | Endpoint layanan data dev |
+| **Launch Teaser** | `launch.sipanda.online` | Halaman promosi/hitung mundur |
 
-## 3. Alur Komunikasi Data
-1. **WP/Petugas** mengirimkan request ke `api.sipanda.online`.
-2. **API** memproses logika (Formula Parser, PBB Inquiry).
-3. **Database** (MySQL) menyimpan state dan `metadata` JSON.
-4. **TTE Service** (BSrE) dipanggil untuk penandatanganan dokumen resmi.
-5. **Gateway Payment** memproses billing via `api.sipanda.online` (Redirect/Callback).
+## 2. Lingkungan Staging (UAT)
+Digunakan sebagai tiruan (*replica*) dari *Production* untuk pengujian final (UAT / *Sandboxing* bersama pihak Bank).
+
+| Komponen | Domain | Deskripsi |
+| :--- | :--- | :--- |
+| **Portal Utama** | `mpad.online` | Aplikasi Warga / Landing page staging |
+| **Dashboard Admin** | `admin.mpad.online` | Panel manajemen versi staging |
+| **Interface Petugas** | `petugas.mpad.online` | Akses petugas lapangan staging |
+| **Backend API** | `api.mpad.online` | Endpoint layanan data staging |
+
+## 3. Lingkungan Produksi (Prod)
+Lingkungan *Live* yang diakses langsung oleh masyarakat Wajib Pajak dan pegawai Pemerintahan Kota Baubau.
+
+| Komponen | Domain | Deskripsi |
+| :--- | :--- | :--- |
+| **Portal Utama** | `mpad.baubaukota.go.id` | Pintu masuk utama aplikasi/Landing page |
+| **Dashboard Admin** | `adminmpad.baubaukota.go.id` | Panel manajemen untuk Bapenda & OPD |
+| **Interface Petugas** | `petugasmpad.baubaukota.go.id` | Akses petugas lapangan (Mobile/Web) |
+| **Backend API** | `apimpad.baubaukota.go.id` | Endpoint layanan data (Core API) |
 
 ---
-*Last modified: April 2026. Unified Branding M-PAD.*
+*Terakhir Diperbarui: 7 Juli 2026*
