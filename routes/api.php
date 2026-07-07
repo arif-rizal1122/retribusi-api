@@ -402,6 +402,27 @@ Route::group(['prefix' => 'snap', 'namespace' => '\App\Http\Controllers\Api\V1\P
 });
 
 // ------------------------------------------------------------------------
+// AUTO DEDUCT & CORRECTION
+// ------------------------------------------------------------------------
+Route::middleware('auth:sanctum')->prefix('auto-deduct')->group(function () {
+    Route::post('/record', [\App\Http\Controllers\AutoDeductController::class, 'recordTransaction']);
+    Route::post('/process', [\App\Http\Controllers\AutoDeductController::class, 'processPayment']);
+    Route::get('/status', [\App\Http\Controllers\AutoDeductController::class, 'getStatus']);
+    Route::get('/notifications', [\App\Http\Controllers\AutoDeductController::class, 'getNotifications']);
+    Route::post('/reminders', [\App\Http\Controllers\AutoDeductController::class, 'sendReminders']);
+});
+
+Route::middleware('auth:sanctum')->prefix('corrections')->group(function () {
+    Route::post('/{transaction}/void', [\App\Http\Controllers\CorrectionController::class, 'void']);
+    Route::post('/{transaction}/adjust-price', [\App\Http\Controllers\CorrectionController::class, 'adjustPrice']);
+    Route::post('/{transaction}/refund', [\App\Http\Controllers\CorrectionController::class, 'refund']);
+    Route::get('/{transaction}/history', [\App\Http\Controllers\CorrectionController::class, 'history']);
+});
+
+Route::post('/auto-deduct/webhook', [\App\Http\Controllers\AutoDeductWebhookController::class, 'handle'])
+    ->middleware('auto_deduct_access:webhook');
+
+// ------------------------------------------------------------------------
 // DEPLOY HOOK (Staging only - protected by X-Deploy-Secret header)
 // ------------------------------------------------------------------------
 Route::post('/admin/deploy-hook', [\App\Http\Controllers\Admin\DeployHookController::class, 'handle']);
