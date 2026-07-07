@@ -396,7 +396,6 @@ Route::group(['prefix' => 'snap', 'namespace' => '\App\Http\Controllers\Api\V1\P
     Route::post('/v1.1/qr/qr-mpm-notify', 'SnapBIController@qrisNotify');
     
     // BRIVA
-    Route::post('/v1.0/access-token/b2b', 'SnapBIController@getAccessToken');
     Route::post('/v1.0/transfer-va/inquiry', 'SnapBIController@brivaInquiry');
     Route::post('/v1.0/transfer-va/payment', 'SnapBIController@brivaPayment');
 });
