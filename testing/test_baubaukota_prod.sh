@@ -4,7 +4,7 @@
 # Tests API + all 3 frontends + PBB Bapenda
 # ============================================================================
 
-API="https://api.sipanda.online/api"
+API="https://api.mpad.online/api"
 ADMIN_FE="https://adminmpad.baubaukota.go.id"
 MOBILE_FE="https://mpad.baubaukota.go.id"
 PETUGAS_FE="https://petugasmpad.baubaukota.go.id"
@@ -41,6 +41,19 @@ for url in "$ADMIN_FE" "$MOBILE_FE" "$PETUGAS_FE"; do
   STATUS=$($CURL -4 -o /dev/null -w "%{http_code}" "$url/")
   check "$url" "200" "$STATUS"
 done
+
+echo ""
+echo -e "${BLUE}[1.b] Frontend Build-Only Configuration${NC}"
+# Verifikasi config.json untuk arsitektur Build-Only
+CONFIG_HTTP=$($CURL -4 -o /dev/null -w "%{http_code}" "$ADMIN_FE/config.json")
+check "Admin config.json Exists" "200" "$CONFIG_HTTP"
+
+CONFIG_API=$($CURL -4 "$ADMIN_FE/config.json" 2>/dev/null | grep -o '"VITE_API_URL"[^,]*' | awk -F'"' '{print $4}')
+if [[ "$CONFIG_API" == *"api.mpad.online"* ]] || [[ "$CONFIG_API" == *"apimpad.baubaukota.go.id"* ]]; then
+  check "Admin config.json API_URL is Prod" "PASS" "PASS"
+else
+  check "Admin config.json API_URL is Prod" "PASS" "$CONFIG_API"
+fi
 
 # --- 2. API AUTH ---
 echo ""
@@ -99,6 +112,20 @@ check "PBB Classifications" "200" "$PBB_CLASS"
 # Check admin PBB page (SPA route — should return index.html)
 PBB_FE=$($CURL -4 -o /dev/null -w "%{http_code}" "$ADMIN_FE/pbb-bapenda")
 check "Admin PBB Page" "200" "$PBB_FE"
+
+# --- 4.b AUTO DEDUCT & CORRECTION ---
+echo ""
+echo -e "${BLUE}[4.b] Auto Deduct & Correction API${NC}"
+# Pastikan endpoint Webhook merespons (bukan 404, melainkan 401 karena butuh Basic Auth)
+AD_WEBHOOK=$($CURL -4 -o /dev/null -w "%{http_code}" -X POST "$API/auto-deduct/webhook" \
+  -H "Content-Type: application/json" \
+  -d '{"event":"TEST"}')
+check "Auto Deduct Webhook Auth (Expect 401)" "401" "$AD_WEBHOOK"
+
+# Pastikan route internal admin untuk status Auto Deduct ada (Expect 200)
+AD_STATUS=$($CURL -4 -o /dev/null -w "%{http_code}" "$API/auto-deduct/status" \
+  -H "Authorization: Bearer $TOKEN" -H "Accept: application/json")
+check "Auto Deduct Status" "200" "$AD_STATUS"
 
 # --- 5. CORS CROSS-ORIGIN VALIDATION ---
 # This section prevents regressions like baubaukota.go.id not being whitelisted
@@ -183,6 +210,7 @@ cat << REPORT > "$RESULTS_FILE"
 6. Public Endpoints
 7. Citizen Endpoints
 8. Error Handling (401/404)
+9. Auto Deduct & Build-Only Config Verification
 
 > **NOSS Compliance**: Seluruh pengujian dilakukan tanpa screenshot, murni via CLI/curl.
 REPORT
