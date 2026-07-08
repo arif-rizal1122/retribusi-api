@@ -25,11 +25,16 @@ class PaymentManager extends Manager
             return \App\Models\PaymentChannel::where('code', $code)->where('is_active', true)->first();
         });
 
-        if (!$channel) {
-            throw new \Exception("Payment channel [{$code}] is not active or not configured.");
+        if ($channel) {
+            return $channel->credentials ?? [];
         }
 
-        return $channel->credentials ?? [];
+        $configFallback = $this->config->get("payment.drivers.{$code}");
+        if (is_array($configFallback)) {
+            return $configFallback;
+        }
+
+        throw new \Exception("Payment channel [{$code}] is not active or not configured.");
     }
 
     /**
