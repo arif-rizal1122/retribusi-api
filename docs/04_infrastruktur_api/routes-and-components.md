@@ -8,7 +8,7 @@
 
 ## 0. INFRASTRUKTUR & DOMAIN
 Seluruh endpoint di bawah ini diakses melalui domain produksi yang sudah dipartisi:
-- **API**: [api.sipanda.online](https://api.sipanda.online)
+- **API**: [apimpad.baubaukota.go.id](https://apimpad.baubaukota.go.id)
 - **Admin**: [adminmpad.baubaukota.go.id](https://adminmpad.baubaukota.go.id)
 - **Petugas**: [petugasmpad.baubaukota.go.id](https://petugasmpad.baubaukota.go.id)
 

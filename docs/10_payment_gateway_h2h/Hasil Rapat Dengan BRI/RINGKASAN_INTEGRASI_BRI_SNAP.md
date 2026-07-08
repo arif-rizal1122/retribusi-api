@@ -91,3 +91,22 @@ Tim IT wajib memastikan poin berikut terpenuhi di portal ASPI Devsite:
 
 ---
 **Catatan**: Dokumen ini bersifat dinamis dan harus diperbarui jika ada perubahan teknis dari pihak BRI selama masa pengembangan.
+
+## 7. Sandboxing Credentials (Extracted from Value QRIS Notif Sandboxing.xlsx)
+Data berikut merupakan credential sandbox dari BRI yang wajib digunakan selama tahap pengujian:
+
+### A. Konfigurasi Email
+Email berikut telah didaftarkan pada portal Developer BRI (https://developers.bri.co.id/id):
+- **Notification QRIS**: `bapendakotabaubau21@gmail.com`
+- **BRIVA Online**: `bapendakotabaubau21@gmail.com`
+
+### B. Konfigurasi BRIVA Online (Environment Variables)
+> [!IMPORTANT]
+> **Client ID dan Client Secret di bawah ini di-generate secara mandiri oleh pihak Bapenda (M-PAD), bukan diberikan oleh BRI.**
+> Ini berarti M-PAD bertindak sebagai *Authorization Server* untuk request yang masuk dari BRI (BRI akan memanggil endpoint `/access-token/b2b` dengan kredensial ini untuk mendapatkan Access Token). Untuk tahap *Production*, Bapenda wajib men-generate kredensial baru yang aman dan menyerahkannya ke BRI.
+
+- **URL Service token**: `https://api.mpad.online/api/snap/v1.1/access-token/b2b`
+- **URL Service Notify**: `https://api.mpad.online/api/snap/v1.1/qr/qr-mpm-notify`
+- **client ID**: `[REDACTED_CLIENT_ID]` (Sandboxing)
+- **client Secret**: `[REDACTED_CLIENT_SECRET]` (Sandboxing)
+
