@@ -3,48 +3,55 @@
 namespace App\Services;
 
 use App\Models\PaymentGatewayLog;
+use App\Services\Payment\Snap\SensitivePaymentLogMasker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class PaymentAuditService
 {
+    public function __construct(private readonly SensitivePaymentLogMasker $masker)
+    {
+    }
+
     /**
      * Log an incoming/outgoing payment gateway communication
      */
-    public function record(Request $request, array $response, string $billNumber = null): void
+    public function record(
+        Request $request,
+        array $response,
+        ?string $billNumber = null,
+        ?string $endpoint = null,
+        ?int $statusCode = null
+    ): void
     {
         try {
             PaymentGatewayLog::create([
-                'bill_number' => $billNumber ?? $request->bill_number,
-                'endpoint' => $request->path(),
+                'bill_number' => $billNumber
+                    ?? $request->input('bill_number')
+                    ?? $request->input('customerNo')
+                    ?? $request->input('virtualAccountNo'),
+                'endpoint' => $endpoint ?? $request->path(),
                 'method' => $request->method(),
-                'payload_in' => $this->maskSensitiveData($request->all()),
-                'payload_out' => $this->maskSensitiveData($response),
-                'status_code' => $response['code'] ?? 200,
+                'payload_in' => $this->masker->mask(array_merge($request->headers->all(), $request->all())),
+                'payload_out' => $this->masker->mask($response),
+                'status_code' => $statusCode ?? $this->statusCodeFromResponse($response),
                 'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-                'signature_verified' => true // Only calls this if middleware passed
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to record Payment Gateway Log:', ['error' => $e->getMessage()]);
         }
     }
 
-    /**
-     * Mask sensitive fields in payloads (secrets, tokens, etc)
-     */
-    protected function maskSensitiveData(array $data): array
+    private function statusCodeFromResponse(array $response): int
     {
-        $sensitiveFields = ['secret', 'password', 'token', 'signature', 'client_secret'];
-        
-        foreach ($data as $key => $value) {
-            if (in_array(strtolower($key), $sensitiveFields)) {
-                $data[$key] = '********';
-            } elseif (is_array($value)) {
-                $data[$key] = $this->maskSensitiveData($value);
-            }
+        if (isset($response['code']) && is_numeric($response['code'])) {
+            return (int) $response['code'];
         }
-        
-        return $data;
+
+        if (isset($response['responseCode']) && is_string($response['responseCode'])) {
+            return (int) substr($response['responseCode'], 0, 3);
+        }
+
+        return 200;
     }
 }
