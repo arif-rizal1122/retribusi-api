@@ -1,0 +1,37 @@
+sequenceDiagram
+    autonumber
+    actor WP as Wajib Pajak
+    participant MPAD as M-PAD (Bapenda)
+    participant BRIAPI as BRIAPI
+    participant BankChannel as BRI Channel (Brimo/ATM)
+    
+    %% Inisiasi Pembayaran
+    rect rgb(240, 248, 255)
+    note right of WP: 1. Inisiasi Pembayaran
+    WP->>MPAD: Pilih Tagihan & Metode Pembayaran BRI
+    MPAD->>MPAD: Generate Nomor VA (BRIVA) Internal
+    MPAD-->>WP: Tampilkan Nomor BRIVA & Batas Waktu
+    end
+    
+    %% Proses Pembayaran
+    rect rgb(255, 248, 220)
+    note right of WP: 2. Pengecekan (Inquiry)
+    WP->>BankChannel: Input Nomor BRIVA
+    BankChannel->>BRIAPI: Proses Pengecekan Tagihan
+    BRIAPI->>MPAD: POST /transfer-va/inquiry (Cek Tagihan)
+    MPAD->>MPAD: Validasi Token & Signature H2H
+    MPAD-->>BRIAPI: Valid (Kirim Detail Tagihan & Nominal)
+    BRIAPI-->>BankChannel: Tampilkan Detail Tagihan ke WP
+    WP->>BankChannel: Konfirmasi Pembayaran
+    end
+    
+    %% Notifikasi & Penyelesaian
+    rect rgb(240, 255, 240)
+    note right of WP: 3. Pembayaran & Notifikasi (Payment)
+    BankChannel-->>BRIAPI: Bayar Berhasil (Dana Masuk RKUD)
+    BRIAPI->>MPAD: POST /transfer-va/payment (Notifikasi Sukses)
+    MPAD->>MPAD: Validasi Signature & Update Status (LUNAS)
+    MPAD-->>BRIAPI: HTTP 200 OK (PaymentFlagStatus: 00)
+    MPAD-->>WP: Notifikasi Sukses di Aplikasi
+    MPAD->>MPAD: Terbitkan SSRD / Bukti Bayar Digital
+    end
