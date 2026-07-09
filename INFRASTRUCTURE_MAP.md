@@ -7,22 +7,38 @@ This file contains sensitive technical information regarding the Bapenda VPS and
 
 ## 1. Server Metadata
 
+### A. VPS MPAD (Production)
 - **Public IP**: `157.10.252.74`
 - **Region**: Bapenda Kota Baubau VPS
 - **User**: `sipanda`
 - **Default SSH Port**: `22`
 - **PHP Version**: `8.3.12`
 - **Database Engine**: MariaDB / MySQL
+- **Role**: Native Nginx Production Server
+
+### B. VPS Ihsan (Staging/Dev)
+- **Public IP**: `47.236.240.61`
+- **Region**: Alibaba Cloud (Assumed)
+- **User**: `root`
+- **Password**: `@zitus123`
+- **Role**: Coolify Orchestrator for Staging & Dev Environments
 
 ## 2. Directory & Domain Mapping
 
+### Production (VPS MPAD)
 | Service | Primary Domain | VPS Base Directory | VPS Web Root (Nginx) |
 | :--- | :--- | :--- | :--- |
-| **Backend API** | `api.sipanda.online` | `/home/sipanda/retribusi-api` | `/home/sipanda/retribusi-api/public` |
+| **Backend API** | `apimpad.baubaukota.go.id` | `/home/sipanda/retribusi-api` | `/home/sipanda/retribusi-api/public` |
 | **Admin Dashboard** | `adminmpad.baubaukota.go.id` | `/home/sipanda/retribusi-admin` | `/home/sipanda/retribusi-admin/dist` |
 | **Petugas App** | `petugasmpad.baubaukota.go.id` | `/home/sipanda/retribusi-petugas` | `/home/sipanda/retribusi-petugas/dist` |
 | **POS System** | `posmpad.baubaukota.go.id` | `/home/sipanda/POS` | `/home/sipanda/POS/frontend/dist` |
-| **Mobile App** | (API Endpoint) | `/home/sipanda/retribusi-mobile` | N/A (Build only) |
+| **Mobile App** | `mpad.baubaukota.go.id` | `/home/sipanda/retribusi-mobile` | N/A (Build only) |
+
+### Staging & Dev (VPS Ihsan via Coolify)
+| Service | Domain | Manager |
+| :--- | :--- | :--- |
+| **Coolify Dashboard** | `coolify.sipanda.online` | Docker Container |
+| **Staging/Dev Services** | `*.sipanda.online`, `*.mpad.online` | Coolify (Traefik) |
 
 ## 3. Database Credentials
 
