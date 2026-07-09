@@ -3,12 +3,20 @@
 Dokumen ini menjelaskan **lokasi penyimpanan** kredensial tanpa mencantumkan nilai rahasianya (secrets) demi keamanan, serta daftar akun dan tautan akses untuk sistem Retribusi.
 
 ## 1. Kredensial VPS (Server)
+
+### VPS MPAD (Production)
 - **Hostname:** `157.10.252.74`
-- **Username:** `mpad`
+- **Username:** `mpad` / `sipanda`
 - **Penyimpanan:** 
   - **GitHub Secrets:** `VPS_HOST`, `VPS_USERNAME`, `VPS_PASSWORD`.
   - **Environment Lokasi:** Disimpan dalam password manager pribadi.
 - **Akses Database:** Dikelola via file `.env` di VPS.
+
+### VPS Ihsan (Staging/Dev - Coolify)
+- **Hostname:** `47.236.240.61`
+- **Username:** `root`
+- **Password:** `@zitus123`
+- **Role:** Orkestrator CI/CD via Coolify untuk semua modul *staging* dan *dev*.
 
 ## 2. Kredensial API & Layanan Ketiga
 - **Cloudinary (Media):** 

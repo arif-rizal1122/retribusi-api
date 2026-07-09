@@ -194,6 +194,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
     // Citizen Specific Actions
     Route::group(['prefix' => 'citizen'], function () {
+        Route::post('/payments', [PaymentController::class, 'store']);
         Route::post('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'store']);
         Route::get('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
         Route::post('/complaints', [ComplaintController::class, 'store']);
