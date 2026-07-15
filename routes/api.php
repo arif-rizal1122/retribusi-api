@@ -194,6 +194,15 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
     // Citizen Specific Actions
     Route::group(['prefix' => 'citizen'], function () {
+        // Pembayaran
+        Route::get('/payments/history', [PaymentController::class, 'history']);
+
+        // Merchant AFT (Kalkulator Bisnis)
+        Route::prefix('merchant')->group(function () {
+            Route::post('/submit-omzet', [\App\Http\Controllers\Api\Merchant\KalkulatorBisnisController::class, 'submitOmzet']);
+            Route::get('/aft-history', [\App\Http\Controllers\Api\Merchant\KalkulatorBisnisController::class, 'getAftHistory']);
+        });
+
         Route::post('/payments', [PaymentController::class, 'store']);
         Route::post('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'store']);
         Route::get('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
@@ -400,6 +409,10 @@ Route::group(['prefix' => 'snap', 'namespace' => '\App\Http\Controllers\Api\V1\P
     Route::post('/v1.0/access-token/b2b', 'SnapBIController@getAccessToken');
     Route::post('/v1.0/transfer-va/inquiry', 'SnapBIController@brivaInquiry');
     Route::post('/v1.0/transfer-va/payment', 'SnapBIController@brivaPayment');
+
+    // BTN Virtual Account
+    Route::post('/v1/transfer-va/inquiry', 'BtnSnapController@inquiry');
+    Route::post('/v1/transfer-va/payment', 'BtnSnapController@payment');
 });
 
 // ------------------------------------------------------------------------
