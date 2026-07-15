@@ -46,4 +46,14 @@ return [
         'outlet'   => env('PBB_BAPENDA_OUTLET', 'm-PAD'),
     ],
 
+    'btn' => [
+        'base_url' => env('BTN_BASE_URL', 'https://devapi.btn.co.id'),
+        'client_id' => env('BTN_CLIENT_ID', ''), // OAuth ID
+        'client_secret' => env('BTN_CLIENT_SECRET', ''), // Apikey Secret
+        'api_key' => env('BTN_API_KEY', ''), // Apikey ID
+        'partner_id' => env('BTN_PARTNER_ID', '99017'),
+        'channel_id' => env('BTN_CHANNEL_ID', '00001'),
+        'private_key_path' => env('BTN_PRIVATE_KEY_PATH', storage_path('app/keys/btn_private.pem')),
+    ],
+
 ];
