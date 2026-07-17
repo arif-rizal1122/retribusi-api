@@ -1,20 +1,20 @@
 #!/bin/bash
 # ============================================================================
-# Production Readiness Test - api.sipanda.online
+# Production Readiness Test - apimpad.baubaukota.go.id
 # ============================================================================
 # Tests: CORS, Authentication, API Endpoints, Error Handling, PWA
 # Run: chmod +x test_production_ready.sh && ./test_production_ready.sh
 # ============================================================================
 
 # Default values
-API_URL="https://api.sipanda.online"
+API_URL="https://apimpad.baubaukota.go.id"
 FRONTEND_ORIGIN="https://sipanda.online"
 ADMIN_ORIGIN="https://admin.sipanda.online"
 
 # Environment selection
 if [ "$1" == "staging" ]; then
   echo -e "${YELLOW}Mode: STAGING (sipanda.online)${NC}"
-  API_URL="https://api.sipanda.online"
+  API_URL="https://apimpad.baubaukota.go.id"
   FRONTEND_ORIGIN="https://sipanda.online"
   ADMIN_ORIGIN="https://admin.sipanda.online"
 elif [ "$1" == "dev" ]; then

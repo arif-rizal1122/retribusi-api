@@ -4,11 +4,11 @@ echo "   STG 1: HEALTH CHECK EKOSISTEM STAGING     \n";
 echo "=============================================\n";
 
 $domains = [
-    'API Backend' => 'https://api.sipanda.online/up',
+    'API Backend' => 'https://apimpad.baubaukota.go.id/up',
     'Dashboard Admin' => 'https://admin.sipanda.online',
     'Aplikasi Petugas' => 'https://petugas.sipanda.online',
     // Cek juga API basic tanpa /up untuk amannya
-    'API Root' => 'https://api.sipanda.online/api/v1/auth/me' 
+    'API Root' => 'https://apimpad.baubaukota.go.id/api/v1/auth/me' 
 ];
 
 $allPassed = true;

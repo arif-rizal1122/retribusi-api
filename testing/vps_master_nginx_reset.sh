@@ -5,7 +5,7 @@
 echo "--- STARTING DOMAIN-CORRECTED NGINX RECOVERY ---"
 
 # 1. DOMAINS & ROOTS
-API_DOMAIN="api.sipanda.online"
+API_DOMAIN="apimpad.baubaukota.go.id"
 ADMIN_DOMAIN="adminmpad.baubaukota.go.id"
 PETUGAS_DOMAIN="petugasmpad.baubaukota.go.id"
 

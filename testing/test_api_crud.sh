@@ -1,23 +1,23 @@
 #!/bin/bash
 # ============================================================================
-# API Endpoint & CRUD Testing Suite - api.sipanda.online
+# API Endpoint & CRUD Testing Suite - apimpad.baubaukota.go.id
 # ============================================================================
 # Tests all API routes: public, auth, CRUD lifecycle, response validation
 # Run: chmod +x test_api_crud.sh && ./test_api_crud.sh
 # ============================================================================
 
 # Default to Staging
-API="https://api.sipanda.online/api"
+API="https://apimpad.baubaukota.go.id/api"
 ORIGIN="https://sipanda.online"
 
 # Handle environment argument
 if [ "$1" == "prod" ]; then
   echo -e "${YELLOW}Mode: PRODUCTION${NC}"
-  API="https://api.sipanda.online/api"
+  API="https://apimpad.baubaukota.go.id/api"
   ORIGIN="https://mpad.baubaukota.go.id"
 elif [ "$1" == "staging" ]; then
   echo -e "${YELLOW}Mode: STAGING (sipanda.online)${NC}"
-  API="https://api.sipanda.online/api"
+  API="https://apimpad.baubaukota.go.id/api"
   ORIGIN="https://sipanda.online"
 elif [ "$1" == "local" ]; then
   echo -e "${YELLOW}Mode: LOCALHOST${NC}"
@@ -134,7 +134,7 @@ test_endpoint GET "$API/pbb/classifications" "" "" "200" "/pbb/classifications" 
 test_endpoint GET "$API/citizen/bills?nik=$CITIZEN_NIK" "" "$ADMIN_TOKEN" "200" "/citizen/bills?nik=..." > /dev/null
 
 # Health check
-test_endpoint GET "https://api.sipanda.online/up" "" "" "200" "/up (health)" > /dev/null
+test_endpoint GET "https://apimpad.baubaukota.go.id/up" "" "" "200" "/up (health)" > /dev/null
 
 # ============================================================================
 # 2. AUTH-REQUIRED ENDPOINTS (Citizen)

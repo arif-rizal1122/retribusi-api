@@ -3,7 +3,7 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-SUBDOMAINS=("api.sipanda.online" "mpad.baubaukota.go.id" "adminmpad.baubaukota.go.id" "petugasmpad.baubaukota.go.id")
+SUBDOMAINS=("apimpad.baubaukota.go.id" "mpad.baubaukota.go.id" "adminmpad.baubaukota.go.id" "petugasmpad.baubaukota.go.id")
 
 echo "Starting Production Infrastructure Health Check..."
 

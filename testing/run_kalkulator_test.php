@@ -9,7 +9,7 @@ $env = $argv[1] ?? 'local';
 if ($env === 'dev') {
     $baseUrl = "https://api-dev.sipanda.online";
 } elseif ($env === 'prod') {
-    $baseUrl = "https://api.sipanda.online";
+    $baseUrl = "https://apimpad.baubaukota.go.id";
 } else {
     $baseUrl = "http://localhost:8000";
 }

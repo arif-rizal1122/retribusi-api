@@ -42,7 +42,7 @@ fi
 # ============================================================
 if [ "$TARGET" = "staging" ]; then
   echo "[3/4] 🌐 Triggering staging deploy webhook..."
-  STAGING_URL="https://api.sipanda.online"
+  STAGING_URL="https://apimpad.baubaukota.go.id"
 
   RESP=$(curl -s -X POST "$STAGING_URL/api/admin/deploy-hook" \
     -H "Content-Type: application/json" \
@@ -66,7 +66,7 @@ fi
 echo "[4/4] 🏥 Post-deploy health check..."
 sleep 3
 
-for URL in "https://api.sipanda.online/up" "https://admin.sipanda.online" "https://petugas.sipanda.online"; do
+for URL in "https://apimpad.baubaukota.go.id/up" "https://admin.sipanda.online" "https://petugas.sipanda.online"; do
   STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 8 "$URL")
   if [ "$STATUS" = "200" ]; then
     echo "  ✅ $URL → HTTP $STATUS"
