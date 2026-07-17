@@ -29,9 +29,9 @@ abstract class SnapFeatureTestCase extends TestCase
         [$this->privateKey, $this->publicKey] = $this->keys();
 
         config([
-            'snap.partner_id' => 'BRI-PARTNER-TEST',
-            'snap.client_key' => 'BRI-CLIENT-TEST',
-            'snap.security.bank_public_key' => $this->publicKey,
+            'snap.partners.BRI.partner_id' => 'BRI-PARTNER-TEST',
+            'snap.partners.BRI.client_key' => 'BRI-CLIENT-TEST',
+            'snap.partners.BRI.public_key' => $this->publicKey,
             'snap.security.require_bearer_token' => true,
             'snap.timestamp_tolerance_seconds' => 300,
             'snap.token_ttl_seconds' => 900,
@@ -43,7 +43,7 @@ abstract class SnapFeatureTestCase extends TestCase
         $timestamp = $overrides['X-TIMESTAMP'] ?? now()->toIso8601String();
 
         $headers = [
-            'X-CLIENT-KEY' => config('snap.client_key'),
+            'X-CLIENT-KEY' => config('snap.partners.BRI.client_key'),
             'X-TIMESTAMP' => $timestamp,
             'X-SIGNATURE' => $this->signature('/api/snap/v1.1/access-token/b2b', $body, $timestamp),
         ];
@@ -56,7 +56,7 @@ abstract class SnapFeatureTestCase extends TestCase
         $timestamp = $overrides['X-TIMESTAMP'] ?? now()->toIso8601String();
 
         $headers = [
-            'X-PARTNER-ID' => config('snap.partner_id'),
+            'X-PARTNER-ID' => config('snap.partners.BRI.partner_id'),
             'X-EXTERNAL-ID' => 'EXT-' . Str::uuid()->toString(),
             'X-TIMESTAMP' => $timestamp,
             'X-SIGNATURE' => $this->signature($path, $body, $timestamp),
@@ -154,7 +154,7 @@ abstract class SnapFeatureTestCase extends TestCase
 
     private function issueToken(): string
     {
-        return app(SnapTokenService::class)->issue((string) config('snap.client_key'))['access_token'];
+        return app(SnapTokenService::class)->issue((string) config('snap.partners.BRI.client_key'), 'BRI')['access_token'];
     }
 
     private function keys(): array
