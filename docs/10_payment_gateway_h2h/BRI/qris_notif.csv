@@ -1,0 +1,19 @@
+Unnamed: 0,Unnamed: 1,Unnamed: 2,Unnamed: 3
+,,,
+,,,
+,,,
+,,,
+,Email Sandbox untuk pengiriman Public key  (Email harus terdaftar pada https://developers.bri.co.id/id),,
+,,,
+,No,Nama Fitur,Email
+,1,Notification QRIS,bapenda@baubaukota.go.id
+,2,BRIVA Online,bapenda@baubaukota.go.id
+,3,,
+,,,
+,Briva Online,,
+,,,
+,No,Attribute,Value
+,1,URL Service token,https://apimpad.baubaukota.go.id/api/snap/v1.1/access-token/b2b
+,2,URL Service Notify,https://apimpad.baubaukota.go.id/api/snap/v1.1/qr/qr-mpm-notify
+,3,client ID,MPADBAUBAUSNAP2026ID
+,4,client Secret,MPADBAUBAUSNAPSECRET2026KEY

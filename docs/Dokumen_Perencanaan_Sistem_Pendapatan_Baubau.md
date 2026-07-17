@@ -82,34 +82,34 @@ Sebagai antitesis langsung dari sistem lama yang rentan, rapuh, dan kaku, arsite
 
 ### 4.1 Skema Topologi Infrastruktur Cloud
 
-<div class="mermaid">
+<div class="mermaid" style="max-width: 800px; margin: 20px auto;">
 flowchart TD
-    classDef cloud fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1,rx:5px,ry:5px
-    classDef server fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100,rx:5px,ry:5px
-    classDef db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20,rx:5px,ry:5px
-    classDef firewall fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c,rx:5px,ry:5px
-    classDef network fill:#f3e5f5,stroke:#303f9f,stroke-width:2px,color:#1a237e,rx:5px,ry:5px
+    classDef cloud fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef server fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100
+    classDef db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef firewall fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c
+    classDef network fill:#f3e5f5,stroke:#303f9f,stroke-width:2px,color:#1a237e
 
-    subgraph AreaPublik ["🌐 KANAL INTERNET PUBLIK DAN INTRANET"]
-        Warga["📱 Wajib Pajak Browser dan Mobile Apps"]:::cloud
-        Perbankan["🏦 Sistem Core Banking Mitra"]:::cloud
-        Petugas["💻 Intranet VPN Bapenda"]:::cloud
+    subgraph AreaPublik[KANAL INTERNET PUBLIK DAN INTRANET]
+        Warga[Wajib Pajak Browser dan Mobile Apps]:::cloud
+        Perbankan[Sistem Core Banking Mitra]:::cloud
+        Petugas[Intranet VPN Bapenda]:::cloud
     end
 
-    subgraph AreaKeamanan ["🛡️ PERIMETER KEAMANAN SIBER DMZ"]
-        WAF["🧱 Web Application Firewall L7 Anti DDoS"]:::firewall
-        LB["⚖️ L4 L7 API Load Balancer"]:::network
+    subgraph AreaKeamanan[PERIMETER KEAMANAN SIBER DMZ]
+        WAF[Web Application Firewall L7 Anti DDoS]:::firewall
+        LB[L4 L7 API Load Balancer]:::network
     end
 
-    subgraph AreaVPS ["☁️ KLASTER APLIKASI MICROSERVICES VPS"]
-        Node1["⚙️ App Server Node 01 Laravel"]:::server
-        Node2["⚙️ App Server Node 02 Auto Scaling"]:::server
+    subgraph AreaVPS[KLASTER APLIKASI MICROSERVICES VPS]
+        Node1[App Server Node 01 Laravel]:::server
+        Node2[App Server Node 02 Auto Scaling]:::server
     end
 
-    subgraph AreaDB ["💾 DATA CENTER DAN PERSISTENSI"]
-        DBMaster["🗄️ Database Master MySQL PostgreSQL"]:::db
-        Redis["⚡ Redis Cache Server Session Store"]:::db
-        ObjectStorage["📁 S3 Object Storage PDF Media"]:::db
+    subgraph AreaDB[DATA CENTER DAN PERSISTENSI]
+        DBMaster[Database Master MySQL PostgreSQL]:::db
+        Redis[Redis Cache Server Session Store]:::db
+        ObjectStorage[S3 Object Storage PDF Media]:::db
     end
 
     Warga -->|HTTPS TLS 1.3| WAF
@@ -120,13 +120,13 @@ flowchart TD
     LB -->|Distribusi 50 Persen| Node1
     LB -->|Distribusi 50 Persen| Node2
 
-    Node1 <-->|Read Write ORM| DBMaster
-    Node1 <-->|Set Get Cache| Redis
-    Node1 <-->|Signed URL| ObjectStorage
+    Node1 -->|Read Write ORM| DBMaster
+    Node1 -->|Set Get Cache| Redis
+    Node1 -->|Signed URL| ObjectStorage
 
-    Node2 <-->|Read Write ORM| DBMaster
-    Node2 <-->|Set Get Cache| Redis
-    Node2 <-->|Signed URL| ObjectStorage
+    Node2 -->|Read Write ORM| DBMaster
+    Node2 -->|Set Get Cache| Redis
+    Node2 -->|Signed URL| ObjectStorage
 </div>
 
 **Analisis Mendalam Arsitektur Jaringan:** Topologi radikal ini mengamputasi paradigma lama di mana peladen terekspos telanjang ke internet. Konfigurasi jaringan kini memusatkan seluruh tameng perlindungan pada *Web Application Firewall* (WAF) di lapis terluar (Lapisan 7 OSI Layer). Dengan arsitektur ini, lalu lintas (*traffic*) data yang datang dari internet publik tidak akan pernah memiliki akses langsung (*direct routing*) untuk menyentuh, apalagi mengeksploitasi mesin *Database*. WAF bertugas bak pasukan elit pabean; ia membongkar setiap paket HTTP yang datang secara *real-time*, mendeteksi dan menghancurkan secara brutal paket yang membawa muatan virus, *malware*, maupun kode injeksi SQL berbahaya (*SQL Injection Payload*). 
@@ -136,56 +136,81 @@ Setelah paket data dipastikan steril, WAF baru akan meneruskannya ke komponen pe
 ### 4.2 Spesifikasi Proses Bisnis Berorientasi Digital
 Demi merampingkan dan membabat habis rantai birokrasi yang panjang dan berbelit, seluruh modul bisnis utama dimodernisasi menjadi subsistem elektronik serba otomatis dan cerdas:
 
-<div class="mermaid">
+<div class="mermaid" style="max-width: 800px; margin: 20px auto;">
 flowchart TD
-    classDef step fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1,rx:5px,ry:5px
-    classDef decision fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100,rx:5px,ry:5px
-    classDef end fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20,rx:5px,ry:5px
+    classDef step fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef decision fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100
+    classDef endnode fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
 
-    A["Wajib Pajak Buka Aplikasi"]:::step --> B("Input NIK dan NPWP"):::step
-    B --> C{"Sistem Validasi Dukcapil dan DJP"}:::decision
-    C -->|Gagal| D["Notifikasi Error Data Tidak Valid"]:::step
-    C -->|Valid| E("Tentukan Titik Peta Google Maps"):::step
-    E --> F("Unggah Foto Usaha ke S3 Storage"):::step
-    F --> G("Isi Detail Objek Pajak"):::step
-    G --> H("Submit E-SPOPD"):::step
-    H --> I["Petugas Bapenda Verifikasi Lapangan"]:::step
-    I --> J{"Kesesuaian Data?"}:::decision
-    J -->|Tidak Sesuai| K["Tolak dan Kembalikan Revisi"]:::step
-    J -->|Sesuai| L["Terbitkan NPWPD dan SKPD Elektronik"]:::end
+    A[Wajib Pajak Buka Aplikasi]:::step
+    B(Input NIK dan NPWP):::step
+    C{Sistem Validasi Dukcapil dan DJP}:::decision
+    D[Notifikasi Error Data Tidak Valid]:::step
+    E(Tentukan Titik Peta Google Maps):::step
+    F(Unggah Foto Usaha ke S3 Storage):::step
+    G(Isi Detail Objek Pajak):::step
+    H(Submit E-SPOPD):::step
+    I[Petugas Bapenda Verifikasi Lapangan]:::step
+    J{Kesesuaian Data}:::decision
+    K[Tolak dan Kembalikan Revisi]:::step
+    L[Terbitkan NPWPD dan SKPD Elektronik]:::endnode
+
+    A --> B
+    B --> C
+    C -->|Gagal| D
+    C -->|Valid| E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+    I --> J
+    J -->|Tidak Sesuai| K
+    J -->|Sesuai| L
 </div>
 
 1.  **Modul Registrasi dan Pemetaan Mandiri E-SPOPD (Electronic - Surat Pemberitahuan Objek Pajak Daerah):** Sistem ini secara definitif akan mengakhiri era penggunaan formulir pendaftaran berbahan kertas fisik yang rentan hilang, kusam, atau terbakar. Modul portal E-SPOPD memberikan otonomi penuh bagi warga masyarakat. Wajib pajak, cukup dari layar sentuh gawai mereka, dapat menginput NIK, NPWP, menentukan dan memvalidasi titik koordinat lokasi usaha mereka secara presisi via satelit terintegrasi (Google Maps API), hingga mengunggah bukti foto lokasi kedai, restoran, atau hotel. Hebatnya, jutaan berkas visual (*image files*) ini sama sekali tidak akan menelan kapasitas ruang penyimapanan VPS aplikasi, karena secara otomatis diterbangkan dan diinangkan pada ekosistem awan S3 *Object Storage* yang murah dan tak terbatas.
 
-<div class="mermaid">
+<div class="mermaid" style="max-width: 800px; margin: 20px auto;">
 flowchart TD
-    classDef step fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1,rx:5px,ry:5px
-    classDef server fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100,rx:5px,ry:5px
-    classDef db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20,rx:5px,ry:5px
-    classDef decision fill:#f3e5f5,stroke:#303f9f,stroke-width:2px,color:#1a237e,rx:5px,ry:5px
+    classDef step fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef server fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100
+    classDef db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef decision fill:#f3e5f5,stroke:#303f9f,stroke-width:2px,color:#1a237e
 
-    WP["Wajib Pajak"]:::step -->|Buka Mobile Banking| MB("Pilih Menu Pembayaran Pajak Daerah"):::step
-    MB --> Input("Input Nomor Bayar Kode Billing"):::step
-    Input --> Bank["Core Banking Bank Mitra"]:::server
-    Bank -->|API Request Inquiry SNAP| API["API Gateway Bapenda WAF"]:::server
-    API --> LB["Load Balancer"]:::server --> App["App Server Laravel"]:::server
-    App --> Redis("Cek Cache Tagihan Redis"):::db
-    Redis -->|Cache Hit| Res1("Kembalikan Data Tagihan Instan"):::step
-    Redis -->|Cache Miss| DB("Query Master Database"):::db
-    DB --> Res1
-    Res1 -->|API Response| Bank
-    Bank --> Tampil("Tampilkan Rincian Tagihan ke Layar WP"):::step
-    Tampil --> WP2{"WP Konfirmasi Bayar"}:::decision
-    WP2 -->|Ya| Bayar("Saldo WP Dipotong"):::step
-    Bayar --> API2["API Request Payment SNAP"]:::server
-    API2 --> App2["App Server Update Status Lunas"]:::server
-    App2 --> GenPDF("Generate TTE Bukti Lunas PDF"):::step
-    App2 -->|API Response| Bank2["Notifikasi Sukses ke Bank"]:::server
+    WP[Wajib Pajak]:::step
+    MB(JIT Billing Engine Aktif):::step
+    App[App Server Laravel]:::server
+    Redis(Kalkulasi Tagihan Denda):::db
+    DB(Kunci Transaksi Idempotency):::db
+    API[Push API Create VA QRIS SNAP]:::server
+    Bank[Core Banking Bank Mitra]:::server
+    Tampil(Tampilkan Kode Bayar QR ke WP):::step
+    WP2{WP Membayar di ATM MB}:::decision
+    Bayar(Saldo WP Dipotong):::step
+    API2[Webhook Real-time Payment SNAP]:::server
+    App2[App Server Update Status Lunas]:::server
+    GenPDF(Generate TTE Bukti Lunas PDF):::step
+    Bank2[Mitigasi Selesai Rekonsiliasi]:::server
+
+    WP -->|Pilih Bayar di mPaD| MB
+    MB --> App
+    App --> Redis
+    Redis --> DB
+    DB --> API
+    API --> Bank
+    Bank -->|Response VA Number QR| App
+    App --> Tampil
+    Tampil --> WP2
+    WP2 -->|Selesai Bayar| Bayar
+    Bayar --> API2
+    API2 --> App2
+    App2 --> GenPDF
+    App2 -->|API Response 200 OK| Bank2
 </div>
 
-2.  **Modul Kecerdasan Penetapan *JIT (Just-In-Time) Billing & Penalty Engine*:** Pada sistem ortodoks, mesin peladen akan menghitung, mengkompilasi, dan merumuskan seluruh nilai tagihan pajak dan denda jutaan wajib pajak secara massal di awal tahun. Proses konyol ini sangat memboroskan tenaga memori komputasi untuk data yang belum tentu diakses hari itu juga. Menghapus kebiasaan itu, sistem Bapenda baru beroperasi menggunakan algoritma perhitungan JIT. Logika matematika denda (kumulatif otomatis 2% per bulan) hanya akan diproses, dihitung, dan dimunculkan di layar dalam durasi sepersekian mikrosekon, *hanya dan hanya jika* wajib pajak bersangkutan (atau bank yang melayaninya) memicu tombol permintaan rincian tagihan (*inquiry*). Inovasi ini menghemat miliaran instruksi CPU yang sia-sia setiap harinya.
+2.  **Modul Kecerdasan Penetapan *JIT (Just-In-Time) Billing & Penalty Engine*:** Pada sistem ortodoks, mesin peladen akan menghitung, mengkompilasi, dan merumuskan seluruh nilai tagihan pajak dan denda jutaan wajib pajak secara massal di awal tahun. Proses konyol ini sangat memboroskan tenaga memori komputasi untuk data yang belum tentu diakses hari itu juga. Menghapus kebiasaan itu, sistem Bapenda baru beroperasi menggunakan algoritma perhitungan JIT. Logika matematika denda (kumulatif otomatis 2% per bulan) hanya akan diproses, dihitung, dan dimunculkan di layar dalam durasi sepersekian mikrosekon, *hanya dan hanya jika* wajib pajak bersangkutan memicu tombol permintaan rincian tagihan di aplikasi mPaD. Sistem mPaD kemudian secara aktif mengirimkan tagihan tersebut ke pihak Bank Mitra (Pola *Create VA/Push*). Inovasi ini menghemat miliaran instruksi CPU yang sia-sia setiap harinya.
 3.  **Digitalisasi Tanda Tangan Elektronik (TTE) Tersertifikasi:** Sistem ini dengan tegas meniadakan prosedur feodal pimpinan yang harus membubuhkan stempel basah pada tumpukan ratusan dokumen kertas. Setiap berkas produk hukum berupa Surat Ketetapan Pajak Daerah (SKPD) akan secara otomatis di- *generate* oleh *backend server* menjadi dokumen berformat *Portable Document Format (PDF)*. Selanjutnya, fail ini dikirimkan via *API Gateway* menuju mesin kriptografi terpusat milik Balai Sertifikasi Elektronik (BSrE - Badan Siber dan Sandi Negara RI) untuk direstui dan dibubuhi Sertifikat Digital berenkripsi tinggi (*Passphrase P12/QR Code*). Dokumen maya ini mengikat secara yuridis dan memiliki legitimasi hukum setara, bahkan lebih aman dari stempel basah di ruang pengadilan.
-4.  **Integrasi Interkoneksi Perbankan Otomatis (Host-to-Host):** Selaras dengan mandatori standar asinkron seketika (T+0) dari BI SNAP Nasional, arus kas perpajakan tidak lagi membutuhkan manusia penengah. Begitu uang kas wajib pajak dipotong secara elektronik melalui layar mesin ATM, *teller* fisik, atau aplikasi *Mobile Banking* Bank Sultra, mesin bank akan menembakkan (*webhook*) sinyal pelunasan ke peladen Bapenda. Dalam hitungan kurang dari 30 milidetik, layar *dashboard* pengawasan petugas Bapenda akan berubah status menjadi warna hijau "LUNAS". Integrasi nirmanusia ini secara instan membumihanguskan ritual pencocokan rekonsiliasi data manual akhir bulan yang seringkali membuat petugas harus bekerja lembur hingga tengah malam.
+4.  **Integrasi Interkoneksi Perbankan Otomatis (Host-to-Host):** Menggunakan standar **Two-Way Handshake** asinkron seketika (T+0) dari BI SNAP Nasional. Bapenda bertindak aktif melakukan *Create VA* (Push), lalu begitu uang kas wajib pajak dipotong secara elektronik, mesin bank akan menembakkan (*webhook*) sinyal pelunasan ke peladen Bapenda. Dalam hitungan kurang dari 30 milidetik, layar *dashboard* pengawasan petugas Bapenda akan berubah status menjadi warna hijau "LUNAS". Integrasi nirmanusia ini secara instan membumihanguskan ritual pencocokan rekonsiliasi data manual akhir bulan, ditambah mitigasi *Check Status* otomatis untuk memitigasi gagal transfer.
 
 ### 4.3 Standar Keamanan Sistem Tingkat Lanjut
 Infrastruktur finansial daerah mutlak dilindungi dengan tameng digital yang diimpor dari standar praktik keamanan industri perbankan (PCI-DSS):
@@ -246,18 +271,26 @@ Realisasi cetak biru megaproyek transformasi ini diurai sedemikian rupa ke dalam
 ### 6.2 Indikasi Perawatan Berkelanjutan (*SLA Maintenance Lifecycle*)
 Paradigma kolot yang menganggap peluncuran produk (*Go-Live*) adalah panggung penutupan dan akhir dari umur penyelesaian proyek harus dihancurkan. Sejatinya, platform perangkat lunak arsitektur mutakhir berderajat setara dengan bernapasnya organisme hidup mekanis yang sensitif. Peladen sistem mutlak menuntut perlakuan protektif dan ritual pemantauan ketat yang bergulir tanpa henti secara reguler guna menjamin tingkat kesehatan pernapasan mesin, merawat kepatuhan terhadap parameter *Service Level Agreement* (SLA) waktu beroperasi (ketersediaan *uptime*) di angka fantastis 99.9% setahun, dan menyiapkan obat penawar darurat dari berbagai serangan cuaca siber:
 
-<div class="mermaid">
+<div class="mermaid" style="max-width: 800px; margin: 20px auto;">
 flowchart LR
-    classDef check fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20,rx:5px,ry:5px
-    classDef backup fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100,rx:5px,ry:5px
-    classDef update fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1,rx:5px,ry:5px
+    classDef check fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef backup fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100
+    classDef update fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
 
-    A("Pengecekan Harian Radar Log Error"):::check --> B("Monitoring Lonjakan CPU"):::check
-    B --> C("Validasi API Handshake Bank"):::check
-    C --> D("Replikasi Database Mingguan"):::backup
-    D --> E("Flushing Cache Redis"):::backup
-    E --> F("Update Security Patch Bulanan"):::update
-    F --> G("Perpanjangan Sertifikat SSL"):::update
+    A(Pengecekan Harian Radar Log Error):::check
+    B(Monitoring Lonjakan CPU):::check
+    C(Validasi API Handshake Bank):::check
+    D(Replikasi Database Mingguan):::backup
+    E(Flushing Cache Redis):::backup
+    F(Update Security Patch Bulanan):::update
+    G(Perpanjangan Sertifikat SSL):::update
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
 </div>
 
 *   **Protokol Inspeksi Medis Harian (Operasional):** Pengecekan ritin yang wajib dilakukan teknisi di setiap pagi, berfokus kepada pembacaan radar grafik *Log* jejak kegagalan peladen internal merespons aplikasi (*HTTP Error Code 500*). Memantau secara teliti apakah ada lonjakan pembengkakan anomali memakan porsi utilisasi inti komputasi prosesor (CPU) pada indikator matriks panel layar VPS, dan tak kalah penting, menunaikan ritual pengecekan rutinitas akan kestabilan kelancaran rute konektivitas jabat tangan komunikasi antar peladen (*API Handshake*) melalui terowongan VPN ke markas besar pangkalan data Server Bank Mitra.
