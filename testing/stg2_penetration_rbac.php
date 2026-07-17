@@ -10,7 +10,7 @@ echo "=============================================\n";
 echo "   STG 2: PENETRATION & RBAC (STAGING)       \n";
 echo "=============================================\n";
 
-$baseUrl = 'https://api.sipanda.online/api';
+$baseUrl = 'https://apimpad.baubaukota.go.id/api';
 
 echo "[1/3] Uji Coba Tanpa Login (No Bearer Token)...\n";
 $res1 = Http::get("$baseUrl/tax-objects");

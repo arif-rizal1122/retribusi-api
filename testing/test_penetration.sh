@@ -1,19 +1,19 @@
 #!/bin/bash
 # ============================================================================
-# Penetration Testing Suite - api.sipanda.online
+# Penetration Testing Suite - apimpad.baubaukota.go.id
 # ============================================================================
 # OWASP Top 10 + Common Attack Vectors
 # Run: chmod +x test_penetration.sh && ./test_penetration.sh
 # ============================================================================
 
 # Default values
-API_URL="https://api.sipanda.online"
+API_URL="https://apimpad.baubaukota.go.id"
 FRONTEND="https://sipanda.online"
 
 # Environment selection
 if [ "$1" == "staging" ]; then
   echo -e "${YELLOW}Mode: STAGING (sipanda.online)${NC}"
-  API_URL="https://api.sipanda.online"
+  API_URL="https://apimpad.baubaukota.go.id"
   FRONTEND="https://sipanda.online"
 elif [ "$1" == "dev" ]; then
   echo -e "${YELLOW}Mode: DEVELOPMENT (sipanda.online)${NC}"

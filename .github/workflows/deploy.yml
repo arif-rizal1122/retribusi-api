@@ -68,8 +68,8 @@ jobs:
             
             echo "--- FINAL HEALTH CHECK ---"
             # Verify API
-            echo "API (api.sipanda.online):"
-            curl -k -I https://api.sipanda.online/
+            echo "API (apimpad.baubaukota.go.id):"
+            curl -k -I https://apimpad.baubaukota.go.id/
             
             # Verify Admin
             echo "Admin (adminmpad.baubaukota.go.id):"
@@ -91,7 +91,7 @@ jobs:
 Generated on: \$(date)
 
 ## 1. DOMAIN & DIRECTORY MAPPING
-- API: https://api.sipanda.online -> /home/sipanda/retribusi-api/public
+- API: https://apimpad.baubaukota.go.id -> /home/sipanda/retribusi-api/public
 - Admin: https://adminmpad.baubaukota.go.id -> /home/sipanda/retribusi-admin/dist
 - Petugas: https://petugasmpad.baubaukota.go.id -> /home/sipanda/retribusi-petugas/dist
 - POS: https://posmpad.baubaukota.go.id -> /home/sipanda/POS/frontend/dist

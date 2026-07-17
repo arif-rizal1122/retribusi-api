@@ -10,7 +10,7 @@ echo "=============================================\n";
 echo "   STG 3: FORMULA SYNCHRONIZATION (STAGING)  \n";
 echo "=============================================\n";
 
-$baseUrl = 'https://api.sipanda.online/api';
+$baseUrl = 'https://apimpad.baubaukota.go.id/api';
 
 echo "[1/2] Mengambil Data Klasifikasi & Formula dari Staging...\n";
 $formulasRes = Http::get("$baseUrl/tax-formulas");

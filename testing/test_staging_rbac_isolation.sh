@@ -5,7 +5,7 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-API_URL="https://api.sipanda.online/api"
+API_URL="https://apimpad.baubaukota.go.id/api"
 
 echo "Starting RBAC isolation testing on $API_URL..."
 
