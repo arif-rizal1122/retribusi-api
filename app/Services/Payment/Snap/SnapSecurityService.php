@@ -16,6 +16,7 @@ class SnapSecurityService
 
     public function validateAccessTokenRequest(Request $request): void
     {
+        $this->validateAllowedIp($request);
         $this->headers->validateAccessTokenHeaders($request);
         $this->timestamps->validate($request->header('X-TIMESTAMP'));
         $this->signatures->verify($request);
@@ -23,9 +24,19 @@ class SnapSecurityService
 
     public function validateTransactionRequest(Request $request): void
     {
+        $this->validateAllowedIp($request);
         $this->headers->validateTransactionHeaders($request);
         $this->timestamps->validate($request->header('X-TIMESTAMP'));
         $this->tokens->validateAuthorizationHeader($request->header('Authorization'));
         $this->signatures->verify($request);
+    }
+
+    private function validateAllowedIp(Request $request): void
+    {
+        $allowedIps = config('snap.allowed_ips', []);
+
+        if ($allowedIps !== [] && !in_array($request->ip(), $allowedIps, true)) {
+            throw SnapValidationException::unauthorized('Unauthorized. Source IP is not allowed.');
+        }
     }
 }

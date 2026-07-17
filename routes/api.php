@@ -196,6 +196,10 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::group(['prefix' => 'citizen'], function () {
         // Pembayaran
         Route::get('/payments/history', [PaymentController::class, 'history']);
+        Route::post('/payment-requests', [\App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController::class, 'store']);
+        Route::get('/payment-requests/{paymentRequest}', [\App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController::class, 'show']);
+        Route::post('/payment-requests/{paymentRequest}/refresh', [\App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController::class, 'refresh']);
+        Route::post('/payment-requests/{paymentRequest}/cancel', [\App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController::class, 'cancel']);
 
         // Merchant AFT (Kalkulator Bisnis)
         Route::prefix('merchant')->group(function () {
