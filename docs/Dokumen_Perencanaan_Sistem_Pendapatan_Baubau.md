@@ -18,30 +18,28 @@ Pengembangan aplikasi ini mematuhi kerangka regulasi terbaru:
 
 ## BAB II: ARSITEKTUR & EKOSISTEM SISTEM
 
-
 <div class="mermaid">
-graph TD
-    Client[BNI Gateway] -->|HTTPS / TLS 1.2+| WAF[Web Application Firewall / Load Balancer]
-    WAF -->|Port 443| Server[VPS Neo Cloud Bapenda]
+architecture-beta
+    group public(cloud)[Area Publik]
+    group waf(cloud)[Keamanan & Load Balancing]
+    group vps(server)[Neo Cloud VPS Bapenda]
+    group database(database)[Data Center]
     
-    subgraph Neo Cloud VPS
-        Server --> App[M-PAD Laravel Backend]
-        App --> DB[(Database Master)]
-    end
+    service client(internet)[Kanal Perbankan & Warga] in public
+    service firewall(firewall)[Web Application Firewall] in waf
+    service backend(server)[API Gateway & Laravel Backend] in vps
+    service db(database)[Unified MySQL/PostgreSQL DB] in database
+    service redis(database)[Redis In-Memory Cache] in database
+    
+    client:R --> L:firewall
+    firewall:R --> L:backend
+    backend:R --> L:db
+    backend:T --> B:redis
 </div>
 
+**Deskripsi Arsitektur Topologi Jaringan:**
+Arsitektur sistem dibangun dengan pendekatan *N-Tier Architecture* yang mendisagregasi lapisan antarmuka (Presentasi), logika bisnis (Aplikasi), dan penyimpanan data (Basis Data). Kanal akses yang berasal dari entitas eksternal seperti *Payment Gateway* Perbankan maupun aplikasi pengguna (Wajib Pajak) dialirkan melalui protokol aman (HTTPS/TLS 1.2+). Lapisan pertama dari sistem perimeter dipertahankan oleh *Web Application Firewall* (WAF) yang bertugas menyaring anomali lalu lintas data, mencegah *SQL Injection*, serta melakukan *Load Balancing* untuk mendistribusikan beban secara merata. Pada zona inti (Neo Cloud VPS Bapenda), sebuah *API Gateway* berbasis kerangka kerja Laravel berfungsi sebagai orkestrator layanan (mikro-monolitik) yang menjembatani transaksi antara *client* dan *Unified Database*. Penggunaan *Redis In-Memory Cache* diterapkan guna mengoptimalkan latensi *query* repetitif, sehingga sistem mencapai tingkat ketersediaan (*High Availability*) yang optimal.
 
-
-<div class="mermaid">
-graph TD
-    Client[BNI Gateway] -->|HTTPS / TLS 1.2+| WAF[Web Application Firewall / Load Balancer]
-    WAF -->|Port 443| Server[VPS Neo Cloud Bapenda]
-    
-    subgraph Neo Cloud VPS
-        Server --> App[M-PAD Laravel Backend]
-        App --> DB[(Database Master)]
-    end
-</div>
 
 
 Sistem ini akan dipecah ke dalam 4 (empat) repositori platform utama agar beban kerja lebih efisien dan terukur:
@@ -64,110 +62,60 @@ Sistem ini dirancang untuk mengawal 4 (empat) siklus pemungutan BAPENDA secara t
 
 ### 3. Penetapan (Billing Engine & TTE)
 
-
 <div class="mermaid">
 graph TD
-    subgraph "CORE API ENGINE (Laravel Backend)"
-        BS[Billing Service - JIT Engine]
-        FPS[Formula Parser - Tariff Logic]
-        PCS[Penalty Engine - 1-2% Calc]
-        DS[Dunning Engine - Teguran 1 & 2]
+    subgraph "Logika Aplikasi Core (Backend)"
+        BS[Modul Billing JIT]
+        FPS[Formula Parser Dinamis]
+        PCS[Kalkulator Denda 2%]
     end
 
-    subgraph "ADMIN DASHBOARD (Web)"
-        A_VER[Verifikasi Objek & Laporan]
-        A_AUDIT[Audit Anomali & Piutang]
-        A_DUN[Approve/Kirim Teguran 1 & 2]
+    subgraph "Antarmuka Pengguna & Manajemen"
+        A_VER[Verifikasi Data]
+        A_AUDIT[Audit Pembayaran]
     end
 
-    subgraph "PETUGAS APP (Mobile)"
-        P_SCAN[QR Scanner Penagihan]
-        P_SURV[Daftar Surveillance WP Bandel]
-        P_PAY[Record Pembayaran Lapangan]
+    subgraph "Perangkat Lapangan"
+        P_SCAN[Pemindai QR Code]
+        P_PAY[Pencatatan Lapangan]
     end
     
     A_VER --> BS
     P_SCAN --> BS
     BS --> FPS
+    BS --> PCS
 </div>
 
 
 
-<div class="mermaid">
-graph TD
-    subgraph "CORE API ENGINE (Laravel Backend)"
-        BS[Billing Service - JIT Engine]
-        FPS[Formula Parser - Tariff Logic]
-        PCS[Penalty Engine - 1-2% Calc]
-        DS[Dunning Engine - Teguran 1 & 2]
-    end
-
-    subgraph "ADMIN DASHBOARD (Web)"
-        A_VER[Verifikasi Objek & Laporan]
-        A_AUDIT[Audit Anomali & Piutang]
-        A_DUN[Approve/Kirim Teguran 1 & 2]
-    end
-
-    subgraph "PETUGAS APP (Mobile)"
-        P_SCAN[QR Scanner Penagihan]
-        P_SURV[Daftar Surveillance WP Bandel]
-        P_PAY[Record Pembayaran Lapangan]
-    end
-    
-    A_VER --> BS
-    P_SCAN --> BS
-    BS --> FPS
-</div>
 
 *   **JIT (Just-In-Time) Billing:** Tagihan dikalkulasi secara dinamis saat sistem melakukan inquiry. Dilengkapi Penalty Engine yang otomatis menyematkan denda 2% per bulan untuk keterlambatan pembayaran.
 *   **E-Document ber-TTE:** Penerbitan berkas resmi seperti SKPD, SKRD, SSPD, dan Surat Paksa dalam bentuk PDF yang disahkan menggunakan QR Code Tanda Tangan Elektronik (TTE) tersertifikasi dari BSrE.
 
 ### 4. Pembayaran (Payment Gateway H2H) & Penagihan
 
-
 <div class="mermaid">
 sequenceDiagram
-    participant Nasabah
-    participant Bank as Sistem Bank
-    participant mPaD as Sistem mPaD (Bapenda)
+    autonumber
+    participant WP as Wajib Pajak
+    participant Bank as Open API Bank
+    participant Bapenda as API Bapenda
 
-    Note over Nasabah,mPaD: 1. Proses Inquiry (Cek Tagihan)
-    Nasabah->>Bank: Input Nomor Bayar/Tagihan
-    Bank->>mPaD: POST /api/v1/bank/inquiry
-    mPaD-->>Bank: Response: Detail Tagihan & Nominal
-    Bank-->>Nasabah: Tampilkan Rincian Tagihan
+    WP->>Bank: Memasukkan Kode Bayar/Billing
+    Bank->>Bapenda: POST /api/inquiry (Cek Tagihan)
+    Bapenda-->>Bank: 200 OK (Rincian Tagihan & WP)
+    Bank-->>WP: Menampilkan Nominal Tagihan
 
-    Note over Nasabah,mPaD: 2. Proses Payment (Pelunasan)
-    Nasabah->>Bank: Konfirmasi Pembayaran & PIN
-    Bank->>Bank: Debet Saldo Nasabah
-    Bank->>mPaD: POST /api/v1/bank/payment
-    mPaD->>mPaD: Update Status "LUNAS" & Generate NTPD
-    mPaD-->>Bank: Response: Sukses + NTPD
-    Bank-->>Nasabah: Cetak Struk / Resi Pembayaran
+    WP->>Bank: Otorisasi Pembayaran (PIN)
+    Bank->>Bank: Proses Mutasi Debet Rekening
+    Bank->>Bapenda: POST /api/payment (Pelunasan)
+    Bapenda->>Bapenda: Update Status "LUNAS", Generate NTPD
+    Bapenda-->>Bank: 200 OK (NTPD & Konfirmasi)
+    Bank-->>WP: Menerbitkan Bukti Bayar Sah
 </div>
 
 
 
-<div class="mermaid">
-sequenceDiagram
-    participant Nasabah
-    participant Bank as Sistem Bank
-    participant mPaD as Sistem mPaD (Bapenda)
-
-    Note over Nasabah,mPaD: 1. Proses Inquiry (Cek Tagihan)
-    Nasabah->>Bank: Input Nomor Bayar/Tagihan
-    Bank->>mPaD: POST /api/v1/bank/inquiry
-    mPaD-->>Bank: Response: Detail Tagihan & Nominal
-    Bank-->>Nasabah: Tampilkan Rincian Tagihan
-
-    Note over Nasabah,mPaD: 2. Proses Payment (Pelunasan)
-    Nasabah->>Bank: Konfirmasi Pembayaran & PIN
-    Bank->>Bank: Debet Saldo Nasabah
-    Bank->>mPaD: POST /api/v1/bank/payment
-    mPaD->>mPaD: Update Status "LUNAS" & Generate NTPD
-    mPaD-->>Bank: Response: Sukses + NTPD
-    Bank-->>Nasabah: Cetak Struk / Resi Pembayaran
-</div>
 
 *   **Integrasi H2H Perbankan:** Sistem terhubung dengan Bank Pembangunan Daerah (BPD Sultra) serta bank nasional (Mandiri, BNI, BRI) melalui standar Open API dan SNAP BI.
 *   **Omni-Channel Payment:** Menyediakan kanal pembayaran Virtual Account (VA) dinamis dan QRIS dinamis untuk memastikan rekonsiliasi seketika (H+0) tanpa delay pencatatan.
