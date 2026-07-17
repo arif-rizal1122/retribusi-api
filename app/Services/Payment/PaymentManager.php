@@ -63,4 +63,12 @@ class PaymentManager extends Manager
         $config = $this->getChannelConfig('mandiri');
         return new \App\Services\Payment\Drivers\BankMandiriDriver(app(BillingService::class), $config);
     }
+
+    /**
+     * Create the Bank BTN driver.
+     */
+    public function createBtnDriver(): \App\Services\Payment\Drivers\BankBTNDriver
+    {
+        return app(\App\Services\Payment\Drivers\BankBTNDriver::class);
+    }
 }

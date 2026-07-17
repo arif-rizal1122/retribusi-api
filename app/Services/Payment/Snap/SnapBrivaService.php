@@ -30,46 +30,57 @@ class SnapBrivaService
     {
         [$bill, $paymentRequest] = $this->resolveOpenBill($request);
         $paidAmount = $this->extractAmount($request);
-        $expectedAmount = (float) $bill->total_amount;
+        $expectedAmount = $this->expectedAmount($bill, $paymentRequest);
 
         if (!$this->sameAmount($expectedAmount, $paidAmount)) {
             throw new SnapPaymentException('4002401', 'Bad Request. Paid amount does not match bill amount.', 400);
         }
 
         return DB::transaction(function () use ($request, $bill, $paymentRequest, $paidAmount) {
-            $lockedBill = Bill::whereKey($bill->id)->lockForUpdate()->firstOrFail();
-
-            if ($this->isPaid($lockedBill)) {
-                throw new SnapPaymentException('4092400', 'Conflict. Bill already paid.', 409);
-            }
-
             $referenceNumber = $this->referenceNumber($request);
             $externalId = (string) $request->header('X-EXTERNAL-ID');
 
             $bankCode = strtoupper($request->attributes->get('snap_bank_code', 'UNKNOWN'));
             $channel = $bankCode . '_SNAP';
 
-            $lockedBill->update([
-                'status' => 'lunas',
-                'penalty_at_payment' => (float) $lockedBill->penalty_amount + (float) $lockedBill->fixed_fine_amount + (float) $lockedBill->surcharge_amount,
-                'bank_code' => $bankCode,
-            ]);
+            $items = $paymentRequest?->items()->with('bill')->get();
+            if (!$items || $items->isEmpty()) {
+                $items = collect([(object) ['bill' => $bill, 'amount_snapshot' => $paidAmount, 'id' => null]]);
+            }
 
-            Payment::create([
-                'bill_id' => $lockedBill->id,
-                'tax_object_id' => $lockedBill->tax_object_id,
-                'taxpayer_id' => $lockedBill->taxpayer_id,
-                'transaction_id' => 'SNAP-' . ($externalId !== '' ? $externalId : Str::uuid()->toString()),
-                'reference_number' => $referenceNumber,
-                'receipt_number' => 'NTPD-SNAP-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6)),
-                'payment_method' => 'va',
-                'channel' => $channel,
-                'amount' => $paidAmount,
-                'status' => 'success',
-                'billing_period' => $lockedBill->period ?? now()->format('Y-m'),
-                'paid_at' => now(),
-                'raw_callback_data' => $this->masker->mask($request->all()),
-            ]);
+            foreach ($items as $index => $item) {
+                $lockedBill = Bill::whereKey($item->bill->id)->lockForUpdate()->firstOrFail();
+
+                if ($this->isPaid($lockedBill)) {
+                    throw new SnapPaymentException('4092400', 'Conflict. Bill already paid.', 409);
+                }
+
+                $lockedBill->update([
+                    'status' => 'lunas',
+                    'penalty_at_payment' => (float) $lockedBill->penalty_amount + (float) $lockedBill->fixed_fine_amount + (float) $lockedBill->surcharge_amount,
+                    'bank_code' => $bankCode,
+                ]);
+
+                Payment::create([
+                    'bill_id' => $lockedBill->id,
+                    'tax_object_id' => $lockedBill->tax_object_id,
+                    'taxpayer_id' => $lockedBill->taxpayer_id,
+                    'transaction_id' => 'SNAP-' . ($externalId !== '' ? $externalId : Str::uuid()->toString()) . '-' . $lockedBill->id,
+                    'reference_number' => $items->count() > 1 ? $referenceNumber . '-' . ($index + 1) : $referenceNumber,
+                    'receipt_number' => 'NTPD-SNAP-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6)),
+                    'payment_method' => 'va',
+                    'channel' => $channel,
+                    'amount' => (float) $item->amount_snapshot,
+                    'status' => 'success',
+                    'billing_period' => $lockedBill->period ?? now()->format('Y-m'),
+                    'paid_at' => now(),
+                    'raw_callback_data' => $this->masker->mask($request->all()),
+                ]);
+
+                if ($item->id) {
+                    $item->update(['status' => 'paid', 'paid_at' => now()]);
+                }
+            }
 
             if ($paymentRequest) {
                 $paymentRequest->update([
@@ -138,7 +149,15 @@ class SnapBrivaService
         $partnerServiceId = (string) $request->input('partnerServiceId', '');
         $customerNo = (string) $request->input('customerNo', $bill->bill_number);
         $virtualAccountNo = (string) $request->input('virtualAccountNo', $paymentRequest?->va_number ?? ($partnerServiceId . $customerNo));
-        $totalAmount = $this->money((float) $bill->total_amount);
+        $totalAmount = $this->money($this->expectedAmount($bill, $paymentRequest));
+        $billDetails = $paymentRequest?->items()->with('bill')->get()->map(fn ($item) => [
+            'billNo' => $item->bill->bill_number,
+            'billDescription' => 'Tagihan Retribusi',
+            'billAmount' => [
+                'value' => $this->money((float) $item->amount_snapshot),
+                'currency' => 'IDR',
+            ],
+        ])->all();
 
         return array_merge([
             'partnerServiceId' => $partnerServiceId,
@@ -151,7 +170,7 @@ class SnapBrivaService
                 'value' => $totalAmount,
                 'currency' => 'IDR',
             ],
-            'billDetails' => [
+            'billDetails' => $billDetails ?: [
                 [
                     'billNo' => $bill->bill_number,
                     'billDescription' => 'Tagihan Retribusi',
@@ -162,6 +181,17 @@ class SnapBrivaService
                 ],
             ],
         ], $status);
+    }
+
+    private function expectedAmount(Bill $bill, ?PaymentRequest $paymentRequest): float
+    {
+        if ($paymentRequest) {
+            return (float) $paymentRequest->amount_snapshot
+                + (float) $paymentRequest->admin_fee_snapshot
+                + (float) $paymentRequest->penalty_snapshot;
+        }
+
+        return (float) $bill->total_amount;
     }
 
     private function extractAmount(Request $request): float
