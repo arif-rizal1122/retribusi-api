@@ -5,18 +5,34 @@
 # DOKUMEN PERENCANAAN PENGEMBANGAN SISTEM INFORMASI PENDAPATAN DAERAH TERINTEGRASI
 **BADAN PENDAPATAN DAERAH (BAPENDA) KOTA BAUBAU**
 
-## BAB I: PENDAHULUAN & LANDASAN HUKUM
+---
+
+## BAB I: PENDAHULUAN
 
 ### 1. Latar Belakang
-Pengembangan sistem informasi pendapatan daerah yang baru diinisiasi untuk mengkonsolidasikan aplikasi yang sebelumnya terpisah secara silo (seperti SIMPAD, SIMBPHTB, dan SIMPBB) menjadi satu platform tunggal yang terintegrasi secara hulu-ke-hilir. Peralihan dari arsitektur database yang kaku menuju sistem Unified Database dengan Metadata JSON akan memberikan kelincahan tinggi serta visibilitas data yang terpusat bagi pimpinan daerah. Sistem ini dirancang untuk mengotomatisasi proses birokrasi, mengamankan pendapatan daerah, meminimalisasi kebocoran, dan meningkatkan transparansi.
+Pengelolaan Pendapatan Asli Daerah (PAD) yang optimal membutuhkan instrumen teknologi informasi yang andal, transparan, dan terintegrasi. Secara historis, infrastruktur digital yang digunakan oleh Badan Pendapatan Daerah (BAPENDA) Kota Baubau beroperasi dalam ekosistem yang terfragmentasi (silo). Sistem-sistem seperti SIMPAD (Sistem Informasi Manajemen Pendapatan Daerah), SIMBPHTB, dan SIMPBB berdiri secara independen tanpa adanya sinkronisasi basis data hulu-ke-hilir. Hal ini memunculkan redudansi data, inefisiensi pelaporan, serta tingginya risiko kebocoran penerimaan daerah akibat rekonsiliasi pembayaran yang masih mengandalkan proses manual.
 
-### 2. Landasan Hukum
-Pengembangan aplikasi ini mematuhi kerangka regulasi terbaru:
-*   Undang-Undang No. 1 Tahun 2022 tentang Hubungan Keuangan Antara Pemerintah Pusat dan Daerah (HKPD).
-*   Peraturan Daerah (Perda) Kota Baubau No. 1 Tahun 2024 tentang Pajak Daerah dan Retribusi Daerah (PDRD).
-*   Peraturan Wali Kota Baubau No. 58 Tahun 2024 tentang Tata Cara Pemungutan PDRD.
+Untuk mengatasi tantangan tersebut, pengembangan Sistem Informasi Pendapatan Daerah Terintegrasi diinisiasi. Inovasi utama dari pengembangan ini adalah peralihan dari arsitektur basis data relasional yang kaku menuju arsitektur *Unified Database* dengan dukungan skalabilitas *Metadata JSON*. Pendekatan ini tidak hanya mengonsolidasikan seluruh jenis pungutan pajak dan retribusi ke dalam satu *Single Source of Truth*, namun juga memberikan kelincahan (*agility*) bagi pimpinan daerah dalam mengambil keputusan strategis berbasis data aktual (*real-time dashboard*). Sistem ini secara khusus dirancang untuk mengotomatisasi proses birokrasi mulai dari pendaftaran Wajib Pajak, penetapan tagihan secara instan, hingga rekonsiliasi pembayaran nirsentuh (*cashless*) melalui gerbang pembayaran (*payment gateway*).
 
-## BAB II: ARSITEKTUR & EKOSISTEM SISTEM
+### 2. Maksud dan Tujuan
+Maksud dari penyusunan dokumen perencanaan ini adalah untuk memberikan pedoman teknis (Cetak Biru / *Blueprint*) yang komprehensif bagi seluruh pemangku kepentingan (*stakeholders*) yang terlibat dalam siklus pengembangan perangkat lunak. 
+
+Tujuan utama dari pengembangan sistem ini meliputi:
+1. **Penyatuan Ekosistem Data:** Menciptakan satu pangkalan data terpusat (*Unified Database*) untuk meniadakan redudansi data Wajib Pajak antar jenis pajak/retribusi.
+2. **Otomatisasi Penetapan dan Penagihan:** Mengimplementasikan *Just-In-Time (JIT) Billing Engine* yang mampu mengalkulasi tagihan dan denda secara dinamis (termasuk denda 2% per bulan untuk keterlambatan).
+3. **Digitalisasi Pelayanan:** Mendorong kepatuhan Wajib Pajak melalui kemudahan akses pendaftaran mandiri (E-SPOPD) dan pembayaran berbagai kanal digital (QRIS, Virtual Account) secara mandiri (*self-service*).
+4. **Keamanan dan Transparansi:** Mengintegrasikan Tanda Tangan Elektronik (TTE) tersertifikasi untuk penerbitan dokumen resmi, serta menyajikan data analitik PAD harian yang presisi kepada pimpinan daerah.
+
+### 3. Landasan Hukum
+Arsitektur dan alur bisnis pada aplikasi ini dirancang sedemikian rupa agar sepenuhnya patuh terhadap kerangka regulasi dan perundang-undangan terbaru yang berlaku, antara lain:
+1.  **Undang-Undang Nomor 1 Tahun 2022** tentang Hubungan Keuangan Antara Pemerintah Pusat dan Pemerintahan Daerah (HKPD).
+2.  **Peraturan Daerah (Perda) Kota Baubau Nomor 1 Tahun 2024** tentang Pajak Daerah dan Retribusi Daerah (PDRD).
+3.  **Peraturan Wali Kota Baubau Nomor 58 Tahun 2024** tentang Tata Cara Pemungutan Pajak Daerah dan Retribusi Daerah.
+4.  Standar Nasional Open API Pembayaran (SNAP) dari Bank Indonesia terkait interkoneksi sistem perbankan.
+
+---
+
+## BAB II: ARSITEKTUR DAN EKOSISTEM SISTEM
 
 <div class="mermaid">
 flowchart TD
@@ -55,61 +71,61 @@ flowchart TD
 </div>
 
 **Deskripsi Arsitektur Topologi Jaringan:**
-Arsitektur sistem dibangun dengan pendekatan *N-Tier Architecture* yang mendisagregasi lapisan antarmuka (Presentasi), logika bisnis (Aplikasi), dan penyimpanan data (Basis Data). Kanal akses yang berasal dari entitas eksternal seperti *Payment Gateway* Perbankan maupun aplikasi pengguna (Wajib Pajak) dialirkan melalui protokol aman (HTTPS/TLS 1.2+). Lapisan pertama dari sistem perimeter dipertahankan oleh *Web Application Firewall* (WAF) yang bertugas menyaring anomali lalu lintas data, mencegah *SQL Injection*, serta melakukan *Load Balancing* untuk mendistribusikan beban secara merata. Pada zona inti (Neo Cloud VPS Bapenda), sebuah *API Gateway* berbasis kerangka kerja Laravel berfungsi sebagai orkestrator layanan (mikro-monolitik) yang menjembatani transaksi antara *client* dan *Unified Database*. Penggunaan *Redis In-Memory Cache* diterapkan guna mengoptimalkan latensi *query* repetitif, sehingga sistem mencapai tingkat ketersediaan (*High Availability*) yang optimal.
+Arsitektur sistem dibangun dengan menggunakan pendekatan *N-Tier Architecture* (Arsitektur Multi-Lapis) yang secara ketat mendisagregasi lapisan antarmuka pengguna (Presentasi), logika bisnis (Aplikasi), dan lapisan penyimpanan data (Basis Data). Desain ini memastikan bahwa setiap komponen dapat dikembangkan, diperbarui, dan diskalakan secara independen tanpa mengganggu stabilitas modul lainnya. 
 
+Kanal akses yang berasal dari entitas eksternal—baik itu *Payment Gateway* perbankan maupun aplikasi pengguna yang diakses oleh Wajib Pajak—diwajibkan melewati jalur protokol terenkripsi (HTTPS/TLS 1.2+). Sebagai lapis pertama dari pertahanan sistem perimeter, *Web Application Firewall* (WAF) diimplementasikan untuk melakukan mitigasi risiko secara proaktif. WAF bertugas memfilter anomali lalu lintas data, menangkal serangan *Distributed Denial of Service* (DDoS), mencegah penetrasi *SQL Injection* maupun *Cross-Site Scripting* (XSS), dan sekaligus beroperasi sebagai *Load Balancer* untuk mendistribusikan beban trafik akses agar merata.
 
+Memasuki zona inti yang di-*host* pada infrastruktur *Neo Cloud VPS Bapenda*, sistem digerakkan oleh *API Gateway* tersentralisasi yang dibangun di atas kerangka kerja (*framework*) Laravel. Backend ini berfungsi sebagai *orchestrator* mikrolayanan yang mengamankan rute transaksi dan memvalidasi permintaan (*request*) antara *client* dan kluster *Unified Database*. Untuk menekan beban pembacaan data di pangkalan data utama dan mengatasi masalah latensi *query* repetitif, sistem diinjeksi dengan teknologi *Redis In-Memory Cache*. Konfigurasi arsitektural komprehensif ini digagas untuk mencapai *High Availability* (Ketersediaan Tinggi) dan *Zero-Downtime Deployment* guna melayani transaksi setoran daerah selama 24 jam nonstop.
 
-Sistem ini akan dipecah ke dalam 4 (empat) repositori platform utama agar beban kerja lebih efisien dan terukur:
-1.  **Backend (API):** Dibangun menggunakan framework Laravel 11 dan database MySQL/PostgreSQL. Komponen ini menjadi pusat logika bisnis yang melayani Formula Parser Service untuk kalkulasi dinamis dan Billing Engine berbasis Just-In-Time (JIT).
-2.  **Dashboard Admin:** Antarmuka berbasis React (Vite) yang berfungsi sebagai pusat komando pengelola BAPENDA untuk memantau master data, zonasi, validasi, dan pelaporan.
-3.  **Aplikasi Mobile Warga:** Aplikasi portal layanan mandiri (Progressive Web App/React) bagi Wajib Pajak untuk melakukan pendaftaran, pengecekan tagihan, inkuiri E-SPPT PBB, dan pembayaran cashless.
-4.  **Aplikasi Petugas Lapangan:** Aplikasi mobile (Android/iOS) khusus untuk petugas pemungut retribusi yang dilengkapi dengan fitur GPS, live tracking, uji petik, dan pembuatan tagihan di lokasi.
+---
 
-## BAB III: STANDAR KINERJA & MODUL UTAMA
+## BAB III: SPESIFIKASI MODUL DAN PROSES BISNIS
 
-Sistem ini dirancang untuk mengawal 4 (empat) siklus pemungutan BAPENDA secara terpadu (End-to-End):
+Guna memastikan setiap aspek pemungutan pajak daerah berjalan sesuai kaidah tata kelola pemerintahan yang baik (*Good Corporate Governance*), spesifikasi fungsional sistem dibagi ke dalam empat ekosistem platform yang saling terintegrasi: Modul Web Admin (Pusat Komando), Modul Aplikasi Petugas (Operasional Lapangan), Modul Aplikasi Warga (Layanan Mandiri), dan Modul Logika Inti (*Core Backend Engine*).
 
-### 1. Pendaftaran (Registration)
-*   Digitalisasi E-SPOPD dan SPTPD untuk pendaftaran 9 jenis Pajak Barang dan Jasa Tertentu (PBJT) dan Retribusi.
-*   Pembuatan NPWPD (Nomor Pokok Wajib Pajak Daerah) secara otomatis ketika pendaftaran diverifikasi.
+### 1. Pendaftaran dan Validasi Basis Data
+Fase registrasi merupakan gerbang awal dari validasi data Wajib Pajak. Pada modul ini, sistem menerapkan alur digitalisasi untuk pendaftaran Surat Pemberitahuan Objek Pajak Daerah (E-SPOPD) dan Surat Pemberitahuan Pajak Daerah (SPTPD). Melalui *portal mandiri*, masyarakat dapat menginput data perpajakan mereka yang secara otomatis akan divalidasi silang.
+Penomoran administrasi seperti Nomor Pokok Wajib Pajak Daerah (NPWPD) dihasilkan secara terprogram menggunakan algoritma *auto-increment* regional segera setelah petugas seksi pendaftaran memberikan persetujuan (verifikasi) melalui *Web Admin*. Logika validasi ini memastikan tidak ada data ganda (*duplicate entry*) yang mengotori *master data* pemerintah kota.
 
-### 2. Pendataan & Pengawasan (Assessment & Surveillance)
-*   **GIS & Peta Spasial:** Peta digital untuk memvisualisasikan Heatmap objek pajak. Area penunggak akan ditandai merah, dan yang patuh ditandai hijau.
-*   **Uji Petik (Spot Check):** Pengamatan lapangan jam-per-jam untuk memvalidasi omzet Wajib Pajak riil, dilengkapi fitur GPS Tracking petugas untuk mencegah manipulasi.
+### 2. Modul Uji Petik dan Pengawasan (*Surveillance*)
+Modul aplikasi petugas lapangan dilengkapi dengan teknologi Sistem Informasi Geografis (GIS) dan pelacakan spasial yang dirancang untuk mencegah terjadinya pelaporan omzet fiktif. Saat petugas mendatangi lokasi usaha, sistem akan memvalidasi posisi petugas berdasarkan koordinat *Global Positioning System* (GPS) sebelum mengizinkan proses *input* laporan Uji Petik harian.
+Lebih lanjut, *dashboard* pimpinan akan menyajikan peta *heatmap* visual. Wilayah atau titik usaha yang terindikasi sebagai penunggak akan ditandai dengan zona merah, sedangkan wajib pajak yang patuh (*compliant*) ditandai dengan warna hijau. Pendekatan spasial ini sangat krusial bagi Bidang Pengawasan untuk menentukan arah strategi penagihan *door-to-door*.
 
-### 3. Penetapan (Billing Engine & TTE)
+### 3. Modul Penetapan (*Billing Engine*) dan Tanda Tangan Elektronik
 
 <div class="mermaid">
-graph TD
-    subgraph "Logika Aplikasi Core (Backend)"
-        BS[Modul Billing JIT]
-        FPS[Formula Parser Dinamis]
-        PCS[Kalkulator Denda 2%]
+flowchart TD
+    %% Styling
+    classDef core fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px,color:#1a237e,rx:8px,ry:8px
+    classDef dash fill:#e0f7fa,stroke:#00838f,stroke-width:2px,color:#004d40,rx:8px,ry:8px
+    classDef app fill:#fbe9e7,stroke:#d84315,stroke-width:2px,color:#bf360c,rx:8px,ry:8px
+
+    subgraph CoreBackend ["⚙️ Logika Aplikasi Core (Backend)"]
+        BS["🧮 Modul Billing JIT"]:::core
+        FPS["📜 Formula Parser Dinamis"]:::core
+        PCS["⏱️ Kalkulator Denda 2%"]:::core
     end
 
-    subgraph "Antarmuka Pengguna & Manajemen"
-        A_VER[Verifikasi Data]
-        A_AUDIT[Audit Pembayaran]
+    subgraph AdminDashboard ["💻 Antarmuka Web Bapenda"]
+        A_VER["✅ Verifikasi Data SPTPD"]:::dash
+        A_AUDIT["📊 Audit & Rekonsiliasi"]:::dash
     end
 
-    subgraph "Perangkat Lapangan"
-        P_SCAN[Pemindai QR Code]
-        P_PAY[Pencatatan Lapangan]
+    subgraph PetugasApp ["📱 Perangkat Mobile Lapangan"]
+        P_SCAN["📷 Pemindai QR Penagihan"]:::app
+        P_PAY["💳 Input Setoran Tunai"]:::app
     end
     
-    A_VER --> BS
-    P_SCAN --> BS
-    BS --> FPS
-    BS --> PCS
+    A_VER -->|Trigger Penetapan| BS
+    P_SCAN -->|Inquiry Tunggakan| BS
+    BS -->|Hitung Pokok| FPS
+    BS -->|Validasi Telat Bayar| PCS
 </div>
 
+*Billing Engine* beroperasi dengan mekanisme *Just-In-Time* (JIT). Berbeda dengan sistem lawas di mana tagihan di-generate di awal tahun (yang rentan membebani pangkalan data), JIT Billing menghitung besaran nilai tagihan secara dinamis tepat pada milidetik ketika ada interogasi (*inquiry*) ke server. Modul ini terintegrasi erat dengan *Penalty Engine* yang otomatis menyematkan bunga denda progresif sesuai peraturan perundang-undangan tanpa intervensi manusia.
+Dari sisi legalitas dokumen, seluruh produk akhir ketetapan seperti Surat Ketetapan Pajak Daerah (SKPD) maupun Surat Tagihan Pajak Daerah (STPD) di-generate dalam bentuk fail PDF yang sah secara hukum berkat pembubuhan kode QR Tanda Tangan Elektronik (TTE) yang diverifikasi oleh Balai Sertifikasi Elektronik (BSrE) BSSN.
 
-
-
-*   **JIT (Just-In-Time) Billing:** Tagihan dikalkulasi secara dinamis saat sistem melakukan inquiry. Dilengkapi Penalty Engine yang otomatis menyematkan denda 2% per bulan untuk keterlambatan pembayaran.
-*   **E-Document ber-TTE:** Penerbitan berkas resmi seperti SKPD, SKRD, SSPD, dan Surat Paksa dalam bentuk PDF yang disahkan menggunakan QR Code Tanda Tangan Elektronik (TTE) tersertifikasi dari BSrE.
-
-### 4. Pembayaran (Payment Gateway H2H) & Penagihan
+### 4. Integrasi Gateway Pembayaran (Host-to-Host)
 
 <div class="mermaid">
 sequenceDiagram
@@ -120,84 +136,55 @@ sequenceDiagram
 
     WP->>Bank: Memasukkan Kode Bayar/Billing
     Bank->>Bapenda: POST /api/inquiry (Cek Tagihan)
-    Bapenda-->>Bank: 200 OK (Rincian Tagihan & WP)
-    Bank-->>WP: Menampilkan Nominal Tagihan
+    Bapenda-->>Bank: 200 OK (Rincian Tagihan & Identitas)
+    Bank-->>WP: Menampilkan Detail Rincian
 
-    WP->>Bank: Otorisasi Pembayaran (PIN)
-    Bank->>Bank: Proses Mutasi Debet Rekening
-    Bank->>Bapenda: POST /api/payment (Pelunasan)
+    WP->>Bank: Otorisasi Pembayaran (Konfirmasi PIN)
+    Bank->>Bank: Mutasi Debet Rekening Nasabah
+    Bank->>Bapenda: POST /api/payment (Konfirmasi Pelunasan)
     Bapenda->>Bapenda: Update Status "LUNAS", Generate NTPD
-    Bapenda-->>Bank: 200 OK (NTPD & Konfirmasi)
-    Bank-->>WP: Menerbitkan Bukti Bayar Sah
+    Bapenda-->>Bank: 200 OK (NTPD Disahkan)
+    Bank-->>WP: Menerbitkan Bukti Bayar / Struk
 </div>
 
-
-
-
-*   **Integrasi H2H Perbankan:** Sistem terhubung dengan Bank Pembangunan Daerah (BPD Sultra) serta bank nasional (Mandiri, BNI, BRI) melalui standar Open API dan SNAP BI.
-*   **Omni-Channel Payment:** Menyediakan kanal pembayaran Virtual Account (VA) dinamis dan QRIS dinamis untuk memastikan rekonsiliasi seketika (H+0) tanpa delay pencatatan.
-*   **Penagihan Otomatis:** Generate Surat Teguran dan Surat Paksa Pelaksanaan Penyitaan (SPMP) apabila Wajib Pajak mengabaikan tagihan.
-
-## BAB IV: RENCANA IMPLEMENTASI (ROADMAP)
-
-Tahapan implementasi sistem dikembangkan secara bertahap dan dieksekusi dengan jadwal mikro (agile):
-
-### A. Roadmap Mikro Pembangunan Sistem:
-*   **Fase 1 (Minggu 1-2) - Fondasi:** Setup skema database, pengisian Master Data Jenis Retribusi/Pajak, serta pengaturan Autentikasi Pengguna.
-*   **Fase 2 (Minggu 3-4) - Fitur Inti:** Pendaftaran (SPOPD), Workflow Verifikasi, Kalkulasi Tagihan (Billing), dan Formula Engine.
-*   **Fase 3 (Minggu 5-6) - Pembayaran & Pelaporan:** Integrasi Payment Gateway, Laporan harian/bulanan, dan pembuatan Dashboard Analytics.
-*   **Fase 4 (Minggu 7-8) - Frontend Mobile:** Peluncuran aplikasi portal warga untuk pengecekan tagihan, serta aplikasi petugas untuk verifikasi dan sinkronisasi data lapangan.
-
-### B. Rencana Ekspansi Jangka Panjang:
-*   **Tahap Integrasi Basis Data:** Penyatuan database PBB-P2 dan BPHTB dengan sistem pajak daerah lainnya (PBJT).
-*   **Tahap Ekosistem Nasional:** Integrasi dengan NIK Dukcapil, data Pertanahan (BPN), serta izin usaha dari DPMPTSP (OSS-RBA).
-*   **Tahap Optimalisasi Cerdas:** Memanfaatkan kecerdasan buatan (Data Mining) untuk menggali potensi silang dan mendeteksi anomali setoran secara cerdas.
-
-## BAB V: RENCANA ANGGARAN BIAYA (RAB) SOFTWARE
-
-Berdasarkan penawaran implementasi dari CV Sarjana Komputer Indonesia, berikut adalah rincian anggaran yang dialokasikan untuk pengembangan 3 platform utama (Web Admin BAPENDA, Aplikasi Mobile Petugas, dan Aplikasi Mobile Masyarakat), serta integrasi pembayaran digital dan dokumentasi:
-
-| No | Uraian / Kegiatan | Biaya |
-|:---:|---|---:|
-| **A** | **Platform Admin BAPENDA (Web Dashboard)** | |
-| 1 | Dashboard Manajemen Data & Pengguna | Rp 30.000.000 |
-| 2 | Modul Penetapan & Penagihan Pajak/Retribusi | Rp 25.000.000 |
-| 3 | Modul Laporan & Dashboard Monitoring PAD | Rp 22.500.000 |
-| **B** | **Platform Petugas (Aplikasi Mobile)** | |
-| 4 | Aplikasi Petugas Lapangan (Pendataan & Verifikasi) | Rp 35.000.000 |
-| **C** | **Platform Masyarakat (Aplikasi Mobile)** | |
-| 5 | Aplikasi Mobile Wajib Pajak (Pembayaran & Informasi) | Rp 30.000.000 |
-| 6 | Integrasi Pembayaran Digital (QRIS/VA/E-Wallet) | Rp 20.000.000 |
-| **D** | **Infrastruktur & Dokumentasi** | |
-| 7 | Setup Server & Deployment | Rp 15.000.000 |
-| 8 | User Guide & Dokumentasi | Rp 0 |
-| | **Subtotal** | **Rp 177.500.000** |
-| | **PPN (12%)** | **Rp 21.300.000** |
-| | **Total Biaya** | **Rp 198.800.000** |
-
-## BAB VI: PENUTUP
-
-Sistem Informasi Pendapatan Daerah terpadu ini merupakan instrumen strategis untuk mewujudkan efisiensi dan transparansi. Melalui integrasi penuh Single Sign-On dan integrasi sistem perbankan (Cashless), tingkat kebocoran PAD dapat diminimalisasi secara drastis, sehingga target rasio kepatuhan pajak daerah dapat terus ditingkatkan menuju kemandirian fiskal Pemerintah Kota Baubau.
+Sebagai bentuk konkret digitalisasi Pendapatan Asli Daerah, platform menyediakan interkonektivitas antar-server (*Host-to-Host*) dengan Bank Pembangunan Daerah (Bank Sultra) dan institusi perbankan nasional lainnya. Arsitektur jembatan API (*Application Programming Interface*) dibangun di atas kepatuhan *Standar Nasional Open API Pembayaran* (SNAP) Bank Indonesia. Melalui rute integrasi omni-kanal ini, Wajib Pajak dimanjakan dengan kebebasan memilih metode bayar, mulai dari *Virtual Account* (VA) yang dikonfigurasi dinamis, hingga *Quick Response Code Indonesian Standard* (QRIS).
+Arsitektur transaksi asinkron di atas membedakan proses *Inquiry* (pengecekan jumlah tagihan dan denda yang dikalkulasi mesin JIT) dan proses *Payment* (pemotongan saldo yang diakhiri penyampaian *webhook* lunas ke Bapenda). Hal ini menjamin nihilnya jeda waktu perpindahan data, serta menjadikan proses rekonsiliasi harian menjadi *H+0* tanpa penundaan.
 
 ---
 
-## LAMPIRAN: KESIMPULAN & REKOMENDASI LANGKAH STRATEGIS
+## BAB IV: STANDAR KEAMANAN SISTEM
 
-Metode E-Katalog sangat mungkin digunakan untuk pengadaan Sistem Digital Bapenda. Namun, disarankan untuk menggeser semua agenda uji coba sistem (Host-to-Host dan perizinan) ke waktu setelah kontrak E-Katalog ditandatangani. Pemanfaatan bulan Mei s/d September sebelum Perubahan Anggaran difokuskan pada pematangan dokumen Detail Engineering Design (DED) sistem, koordinasi kebijakan antar-lembaga untuk perizinan, dan penyusunan draf Kerangka Acuan Kerja (KAK) pengadaan.
+Sistem perpajakan daerah menyimpan data demografi warga dan menangani lalu lintas transaksi bernilai miliaran rupiah setiap harinya. Oleh karena itu, postur keamanan sibernetika (*cybersecurity posture*) menjadi tulang punggung keberlangsungan layanan. Spesifikasi mitigasi mencakup:
 
-### 1. Fase Pematangan & Pra-Pengadaan (Mei – September)
-Fase ini difokuskan pada penguatan legalitas, penyusunan dokumen teknis, dan persiapan lelang sebelum APBD Perubahan (Oktober) disahkan.
-*   **Penyusunan DED (Detail Engineering Design):** Mematangkan cetak biru arsitektur sistem. DED harus merincikan 4 komponen utama (Backend API Laravel, Dashboard Admin React, PWA Mobile Warga, dan Mobile Petugas), serta skema keamanan standar perbankan seperti IP Whitelisting dan enkripsi Signature HMAC-SHA256.
-*   **Penyusunan Draf KAK (Kerangka Acuan Kerja):** Menetapkan spesifikasi teknis dan ruang lingkup yang mengunci kebutuhan spesifik daerah, seperti fitur Just-In-Time (JIT) Billing untuk kalkulasi denda real-time, Penalty Engine, modul Uji Petik (Spot Check), dan generator dokumen ber-TTE terintegrasi BSrE.
-*   **Pematangan Koordinasi Lintas Lembaga (MoU/PKS):** Karena uji coba sistem digeser, waktu ini dimanfaatkan untuk mengurus aspek legal dan Perjanjian Kerja Sama (PKS) non-teknis. Ini meliputi kesepakatan sharing data dengan Dukcapil (untuk validasi NIK), DPMPTSP (untuk NIB), dan Bank RKUD (Bank Sultra/Himbara) untuk persiapan integrasi Host-to-Host (H2H).
+1. **Komunikasi Kriptografi Host-to-Host:** 
+   Seluruh pertukaran data keuangan (JSON *payload*) yang mengalir antara server BAPENDA dan server Perbankan diwajibkan untuk dienkripsi. *Header request* dilindungi dengan *Signature* berbasis *Hash-based Message Authentication Code* menggunakan algoritma SHA-256 (HMAC-SHA256). Penggunaan Kunci Asimetris (RSA-2048) ditambahkan guna memastikan integritas pesan dan melakukan mekanisme *non-repudiation* (anti-sangkalan).
+2. **Kendali Akses Geografis dan Jaringan (IP Whitelisting):** 
+   Titik akhir (*endpoint*) API kritis seperti proses transaksi pelunasan (*payment webhook*) bersifat rahasia dan tidak terekspos di jaringan bebas. Hanya *Internet Protocol* (IP) statis terdaftar yang sepenuhnya dikontrol oleh Bank Mitra dan internal infrastruktur pemerintah kota yang mendapatkan izin akses. Permintaan dari IP anonim akan secara otomatis digugurkan di level *firewall*.
+3. **Autentikasi Terdistribusi berbasis Token:** 
+   Sesi komunikasi pada aplikasi *dashboard web* maupun perangkat *mobile* tidak menggunakan struktur basis data statis yang usang, melainkan mengandalkan JSON Web Token (JWT). Token ini dirancang *stateless* dan dilengkapi *expiration time* berdurasi pendek, yang memaksa penyegaran sesi (*token refresh*) berkala guna menutup ruang eksploitasi oleh pihak peretas.
 
-### 2. Fase Pengadaan & Perubahan Anggaran (Oktober)
-Pada tahap ini dokumen spesifikasi sudah siap saji.
-*   **Tender LPSE / Seleksi Jasa Konsultansi Badan Usaha:** Mengingat arsitektur sistem ini sangat spesifik (custom-built) dengan kebutuhan pengolahan data terpusat (Single Data Source), auto-klasifikasi puluhan jenis retribusi, dan Driver-Based Payment Gateway multi-bank, metode lelang LPSE lebih direkomendasikan jika produk E-Katalog tidak mampu mengakomodasi spesifikasi custom tersebut.
+---
 
-### 3. Fase Implementasi & Uji Coba Teknis (Pasca Penandatanganan Kontrak)
-Setelah kontrak LPSE/E-Katalog diterbitkan, pihak vendor/pengembang memiliki landasan hukum (legal standing) yang kuat untuk memulai eksekusi.
-*   **Uji Coba Host-to-Host (H2H) Perbankan:** Pihak Bank biasanya mewajibkan adanya kontrak resmi sebelum memberikan akses Sandbox (lingkungan uji coba), dokumentasi API (seperti standar SNAP BI), dan Client ID / Secret Key. Uji coba inquiry NIK/Kode Bayar dan sinkronisasi pembayaran real-time dieksekusi di fase ini.
-*   **Integrasi TTE & Pengujian End-to-End:** Menguji penerbitan E-SKPD dan E-SSPD yang langsung dibubuhi stempel QR Code (TTE) setelah bank mengirimkan webhook notifikasi pembayaran sukses.
+## BAB V: RENCANA IMPLEMENTASI DAN PENGUJIAN (ROADMAP)
 
-*Catatan: Keputusan untuk menunda uji coba hingga vendor resmi terpilih akan mencegah pemborosan waktu kerja (resource drain) dari tim IT internal Bapenda maupun pihak Bank mitra pada fase di mana anggaran belum pasti.*
+Siklus hidup pengembangan (*System Development Life Cycle*) akan diselenggarakan menggunakan metodologi hibrida, mengedepankan presisi analisis di awal dan *agile* di fase pengerjaan. Cetak biru pelaksanaan dirancang menjadi beberapa tahapan esensial:
+
+### A. Fase Konstruksi Inti dan Pematangan
+*   **Sprint Arsitektur & Pangkalan Data:** Merancang dan melakukan normalisasi skema *Unified Database*. Pendefinisian relasi antara entitas Wajib Pajak, Objek Pajak, dan Histori Tagihan (SKPD).
+*   **Sprint Logika Bisnis:** Pembuatan modul Registrasi WP (E-SPOPD), konfigurasi *Formula Parser* per jenis pajak (misalnya perbedaan formula Hotel vs Restoran vs MBLB), serta pengujian fungsi *JIT Billing*.
+
+### B. Fase Integrasi Eksternal (SIT)
+*   **Pengujian Sandbox Perbankan:** Menyelesaikan administrasi kunci kriptografi Bank, dan melakukan *System Integration Testing* (SIT) melalui server bohongan (*sandbox*) perbankan untuk memvalidasi alur *Inquiry* dan *Payment*.
+*   **Integrasi TTE BSrE BSSN:** Mengembangkan jembatan komunikasi (*bridge*) menuju server Balai Sertifikasi Elektronik untuk otomatisasi penerbitan spesimen SKPD digital berbasis stempel QR.
+
+### C. Fase Validasi Kualitas (UAT) dan Go-Live
+*   **User Acceptance Testing (UAT):** Proses peragaan purwarupa sistem (*mock-up testing*) secara komprehensif bersama pemangku jabatan terkait di internal BAPENDA. Menguji beban fungsional dan pelaporan.
+*   **Phased Rollout:** Tahapan pelepasan (*deployment*) secara gradual. Dimulai dengan rilis *Dashboard Admin* sebagai fondasi awal, disusul peluncuran *Aplikasi Petugas Mobile*, dan diakhiri dengan rilis *Portal Mobile Warga* di pasar aplikasi publik (PlayStore).
+
+---
+
+## BAB VI: PENUTUP
+
+Dokumen Blueprint Arsitektur Sistem Informasi Pendapatan Daerah ini disusun bukan sekadar sebagai pemenuhan formalitas perancangan teknologi, melainkan sebagai sebuah pilar fundamental transformasi kelembagaan digital di lingkungan Badan Pendapatan Daerah (BAPENDA) Kota Baubau. Ketiadaan struktur arsitektur yang kokoh seringkali berujung pada investasi infrastruktur IT yang gagal mengimbangi laju dinamis peraturan daerah, sehingga menghambat optimalisasi penerimaan kas daerah.
+
+Dengan dianutnya filosofi *Unified Database* yang fleksibel, ditambah pengawalan berlapis dari sisi *Cyber Security* perbankan (H2H SNAP BI), pemerintah daerah kini disokong oleh ekosistem yang mapan, otonom, dan *future-proof* (tahan banting di masa depan). Digitalisasi komprehensif ini secara nyata akan menutup semua keran celah kebocoran fiskal yang diakibatkan oleh human-error, memaksimalkan target *collection rate* wajib pajak secara radikal, serta mewujudkan transparansi akuntabilitas publik menuju tatakelola pemerintahan yang benar-benar bersih dan responsif.
