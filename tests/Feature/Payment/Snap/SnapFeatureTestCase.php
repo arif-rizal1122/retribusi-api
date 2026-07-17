@@ -114,9 +114,9 @@ abstract class SnapFeatureTestCase extends TestCase
             'payment_channel' => 'BRI',
             'method' => 'VA',
             'va_number' => $vaNumber ?? '777' . $bill->bill_number,
-            'amount_snapshot' => $bill->total_amount,
+            'amount_snapshot' => $bill->amount,
             'admin_fee_snapshot' => $bill->admin_fee ?? 0,
-            'penalty_snapshot' => $bill->penalty_amount ?? 0,
+            'penalty_snapshot' => $bill->total_amount - $bill->amount - ($bill->admin_fee ?? 0),
             'expires_at' => now()->addDay(),
             'status' => 'pending',
         ]);

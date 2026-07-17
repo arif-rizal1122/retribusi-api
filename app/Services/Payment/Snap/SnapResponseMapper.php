@@ -27,7 +27,7 @@ class SnapResponseMapper
     public function brivaPayment(array $virtualAccountData): array
     {
         return [
-            'responseCode' => '2002400',
+            'responseCode' => '2002500',
             'responseMessage' => 'Successful',
             'virtualAccountData' => $virtualAccountData,
         ];
