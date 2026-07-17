@@ -1,0 +1,21 @@
+Unnamed: 0,Unnamed: 1,Unnamed: 2,Unnamed: 3,Unnamed: 4
+,,,,
+,Kebutuhan akses sandboxing SNAP BI BRI ,,,
+,,,,
+,,,,
+,Email akses production,,,
+,,,,
+,No,Nama Fitur,Email,
+,1,Virtual Account Online,bapenda@baubaukota.go.id,
+,2,,,
+,3,,,
+,,,,
+,Briva Online,,,
+,,,,
+,No,Attribute,Value,
+,1,IP Private (untuk koneksi leased line),Public Internet (IP apimpad.baubaukota.go.id),*Bisa diiskan IP existing yang sudah terkoneksi dengan BRI
+,2,URL Service token virtual account online,https://apimpad.baubaukota.go.id/api/snap/v1.1/access-token/b2b,
+,3,URL Service inquiry virtual account online,https://apimpad.baubaukota.go.id/api/snap/v1.0/transfer-va/inquiry,
+,4,URL Service payment virtual account online,https://apimpad.baubaukota.go.id/api/snap/v1.0/transfer-va/payment,
+,5,client ID,MPADBAUBAUSNAP2026ID,"*Bersifat credential, mohon disertakan dalam email dan diberi password, password bisa diberikan pada PIC BRI "
+,6,client Secret,MPADBAUBAUSNAPSECRET2026KEY,"*Bersifat credential, mohon disertakan dalam email dan diberi password, password bisa diberikan pada PIC BRI"

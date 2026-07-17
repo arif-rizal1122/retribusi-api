@@ -32,7 +32,8 @@ class SnapBIController extends Controller
     {
         try {
             $this->security->validateAccessTokenRequest($request);
-            $token = $this->tokens->issue((string) $request->header('X-CLIENT-KEY'));
+            $bankCode = $request->attributes->get('snap_bank_code');
+            $token = $this->tokens->issue((string) $request->header('X-CLIENT-KEY'), (string) $bankCode);
             $response = $this->responses->accessToken($token['access_token'], $token['expires_in']);
 
             return $this->respondAndLog($request, $response, 200);

@@ -1,0 +1,118 @@
+No,Deskripsi,Keterangan
+I,Informasi Umum,
+1,Nama perusahaan ,Nama perusahaan
+2,Website perusahaan,Website perusahaan
+3,Tanggal berdiri perusahaan ,Tanggal berdiri perusahaan 
+4,Jenis Bisnis,"Pilih salah satu jenis bisnis (Misal : P2P Lending, Fintech, Aggregator, dsb)"
+5,Struktur organisasi perusahaan ,Struktur organisasi perusahaan (lampirkan dokumen)
+6,Penanggung jawab perusahaan (CEO),Pemimpin tertinggi di perusahaan (Level CEO)
+7,Jumlah karyawan IT,Total jumlah karyawan IT
+a,Pegawai Tetap,Total Jumlah pegawai tetap
+b,Outsourcing,Total jumlah Outsorcing
+8,Apakah telah terdaftar di OJK / BI (Apabila perusahaan merupakan Tekfin),Dijawab Ya atau Tidak
+,,
+9,Apakah perusahaan memiliki sertifikasi terkait IT,Pilih sertifikasi terkait IT yang dimiliki perusahaan (Dapat memilih lebih dari satu) (Lampirkan dokumen)
+10,Lokasi server dan/atau data (Pilih salah satu),a. Server dan/atau data credential sepenuhnya ada di on premise BNI
+,,"b. Sebagian server/data credential ada di BNI, sebagian lainnya dikelola oleh perusahaan"
+,,c. Server dan/atau data credential sepenuhnya ada di perusahaan.
+II,Pengamanan Data,
+1,Apakah terdapat credential data pada perusahaan,Dijawab Ya atau Tidak.
+,,
+2,Siapa penanggung jawab keamanan data perusahaan (level CISO),Pemimpin di sisi keamanan (Level Chief Information Security Officer - CISO)
+3,Sebutkan jenis data credential pada perusahaan,"Jenis data credential yang ada di perusahaan (data no. rekening, no. HP, user, password, dsb)"
+4,Apakah terdapat klasifikasi data pada perusahaan,Dijawab Ya atau Tidak
+5,Bagaimana cara perusahaan untuk menjaga kerahasiaan data credential (Pilih salah satu),"a. Enkripsi data at rest (Data yang disimpan dalam database, harddisk, dsb) - umumnya menggunakan metode AES 256, dsb"
+,,"b. Enkripsi data at motion (Data yang sedang dalam proses pengiriman, misal H2H, internet, dsb) - umumnya menggunakan metode VPN / TLS"
+,,"c. Masking data (Sebuah proses untuk mengaburkan sebagian nilai dari data, misal data kartu menjadi XXXX XXXX XXXX 8721, kata yang di bold merupakan data yang dimasking)"
+,,"d. Tokenisasi (proses untuk membagi teks yang dapat berupa kalimat, paragraf atau dokumen, menjadi token - token / bagian - bagian tertentu)"
+,,e. Terbatas hanya prosedural (Hanya terbatas pada himbauan / SOP / NDA yang dibuat agar karyawan tidak membocorkan data credential)
+,,f. Belum memiliki
+,,g. Lainnya (Sebutkan)
+6,Apakah tedapat disposal data bank yang ada di perusahaan secara reguler?,Dijawab Ya atau Tidak (dilampirkan penjelasan mekanisme/ dokumen)
+,,
+7,Bagaimana pengamanan data perusahaan anda dengan vendor 3rd party (Dapat memilih lebih dari satu),"Jelaskan proses pengamanan data perusahaan dengan pihak ke 3 / vendor perusahaan. Misal : NDA, Enkripsi data, dsb"
+III,Data Center,
+1,Dimana lokasi data center,Jelaskan lokasi DC perusahaan
+2,Bagaimana Pengelolaan data center perusahaan ,a. Dikelola sendiri (24 X 7)
+,,"b. Vendor jasa pengelolaan data center 
+(24 X 7)"
+,,c. Dikelola sendiri (Tidak 24 X 7)
+,,d. Vendor jasa pengelolaan data center (Tidak 24 X 7)
+,,e. Cloud
+3,"Apabila menggunakan vendor jasa pengelolaan data center, maka sebutkan nama vendornya",Sebutkan nama vendor Data Center yang digunakan oleh perusahaan
+4,"Apabila data center dikelola sendiri, berapa jumlah karyawan operasional data center",Total jumlah karyawan operasional Data Center
+a,Pegawai Tetap,Total Jumlah pegawai tetap
+b,Outsourced,Total jumlah Outsorcing
+5,Apakah perusahaan memiliki DRC (Data Recovery Center) / mekanisme backup data,Dijawab sesuai dengan pilihan
+,,
+6,Apakah perusahaan pernah melakukan pengujian DRC,"Dijawab Ya atau Tidak, dilampirkan dokumen pengujian terakhir (dapat berupa executive report)"
+7,"Jika No. 5 Dijawab c. Hanya menggunakan mekanisme backup data (manual), maka berapa frekuensi backup data (Pilih salah satu)",a. 1 kali setahun
+,,b. 3 bulanan
+,,c. Bulanan
+,,d. Mingguan
+,,e. Harian
+,,g. Lainnya (Sebutkan)
+8,Apakah perusahaan memiliki Security Operation Center (SOC),a. Dikelola sendiri (24 X 7)
+,,"b. Vendor jasa pengelolaan data center 
+(24 X 7)"
+,,c. Dikelola sendiri (Tidak 24 X 7)
+,,d. Vendor jasa pengelolaan data center (Tidak 24 X 7)
+9,"Apabila menggunakan vendor Security Operation Center (SOC), maka sebutkan nama vendornya",Sebutkan nama vendor Security Operation Center (SOC) yang digunakan oleh perusahaan
+10,"Apabila Security Operation Center (SOC), dikelola sendiri, berapa jumlah karyawan operasional data center",Total jumlah karyawan SOC
+a,Pegawai Tetap,Total Jumlah pegawai tetap
+b,Outsourced,Total jumlah Outsorcing
+IV,Proses Pengembangan IT,
+1,Berapa jumlah karyawan development dan testing,Total jumlah karyawan Development
+a,Pegawai Tetap,Total Jumlah pegawai tetap
+b,Outsourced,Total jumlah Outsorcing
+2,Bagaimana mekanisme pengembangan aplikasi (Mohon dijelaskan prosesnya dari development hingga production),"Pilih salah satu proses SDLC perusahaan (Misal : Scurm, Waterfall, Prototype, dsb)"
+3,Apakah perusahaan telah menerapkan secure coding dalam proses pengembangan.,Dijawab Ya atau Tidak.  Dilampirkan mekanisme/ dokumen pendukung.
+4,Apakah perusahaan melakukan pentest pada aplikasi,Dijawab Ya atau Tidak. Dilampirkan report pentest terakhir (dapat berupa executive report).
+,,
+5,Kapan pentest dilakukan oleh perusahaan,Sebutkan kapan pentest terakhir dilakukan oleh perusahaan (Isi dengan format DD/MM/YYYY)
+6,Jelaskan hasil pentest yang telah dilakukan (Pilih salah satu),a. Cukup aman / tidak ada temuan
+,,b. Ada temuan dan sedang dalam proses tindak lanjut
+,,c. Ada temuan dan belum dilakukan tindak lanjut terhadap temuan
+7,Apakah perusahaan melakukan vulnerability assessment / assessment internal pada aplikasi,Dijawab Ya atau Tidak. Dilampirkan report pentest terakhir (dapat berupa executive report).
+8,Kapan vulnerability assessment / assessment internal  dilakukan oleh perusahaan,Sebutkan kapan pentest terakhir dilakukan oleh perusahaan (Isi dengan format DD/MM/YYYY)
+9,Jelaskan hasil vulnerability assessment / assessment internal  yang telah dilakukan (Pilih salah satu),a. Cukup aman / tidak ada temuan
+,,b. Ada temuan dan sedang dalam proses tindak lanjut
+,,c. Ada temuan dan belum dilakukan tindak lanjut terhadap temuan
+10,Jelaskan platform aplikasi yang digunakan,Pilih platform aplikasi yang digunakan (Dapat memilih lebih dari satu)
+11,Jelaskan arsitektur aplikasi yang digunakan,Jelaskan arsitektur aplikasi yang digunakan
+12,Gambarkan dan Jelaskan proses rekonsiliasi yang digunakan,Gambarkan dan Jelaskan proses rekonsiliasi yang digunakan (lampirkan dokumen)
+13,Gambarkan dan Jelaskan topologi jaringan yang digunakan,Gambarkan dan Jelaskan topologi jaringan yang digunakan (lampirkan dokumen)
+14,Apakah perusahaan memiliki mekanisme fraud detection system?,Dijawab Ya atau Tidak (lampirkan dokumen)
+15,Jelaskan flow proses bisnis yang dilakukan oleh perusahaan dengan BNI?,Jelaskan proses bisnis yang dilakukan oleh perusahaan dengan BNI (lampirkan dokumen)
+16,Jelaskan mekanisme fraud detection system pada perusahaan,Jelaskan mekanisme fraud detection system pada perusahaan (lampirkan dokumen)
+V,Endpoint Security (PC atau Laptop terkait),
+1,"PC ditempatkan di lingkungan yang aman, terkunci ",Dijawab Ya atau tidak 
+,,
+2,"Setiap pengguna end point berupa PC dan laptop, login ke operating system menggunakan non-privileged user (non administrator/non super user).","Dijawab Ya atau tidak (jika Ya, dilampirkan eviden/ dokumen)"
+,,
+3,Aplikasi yang di install di end point merupakan aplikasi yang legal dan terpercaya,"Dijawab Ya atau tidak (jika Ya, dilampirkan eviden/ dokumen)"
+,,
+4,Tersedia antivirus dan active scanning ,"Dijawab Ya atau tidak (jika Ya, dilampirkan eviden/ dokumen)"
+,,
+5,"Terkoneksi pada authentication, authorization, and accounting system yang terpusat","Dijawab Ya atau tidak (jika Ya, dilampirkan eviden/ dokumen)"
+,,
+6,Penutupan port USB atau removable media lainnya,"Dijawab Ya atau tidak (jika Ya, dilampirkan eviden/ dokumen)"
+,,
+7,Penutupan akses internet,Dijawab Ya atau tidak 
+,,
+VI,Insiden Response ,
+1,Apakah terdapat prosedur insiden response yang tertulis?,Dijawab Ya atau Tidak
+2,Jelaskan proses mekanisme insiden response,Jelaskan proses mekanisme insiden response (lampirkan dokumen IR)
+VII,Helpdesk dan Support,
+1,Hotline helpdesk perusahaan,Sebutkan hotline Helpdesk perusahaan
+2,Lokasi helpdesk perusahaan,Sebutkan lokasi helpdesk perusahaan
+3,Bagaimana layanan helpdesk perusahaan,"Sebutkan layanan helpdesk perusahaan (Misal : Realtime, Office hours, dsb)"
+VIII,Pengalaman,
+1,Apakah perusahaan memiliki pengalaman kerja sama dengan bank atau lembaga keuangan,Dijawab Ya atau Tidak
+2,Sebutkan bank / lembaga keuangan apa yang telah melakukan kerjasama dengan perusahaan,Sebutkan bank / lembaga keuangan apa yang telah melakukan kerjasama dengan perusahaan
+3,Jelaskan pengalaman perusahaan dalam kerjasama dengan bank / lembaga keuangan,Jelaskan pengalaman perusahaan dalam kerjasama dengan bank / lembaga keuangan
+IX,Security Awareness,
+1,Apakah perusahaan melakukan security awareness kepada pegawai dan nasabahnya?,Dijawab Ya atau Tidak
+,,
+2,"Jika Ya, berapa frekuensi security awareness yang dilakukan perusahaan dalam 1 (Satu) Tahun","Pilih salah satu frekuensi security awareness yang dilakukan perusahaan dalam 1 (satu) tahun (Misal : 1x, 3x, 6x, 12x, dsb)"
+3,Kapan terakhir perusahaan melakukan security awareness kepada nasabah,Kapan terakhir perusahaan melakukan security awareness kepada nasabah. Dilampirkan jenis awareness terakhir yang dilakukan.

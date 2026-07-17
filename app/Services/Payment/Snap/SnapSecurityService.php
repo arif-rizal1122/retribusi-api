@@ -25,7 +25,8 @@ class SnapSecurityService
     {
         $this->headers->validateTransactionHeaders($request);
         $this->timestamps->validate($request->header('X-TIMESTAMP'));
-        $this->tokens->validateAuthorizationHeader($request->header('Authorization'));
+        $bankCode = $request->attributes->get('snap_bank_code');
+        $this->tokens->validateAuthorizationHeader($request->header('Authorization'), (string) $bankCode);
         $this->signatures->verify($request);
     }
 }

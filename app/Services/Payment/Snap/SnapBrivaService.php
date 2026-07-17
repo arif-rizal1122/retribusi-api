@@ -46,10 +46,13 @@ class SnapBrivaService
             $referenceNumber = $this->referenceNumber($request);
             $externalId = (string) $request->header('X-EXTERNAL-ID');
 
+            $bankCode = strtoupper($request->attributes->get('snap_bank_code', 'UNKNOWN'));
+            $channel = $bankCode . '_SNAP';
+
             $lockedBill->update([
                 'status' => 'lunas',
                 'penalty_at_payment' => (float) $lockedBill->penalty_amount + (float) $lockedBill->fixed_fine_amount + (float) $lockedBill->surcharge_amount,
-                'bank_code' => 'BRI',
+                'bank_code' => $bankCode,
             ]);
 
             Payment::create([
@@ -60,7 +63,7 @@ class SnapBrivaService
                 'reference_number' => $referenceNumber,
                 'receipt_number' => 'NTPD-SNAP-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6)),
                 'payment_method' => 'va',
-                'channel' => 'BRI_SNAP',
+                'channel' => $channel,
                 'amount' => $paidAmount,
                 'status' => 'success',
                 'billing_period' => $lockedBill->period ?? now()->format('Y-m'),
