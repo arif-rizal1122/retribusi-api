@@ -27,6 +27,12 @@ return [
     'token_ttl_seconds' => (int) env('SNAP_TOKEN_TTL_SECONDS', 900),
     'idempotency_ttl_minutes' => (int) env('SNAP_IDEMPOTENCY_TTL_MINUTES', 1440),
 
+    'briva' => [
+        'va_prefix' => env('BRI_SNAP_VA_PREFIX', ''),
+        'va_length' => (int) env('BRI_SNAP_VA_LENGTH', 18),
+        'payment_request_expiry_minutes' => (int) env('BRI_SNAP_PAYMENT_REQUEST_EXPIRY_MINUTES', 1440),
+    ],
+
     'security' => [
         'mpad_private_key_path' => env('SNAP_MPAD_PRIVATE_KEY_PATH', ''),
         'mpad_public_key_path' => env('SNAP_MPAD_PUBLIC_KEY_PATH', ''),

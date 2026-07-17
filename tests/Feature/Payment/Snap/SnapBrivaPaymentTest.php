@@ -15,7 +15,7 @@ class SnapBrivaPaymentTest extends SnapFeatureTestCase
         $response = $this->postJson($path, $body, $this->transactionHeaders($path, $body));
 
         $response->assertOk()
-            ->assertJsonPath('responseCode', '2002400')
+            ->assertJsonPath('responseCode', '2002500')
             ->assertJsonPath('virtualAccountData.paymentFlagStatus', '00');
 
         $this->assertDatabaseHas('bills', [

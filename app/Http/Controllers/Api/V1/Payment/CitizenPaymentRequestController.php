@@ -1,0 +1,202 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1\Payment;
+
+use App\Http\Controllers\Controller;
+use App\Models\Bill;
+use App\Models\PaymentRequest;
+use App\Models\PaymentRequestItem;
+use App\Models\Taxpayer;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+class CitizenPaymentRequestController extends Controller
+{
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'bill_ids' => ['required', 'array', 'min:1', 'max:20'],
+            'bill_ids.*' => ['integer', 'distinct', 'exists:bills,id'],
+            'method' => ['required', 'in:bri_va'],
+        ]);
+
+        $taxpayer = $this->taxpayer($request);
+        $billIds = collect($validated['bill_ids'])->map(fn ($id) => (int) $id)->sort()->values();
+        $bills = Bill::with(['taxpayer', 'taxObject'])
+            ->where('taxpayer_id', $taxpayer->id)
+            ->whereIn('id', $billIds)
+            ->whereIn('status', ['pending', 'overdue'])
+            ->get()
+            ->sortBy('id')
+            ->values();
+
+        if ($bills->count() !== $billIds->count()) {
+            return response()->json(['message' => 'Satu atau lebih tagihan tidak dapat dibayarkan melalui gateway.'], 422);
+        }
+
+        $existing = PaymentRequest::with('items.bill')
+            ->where('taxpayer_id', $taxpayer->id)
+            ->where('payment_channel', 'BRI')
+            ->where('method', 'VA')
+            ->where('status', 'pending')
+            ->where('expires_at', '>', now())
+            ->latest('id')
+            ->get()
+            ->first(fn (PaymentRequest $paymentRequest) => $paymentRequest->items->pluck('bill_id')->sort()->values()->all() === $billIds->all());
+
+        if ($existing) {
+            return response()->json(['data' => $this->payload($existing)]);
+        }
+
+        $prefix = preg_replace('/\D/', '', (string) config('snap.briva.va_prefix'));
+        $length = (int) config('snap.briva.va_length', 18);
+        if ($prefix === '' || strlen($prefix) >= $length) {
+            return response()->json(['message' => 'Channel BRIVA belum dikonfigurasi untuk sandbox.'], 422);
+        }
+
+        $expiresAt = now()->addMinutes((int) config('snap.briva.payment_request_expiry_minutes', 1440));
+        foreach ($bills as $bill) {
+            if ($bill->due_date && $bill->due_date->lessThan($expiresAt)) {
+                $expiresAt = $bill->due_date->copy();
+            }
+        }
+
+        if ($expiresAt->lessThanOrEqualTo(now())) {
+            return response()->json(['message' => 'Tagihan yang dipilih sudah melewati masa pembayaran.'], 422);
+        }
+
+        $paymentRequest = DB::transaction(function () use ($bills, $taxpayer, $expiresAt, $prefix, $length) {
+            $baseAmount = $bills->sum(fn (Bill $bill) => (float) $bill->amount);
+            $adminFee = $bills->sum(fn (Bill $bill) => (float) $bill->admin_fee);
+            $totalAmount = $bills->sum(fn (Bill $bill) => (float) $bill->total_amount);
+
+            $paymentRequest = PaymentRequest::create([
+                'bill_id' => $bills->first()->id,
+                'tax_object_id' => $bills->first()->tax_object_id,
+                'taxpayer_id' => $taxpayer->id,
+                'payment_channel' => 'BRI',
+                'method' => 'VA',
+                'amount_snapshot' => $baseAmount,
+                'admin_fee_snapshot' => $adminFee,
+                'penalty_snapshot' => $totalAmount - $baseAmount - $adminFee,
+                'expires_at' => $expiresAt,
+                'external_id' => 'MOB-BRI-' . Str::upper(Str::random(16)),
+                'status' => 'pending',
+            ]);
+
+            $paymentRequest->update([
+                'va_number' => $prefix . str_pad((string) $paymentRequest->id, $length - strlen($prefix), '0', STR_PAD_LEFT),
+            ]);
+
+            foreach ($bills as $bill) {
+                PaymentRequestItem::create([
+                    'payment_request_id' => $paymentRequest->id,
+                    'bill_id' => $bill->id,
+                    'amount_snapshot' => $bill->total_amount,
+                    'status' => 'pending',
+                ]);
+            }
+
+            return $paymentRequest->fresh(['items.bill.taxpayer']);
+        });
+
+        return response()->json(['data' => $this->payload($paymentRequest)], 201);
+    }
+
+    public function show(Request $request, PaymentRequest $paymentRequest): JsonResponse
+    {
+        $this->assertOwner($request, $paymentRequest);
+
+        return response()->json(['data' => $this->payload($this->refreshExpiry($paymentRequest))]);
+    }
+
+    public function refresh(Request $request, PaymentRequest $paymentRequest): JsonResponse
+    {
+        $this->assertOwner($request, $paymentRequest);
+
+        return response()->json(['data' => $this->payload($this->refreshExpiry($paymentRequest))]);
+    }
+
+    public function cancel(Request $request, PaymentRequest $paymentRequest): JsonResponse
+    {
+        $this->assertOwner($request, $paymentRequest);
+        $paymentRequest = $this->refreshExpiry($paymentRequest);
+
+        if ($paymentRequest->status === 'pending') {
+            $paymentRequest->update(['status' => 'cancelled']);
+        }
+
+        return response()->json(['data' => $this->payload($paymentRequest->fresh(['items.bill.taxpayer']))]);
+    }
+
+    private function taxpayer(Request $request): Taxpayer
+    {
+        $user = $request->user();
+        abort_unless($user instanceof Taxpayer, 403, 'Endpoint pembayaran ini hanya untuk wajib pajak.');
+
+        return $user;
+    }
+
+    private function assertOwner(Request $request, PaymentRequest $paymentRequest): void
+    {
+        abort_unless($paymentRequest->taxpayer_id === $this->taxpayer($request)->id, 404);
+    }
+
+    private function refreshExpiry(PaymentRequest $paymentRequest): PaymentRequest
+    {
+        if ($paymentRequest->status === 'pending' && $paymentRequest->expires_at && $paymentRequest->expires_at->isPast()) {
+            $paymentRequest->update(['status' => 'expired']);
+        }
+
+        return $paymentRequest->fresh(['items.bill.taxpayer']);
+    }
+
+    private function payload(PaymentRequest $paymentRequest): array
+    {
+        $items = $paymentRequest->items;
+        $method = strtolower($paymentRequest->payment_channel) === 'bri' && strtoupper($paymentRequest->method) === 'VA'
+            ? 'bri_va'
+            : strtolower($paymentRequest->method);
+        $totalAmount = (float) $paymentRequest->amount_snapshot
+            + (float) $paymentRequest->admin_fee_snapshot
+            + (float) $paymentRequest->penalty_snapshot;
+
+        return [
+            'id' => (string) $paymentRequest->id,
+            'external_id' => $paymentRequest->external_id,
+            'provider' => $paymentRequest->payment_channel,
+            'method' => $method,
+            'status' => $paymentRequest->status,
+            'status_label' => $this->statusLabel($paymentRequest->status),
+            'bill_ids' => $items->pluck('bill_id')->values(),
+            'bill_numbers' => $items->map(fn (PaymentRequestItem $item) => $item->bill?->bill_number)->filter()->values(),
+            'amount' => (float) $paymentRequest->amount_snapshot,
+            'admin_fee' => (float) $paymentRequest->admin_fee_snapshot,
+            'total_amount' => $totalAmount,
+            'va_number' => $paymentRequest->va_number,
+            'expired_at' => $paymentRequest->expires_at?->toIso8601String(),
+            'paid_at' => $paymentRequest->paid_at?->toIso8601String(),
+            'reference_number' => $paymentRequest->provider_reference,
+            'instructions' => [
+                'Buka BRImo, ATM BRI, BRILink, atau channel pembayaran BRI.',
+                'Pilih menu pembayaran BRIVA atau Virtual Account.',
+                'Masukkan nomor VA dan pastikan nama serta nominal tagihan sesuai.',
+                'Pembayaran akan diperbarui otomatis setelah callback bank diterima.',
+            ],
+            'can_refresh' => $paymentRequest->status === 'pending',
+            'can_cancel' => $paymentRequest->status === 'pending',
+        ];
+    }
+
+    private function statusLabel(string $status): string
+    {
+        return match ($status) {
+            'paid' => 'Pembayaran diterima.',
+            'expired' => 'Payment request telah kedaluwarsa.',
+            'cancelled' => 'Payment request dibatalkan.',
+            default => 'Menunggu pembayaran melalui channel BRI.',
+        };
+    }
+}
