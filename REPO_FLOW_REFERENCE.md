@@ -99,7 +99,6 @@ Daftar ini berasal dari `routes/api.php`.
 | `POST` | `/api/citizen/login` | Login warga. |
 | `POST` | `/api/citizen/register` | Registrasi warga. |
 | `GET` | `/api/opds` | Daftar OPD publik. |
-| `GET` | `/api/citizen/bills` | Cek tagihan warga dari parameter publik. |
 | `GET` | `/api/verify/bill/{number}` | Verifikasi nomor tagihan. |
 | `GET` | `/api/verify/payment/{number}` | Verifikasi nomor pembayaran. |
 | `GET` | `/api/public/pdf/skrd/{number}` | PDF SKRD publik. |
@@ -124,6 +123,8 @@ Daftar ini berasal dari `routes/api.php`.
 | `GET` | `/api/me` | Profil ringkas untuk frontend. |
 | `POST` | `/api/upload` | Upload file/bukti/dokumen. |
 | `GET/POST` | `/api/citizen/services` | Layanan warga dan registrasi layanan. |
+| `GET` | `/api/citizen/bills` | Tagihan milik taxpayer dari bearer token; response paginated. |
+| `GET` | `/api/citizen/payments/history` | Riwayat pembayaran aman milik taxpayer; response paginated. |
 | `GET/POST` | `/api/citizen/reports` | Pelaporan SPTPD/warga. |
 | `GET/POST` | `/api/citizen/complaints` | Pengaduan warga. |
 | `POST` | `/api/pbb/bapenda/link-nop` | Kaitkan NOP PBB ke akun. |

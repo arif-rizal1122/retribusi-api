@@ -46,7 +46,6 @@ Route::group(['middleware' => 'throttle:10,1'], function () {
 
 // Other public routes
 Route::get('/opds', [OpdController::class, 'index']); // Public access
-Route::get('/citizen/bills', [BillController::class, 'citizenBills']); // Public access for demo
 Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyBill']);
 Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
 
@@ -194,6 +193,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
     // Citizen Specific Actions
     Route::group(['prefix' => 'citizen'], function () {
+        Route::get('/bills', [BillController::class, 'citizenBills']);
+
         // Pembayaran
         Route::get('/payments/history', [PaymentController::class, 'history']);
         Route::post('/payment-requests', [\App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController::class, 'store']);

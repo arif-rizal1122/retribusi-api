@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bill;
 use App\Models\Payment;
+use App\Models\Taxpayer;
 use App\Models\TaxObject;
 use App\Services\BillCreationService;
 use App\Services\BillingService;
@@ -49,6 +50,84 @@ class PaymentController extends Controller
     }
 
     /**
+     * List the authenticated citizen's payment history without exposing
+     * callback payloads or internal approval metadata.
+     */
+    public function history(Request $request)
+    {
+        $taxpayer = $request->user();
+        abort_unless($taxpayer instanceof Taxpayer, 403, 'Endpoint riwayat pembayaran ini hanya untuk wajib pajak.');
+
+        $validated = $request->validate([
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'status' => ['sometimes', 'string', 'in:pending,success,failed'],
+        ]);
+
+        $query = Payment::with([
+            'bill.retributionType',
+            'bill.classification',
+            'taxObject',
+        ])->where('taxpayer_id', $taxpayer->id);
+
+        if (isset($validated['status'])) {
+            $query->where('status', $validated['status']);
+        }
+
+        $payments = $query
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->paginate($validated['per_page'] ?? 20);
+
+        $data = collect($payments->items())->map(function (Payment $payment) {
+            $bill = $payment->bill;
+            $retributionType = $bill?->retributionType;
+            $taxObject = $payment->taxObject;
+
+            return [
+                'id' => $payment->id,
+                'transaction_id' => $payment->transaction_id,
+                'reference_number' => $payment->reference_number,
+                'receipt_number' => $payment->receipt_number,
+                'payment_method' => $payment->payment_method,
+                'channel' => $payment->channel,
+                'amount' => (float) $payment->amount,
+                'status' => $payment->status,
+                'status_label' => $this->citizenPaymentStatusLabel($payment->status),
+                'billing_period' => $payment->billing_period,
+                'paid_at' => $payment->paid_at?->toIso8601String(),
+                'created_at' => $payment->created_at?->toIso8601String(),
+                'proof_url' => $payment->proof_url,
+                'bill' => $bill ? [
+                    'id' => $bill->id,
+                    'bill_number' => $bill->bill_number,
+                    'status' => $bill->status,
+                    'period' => $bill->period,
+                    'total_amount' => $bill->total_amount,
+                ] : null,
+                'tax_object' => $taxObject ? [
+                    'id' => $taxObject->id,
+                    'name' => $taxObject->name,
+                ] : null,
+                'retribution_type' => $retributionType ? [
+                    'id' => $retributionType->id,
+                    'name' => $retributionType->name,
+                    'icon' => $retributionType->icon,
+                ] : null,
+            ];
+        })->values();
+
+        return response()->json([
+            'data' => $data,
+            'meta' => [
+                'current_page' => $payments->currentPage(),
+                'last_page' => $payments->lastPage(),
+                'per_page' => $payments->perPage(),
+                'total' => $payments->total(),
+            ],
+        ]);
+    }
+
+    /**
      * Get pending billing periods for a tax object
      */
     public function getPendingPeriods(TaxObject $taxObject)
@@ -56,6 +135,15 @@ class PaymentController extends Controller
         return response()->json([
             'data' => $this->billingService->getPendingPeriods($taxObject)
         ]);
+    }
+
+    private function citizenPaymentStatusLabel(string $status): string
+    {
+        return match ($status) {
+            'success' => 'Pembayaran berhasil',
+            'failed' => 'Pembayaran ditolak',
+            default => 'Menunggu verifikasi',
+        };
     }
 
     /**

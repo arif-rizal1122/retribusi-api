@@ -244,20 +244,21 @@ class BillController extends Controller
     }
 
     /**
-     * List bills for a citizen (by NIK)
+     * List bills owned by the authenticated citizen.
      */
     public function citizenBills(Request $request)
     {
-        $request->validate([
-            'nik' => 'required|string',
+        $taxpayer = $request->user();
+        abort_unless($taxpayer instanceof Taxpayer, 403, 'Endpoint tagihan ini hanya untuk wajib pajak.');
+
+        $validated = $request->validate([
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
 
         $bills = Bill::with(['retributionType', 'opd', 'taxObject', 'classification'])
-            ->whereHas('taxpayer', function($q) use ($request) {
-                $q->where('nik', $request->nik);
-            })
+            ->where('taxpayer_id', $taxpayer->id)
             ->latest()
-            ->paginate($request->get('per_page', 10)); // [OPTIMIZATION] Added pagination
+            ->paginate($validated['per_page'] ?? 20);
 
         return response()->json([
             'data' => $bills->items(),
