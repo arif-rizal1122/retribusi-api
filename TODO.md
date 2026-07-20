@@ -21,6 +21,11 @@ Terakhir diperbarui: 2026-07-20
 - [x] **INT-001** Implementasikan `GET /api/citizen/payments/history` yang owner-scoped, paginated, dan tidak mengekspos callback payload maupun metadata approval internal.
 - [x] **INT-001** Tambahkan feature test untuk guest access, ownership, pagination, response aman, dan penolakan internal user pada endpoint citizen.
 
+## Merchant Auto Fund Transfer
+
+- [BLOCKED] **AFT-API-001** Jangan aktifkan AFT di production sebelum kontrak merchant/SKDR, tarif PBJT, city, rekening sumber/tujuan, signature SNAP, dan direct-debit Bank Sultra resmi menggantikan nilai placeholder pada controller/job.
+- [ ] Setelah kontrak tersedia, tambahkan authorization merchant yang eksplisit serta feature test ownership untuk submit omzet dan history AFT.
+
 ## Aturan Lanjutan
 
 - Setelah PAY-002 selesai, perbarui `../WORKBOARD.md`, lalu lanjutkan hanya jika pengguna menginstruksikan.
