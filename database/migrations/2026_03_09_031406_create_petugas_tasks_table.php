@@ -11,17 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('petugas_tasks', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('zone_id')->nullable()->constrained()->onDelete('set null');
-            $table->foreignId('taxpayer_id')->nullable()->constrained()->onDelete('set null');
-            $table->date('due_date');
-            $table->text('notes')->nullable();
-            $table->enum('status', ['pending', 'completed'])->default('pending');
-            $table->timestamp('completed_at')->nullable();
-            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->timestamps();
+        Schema::table('petugas_tasks', function (Blueprint $table) {
+            if (!Schema::hasColumn('petugas_tasks', 'created_by')) {
+                $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            }
         });
     }
 
@@ -30,6 +23,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('petugas_tasks');
+        Schema::table('petugas_tasks', function (Blueprint $table) {
+            if (Schema::hasColumn('petugas_tasks', 'created_by')) {
+                $table->dropForeign(['created_by']);
+                $table->dropColumn('created_by');
+            }
+        });
     }
 };
