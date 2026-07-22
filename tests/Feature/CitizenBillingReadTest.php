@@ -72,6 +72,46 @@ class CitizenBillingReadTest extends TestCase
         $this->assertFalse($returnedIds->contains($otherBill->id));
     }
 
+    public function test_citizen_bill_statuses_are_normalized_and_pending_claims_are_not_payable(): void
+    {
+        $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
+        $pendingBill = $this->createBill($taxpayer, [
+            'status' => 'pending',
+            'due_date' => now()->addDay(),
+        ]);
+        $overdueBill = $this->createBill($taxpayer, [
+            'status' => 'pending',
+            'due_date' => now()->subDay(),
+        ]);
+        $paidBill = $this->createBill($taxpayer, ['status' => 'lunas']);
+        $cancelledBill = $this->createBill($taxpayer, ['status' => 'canceled']);
+        $pendingVerificationBill = $this->createBill($taxpayer, [
+            'status' => 'pending',
+            'due_date' => now()->addDay(),
+        ]);
+        $this->createPayment($pendingVerificationBill);
+
+        Sanctum::actingAs($taxpayer);
+
+        $response = $this->getJson('/api/citizen/bills?per_page=100');
+
+        $response->assertOk();
+        $bills = collect($response->json('data'))->keyBy('id');
+
+        $this->assertSame('pending', $bills[$pendingBill->id]['status']);
+        $this->assertTrue($bills[$pendingBill->id]['can_pay']);
+        $this->assertSame('overdue', $bills[$overdueBill->id]['status']);
+        $this->assertTrue($bills[$overdueBill->id]['can_pay']);
+        $this->assertSame('paid', $bills[$paidBill->id]['status']);
+        $this->assertFalse($bills[$paidBill->id]['can_pay']);
+        $this->assertSame('cancelled', $bills[$cancelledBill->id]['status']);
+        $this->assertFalse($bills[$cancelledBill->id]['can_pay']);
+        $this->assertSame('pending_verification', $bills[$pendingVerificationBill->id]['status']);
+        $this->assertSame('Menunggu verifikasi pembayaran', $bills[$pendingVerificationBill->id]['status_label']);
+        $this->assertFalse($bills[$pendingVerificationBill->id]['can_pay']);
+        $this->assertArrayNotHasKey('has_pending_payment_claim', $bills[$pendingVerificationBill->id]);
+    }
+
     public function test_citizen_payment_history_is_owner_scoped_and_hides_internal_payloads(): void
     {
         $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
@@ -111,7 +151,7 @@ class CitizenBillingReadTest extends TestCase
         $this->getJson('/api/citizen/payments/history')->assertForbidden();
     }
 
-    private function createBill(Taxpayer $taxpayer): Bill
+    private function createBill(Taxpayer $taxpayer, array $overrides = []): Bill
     {
         $taxObject = TaxObject::factory()->create([
             'opd_id' => $this->opd->id,
@@ -120,14 +160,14 @@ class CitizenBillingReadTest extends TestCase
             'retribution_classification_id' => $this->classification->id,
         ]);
 
-        return Bill::factory()->create([
+        return Bill::factory()->create(array_merge([
             'taxpayer_id' => $taxpayer->id,
             'tax_object_id' => $taxObject->id,
             'opd_id' => $this->opd->id,
             'retribution_type_id' => $this->retributionType->id,
             'retribution_classification_id' => $this->classification->id,
             'period' => now()->format('Y-m'),
-        ]);
+        ], $overrides));
     }
 
     private function createPayment(Bill $bill, array $overrides = []): Payment

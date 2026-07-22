@@ -10,6 +10,7 @@ use App\Services\BillCreationService;
 use App\Services\BillingService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class PaymentController extends Controller
@@ -155,6 +156,10 @@ class PaymentController extends Controller
             $user = $request->user();
             $isCitizen = $user instanceof \App\Models\Taxpayer;
 
+            if ($isCitizen && $request->has('bill_ids')) {
+                return $this->storeCitizenBillClaims($request, $user);
+            }
+
             $request->validate([
                 'tax_object_id' => 'required|exists:tax_objects,id',
                 'billing_period' => 'required|string|max:255',
@@ -285,6 +290,69 @@ class PaymentController extends Controller
                 'message' => 'Gagal mencatat pembayaran: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function storeCitizenBillClaims(Request $request, Taxpayer $taxpayer)
+    {
+        $validated = $request->validate([
+            'bill_ids' => ['required', 'array', 'min:1', 'max:20'],
+            'bill_ids.*' => ['integer', 'distinct', 'exists:bills,id'],
+            'payment_method' => ['required', 'in:transfer'],
+            'proof_url' => ['required', 'string'],
+        ]);
+
+        $billIds = collect($validated['bill_ids'])
+            ->map(fn ($id) => (int) $id)
+            ->sort()
+            ->values();
+
+        $payments = DB::transaction(function () use ($billIds, $taxpayer, $validated) {
+            $bills = Bill::where('taxpayer_id', $taxpayer->id)
+                ->whereIn('id', $billIds)
+                ->whereIn('status', ['pending', 'overdue', 'unpaid'])
+                ->lockForUpdate()
+                ->get()
+                ->sortBy('id')
+                ->values();
+
+            if ($bills->count() !== $billIds->count()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'bill_ids' => 'Satu atau lebih tagihan tidak dapat diajukan untuk pembayaran.',
+                ]);
+            }
+
+            $hasExistingPayment = Payment::whereIn('bill_id', $billIds)
+                ->whereIn('status', ['pending', 'success'])
+                ->exists();
+
+            if ($hasExistingPayment) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'bill_ids' => 'Satu atau lebih tagihan sudah lunas atau sedang menunggu verifikasi pembayaran.',
+                ]);
+            }
+
+            return $bills->map(function (Bill $bill) use ($taxpayer, $validated) {
+                return Payment::create([
+                    'bill_id' => $bill->id,
+                    'tax_object_id' => $bill->tax_object_id,
+                    'taxpayer_id' => $taxpayer->id,
+                    'transaction_id' => 'PAY-' . date('Ymd') . '-' . strtoupper(Str::random(8)),
+                    'payment_method' => $validated['payment_method'],
+                    'amount' => $bill->total_amount,
+                    'status' => 'pending',
+                    'billing_period' => $bill->period,
+                    'paid_at' => null,
+                    'approved_by' => null,
+                    'proof_url' => $validated['proof_url'],
+                    'channel' => 'MOBILE_CLAIM',
+                ]);
+            });
+        });
+
+        return response()->json([
+            'message' => 'Bukti pembayaran berhasil dikirim. Menunggu verifikasi petugas.',
+            'data' => $payments->values(),
+        ], 201);
     }
 
     /**

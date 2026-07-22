@@ -27,7 +27,7 @@ class CitizenPaymentRequestController extends Controller
         $bills = Bill::with(['taxpayer', 'taxObject'])
             ->where('taxpayer_id', $taxpayer->id)
             ->whereIn('id', $billIds)
-            ->whereIn('status', ['pending', 'overdue'])
+            ->whereIn('status', ['pending', 'overdue', 'unpaid'])
             ->get()
             ->sortBy('id')
             ->values();

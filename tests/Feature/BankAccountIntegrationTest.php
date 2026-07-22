@@ -11,6 +11,7 @@ use App\Models\Taxpayer;
 use App\Models\TaxObject;
 use App\Models\Bill;
 use App\Models\Opd;
+use Laravel\Sanctum\Sanctum;
 
 class BankAccountIntegrationTest extends TestCase
 {
@@ -102,10 +103,14 @@ class BankAccountIntegrationTest extends TestCase
             'retribution_type_id' => $type->id,
             'retribution_classification_id' => $classification->id,
             'amount' => 50000,
+            'admin_fee' => 1500,
+            'due_date' => now()->addDay(),
             'status' => 'pending'
         ]);
 
-        $response = $this->getJson('/api/citizen/bills?nik=9988776655443322');
+        Sanctum::actingAs($taxpayer);
+
+        $response = $this->getJson('/api/citizen/bills');
 
         $response->assertStatus(200);
         
@@ -113,5 +118,11 @@ class BankAccountIntegrationTest extends TestCase
         $response->assertJsonPath('data.0.classification.id', $classification->id);
         $response->assertJsonPath('data.0.classification.bank_accounts.0.bank_name', 'QRIS Mandiri');
         $response->assertJsonPath('data.0.classification.bank_accounts.0.qr_image_url', 'https://cdn.example.com/qris-mandiri.jpg');
+        $response->assertJsonPath('data.0.payment_options.manual_transfer.available', true);
+        $response->assertJsonPath('data.0.payment_options.manual_transfer.bank_accounts.0.bank_name', 'QRIS Mandiri');
+        $response->assertJsonPath('data.0.payment_options.manual_transfer.bank_accounts.0.account_number', '1122334455');
+        $response->assertJsonMissingPath('data.0.payment_options.manual_transfer.bank_accounts.0.qr_image_url');
+        $response->assertJsonPath('data.0.payment_options.manual_transfer.admin_fee', 1500);
+        $response->assertJsonPath('data.0.payment_options.manual_transfer.total_amount', 51500);
     }
 }
