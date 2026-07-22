@@ -18,9 +18,13 @@ class CitizenPaymentRequestTest extends TestCase
     use RefreshDatabase;
 
     private Taxpayer $taxpayer;
+
     private TaxObject $taxObject;
+
     private Opd $opd;
+
     private RetributionType $retributionType;
+
     private RetributionClassification $classification;
 
     protected function setUp(): void
@@ -63,12 +67,15 @@ class CitizenPaymentRequestTest extends TestCase
             ->assertJsonPath('data.method', 'bri_va')
             ->assertJsonPath('data.status', 'pending')
             ->assertJsonPath('data.total_amount', 125000)
-            ->assertJsonCount(2, 'data.bill_ids');
+            ->assertJsonCount(2, 'data.bill_ids')
+            ->assertJsonCount(0, 'data.receipts')
+            ->assertJsonPath('data.receipt_number', null)
+            ->assertJsonPath('data.receipt_url', null);
 
         $paymentRequestId = $createResponse->json('data.id');
         $paymentRequest = PaymentRequest::findOrFail($paymentRequestId);
 
-        $this->assertSame('777' . str_pad((string) $paymentRequest->id, 15, '0', STR_PAD_LEFT), $paymentRequest->va_number);
+        $this->assertSame('777'.str_pad((string) $paymentRequest->id, 15, '0', STR_PAD_LEFT), $paymentRequest->va_number);
         $this->assertDatabaseCount('payment_request_items', 2);
 
         $this->postJson('/api/citizen/payment-requests', [

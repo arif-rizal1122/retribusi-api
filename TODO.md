@@ -12,7 +12,9 @@ Terakhir diperbarui: 2026-07-22
 
 - [x] **PAY-002** Feature test citizen payment request lulus: create, reuse request aktif, ownership, expiry, cancel, serta response payload.
 - [x] **PAY-002** Test callback BRIVA multi-tagihan lulus: nominal snapshot, status bill, payment record, dan item request konsisten.
-- [ ] Dokumentasikan konfigurasi sandbox yang diperlukan tanpa menaruh credential pada file tracked.
+- [x] **MOB-PAY-002** Terbitkan referensi provider serta receipt/NTPD dan path unduh SSPD per bill pada payment request berstatus paid.
+- [x] **PAY-SBX-001** Dokumentasikan konfigurasi sandbox yang diperlukan tanpa menaruh credential pada file tracked; selaraskan nama variable `.env.example` dengan `config/snap.php` dan ignore direktori key lokal.
+- [ ] **PAY-TEST-001** Selaraskan unit test `SnapHeaderValidator`, `SnapSignatureService`, dan `SnapTokenService` dengan kontrak bank context service saat ini.
 - [ ] Verifikasi response SNAP terhadap spesifikasi bank yang dipakai sebelum UAT.
 
 ## Integrasi Citizen Billing
