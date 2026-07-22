@@ -11,12 +11,12 @@ use Illuminate\Http\Request;
 
 class SnapIdempotencyService
 {
-    public function reserve(Request $request): SnapIdempotencyKey
+    public function reserve(Request $request, string $serviceCode): SnapIdempotencyKey
     {
         $externalId = (string) $request->header('X-EXTERNAL-ID');
 
         if ($externalId === '') {
-            throw SnapValidationException::missing('Bad Request. Missing X-EXTERNAL-ID.');
+            throw SnapValidationException::missing('X-EXTERNAL-ID', $serviceCode);
         }
 
         try {
@@ -30,12 +30,12 @@ class SnapIdempotencyService
         } catch (QueryException) {
             $existing = SnapIdempotencyKey::where('external_id', $externalId)->first();
 
-            if (!$existing) {
-                throw SnapValidationException::missing('Bad Request. Duplicate X-EXTERNAL-ID cannot be resolved.');
+            if (! $existing) {
+                throw new SnapPaymentException("409{$serviceCode}00", 'Conflict', 409);
             }
 
             if ($existing->request_hash !== $this->hashRequest($request)) {
-                throw new SnapPaymentException('4092400', 'Conflict. X-EXTERNAL-ID has different request payload.', 409);
+                throw new SnapPaymentException("409{$serviceCode}00", 'Conflict', 409);
             }
 
             throw new DuplicateSnapExternalIdException($existing);
@@ -53,6 +53,6 @@ class SnapIdempotencyService
 
     public function hashRequest(Request $request): string
     {
-        return hash('sha256', $request->method() . ':' . $request->path() . ':' . $request->getContent());
+        return hash('sha256', $request->method().':'.$request->path().':'.$request->getContent());
     }
 }

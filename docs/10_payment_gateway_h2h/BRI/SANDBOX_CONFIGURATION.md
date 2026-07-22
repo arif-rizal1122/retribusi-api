@@ -10,11 +10,11 @@ Laravel memberi prefix `/api` pada `routes/api.php`. Endpoint runtime saat ini a
 
 | Fungsi | Method dan path |
 | --- | --- |
-| Access token B2B BRIVA | `POST /api/snap/v1.0/access-token/b2b` |
+| Access token B2B BRIVA | `POST /api/snap/v1.1/access-token/b2b` |
 | Inquiry BRIVA | `POST /api/snap/v1.0/transfer-va/inquiry` |
 | Callback pembayaran BRIVA | `POST /api/snap/v1.0/transfer-va/payment` |
 
-Semua URL sandbox harus memakai domain publik HTTPS. Konfirmasikan path lengkap dengan BRI sebelum menyerahkan formulir callback karena dokumen lokal lama tidak konsisten antara path dengan dan tanpa `/api`.
+Route token `/api/snap/v1.0/access-token/b2b` tetap tersedia sebagai compatibility alias, tetapi matriks akses sandbox lokal mencantumkan versi `v1.1`. Semua URL sandbox harus memakai domain publik HTTPS. Konfirmasikan path lengkap dengan BRI sebelum menyerahkan formulir callback karena dokumen lokal lama tidak konsisten antara path dengan dan tanpa `/api`.
 
 ## Environment Variable Runtime
 
@@ -100,7 +100,7 @@ php artisan test tests/Feature/Payment/Snap tests/Unit/Payment/Snap --do-not-cac
 
 9. Lakukan test positif dan negatif memakai credential sandbox resmi: token, signature salah, timestamp kedaluwarsa, IP tidak diizinkan, inquiry valid/tidak ditemukan/lunas/expired, payment valid, amount mismatch, dan duplicate `X-EXTERNAL-ID`.
 
-Baseline lokal 2026-07-22: seluruh feature test SNAP lulus, tetapi empat unit test lama belum mengikuti kontrak service bank context saat ini. Debt tersebut dicatat sebagai `PAY-TEST-001` di `TODO.md` dan harus diselesaikan sebelum hasil suite gabungan dipakai sebagai bukti UAT.
+Baseline lokal 2026-07-22: suite feature dan unit SNAP lulus 33 test dengan 114 assertion. Hasil lokal ini tetap bukan bukti kelulusan sandbox/UAT dengan credential dan skenario resmi BRI.
 
 ## Checklist Sebelum Menyerahkan Callback ke BRI
 

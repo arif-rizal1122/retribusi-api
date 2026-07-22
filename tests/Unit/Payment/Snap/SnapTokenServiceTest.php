@@ -12,9 +12,9 @@ class SnapTokenServiceTest extends TestCase
     {
         config(['snap.security.require_bearer_token' => true]);
 
-        $token = app(SnapTokenService::class)->issue('client-unit');
+        $token = app(SnapTokenService::class)->issue('client-unit', 'BRI');
 
-        app(SnapTokenService::class)->validateAuthorizationHeader('Bearer ' . $token['access_token']);
+        app(SnapTokenService::class)->validateAuthorizationHeader('Bearer '.$token['access_token'], 'BRI');
 
         $this->assertSame(900, $token['expires_in']);
     }
@@ -25,6 +25,16 @@ class SnapTokenServiceTest extends TestCase
 
         $this->expectException(SnapValidationException::class);
 
-        app(SnapTokenService::class)->validateAuthorizationHeader('Bearer missing-token');
+        app(SnapTokenService::class)->validateAuthorizationHeader('Bearer missing-token', 'BRI');
+    }
+
+    public function test_it_rejects_token_issued_for_another_bank(): void
+    {
+        config(['snap.security.require_bearer_token' => true]);
+        $token = app(SnapTokenService::class)->issue('client-unit', 'BRI');
+
+        $this->expectException(SnapValidationException::class);
+
+        app(SnapTokenService::class)->validateAuthorizationHeader('Bearer '.$token['access_token'], 'BTN');
     }
 }

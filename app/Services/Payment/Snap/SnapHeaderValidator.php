@@ -9,37 +9,37 @@ class SnapHeaderValidator
 {
     public function validateAccessTokenHeaders(Request $request): void
     {
-        $this->requireHeaders($request, ['X-CLIENT-KEY', 'X-TIMESTAMP', 'X-SIGNATURE'], '4007302');
+        $this->requireHeaders($request, ['X-CLIENT-KEY', 'X-TIMESTAMP', 'X-SIGNATURE'], '73');
 
         $clientKey = $request->header('X-CLIENT-KEY');
         $bankCode = $this->resolveBankByClientKey($clientKey);
 
-        if (!$bankCode) {
-            throw SnapValidationException::unauthorized('Unauthorized. Invalid Client Key.');
+        if (! $bankCode) {
+            throw SnapValidationException::unauthorized('Unauthorized Client Key', '73');
         }
 
         $request->attributes->set('snap_bank_code', $bankCode);
     }
 
-    public function validateTransactionHeaders(Request $request): void
+    public function validateTransactionHeaders(Request $request, string $serviceCode = '24'): void
     {
-        $this->requireHeaders($request, ['X-PARTNER-ID', 'X-EXTERNAL-ID', 'X-TIMESTAMP', 'X-SIGNATURE']);
+        $this->requireHeaders($request, ['X-PARTNER-ID', 'X-EXTERNAL-ID', 'X-TIMESTAMP', 'X-SIGNATURE'], $serviceCode);
 
         $partnerId = $request->header('X-PARTNER-ID');
         $bankCode = $this->resolveBankByPartnerId($partnerId);
 
-        if (!$bankCode) {
-            throw SnapValidationException::unauthorized('Unauthorized. Invalid Partner ID.');
+        if (! $bankCode) {
+            throw SnapValidationException::unauthorized('Unauthorized Partner ID', $serviceCode);
         }
 
         $request->attributes->set('snap_bank_code', $bankCode);
     }
 
-    private function requireHeaders(Request $request, array $headers, string $code = '4002402'): void
+    private function requireHeaders(Request $request, array $headers, string $serviceCode): void
     {
         foreach ($headers as $header) {
-            if (!$request->header($header)) {
-                throw SnapValidationException::missing("Bad Request. Missing {$header}.", $code);
+            if (! $request->header($header)) {
+                throw SnapValidationException::missing($header, $serviceCode);
             }
         }
     }
@@ -52,6 +52,7 @@ class SnapHeaderValidator
                 return (string) $code;
             }
         }
+
         return null;
     }
 
@@ -63,6 +64,7 @@ class SnapHeaderValidator
                 return (string) $code;
             }
         }
+
         return null;
     }
 }

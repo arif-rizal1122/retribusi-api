@@ -13,7 +13,7 @@ class SnapSignatureServiceTest extends TestCase
     public function test_it_verifies_valid_asymmetric_signature(): void
     {
         [$privateKey, $publicKey] = $this->keys();
-        config(['snap.security.bank_public_key' => $publicKey]);
+        config(['snap.partners.BRI.public_key' => $publicKey]);
 
         $timestamp = now()->toIso8601String();
         $body = ['customerNo' => 'SKRD-UNIT-001'];
@@ -40,6 +40,7 @@ class SnapSignatureServiceTest extends TestCase
             ],
             $canonicalBody
         );
+        $request->attributes->set('snap_bank_code', 'BRI');
 
         app(SnapSignatureService::class)->verify($request);
 
@@ -49,7 +50,7 @@ class SnapSignatureServiceTest extends TestCase
     public function test_it_rejects_invalid_signature(): void
     {
         [, $publicKey] = $this->keys();
-        config(['snap.security.bank_public_key' => $publicKey]);
+        config(['snap.partners.BRI.public_key' => $publicKey]);
 
         $this->expectException(SnapValidationException::class);
 
@@ -66,6 +67,7 @@ class SnapSignatureServiceTest extends TestCase
             ],
             '{"customerNo":"SKRD-UNIT-001"}'
         );
+        $request->attributes->set('snap_bank_code', 'BRI');
 
         app(SnapSignatureService::class)->verify($request);
     }

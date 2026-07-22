@@ -8,12 +8,13 @@ use App\Services\Payment\Snap\Exceptions\SnapPaymentException;
 use App\Services\Payment\Snap\Exceptions\SnapValidationException;
 use App\Services\Payment\Snap\SnapBrivaService;
 use App\Services\Payment\Snap\SnapIdempotencyService;
+use App\Services\Payment\Snap\SnapRequestValidator;
 use App\Services\Payment\Snap\SnapResponseMapper;
 use App\Services\Payment\Snap\SnapSecurityService;
 use App\Services\Payment\Snap\SnapTokenService;
 use App\Services\PaymentAuditService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class SnapBIController extends Controller
@@ -22,11 +23,11 @@ class SnapBIController extends Controller
         private readonly SnapSecurityService $security,
         private readonly SnapTokenService $tokens,
         private readonly SnapIdempotencyService $idempotency,
+        private readonly SnapRequestValidator $requests,
         private readonly SnapResponseMapper $responses,
         private readonly SnapBrivaService $briva,
         private readonly PaymentAuditService $audit
-    ) {
-    }
+    ) {}
 
     public function getAccessToken(Request $request): JsonResponse
     {
@@ -40,29 +41,30 @@ class SnapBIController extends Controller
         } catch (SnapValidationException $e) {
             return $this->validationError($request, $e);
         } catch (\Throwable $e) {
-            return $this->serverError($request, $e);
+            return $this->serverError($request, $e, '73');
         }
     }
 
     public function qrisNotify(Request $request): JsonResponse
     {
         try {
-            $this->security->validateTransactionRequest($request);
+            $this->security->validateTransactionRequest($request, '52');
             $response = $this->responses->qrisNotify();
 
             return $this->respondAndLog($request, $response, 200);
         } catch (SnapValidationException $e) {
             return $this->validationError($request, $e);
         } catch (\Throwable $e) {
-            return $this->serverError($request, $e);
+            return $this->serverError($request, $e, '52');
         }
     }
 
     public function brivaInquiry(Request $request): JsonResponse
     {
         try {
-            $this->security->validateTransactionRequest($request);
-            $idempotencyKey = $this->idempotency->reserve($request);
+            $this->security->validateTransactionRequest($request, '24');
+            $this->requests->validateInquiry($request);
+            $idempotencyKey = $this->idempotency->reserve($request, '24');
             $virtualAccountData = $this->briva->inquiry($request);
             $response = $this->responses->brivaInquiry($virtualAccountData);
 
@@ -70,21 +72,22 @@ class SnapBIController extends Controller
 
             return $this->respondAndLog($request, $response, 200);
         } catch (DuplicateSnapExternalIdException $e) {
-            return $this->duplicateExternalId($request, $e);
+            return $this->duplicateExternalId($request, $e, '24');
         } catch (SnapValidationException $e) {
             return $this->validationError($request, $e);
         } catch (SnapPaymentException $e) {
             return $this->paymentError($request, $e);
         } catch (\Throwable $e) {
-            return $this->serverError($request, $e);
+            return $this->serverError($request, $e, '24');
         }
     }
 
     public function brivaPayment(Request $request): JsonResponse
     {
         try {
-            $this->security->validateTransactionRequest($request);
-            $idempotencyKey = $this->idempotency->reserve($request);
+            $this->security->validateTransactionRequest($request, '25');
+            $this->requests->validatePayment($request);
+            $idempotencyKey = $this->idempotency->reserve($request, '25');
             $virtualAccountData = $this->briva->payment($request);
             $response = $this->responses->brivaPayment($virtualAccountData);
 
@@ -92,13 +95,13 @@ class SnapBIController extends Controller
 
             return $this->respondAndLog($request, $response, 200);
         } catch (DuplicateSnapExternalIdException $e) {
-            return $this->duplicateExternalId($request, $e);
+            return $this->duplicateExternalId($request, $e, '25');
         } catch (SnapValidationException $e) {
             return $this->validationError($request, $e);
         } catch (SnapPaymentException $e) {
             return $this->paymentError($request, $e);
         } catch (\Throwable $e) {
-            return $this->serverError($request, $e);
+            return $this->serverError($request, $e, '25');
         }
     }
 
@@ -120,7 +123,7 @@ class SnapBIController extends Controller
         );
     }
 
-    private function duplicateExternalId(Request $request, DuplicateSnapExternalIdException $exception): JsonResponse
+    private function duplicateExternalId(Request $request, DuplicateSnapExternalIdException $exception, string $serviceCode): JsonResponse
     {
         if ($exception->record->status === 'completed' && $exception->record->response_payload) {
             return $this->respondAndLog(
@@ -132,12 +135,12 @@ class SnapBIController extends Controller
 
         return $this->respondAndLog(
             $request,
-            $this->responses->error('4092400', 'Conflict. Duplicate X-EXTERNAL-ID.'),
+            $this->responses->error("409{$serviceCode}00", 'Conflict'),
             409
         );
     }
 
-    private function serverError(Request $request, \Throwable $exception): JsonResponse
+    private function serverError(Request $request, \Throwable $exception, string $serviceCode): JsonResponse
     {
         Log::error('SNAP BI request failed.', [
             'path' => $request->path(),
@@ -146,7 +149,7 @@ class SnapBIController extends Controller
 
         return $this->respondAndLog(
             $request,
-            $this->responses->error('5002400', 'General Error.'),
+            $this->responses->error("500{$serviceCode}00", 'General Error.'),
             500
         );
     }

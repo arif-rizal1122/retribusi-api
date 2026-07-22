@@ -11,7 +11,7 @@ class SnapHeaderValidatorTest extends TestCase
 {
     public function test_it_validates_transaction_partner_header(): void
     {
-        config(['snap.partner_id' => 'PARTNER-UNIT']);
+        config(['snap.partners.BRI.partner_id' => 'PARTNER-UNIT']);
 
         $request = Request::create('/api/snap/v1.0/transfer-va/inquiry', 'POST', [], [], [], [
             'HTTP_X_PARTNER_ID' => 'PARTNER-UNIT',
@@ -22,7 +22,7 @@ class SnapHeaderValidatorTest extends TestCase
 
         app(SnapHeaderValidator::class)->validateTransactionHeaders($request);
 
-        $this->assertTrue(true);
+        $this->assertSame('BRI', $request->attributes->get('snap_bank_code'));
     }
 
     public function test_it_rejects_missing_mandatory_header(): void
