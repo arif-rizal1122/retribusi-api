@@ -14,18 +14,23 @@ class SnapValidationException extends RuntimeException
         parent::__construct($snapMessage, $httpStatus);
     }
 
-    public static function missing(string $message = 'Bad Request. Missing Mandatory Field.', string $code = '4002402'): self
+    public static function missing(string $field, string $serviceCode = '24'): self
     {
-        return new self($code, $message, 400);
+        return new self("400{$serviceCode}02", "Invalid Mandatory Field {{$field}}", 400);
     }
 
-    public static function unauthorized(string $message = 'Unauthorized.'): self
+    public static function invalidFormat(string $field, string $serviceCode = '24'): self
     {
-        return new self('4012400', $message, 401);
+        return new self("400{$serviceCode}01", "Invalid Field Format {{$field}}", 400);
     }
 
-    public static function invalidToken(string $message = 'Unauthorized. Invalid Token.'): self
+    public static function unauthorized(string $message = 'Unauthorized Signature', string $serviceCode = '24'): self
     {
-        return new self('4017300', $message, 401);
+        return new self("401{$serviceCode}00", $message, 401);
+    }
+
+    public static function invalidToken(string $serviceCode = '24'): self
+    {
+        return new self("401{$serviceCode}01", 'Access Token Invalid', 401);
     }
 }

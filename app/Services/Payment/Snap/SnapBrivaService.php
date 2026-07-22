@@ -6,19 +6,18 @@ use App\Models\Bill;
 use App\Models\Payment;
 use App\Models\PaymentRequest;
 use App\Services\Payment\Snap\Exceptions\SnapPaymentException;
+use App\Services\Payment\Snap\Exceptions\SnapValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class SnapBrivaService
 {
-    public function __construct(private readonly SensitivePaymentLogMasker $masker)
-    {
-    }
+    public function __construct(private readonly SensitivePaymentLogMasker $masker) {}
 
     public function inquiry(Request $request): array
     {
-        [$bill, $paymentRequest] = $this->resolveOpenBill($request);
+        [$bill, $paymentRequest] = $this->resolveOpenBill($request, '24');
 
         return $this->virtualAccountData($request, $bill, [
             'inquiryStatus' => '00',
@@ -28,12 +27,12 @@ class SnapBrivaService
 
     public function payment(Request $request): array
     {
-        [$bill, $paymentRequest] = $this->resolveOpenBill($request);
+        [$bill, $paymentRequest] = $this->resolveOpenBill($request, '25');
         $paidAmount = $this->extractAmount($request);
         $expectedAmount = $this->expectedAmount($bill, $paymentRequest);
 
-        if (!$this->sameAmount($expectedAmount, $paidAmount)) {
-            throw new SnapPaymentException('4002401', 'Bad Request. Paid amount does not match bill amount.', 400);
+        if (! $this->sameAmount($expectedAmount, $paidAmount)) {
+            throw new SnapPaymentException('4042513', 'Invalid Amount', 404);
         }
 
         return DB::transaction(function () use ($request, $bill, $paymentRequest, $paidAmount) {
@@ -41,10 +40,10 @@ class SnapBrivaService
             $externalId = (string) $request->header('X-EXTERNAL-ID');
 
             $bankCode = strtoupper($request->attributes->get('snap_bank_code', 'UNKNOWN'));
-            $channel = $bankCode . '_SNAP';
+            $channel = $bankCode.'_SNAP';
 
             $items = $paymentRequest?->items()->with('bill')->get();
-            if (!$items || $items->isEmpty()) {
+            if (! $items || $items->isEmpty()) {
                 $items = collect([(object) ['bill' => $bill, 'amount_snapshot' => $paidAmount, 'id' => null]]);
             }
 
@@ -52,7 +51,7 @@ class SnapBrivaService
                 $lockedBill = Bill::whereKey($item->bill->id)->lockForUpdate()->firstOrFail();
 
                 if ($this->isPaid($lockedBill)) {
-                    throw new SnapPaymentException('4092400', 'Conflict. Bill already paid.', 409);
+                    throw new SnapPaymentException('4042514', 'Bill has been paid', 404);
                 }
 
                 $lockedBill->update([
@@ -65,9 +64,9 @@ class SnapBrivaService
                     'bill_id' => $lockedBill->id,
                     'tax_object_id' => $lockedBill->tax_object_id,
                     'taxpayer_id' => $lockedBill->taxpayer_id,
-                    'transaction_id' => 'SNAP-' . ($externalId !== '' ? $externalId : Str::uuid()->toString()) . '-' . $lockedBill->id,
-                    'reference_number' => $items->count() > 1 ? $referenceNumber . '-' . ($index + 1) : $referenceNumber,
-                    'receipt_number' => 'NTPD-SNAP-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6)),
+                    'transaction_id' => 'SNAP-'.($externalId !== '' ? $externalId : Str::uuid()->toString()).'-'.$lockedBill->id,
+                    'reference_number' => $items->count() > 1 ? $referenceNumber.'-'.($index + 1) : $referenceNumber,
+                    'receipt_number' => 'NTPD-SNAP-'.now()->format('YmdHis').'-'.Str::upper(Str::random(6)),
                     'payment_method' => 'va',
                     'channel' => $channel,
                     'amount' => (float) $item->amount_snapshot,
@@ -98,20 +97,20 @@ class SnapBrivaService
         });
     }
 
-    private function resolveOpenBill(Request $request): array
+    private function resolveOpenBill(Request $request, string $serviceCode): array
     {
         [$bill, $paymentRequest] = $this->resolveBill($request);
 
-        if (!$bill) {
-            throw new SnapPaymentException('4042412', 'Bill not found / Invalid VA.', 404);
+        if (! $bill) {
+            throw new SnapPaymentException("404{$serviceCode}12", 'Bill not found', 404);
         }
 
         if ($paymentRequest && $paymentRequest->expires_at && $paymentRequest->expires_at->isPast()) {
-            throw new SnapPaymentException('4042419', 'Bill expired.', 404);
+            throw new SnapPaymentException("404{$serviceCode}19", 'Bill expired', 404);
         }
 
         if ($this->isPaid($bill)) {
-            throw new SnapPaymentException('4092400', 'Conflict. Bill already paid.', 409);
+            throw new SnapPaymentException("404{$serviceCode}14", 'Bill has been paid', 404);
         }
 
         return [$bill, $paymentRequest];
@@ -127,17 +126,17 @@ class SnapBrivaService
             $paymentRequest = PaymentRequest::where('va_number', $virtualAccountNo)->first();
         }
 
-        if (!$paymentRequest && $customerNo !== '') {
+        if (! $paymentRequest && $customerNo !== '') {
             $paymentRequest = PaymentRequest::where('external_id', $customerNo)->first();
         }
 
         $bill = $paymentRequest?->bill;
 
-        if (!$bill && $customerNo !== '') {
+        if (! $bill && $customerNo !== '') {
             $bill = Bill::where('bill_number', $customerNo)->first();
         }
 
-        if (!$bill && $virtualAccountNo !== '') {
+        if (! $bill && $virtualAccountNo !== '') {
             $bill = Bill::where('bill_number', $virtualAccountNo)->first();
         }
 
@@ -148,7 +147,7 @@ class SnapBrivaService
     {
         $partnerServiceId = (string) $request->input('partnerServiceId', '');
         $customerNo = (string) $request->input('customerNo', $bill->bill_number);
-        $virtualAccountNo = (string) $request->input('virtualAccountNo', $paymentRequest?->va_number ?? ($partnerServiceId . $customerNo));
+        $virtualAccountNo = (string) $request->input('virtualAccountNo', $paymentRequest?->va_number ?? ($partnerServiceId.$customerNo));
         $totalAmount = $this->money($this->expectedAmount($bill, $paymentRequest));
         $billDetails = $paymentRequest?->items()->with('bill')->get()->map(fn ($item) => [
             'billNo' => $item->bill->bill_number,
@@ -210,7 +209,7 @@ class SnapBrivaService
             }
         }
 
-        throw new SnapPaymentException('4002402', 'Bad Request. Missing paid amount.', 400);
+        throw SnapValidationException::missing('paidAmount', '25');
     }
 
     private function referenceNumber(Request $request): string

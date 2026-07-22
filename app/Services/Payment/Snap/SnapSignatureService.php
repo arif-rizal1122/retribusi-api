@@ -7,28 +7,26 @@ use Illuminate\Http\Request;
 
 class SnapSignatureService
 {
-    public function __construct(private readonly SnapCanonicalRequest $canonicalRequest)
-    {
-    }
+    public function __construct(private readonly SnapCanonicalRequest $canonicalRequest) {}
 
-    public function verify(Request $request): void
+    public function verify(Request $request, string $serviceCode = '24'): void
     {
         $signature = (string) $request->header('X-SIGNATURE');
         $stringToSign = $this->canonicalRequest->stringToSignFromRequest($request);
         $bankCode = $request->attributes->get('snap_bank_code');
 
-        if (!$bankCode) {
-            throw SnapValidationException::unauthorized('Unauthorized. Cannot resolve bank for signature verification.');
+        if (! $bankCode) {
+            throw SnapValidationException::unauthorized('Unauthorized Signature', $serviceCode);
         }
 
-        if (!$this->verifyString($stringToSign, $signature, $bankCode)) {
-            throw SnapValidationException::unauthorized('Unauthorized. Signature invalid.');
+        if (! $this->verifyString($stringToSign, $signature, $bankCode, $serviceCode)) {
+            throw SnapValidationException::unauthorized('Unauthorized Signature', $serviceCode);
         }
     }
 
-    public function verifyString(string $stringToSign, string $signature, string $bankCode): bool
+    public function verifyString(string $stringToSign, string $signature, string $bankCode, string $serviceCode = '24'): bool
     {
-        $publicKey = $this->publicKey($bankCode);
+        $publicKey = $this->publicKey($bankCode, $serviceCode);
         $decodedSignature = base64_decode($signature, true);
 
         if ($decodedSignature === false) {
@@ -38,7 +36,7 @@ class SnapSignatureService
         return openssl_verify($stringToSign, $decodedSignature, $publicKey, OPENSSL_ALGO_SHA256) === 1;
     }
 
-    private function publicKey(string $bankCode): string
+    private function publicKey(string $bankCode, string $serviceCode): string
     {
         $inlineKey = (string) config("snap.partners.{$bankCode}.public_key", '');
         if ($inlineKey !== '') {
@@ -50,6 +48,6 @@ class SnapSignatureService
             return (string) file_get_contents($path);
         }
 
-        throw SnapValidationException::unauthorized("Unauthorized. SNAP public key for {$bankCode} is not configured.");
+        throw SnapValidationException::unauthorized('Unauthorized Signature', $serviceCode);
     }
 }

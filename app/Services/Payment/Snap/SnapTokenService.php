@@ -24,31 +24,31 @@ class SnapTokenService
         ];
     }
 
-    public function validateAuthorizationHeader(?string $authorizationHeader, string $expectedBankCode): void
+    public function validateAuthorizationHeader(?string $authorizationHeader, string $expectedBankCode, string $serviceCode = '24'): void
     {
-        if (!config('snap.security.require_bearer_token', true)) {
+        if (! config('snap.security.require_bearer_token', true)) {
             return;
         }
 
-        if (!$authorizationHeader || !str_starts_with($authorizationHeader, 'Bearer ')) {
-            throw SnapValidationException::invalidToken('Unauthorized. Missing Bearer Token.');
+        if (! $authorizationHeader || ! str_starts_with($authorizationHeader, 'Bearer ')) {
+            throw SnapValidationException::invalidToken($serviceCode);
         }
 
         $token = trim(substr($authorizationHeader, 7));
         $cacheKey = $this->cacheKey($token);
 
-        if ($token === '' || !Cache::has($cacheKey)) {
-            throw SnapValidationException::invalidToken();
+        if ($token === '' || ! Cache::has($cacheKey)) {
+            throw SnapValidationException::invalidToken($serviceCode);
         }
 
         $tokenData = Cache::get($cacheKey);
         if (($tokenData['bank_code'] ?? '') !== $expectedBankCode) {
-            throw SnapValidationException::unauthorized('Unauthorized. Token does not belong to the requested Partner ID.');
+            throw SnapValidationException::invalidToken($serviceCode);
         }
     }
 
     private function cacheKey(string $token): string
     {
-        return 'snap:b2b-token:' . hash('sha256', $token);
+        return 'snap:b2b-token:'.hash('sha256', $token);
     }
 }

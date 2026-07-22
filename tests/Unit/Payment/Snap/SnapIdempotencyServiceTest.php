@@ -19,10 +19,10 @@ class SnapIdempotencyServiceTest extends TestCase
             'HTTP_X_EXTERNAL_ID' => 'EXT-DUPLICATE-UNIT',
         ], '{"customerNo":"SKRD-UNIT"}');
 
-        $service->reserve($request);
+        $service->reserve($request, '24');
 
         $this->expectException(DuplicateSnapExternalIdException::class);
 
-        $service->reserve($request);
+        $service->reserve($request, '24');
     }
 }
