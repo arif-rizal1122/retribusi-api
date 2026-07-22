@@ -256,12 +256,17 @@ class BillController extends Controller
         ]);
 
         $bills = Bill::with(['retributionType', 'opd', 'taxObject', 'classification'])
+            ->withExists([
+                'payments as has_pending_payment_claim' => fn ($query) => $query->where('status', 'pending'),
+            ])
             ->where('taxpayer_id', $taxpayer->id)
             ->latest()
             ->paginate($validated['per_page'] ?? 20);
 
         return response()->json([
-            'data' => $bills->items(),
+            'data' => collect($bills->items())
+                ->map(fn (Bill $bill) => $this->citizenBillPayload($bill))
+                ->values(),
             'meta' => [
                 'current_page' => $bills->currentPage(),
                 'last_page' => $bills->lastPage(),
@@ -269,6 +274,98 @@ class BillController extends Controller
                 'total' => $bills->total(),
             ],
         ]);
+    }
+
+    private function citizenBillPayload(Bill $bill): array
+    {
+        $payload = $bill->toArray();
+        $status = $this->citizenBillStatus($bill);
+
+        unset($payload['has_pending_payment_claim']);
+
+        $payload['status'] = $status;
+        $payload['status_label'] = match ($status) {
+            'overdue' => 'Jatuh tempo',
+            'paid' => 'Lunas',
+            'pending_verification' => 'Menunggu verifikasi pembayaran',
+            'cancelled' => 'Dibatalkan',
+            default => 'Menunggu pembayaran',
+        };
+        $payload['can_pay'] = in_array($status, ['pending', 'overdue'], true);
+        $payload['payment_options'] = $this->citizenPaymentOptions($bill, $payload['can_pay']);
+
+        return $payload;
+    }
+
+    private function citizenPaymentOptions(Bill $bill, bool $canPay): array
+    {
+        $expiresAt = $bill->expiry_time;
+        if (! $expiresAt && $bill->due_date?->isFuture()) {
+            $expiresAt = $bill->due_date;
+        }
+
+        $bankAccounts = collect($bill->classification?->bank_accounts ?? [])
+            ->map(function ($account) {
+                if (! is_array($account)) {
+                    return null;
+                }
+
+                $bankName = trim((string) ($account['bank_name'] ?? ''));
+                $accountNumber = preg_replace('/\s+/', '', (string) ($account['account_number'] ?? ''));
+                if ($bankName === '' || $accountNumber === '') {
+                    return null;
+                }
+
+                return [
+                    'bank_name' => $bankName,
+                    'account_number' => $accountNumber,
+                    'account_name' => trim((string) ($account['account_name'] ?? '')) ?: null,
+                ];
+            })
+            ->filter()
+            ->unique(fn (array $account) => strtolower($account['bank_name']).'|'.$account['account_number'])
+            ->values();
+
+        return [
+            'manual_transfer' => [
+                'available' => $canPay && $bankAccounts->isNotEmpty(),
+                'bank_accounts' => $bankAccounts,
+                'admin_fee' => (float) $bill->admin_fee,
+                'total_amount' => (float) $bill->total_amount,
+                'expires_at' => $expiresAt?->toIso8601String(),
+                'instructions' => [
+                    'Transfer hanya ke rekening yang diterbitkan untuk klasifikasi tagihan ini.',
+                    'Pastikan nominal transfer sama dengan total tagihan.',
+                    'Unggah bukti transfer untuk diverifikasi petugas.',
+                ],
+            ],
+            'bri_va' => [
+                'available' => $canPay,
+            ],
+        ];
+    }
+
+    private function citizenBillStatus(Bill $bill): string
+    {
+        $storedStatus = strtolower((string) $bill->getRawOriginal('status'));
+
+        if (in_array($storedStatus, ['paid', 'lunas', 'success', 'settled'], true)) {
+            return 'paid';
+        }
+
+        if (in_array($storedStatus, ['cancelled', 'canceled', 'expired', 'void', 'voided'], true)) {
+            return 'cancelled';
+        }
+
+        if ((bool) $bill->has_pending_payment_claim) {
+            return 'pending_verification';
+        }
+
+        if ($storedStatus === 'overdue' || $bill->due_date?->isPast()) {
+            return 'overdue';
+        }
+
+        return 'pending';
     }
 
     /**
