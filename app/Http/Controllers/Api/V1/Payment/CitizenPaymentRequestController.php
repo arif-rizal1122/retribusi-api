@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\V1\Payment;
 
 use App\Http\Controllers\Controller;
 use App\Models\Bill;
+use App\Models\Payment;
 use App\Models\PaymentRequest;
 use App\Models\PaymentRequestItem;
 use App\Models\Taxpayer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -82,12 +84,12 @@ class CitizenPaymentRequestController extends Controller
                 'admin_fee_snapshot' => $adminFee,
                 'penalty_snapshot' => $totalAmount - $baseAmount - $adminFee,
                 'expires_at' => $expiresAt,
-                'external_id' => 'MOB-BRI-' . Str::upper(Str::random(16)),
+                'external_id' => 'MOB-BRI-'.Str::upper(Str::random(16)),
                 'status' => 'pending',
             ]);
 
             $paymentRequest->update([
-                'va_number' => $prefix . str_pad((string) $paymentRequest->id, $length - strlen($prefix), '0', STR_PAD_LEFT),
+                'va_number' => $prefix.str_pad((string) $paymentRequest->id, $length - strlen($prefix), '0', STR_PAD_LEFT),
             ]);
 
             foreach ($bills as $bill) {
@@ -156,6 +158,7 @@ class CitizenPaymentRequestController extends Controller
     private function payload(PaymentRequest $paymentRequest): array
     {
         $items = $paymentRequest->items;
+        $receipts = $this->receipts($paymentRequest, $items);
         $method = strtolower($paymentRequest->payment_channel) === 'bri' && strtoupper($paymentRequest->method) === 'VA'
             ? 'bri_va'
             : strtolower($paymentRequest->method);
@@ -179,6 +182,9 @@ class CitizenPaymentRequestController extends Controller
             'expired_at' => $paymentRequest->expires_at?->toIso8601String(),
             'paid_at' => $paymentRequest->paid_at?->toIso8601String(),
             'reference_number' => $paymentRequest->provider_reference,
+            'receipt_number' => $receipts->first()['receipt_number'] ?? null,
+            'receipt_url' => $receipts->first()['download_path'] ?? null,
+            'receipts' => $receipts,
             'instructions' => [
                 'Buka BRImo, ATM BRI, BRILink, atau channel pembayaran BRI.',
                 'Pilih menu pembayaran BRIVA atau Virtual Account.',
@@ -188,6 +194,42 @@ class CitizenPaymentRequestController extends Controller
             'can_refresh' => $paymentRequest->status === 'pending',
             'can_cancel' => $paymentRequest->status === 'pending',
         ];
+    }
+
+    private function receipts(PaymentRequest $paymentRequest, Collection $items): Collection
+    {
+        if ($paymentRequest->status !== 'paid') {
+            return collect();
+        }
+
+        $payments = Payment::where('taxpayer_id', $paymentRequest->taxpayer_id)
+            ->whereIn('bill_id', $items->pluck('bill_id'))
+            ->where('status', 'success')
+            ->whereNotNull('receipt_number')
+            ->latest('id')
+            ->get()
+            ->when($paymentRequest->provider_reference, function (Collection $payments, string $reference) {
+                return $payments->filter(fn (Payment $payment) => $payment->reference_number === $reference
+                    || str_starts_with((string) $payment->reference_number, "{$reference}-"));
+            })
+            ->unique('bill_id')
+            ->keyBy('bill_id');
+
+        return $items->map(function (PaymentRequestItem $item) use ($payments) {
+            $payment = $payments->get($item->bill_id);
+            if (! $payment) {
+                return null;
+            }
+
+            return [
+                'bill_id' => $item->bill_id,
+                'bill_number' => $item->bill?->bill_number,
+                'reference_number' => $payment->reference_number,
+                'receipt_number' => $payment->receipt_number,
+                'download_path' => "/api/bills/{$item->bill_id}/sspd",
+                'file_name' => 'SSPD-'.($item->bill?->bill_number ?? $item->bill_id).'.pdf',
+            ];
+        })->filter()->values();
     }
 
     private function statusLabel(string $status): string

@@ -4,6 +4,7 @@ namespace Tests\Feature\Payment\Snap;
 
 use App\Models\Bill;
 use App\Models\PaymentRequestItem;
+use Laravel\Sanctum\Sanctum;
 
 class SnapMultiBillPaymentTest extends SnapFeatureTestCase
 {
@@ -27,7 +28,7 @@ class SnapMultiBillPaymentTest extends SnapFeatureTestCase
             'period' => '2026-07',
             'due_date' => now()->addMonth(),
         ]);
-        $vaNumber = '777' . $firstBill->bill_number;
+        $vaNumber = '777'.$firstBill->bill_number;
         $paymentRequest = $this->createPaymentRequest($firstBill, $vaNumber);
         $paymentRequest->update(['amount_snapshot' => 200000, 'admin_fee_snapshot' => 0, 'penalty_snapshot' => 0]);
 
@@ -67,5 +68,26 @@ class SnapMultiBillPaymentTest extends SnapFeatureTestCase
         }
 
         $this->assertDatabaseHas('payment_requests', ['id' => $paymentRequest->id, 'status' => 'paid']);
+
+        Sanctum::actingAs($firstBill->taxpayer);
+
+        $response = $this->getJson("/api/citizen/payment-requests/{$paymentRequest->id}")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'paid')
+            ->assertJsonCount(2, 'data.receipts');
+
+        foreach ([$firstBill, $secondBill] as $bill) {
+            $response->assertJsonFragment([
+                'bill_id' => $bill->id,
+                'bill_number' => $bill->bill_number,
+                'download_path' => "/api/bills/{$bill->id}/sspd",
+                'file_name' => "SSPD-{$bill->bill_number}.pdf",
+            ]);
+        }
+
+        $this->assertNotEmpty($response->json('data.reference_number'));
+        $this->assertNotEmpty($response->json('data.receipt_number'));
+        $this->assertNotEmpty($response->json('data.receipts.0.reference_number'));
+        $this->assertNotEmpty($response->json('data.receipts.0.receipt_number'));
     }
 }
