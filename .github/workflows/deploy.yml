@@ -20,7 +20,7 @@ jobs:
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          password: ${{ secrets.VPS_PASSWORD }}
+          key: ${{ secrets.VPS_KEY }}
           port: ${{ secrets.VPS_PORT }}
           script: |
             set -e
@@ -68,8 +68,8 @@ jobs:
             
             echo "--- FINAL HEALTH CHECK ---"
             # Verify API
-            echo "API (apimpad.baubaukota.go.id):"
-            curl -k -I https://apimpad.baubaukota.go.id/
+            echo "API (api.sipanda.online):"
+            curl -k -I https://api.sipanda.online/
             
             # Verify Admin
             echo "Admin (adminmpad.baubaukota.go.id):"
@@ -87,25 +87,25 @@ jobs:
               exit 1
             # Create a readable reference file directly on the VPS
             cat <<EOF > /home/sipanda/MPAD_REFERENCE.md
-# M-PAD PRODUCTION INFRASTRUCTURE REFERENCE
-Generated on: \$(date)
-
-## 1. DOMAIN & DIRECTORY MAPPING
-- API: https://apimpad.baubaukota.go.id -> /home/sipanda/retribusi-api/public
-- Admin: https://adminmpad.baubaukota.go.id -> /home/sipanda/retribusi-admin/dist
-- Petugas: https://petugasmpad.baubaukota.go.id -> /home/sipanda/retribusi-petugas/dist
-- POS: https://posmpad.baubaukota.go.id -> /home/sipanda/POS/frontend/dist
-
-## 2. DATABASE
-- Name: sipanda_retribusi (MariaDB)
-- Host: 127.0.0.1 (Localhost)
-- User: sipanda
-
-## 3. MAINTENANCE SCRIPTS
-- Nginx Repair: /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh
-- Deployment Source: github.com/muhdanfyan/retribusi-api
-
-EOF
+            # M-PAD PRODUCTION INFRASTRUCTURE REFERENCE
+            Generated on: \$(date)
+            
+            ## 1. DOMAIN & DIRECTORY MAPPING
+            - API: https://api.sipanda.online -> /home/sipanda/retribusi-api/public
+            - Admin: https://adminmpad.baubaukota.go.id -> /home/sipanda/retribusi-admin/dist
+            - Petugas: https://petugasmpad.baubaukota.go.id -> /home/sipanda/retribusi-petugas/dist
+            - POS: https://posmpad.baubaukota.go.id -> /home/sipanda/POS/frontend/dist
+            
+            ## 2. DATABASE
+            - Name: sipanda_retribusi (MariaDB)
+            - Host: 127.0.0.1 (Localhost)
+            - User: sipanda
+            
+            ## 3. MAINTENANCE SCRIPTS
+            - Nginx Repair: /home/sipanda/retribusi-api/testing/vps_master_nginx_reset.sh
+            - Deployment Source: github.com/muhdanfyan/retribusi-api
+            
+            EOF
             chmod 644 /home/sipanda/MPAD_REFERENCE.md
             echo "--- VPS REFERENCE FILE CREATED ( /home/sipanda/MPAD_REFERENCE.md ) ---"
 
