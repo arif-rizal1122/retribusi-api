@@ -180,7 +180,8 @@ class CitizenBillingReadTest extends TestCase
             'snap.briva.enabled' => true,
             'snap.partners.BRI.partner_id' => 'BRI-PARTNER-LOCAL',
             'snap.partners.BRI.client_key' => 'BRI-CLIENT-LOCAL',
-            'snap.partners.BRI.public_key' => '-----BEGIN PUBLIC KEY----- test -----END PUBLIC KEY-----',
+            'snap.partners.BRI.signature_algorithm' => 'hmac_sha512',
+            'snap.partners.BRI.signature_secret' => 'bri-test-signature-secret',
             'snap.briva.va_prefix' => '777',
             'snap.briva.va_length' => 18,
         ]);

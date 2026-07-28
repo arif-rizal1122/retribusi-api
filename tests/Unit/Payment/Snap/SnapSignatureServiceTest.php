@@ -10,10 +10,13 @@ use Tests\TestCase;
 
 class SnapSignatureServiceTest extends TestCase
 {
-    public function test_it_verifies_valid_asymmetric_signature(): void
+    public function test_it_verifies_valid_hmac_sha512_signature(): void
     {
-        [$privateKey, $publicKey] = $this->keys();
-        config(['snap.partners.BRI.public_key' => $publicKey]);
+        $secret = 'bri-test-signature-secret';
+        config([
+            'snap.partners.BRI.signature_algorithm' => 'hmac_sha512',
+            'snap.partners.BRI.signature_secret' => $secret,
+        ]);
 
         $timestamp = now()->toIso8601String();
         $body = ['customerNo' => 'SKRD-UNIT-001'];
@@ -25,7 +28,7 @@ class SnapSignatureServiceTest extends TestCase
             $timestamp
         );
 
-        openssl_sign($stringToSign, $signature, $privateKey, OPENSSL_ALGO_SHA256);
+        $signature = base64_encode(hash_hmac('sha512', $stringToSign, $secret, true));
 
         $request = Request::create(
             '/api/snap/v1.0/transfer-va/inquiry',
@@ -36,7 +39,7 @@ class SnapSignatureServiceTest extends TestCase
             [
                 'CONTENT_TYPE' => 'application/json',
                 'HTTP_X_TIMESTAMP' => $timestamp,
-                'HTTP_X_SIGNATURE' => base64_encode($signature),
+                'HTTP_X_SIGNATURE' => $signature,
             ],
             $canonicalBody
         );
@@ -49,8 +52,10 @@ class SnapSignatureServiceTest extends TestCase
 
     public function test_it_rejects_invalid_signature(): void
     {
-        [, $publicKey] = $this->keys();
-        config(['snap.partners.BRI.public_key' => $publicKey]);
+        config([
+            'snap.partners.BRI.signature_algorithm' => 'hmac_sha512',
+            'snap.partners.BRI.signature_secret' => 'bri-test-signature-secret',
+        ]);
 
         $this->expectException(SnapValidationException::class);
 

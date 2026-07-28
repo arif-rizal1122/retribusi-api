@@ -27,8 +27,8 @@ Sumber kebenaran nama variable adalah `config/snap.php`. Isi nilai sebenarnya me
 | `BRI_SNAP_ENABLED` | `true` setelah konfigurasi lengkap | Default `false`; selama `false`, API tidak mengiklankan BRIVA ke mobile dan create payment request BRIVA ditolak. |
 | `BRI_SNAP_PARTNER_ID` | Partner ID resmi | Dipakai untuk mencocokkan header transaksi `X-PARTNER-ID`. |
 | `BRI_SNAP_CLIENT_KEY` | Client key resmi | Dipakai untuk mencocokkan `X-CLIENT-KEY` saat meminta token. |
-| `BRI_SNAP_PUBLIC_KEY` | Public key BRI format PEM | Pilih ini atau `BRI_SNAP_PUBLIC_KEY_PATH`, jangan keduanya. Inline key harus menyimpan newline sebagai `\n`. |
-| `BRI_SNAP_PUBLIC_KEY_PATH` | Path public key BRI | Pilihan yang disarankan. Gunakan path absolut yang dapat dibaca user proses PHP. |
+| `BRI_SNAP_SIGNATURE_ALGORITHM` | `hmac_sha512` | Keputusan implementasi saat ini berdasarkan tabel header BRIVA v2.0; konfirmasi encoding dan canonical string kepada BRI. |
+| `BRI_SNAP_SIGNATURE_SECRET` | Shared secret BRI | Simpan hanya di secret manager atau `.env` server yang tidak dilacak Git. |
 | `BRI_SNAP_VA_PREFIX` | Prefix VA resmi | Tidak boleh ditebak. Nilai dummy seperti `777` hanya boleh untuk smoke lokal. |
 | `BRI_SNAP_VA_LENGTH` | Panjang VA resmi | Default kode adalah `18`; samakan dengan hasil provisioning BRI. |
 | `BRI_SNAP_PAYMENT_REQUEST_EXPIRY_MINUTES` | Masa aktif request | Default `1440`; harus disepakati dengan aturan produk bank. |
@@ -48,7 +48,7 @@ Token B2B disimpan melalui Laravel Cache. Sandbox bersama atau deployment multi-
 
 ### Variable yang sudah tersedia tetapi belum dipakai alur inbound
 
-- `BRI_SNAP_CLIENT_SECRET` tersedia di config partner, tetapi token endpoint saat ini mengautentikasi client key dan RSA signature, bukan secret.
+- `BRI_SNAP_CLIENT_SECRET` tersedia di config partner, tetapi token endpoint saat ini mengautentikasi client key dan signature HMAC, bukan client secret secara langsung.
 - `SNAP_CALLBACK_BASE_URL` tersedia di config, tetapi endpoint inbound berasal dari route Laravel dan belum membangun URL dari nilai ini.
 - `SNAP_MPAD_PRIVATE_KEY_PATH` dan `SNAP_MPAD_PUBLIC_KEY_PATH` tersedia untuk kebutuhan signing/key exchange berikutnya, tetapi belum dikonsumsi oleh alur token, inquiry, atau payment saat ini.
 
@@ -70,13 +70,13 @@ Aturan minimum:
 - berikan hak baca hanya kepada user proses PHP;
 - jangan simpan private key dalam source code, database umum, atau log;
 - jangan mencetak isi key saat validasi;
-- hanya tukarkan public key melalui kanal onboarding resmi;
+- hanya tukarkan shared secret melalui kanal onboarding resmi;
 - catat pemilik, tanggal berlaku, dan prosedur rotasi key di luar repository publik.
 
 ## Urutan Konfigurasi Sandbox
 
-1. Konfirmasikan dengan BRI: domain HTTPS, path callback, partner ID, client key, public key BRI, IP sumber, prefix/panjang VA, expiry, dan canonical string-to-sign.
-2. Pasang public key BRI pada path server yang aman.
+1. Konfirmasikan dengan BRI: domain HTTPS, path callback, partner ID, client key, shared secret HMAC, IP sumber, prefix/panjang VA, expiry, dan canonical string-to-sign.
+2. Simpan shared secret BRI melalui secret manager atau `.env` server yang tidak dilacak Git.
 3. Isi environment server menggunakan nama variable pada tabel di atas.
 4. Pastikan database memiliki migration `payment_requests`, `payment_request_items`, dan `snap_idempotency_keys`. Jalankan migration hanya melalui prosedur deployment yang diotorisasi.
 5. Pastikan cache store dapat dipakai bersama oleh semua instance API.
@@ -101,7 +101,7 @@ php artisan test tests/Feature/Payment/Snap tests/Unit/Payment/Snap --do-not-cac
 
 9. Lakukan test positif dan negatif memakai credential sandbox resmi: token, signature salah, timestamp kedaluwarsa, IP tidak diizinkan, inquiry valid/tidak ditemukan/lunas/expired, payment valid, amount mismatch, dan duplicate `X-EXTERNAL-ID`.
 
-Baseline lokal 2026-07-22: suite feature dan unit SNAP lulus 33 test dengan 114 assertion. Hasil lokal ini tetap bukan bukti kelulusan sandbox/UAT dengan credential dan skenario resmi BRI.
+Baseline lokal 2026-07-28: suite feature dan unit SNAP lulus 39 test dengan 140 assertion untuk scope SNAP. Hasil lokal ini tetap bukan bukti kelulusan sandbox/UAT dengan credential dan skenario resmi BRI.
 
 ## Checklist Sebelum Menyerahkan Callback ke BRI
 
@@ -109,7 +109,7 @@ Baseline lokal 2026-07-22: suite feature dan unit SNAP lulus 33 test dengan 114 
 - [ ] Path `/api/snap/v1.0/...` telah dikonfirmasi BRI.
 - [ ] `BRI_SNAP_ENABLED=true` hanya setelah seluruh konfigurasi di bawah lengkap.
 - [ ] `BRI_SNAP_PARTNER_ID` dan `BRI_SNAP_CLIENT_KEY` bukan nilai contoh.
-- [ ] Public key BRI terbaca aplikasi tanpa berada di Git.
+- [ ] Shared secret HMAC BRI tersedia melalui secret manager atau `.env` server tanpa berada di Git.
 - [ ] IP BRI sudah masuk `SNAP_ALLOWED_IPS`.
 - [ ] Prefix, panjang, dan expiry VA sudah dikonfirmasi.
 - [ ] Cache token konsisten pada seluruh instance.

@@ -64,9 +64,9 @@ Artefak BRIAPI v2.0 menyediakan contoh JSON serta mandatory/optional rule untuk 
 
 Status schema field inti: PASS berdasarkan artefak BRIAPI v2.0 dan feature regression lokal. Status UAT keseluruhan tetap OPEN karena aturan canonical string-to-sign, konfigurasi VA partner resmi, serta lifecycle/status/report belum dikonfirmasi.
 
-## Discrepancy Signature
+## Keputusan Signature
 
-Tabel header pada artefak BRIAPI v2.0 menyebut `X-SIGNATURE` menggunakan `HMAC_SHA512`, sedangkan implementasi dan artefak integrasi lokal saat ini memakai verifikasi asymmetric RSA dengan `SHA256` melalui public key partner. Perbedaan ini tidak diubah otomatis karena mengganti algoritma akan memutus kontrak security yang sedang diuji. PIC BRI perlu mengonfirmasi algoritma, canonical string, dan key material yang berlaku khusus untuk endpoint M-PAD sebelum sandbox/UAT.
+Implementasi BRI saat ini memakai `HMAC-SHA512` untuk `X-SIGNATURE`, mengikuti tabel header pada artefak BRIAPI v2.0. Signature dibuat sebagai Base64 dari HMAC binary atas string canonical yang dipakai service. BRI tetap perlu mengonfirmasi canonical string, encoding, dan shared secret final sebelum sandbox/UAT. Partner SNAP lain tetap dapat memakai algoritma signature yang dikonfigurasi masing-masing.
 
 Data yang masih dibutuhkan dari BRI:
 

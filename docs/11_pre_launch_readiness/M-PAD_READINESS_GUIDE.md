@@ -53,5 +53,5 @@ Ketika pihak Bank (BRI/Sultra/Mandiri) menelepon untuk memberikan akses *Sandbox
 
 > [!IMPORTANT]
 > 1. **IP Publik Statis (Production & Staging):** Siapkan IP VPS (Misal Biznet Neo) untuk didaftarkan ke sistem *Whitelisting* Bank. Jika IP berubah, API Bank akan langsung me- *reject* koneksi (Error 401).
-> 2. **Sertifikat RSA-2048:** Bank standar BI SNAP mewajibkan keamanan *Asymmetric*. *Generate* sepasang `.pem` (Private & Public Key). Simpan rapat-rapat `private_key.pem` di `.env` / VPS, dan berikan `public_key.pem` kepada tim IT Bank.
+> 2. **Signature BRIVA BRI:** Dokumentasi BRIVA Online v2.0 yang menjadi acuan M-PAD mencantumkan `X-SIGNATURE` HMAC-SHA512. Simpan shared secret hanya di secret manager atau `.env` server, dan konfirmasi canonical string serta encoding signature kepada tim IT BRI. Partner SNAP lain dapat memiliki mekanisme key yang berbeda.
 > 3. **Callback / Webhook URL:** Siapkan domain publik (bukan *localhost* atau IP) yang sudah bersertifikat SSL (HTTPS) valid untuk rute `POST /snap/v1.0/transfer-va/payment`. Bank tidak akan mau menembak ke URL HTTP biasa.
