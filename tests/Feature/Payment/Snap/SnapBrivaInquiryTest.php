@@ -21,7 +21,10 @@ class SnapBrivaInquiryTest extends SnapFeatureTestCase
             ->assertJsonPath('responseCode', '2002400')
             ->assertJsonPath('virtualAccountData.virtualAccountNo', $vaNumber)
             ->assertJsonPath('virtualAccountData.totalAmount.value', '152500.00')
-            ->assertJsonPath('virtualAccountData.inquiryStatus', '00');
+            ->assertJsonPath('virtualAccountData.inquiryStatus', '00')
+            ->assertJsonPath('virtualAccountData.inquiryRequestId', $body['inquiryRequestId'])
+            ->assertJsonPath('virtualAccountData.inquiryReason.english', 'Success')
+            ->assertJsonPath('virtualAccountData.inquiryReason.indonesia', 'Sukses');
     }
 
     public function test_cancelled_briva_payment_request_cannot_be_inquired(): void
