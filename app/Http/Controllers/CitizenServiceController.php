@@ -138,7 +138,8 @@ class CitizenServiceController extends Controller
             $object->setAttribute('latest_field_survey_task', $tasks->last());
         });
 
-        $bills = Bill::whereIn('tax_object_id', $objectIds)
+        $activeObjectIds = $objects->where('status', 'active')->pluck('id');
+        $bills = Bill::whereIn('tax_object_id', $activeObjectIds)
             ->with(['opd:id,name', 'taxObject'])
             ->latest()
             ->get();
@@ -400,6 +401,7 @@ class CitizenServiceController extends Controller
 
         $objectIds = TaxObject::where('taxpayer_id', $taxpayer->id)
             ->where('retribution_classification_id', $classification->id)
+            ->where('status', 'active')
             ->pluck('id');
 
         $bills = Bill::whereIn('tax_object_id', $objectIds)
