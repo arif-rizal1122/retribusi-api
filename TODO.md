@@ -24,6 +24,8 @@ Terakhir diperbarui: 2026-07-28
 
 ## Integrasi Citizen Billing
 
+- [x] **SPTPD-001** Tambahkan endpoint owner-scoped `GET /api/citizen/tax-objects` untuk consumer SPTPD mobile, termasuk metadata klasifikasi self-assessment.
+
 - [x] **INT-001** Lindungi `GET /api/citizen/bills` dengan Sanctum dan batasi hasil berdasarkan taxpayer pemilik token, bukan NIK dari query string.
 - [x] **INT-001** Implementasikan `GET /api/citizen/payments/history` yang owner-scoped, paginated, dan tidak mengekspos callback payload maupun metadata approval internal.
 - [x] **INT-001** Tambahkan feature test untuk guest access, ownership, pagination, response aman, dan penolakan internal user pada endpoint citizen.
