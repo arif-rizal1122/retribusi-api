@@ -30,14 +30,21 @@ class SnapBrivaReadiness
             return 'BRI_SNAP_CLIENT_KEY belum dikonfigurasi.';
         }
 
-        $publicKey = trim((string) config('snap.partners.BRI.public_key'));
-        $publicKeyPath = trim((string) config('snap.partners.BRI.public_key_path'));
-        if ($publicKey === '' && $publicKeyPath === '') {
-            return 'Public key BRI belum dikonfigurasi.';
-        }
+        $signatureAlgorithm = strtolower((string) config('snap.partners.BRI.signature_algorithm', 'rsa_sha256'));
+        if ($signatureAlgorithm === 'hmac_sha512') {
+            if (trim((string) config('snap.partners.BRI.signature_secret')) === '') {
+                return 'BRI_SNAP_SIGNATURE_SECRET belum dikonfigurasi.';
+            }
+        } else {
+            $publicKey = trim((string) config('snap.partners.BRI.public_key'));
+            $publicKeyPath = trim((string) config('snap.partners.BRI.public_key_path'));
+            if ($publicKey === '' && $publicKeyPath === '') {
+                return 'Public key BRI belum dikonfigurasi.';
+            }
 
-        if ($publicKeyPath !== '' && ! is_readable($publicKeyPath)) {
-            return 'Public key BRI tidak dapat dibaca aplikasi.';
+            if ($publicKeyPath !== '' && ! is_readable($publicKeyPath)) {
+                return 'Public key BRI tidak dapat dibaca aplikasi.';
+            }
         }
 
         $prefix = preg_replace('/\D/', '', (string) config('snap.briva.va_prefix'));

@@ -26,6 +26,19 @@ class SnapSignatureService
 
     public function verifyString(string $stringToSign, string $signature, string $bankCode, string $serviceCode = '24'): bool
     {
+        $algorithm = strtolower((string) config("snap.partners.{$bankCode}.signature_algorithm", 'rsa_sha256'));
+
+        if ($algorithm === 'hmac_sha512') {
+            $secret = (string) config("snap.partners.{$bankCode}.signature_secret", '');
+            if ($secret === '') {
+                throw SnapValidationException::unauthorized('Unauthorized Signature', $serviceCode);
+            }
+
+            $expectedSignature = base64_encode(hash_hmac('sha512', $stringToSign, $secret, true));
+
+            return hash_equals($expectedSignature, $signature);
+        }
+
         $publicKey = $this->publicKey($bankCode, $serviceCode);
         $decodedSignature = base64_decode($signature, true);
 

@@ -27,12 +27,11 @@ abstract class SnapFeatureTestCase extends TestCase
     {
         parent::setUp();
 
-        [$this->privateKey, $this->publicKey] = $this->keys();
-
         config([
             'snap.partners.BRI.partner_id' => 'BRI-PARTNER-TEST',
             'snap.partners.BRI.client_key' => 'BRI-CLIENT-TEST',
-            'snap.partners.BRI.public_key' => $this->publicKey,
+            'snap.partners.BRI.signature_algorithm' => 'hmac_sha512',
+            'snap.partners.BRI.signature_secret' => 'bri-test-signature-secret',
             'snap.security.require_bearer_token' => true,
             'snap.timestamp_tolerance_seconds' => 300,
             'snap.token_ttl_seconds' => 900,
@@ -152,9 +151,7 @@ abstract class SnapFeatureTestCase extends TestCase
         $canonical = app(SnapCanonicalRequest::class)->canonicalBodyFromArray($body);
         $stringToSign = app(SnapCanonicalRequest::class)->stringToSign('POST', $path, $canonical, $timestamp);
 
-        openssl_sign($stringToSign, $signature, $this->privateKey, OPENSSL_ALGO_SHA256);
-
-        return base64_encode($signature);
+        return base64_encode(hash_hmac('sha512', $stringToSign, 'bri-test-signature-secret', true));
     }
 
     private function issueToken(): string
