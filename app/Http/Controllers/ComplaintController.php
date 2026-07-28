@@ -11,6 +11,19 @@ use Illuminate\Support\Facades\Schema;
 
 class ComplaintController extends Controller
 {
+    public function citizenIndex(Request $request)
+    {
+        $user = $request->user();
+        abort_unless($user instanceof Taxpayer, 403, 'Endpoint pengaduan ini hanya untuk wajib pajak.');
+
+        $complaints = Complaint::query()
+            ->where('taxpayer_id', $user->id)
+            ->latest()
+            ->paginate($request->get('per_page', 15));
+
+        return response()->json($complaints);
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();

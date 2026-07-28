@@ -213,7 +213,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'store']);
         Route::get('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
         Route::post('/complaints', [ComplaintController::class, 'store']);
-        Route::get('/complaints', [ComplaintController::class, 'index']);
+        Route::get('/complaints', [ComplaintController::class, 'citizenIndex']);
 
         // Pendaftaran NOP Mandiri (Warga)
         Route::post('/pbb/nop-applications', [PbbNopApplicationController::class, 'store']);
