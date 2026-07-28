@@ -40,7 +40,7 @@ class SnapBrivaInquiryTest extends SnapFeatureTestCase
 
         $response->assertNotFound()
             ->assertJsonPath('responseCode', '4042412')
-            ->assertJsonPath('responseMessage', 'Bill not found');
+            ->assertJsonPath('responseMessage', 'Invalid Bill/Virtual Account [Reason]');
     }
 
     public function test_raw_bill_number_without_active_payment_request_is_not_a_briva_bill(): void
@@ -53,6 +53,6 @@ class SnapBrivaInquiryTest extends SnapFeatureTestCase
 
         $response->assertNotFound()
             ->assertJsonPath('responseCode', '4042412')
-            ->assertJsonPath('responseMessage', 'Bill not found');
+            ->assertJsonPath('responseMessage', 'Invalid Bill/Virtual Account [Reason]');
     }
 }

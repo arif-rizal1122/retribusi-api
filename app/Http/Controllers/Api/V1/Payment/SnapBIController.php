@@ -149,7 +149,7 @@ class SnapBIController extends Controller
 
         return $this->respondAndLog(
             $request,
-            $this->responses->error("500{$serviceCode}00", 'General Error.'),
+            $this->responses->error("500{$serviceCode}00", 'General Error'),
             500
         );
     }
