@@ -24,6 +24,7 @@ Sumber kebenaran nama variable adalah `config/snap.php`. Isi nilai sebenarnya me
 
 | Variable | Isi | Catatan |
 | --- | --- | --- |
+| `BRI_SNAP_ENABLED` | `true` setelah konfigurasi lengkap | Default `false`; selama `false`, API tidak mengiklankan BRIVA ke mobile dan create payment request BRIVA ditolak. |
 | `BRI_SNAP_PARTNER_ID` | Partner ID resmi | Dipakai untuk mencocokkan header transaksi `X-PARTNER-ID`. |
 | `BRI_SNAP_CLIENT_KEY` | Client key resmi | Dipakai untuk mencocokkan `X-CLIENT-KEY` saat meminta token. |
 | `BRI_SNAP_PUBLIC_KEY` | Public key BRI format PEM | Pilih ini atau `BRI_SNAP_PUBLIC_KEY_PATH`, jangan keduanya. Inline key harus menyimpan newline sebagai `\n`. |
@@ -106,6 +107,7 @@ Baseline lokal 2026-07-22: suite feature dan unit SNAP lulus 33 test dengan 114 
 
 - [ ] Domain sandbox dapat diakses melalui HTTPS dengan sertifikat valid.
 - [ ] Path `/api/snap/v1.0/...` telah dikonfirmasi BRI.
+- [ ] `BRI_SNAP_ENABLED=true` hanya setelah seluruh konfigurasi di bawah lengkap.
 - [ ] `BRI_SNAP_PARTNER_ID` dan `BRI_SNAP_CLIENT_KEY` bukan nilai contoh.
 - [ ] Public key BRI terbaca aplikasi tanpa berada di Git.
 - [ ] IP BRI sudah masuk `SNAP_ALLOWED_IPS`.

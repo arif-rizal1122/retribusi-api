@@ -109,6 +109,7 @@ class CitizenBillingReadTest extends TestCase
 
         $this->assertSame('pending', $bills[$pendingBill->id]['status']);
         $this->assertTrue($bills[$pendingBill->id]['can_pay']);
+        $this->assertFalse($bills[$pendingBill->id]['payment_options']['bri_va']['available']);
         $this->assertSame('overdue', $bills[$overdueBill->id]['status']);
         $this->assertTrue($bills[$overdueBill->id]['can_pay']);
         $this->assertSame('paid', $bills[$paidBill->id]['status']);
@@ -123,6 +124,38 @@ class CitizenBillingReadTest extends TestCase
         $this->assertSame('Menunggu pembayaran BRIVA', $bills[$activeBrivaBill->id]['status_label']);
         $this->assertFalse($bills[$activeBrivaBill->id]['can_pay']);
         $this->assertArrayNotHasKey('has_active_payment_request', $bills[$activeBrivaBill->id]);
+    }
+
+    public function test_briva_option_is_advertised_only_when_runtime_config_is_ready(): void
+    {
+        $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
+        $bill = $this->createBill($taxpayer, [
+            'status' => 'pending',
+            'due_date' => now()->addDay(),
+        ]);
+
+        Sanctum::actingAs($taxpayer);
+
+        $this->getJson('/api/citizen/bills?per_page=100')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $bill->id)
+            ->assertJsonPath('data.0.payment_options.bri_va.available', false)
+            ->assertJsonPath('data.0.payment_options.bri_va.message', 'Channel BRIVA belum tersedia. Gunakan metode pembayaran lain.');
+
+        config([
+            'snap.briva.enabled' => true,
+            'snap.partners.BRI.partner_id' => 'BRI-PARTNER-LOCAL',
+            'snap.partners.BRI.client_key' => 'BRI-CLIENT-LOCAL',
+            'snap.partners.BRI.public_key' => '-----BEGIN PUBLIC KEY----- test -----END PUBLIC KEY-----',
+            'snap.briva.va_prefix' => '777',
+            'snap.briva.va_length' => 18,
+        ]);
+
+        $this->getJson('/api/citizen/bills?per_page=100')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $bill->id)
+            ->assertJsonPath('data.0.payment_options.bri_va.available', true)
+            ->assertJsonPath('data.0.payment_options.bri_va.message', null);
     }
 
     public function test_citizen_payment_history_is_owner_scoped_and_hides_internal_payloads(): void

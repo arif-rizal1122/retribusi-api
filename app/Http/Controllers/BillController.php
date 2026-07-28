@@ -8,6 +8,7 @@ use App\Models\TaxObject;
 use App\Models\Taxpayer;
 use App\Services\BillCreationService;
 use App\Services\BillPeriodService;
+use App\Services\Payment\Snap\SnapBrivaReadiness;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -19,7 +20,8 @@ class BillController extends Controller
 
     public function __construct(
         BillCreationService $billCreationService,
-        BillPeriodService $periodService
+        BillPeriodService $periodService,
+        private readonly SnapBrivaReadiness $brivaReadiness
     ) {
         $this->billCreationService = $billCreationService;
         $this->periodService = $periodService;
@@ -335,6 +337,8 @@ class BillController extends Controller
             ->unique(fn (array $account) => strtolower($account['bank_name']).'|'.$account['account_number'])
             ->values();
 
+        $brivaAvailable = $canPay && $this->brivaReadiness->available();
+
         return [
             'manual_transfer' => [
                 'available' => $canPay && $bankAccounts->isNotEmpty(),
@@ -349,7 +353,8 @@ class BillController extends Controller
                 ],
             ],
             'bri_va' => [
-                'available' => $canPay,
+                'available' => $brivaAvailable,
+                'message' => $brivaAvailable ? null : $this->brivaReadiness->publicMessage(),
             ],
         ];
     }

@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\PaymentRequest;
 use App\Models\PaymentRequestItem;
 use App\Models\Taxpayer;
+use App\Services\Payment\Snap\SnapBrivaReadiness;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -16,6 +17,8 @@ use Illuminate\Support\Str;
 
 class CitizenPaymentRequestController extends Controller
 {
+    public function __construct(private readonly SnapBrivaReadiness $brivaReadiness) {}
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -26,11 +29,12 @@ class CitizenPaymentRequestController extends Controller
 
         $taxpayer = $this->taxpayer($request);
         $billIds = collect($validated['bill_ids'])->map(fn ($id) => (int) $id)->sort()->values();
+        if (! $this->brivaReadiness->available()) {
+            return response()->json(['message' => $this->brivaReadiness->publicMessage()], 422);
+        }
+
         $prefix = preg_replace('/\D/', '', (string) config('snap.briva.va_prefix'));
         $length = (int) config('snap.briva.va_length', 18);
-        if ($prefix === '' || strlen($prefix) >= $length) {
-            return response()->json(['message' => 'Channel BRIVA belum dikonfigurasi untuk sandbox.'], 422);
-        }
 
         [$paymentRequest, $reused] = DB::transaction(function () use ($billIds, $taxpayer, $prefix, $length) {
             PaymentRequest::where('taxpayer_id', $taxpayer->id)

@@ -28,6 +28,7 @@ return [
     'idempotency_ttl_minutes' => (int) env('SNAP_IDEMPOTENCY_TTL_MINUTES', 1440),
 
     'briva' => [
+        'enabled' => env('BRI_SNAP_ENABLED', false),
         'va_prefix' => env('BRI_SNAP_VA_PREFIX', ''),
         'va_length' => (int) env('BRI_SNAP_VA_LENGTH', 18),
         'payment_request_expiry_minutes' => (int) env('BRI_SNAP_PAYMENT_REQUEST_EXPIRY_MINUTES', 1440),

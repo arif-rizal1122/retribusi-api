@@ -33,6 +33,10 @@ class CitizenPaymentRequestTest extends TestCase
         parent::setUp();
 
         config([
+            'snap.briva.enabled' => true,
+            'snap.partners.BRI.partner_id' => 'BRI-PARTNER-LOCAL',
+            'snap.partners.BRI.client_key' => 'BRI-CLIENT-LOCAL',
+            'snap.partners.BRI.public_key' => '-----BEGIN PUBLIC KEY----- test -----END PUBLIC KEY-----',
             'snap.briva.va_prefix' => '777',
             'snap.briva.va_length' => 18,
             'snap.briva.payment_request_expiry_minutes' => 1440,
@@ -158,6 +162,21 @@ class CitizenPaymentRequestTest extends TestCase
             'method' => 'bri_va',
         ])->assertUnprocessable()
             ->assertJsonValidationErrors('bill_ids');
+
+        $this->assertDatabaseCount('payment_requests', 0);
+    }
+
+    public function test_briva_payment_request_is_rejected_when_runtime_gate_is_disabled(): void
+    {
+        config(['snap.briva.enabled' => false]);
+        $bill = $this->createBill();
+        Sanctum::actingAs($this->taxpayer);
+
+        $this->postJson('/api/citizen/payment-requests', [
+            'bill_ids' => [$bill->id],
+            'method' => 'bri_va',
+        ])->assertUnprocessable()
+            ->assertJsonPath('message', 'Channel BRIVA belum tersedia. Gunakan metode pembayaran lain.');
 
         $this->assertDatabaseCount('payment_requests', 0);
     }
