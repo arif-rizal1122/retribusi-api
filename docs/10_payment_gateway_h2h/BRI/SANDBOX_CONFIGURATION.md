@@ -29,8 +29,10 @@ Sumber kebenaran nama variable adalah `config/snap.php`. Isi nilai sebenarnya me
 | `BRI_SNAP_CLIENT_KEY` | Client key resmi | Dipakai untuk mencocokkan `X-CLIENT-KEY` saat meminta token. |
 | `BRI_SNAP_SIGNATURE_ALGORITHM` | `hmac_sha512` | Keputusan implementasi saat ini berdasarkan tabel header BRIVA v2.0; konfirmasi encoding dan canonical string kepada BRI. |
 | `BRI_SNAP_SIGNATURE_SECRET` | Shared secret BRI | Simpan hanya di secret manager atau `.env` server yang tidak dilacak Git. |
-| `BRI_SNAP_VA_PREFIX` | Prefix VA resmi | Tidak boleh ditebak. Nilai dummy seperti `777` hanya boleh untuk smoke lokal. |
-| `BRI_SNAP_VA_LENGTH` | Panjang VA resmi | Default kode adalah `18`; samakan dengan hasil provisioning BRI. |
+| `BRI_SNAP_PARTNER_SERVICE_ID` | `partnerServiceId` resmi 8 digit | Turunan dari `X-PARTNER-ID`; jangan diisi sebelum BRI memberikan nilai resmi. |
+| `BRI_SNAP_CUSTOMER_NO_LENGTH` | Panjang `customerNo` | Default `20`; sesuaikan jika provisioning BRI menetapkan panjang berbeda. |
+| `BRI_SNAP_VA_PREFIX` | Prefix dummy local smoke | Hanya dipakai saat `partnerServiceId` kosong di local/testing; jangan digunakan sandbox/produksi. |
+| `BRI_SNAP_VA_LENGTH` | Panjang VA resmi | Default `28`, yaitu 8 digit `partnerServiceId` + 20 digit `customerNo`. |
 | `BRI_SNAP_PAYMENT_REQUEST_EXPIRY_MINUTES` | Masa aktif request | Default `1440`; harus disepakati dengan aturan produk bank. |
 
 ### Kontrol keamanan bersama
@@ -75,7 +77,7 @@ Aturan minimum:
 
 ## Urutan Konfigurasi Sandbox
 
-1. Konfirmasikan dengan BRI: domain HTTPS, path callback, partner ID, client key, shared secret HMAC, IP sumber, prefix/panjang VA, expiry, dan canonical string-to-sign.
+1. Konfirmasikan dengan BRI: domain HTTPS, path callback, partner ID, `partnerServiceId`, client key, shared secret HMAC, IP sumber, panjang `customerNo`/VA, expiry, dan canonical string-to-sign.
 2. Simpan shared secret BRI melalui secret manager atau `.env` server yang tidak dilacak Git.
 3. Isi environment server menggunakan nama variable pada tabel di atas.
 4. Pastikan database memiliki migration `payment_requests`, `payment_request_items`, dan `snap_idempotency_keys`. Jalankan migration hanya melalui prosedur deployment yang diotorisasi.

@@ -33,10 +33,12 @@ class CitizenPaymentRequestController extends Controller
             return response()->json(['message' => $this->brivaReadiness->publicMessage()], 422);
         }
 
+        $partnerServiceId = preg_replace('/\D/', '', (string) config('snap.briva.partner_service_id'));
         $prefix = preg_replace('/\D/', '', (string) config('snap.briva.va_prefix'));
-        $length = (int) config('snap.briva.va_length', 18);
+        $customerNoLength = (int) config('snap.briva.customer_no_length', 20);
+        $length = (int) config('snap.briva.va_length', 28);
 
-        [$paymentRequest, $reused] = DB::transaction(function () use ($billIds, $taxpayer, $prefix, $length) {
+        [$paymentRequest, $reused] = DB::transaction(function () use ($billIds, $taxpayer, $partnerServiceId, $prefix, $customerNoLength, $length) {
             PaymentRequest::where('taxpayer_id', $taxpayer->id)
                 ->where('payment_channel', 'BRI')
                 ->where('method', 'VA')
@@ -126,7 +128,13 @@ class CitizenPaymentRequestController extends Controller
             ]);
 
             $paymentRequest->update([
-                'va_number' => $prefix.str_pad((string) $paymentRequest->id, $length - strlen($prefix), '0', STR_PAD_LEFT),
+                'va_number' => $this->buildVaNumber(
+                    $paymentRequest->id,
+                    $partnerServiceId,
+                    $prefix,
+                    $customerNoLength,
+                    $length
+                ),
             ]);
 
             foreach ($bills as $bill) {
@@ -142,6 +150,32 @@ class CitizenPaymentRequestController extends Controller
         });
 
         return response()->json(['data' => $this->payload($paymentRequest)], $reused ? 200 : 201);
+    }
+
+    private function buildVaNumber(
+        int $paymentRequestId,
+        string $partnerServiceId,
+        string $legacyPrefix,
+        int $customerNoLength,
+        int $vaLength
+    ): string {
+        if ($partnerServiceId !== '') {
+            $customerNo = str_pad((string) $paymentRequestId, $customerNoLength, '0', STR_PAD_LEFT);
+            $vaNumber = $partnerServiceId.$customerNo;
+        } else {
+            $vaNumber = $legacyPrefix.str_pad(
+                (string) $paymentRequestId,
+                $vaLength - strlen($legacyPrefix),
+                '0',
+                STR_PAD_LEFT
+            );
+        }
+
+        if (! preg_match('/^\d+$/', $vaNumber) || strlen($vaNumber) > $vaLength) {
+            throw new \RuntimeException('BRIVA VA format is invalid or exceeds configured length.');
+        }
+
+        return $vaNumber;
     }
 
     public function show(Request $request, PaymentRequest $paymentRequest): JsonResponse

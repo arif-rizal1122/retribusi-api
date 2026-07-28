@@ -33,8 +33,10 @@ return [
 
     'briva' => [
         'enabled' => env('BRI_SNAP_ENABLED', false),
+        'partner_service_id' => env('BRI_SNAP_PARTNER_SERVICE_ID', ''),
         'va_prefix' => env('BRI_SNAP_VA_PREFIX', ''),
-        'va_length' => (int) env('BRI_SNAP_VA_LENGTH', 18),
+        'customer_no_length' => (int) env('BRI_SNAP_CUSTOMER_NO_LENGTH', 20),
+        'va_length' => (int) env('BRI_SNAP_VA_LENGTH', 28),
         'payment_request_expiry_minutes' => (int) env('BRI_SNAP_PAYMENT_REQUEST_EXPIRY_MINUTES', 1440),
     ],
 

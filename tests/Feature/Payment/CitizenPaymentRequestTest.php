@@ -103,6 +103,31 @@ class CitizenPaymentRequestTest extends TestCase
             ->assertJsonPath('data.can_cancel', false);
     }
 
+    public function test_citizen_briva_va_uses_partner_service_id_and_numeric_customer_no(): void
+    {
+        config([
+            'snap.briva.partner_service_id' => '00077777',
+            'snap.briva.va_prefix' => '',
+            'snap.briva.customer_no_length' => 20,
+            'snap.briva.va_length' => 28,
+        ]);
+
+        $bill = $this->createBill();
+        Sanctum::actingAs($this->taxpayer);
+
+        $response = $this->postJson('/api/citizen/payment-requests', [
+            'bill_ids' => [$bill->id],
+            'method' => 'bri_va',
+        ])->assertCreated();
+
+        $paymentRequest = PaymentRequest::findOrFail($response->json('data.id'));
+        $expectedVa = '00077777'.str_pad((string) $paymentRequest->id, 20, '0', STR_PAD_LEFT);
+
+        $this->assertSame($expectedVa, $paymentRequest->va_number);
+        $this->assertSame(28, strlen($paymentRequest->va_number));
+        $this->assertMatchesRegularExpression('/^\d{28}$/', $paymentRequest->va_number);
+    }
+
     public function test_citizen_cannot_read_another_taxpayers_payment_request(): void
     {
         $bill = $this->createBill();
