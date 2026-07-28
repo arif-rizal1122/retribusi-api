@@ -226,6 +226,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::delete('/unlink-nop/{id}', [PbbBapendaController::class, 'unlinkNop']);
         Route::get('/my-objects', [PbbBapendaController::class, 'myObjects']);
         Route::get('/my-transactions', [PbbBapendaController::class, 'myTransactions']);
+        Route::get('/transactions/{transaction}/receipt', [PbbBapendaController::class, 'downloadReceipt']);
         Route::post('/pay', [PbbBapendaController::class, 'pay']);
         Route::get('/download-sppt', [PbbBapendaController::class, 'downloadSPPT']);
     });
