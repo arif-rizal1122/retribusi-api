@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Bill;
 use App\Models\Opd;
 use App\Models\Payment;
+use App\Models\PaymentRequest;
+use App\Models\PaymentRequestItem;
 use App\Models\RetributionClassification;
 use App\Models\RetributionType;
 use App\Models\TaxObject;
@@ -19,7 +21,9 @@ class CitizenBillingReadTest extends TestCase
     use RefreshDatabase;
 
     private Opd $opd;
+
     private RetributionType $retributionType;
+
     private RetributionClassification $classification;
 
     protected function setUp(): void
@@ -41,7 +45,7 @@ class CitizenBillingReadTest extends TestCase
         $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
         $this->createBill($taxpayer);
 
-        $this->getJson('/api/citizen/bills?nik=' . $taxpayer->nik)
+        $this->getJson('/api/citizen/bills?nik='.$taxpayer->nik)
             ->assertUnauthorized();
     }
 
@@ -58,7 +62,7 @@ class CitizenBillingReadTest extends TestCase
 
         Sanctum::actingAs($taxpayer);
 
-        $response = $this->getJson('/api/citizen/bills?per_page=2&nik=' . $otherTaxpayer->nik);
+        $response = $this->getJson('/api/citizen/bills?per_page=2&nik='.$otherTaxpayer->nik);
 
         $response->assertOk()
             ->assertJsonCount(2, 'data')
@@ -90,6 +94,11 @@ class CitizenBillingReadTest extends TestCase
             'due_date' => now()->addDay(),
         ]);
         $this->createPayment($pendingVerificationBill);
+        $activeBrivaBill = $this->createBill($taxpayer, [
+            'status' => 'pending',
+            'due_date' => now()->addDay(),
+        ]);
+        $this->createPaymentRequest($activeBrivaBill);
 
         Sanctum::actingAs($taxpayer);
 
@@ -110,6 +119,10 @@ class CitizenBillingReadTest extends TestCase
         $this->assertSame('Menunggu verifikasi pembayaran', $bills[$pendingVerificationBill->id]['status_label']);
         $this->assertFalse($bills[$pendingVerificationBill->id]['can_pay']);
         $this->assertArrayNotHasKey('has_pending_payment_claim', $bills[$pendingVerificationBill->id]);
+        $this->assertSame('pending_verification', $bills[$activeBrivaBill->id]['status']);
+        $this->assertSame('Menunggu pembayaran BRIVA', $bills[$activeBrivaBill->id]['status_label']);
+        $this->assertFalse($bills[$activeBrivaBill->id]['can_pay']);
+        $this->assertArrayNotHasKey('has_active_payment_request', $bills[$activeBrivaBill->id]);
     }
 
     public function test_citizen_payment_history_is_owner_scoped_and_hides_internal_payloads(): void
@@ -176,7 +189,7 @@ class CitizenBillingReadTest extends TestCase
             'bill_id' => $bill->id,
             'taxpayer_id' => $bill->taxpayer_id,
             'tax_object_id' => $bill->tax_object_id,
-            'transaction_id' => 'PAY-' . $bill->id,
+            'transaction_id' => 'PAY-'.$bill->id,
             'reference_number' => null,
             'receipt_number' => null,
             'payment_method' => 'transfer',
@@ -187,5 +200,31 @@ class CitizenBillingReadTest extends TestCase
             'paid_at' => now(),
             'proof_url' => 'https://example.test/proof.jpg',
         ], $overrides));
+    }
+
+    private function createPaymentRequest(Bill $bill): PaymentRequest
+    {
+        $paymentRequest = PaymentRequest::create([
+            'bill_id' => $bill->id,
+            'taxpayer_id' => $bill->taxpayer_id,
+            'tax_object_id' => $bill->tax_object_id,
+            'payment_channel' => 'BRI',
+            'method' => 'VA',
+            'va_number' => '777'.$bill->bill_number,
+            'amount_snapshot' => $bill->amount,
+            'admin_fee_snapshot' => $bill->admin_fee ?? 0,
+            'penalty_snapshot' => $bill->total_amount - $bill->amount - ($bill->admin_fee ?? 0),
+            'expires_at' => now()->addDay(),
+            'status' => 'pending',
+        ]);
+
+        PaymentRequestItem::create([
+            'payment_request_id' => $paymentRequest->id,
+            'bill_id' => $bill->id,
+            'amount_snapshot' => $bill->total_amount,
+            'status' => 'pending',
+        ]);
+
+        return $paymentRequest;
     }
 }

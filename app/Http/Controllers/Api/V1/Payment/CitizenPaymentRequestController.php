@@ -26,50 +26,83 @@ class CitizenPaymentRequestController extends Controller
 
         $taxpayer = $this->taxpayer($request);
         $billIds = collect($validated['bill_ids'])->map(fn ($id) => (int) $id)->sort()->values();
-        $bills = Bill::with(['taxpayer', 'taxObject'])
-            ->where('taxpayer_id', $taxpayer->id)
-            ->whereIn('id', $billIds)
-            ->whereIn('status', ['pending', 'overdue', 'unpaid'])
-            ->get()
-            ->sortBy('id')
-            ->values();
-
-        if ($bills->count() !== $billIds->count()) {
-            return response()->json(['message' => 'Satu atau lebih tagihan tidak dapat dibayarkan melalui gateway.'], 422);
-        }
-
-        $existing = PaymentRequest::with('items.bill')
-            ->where('taxpayer_id', $taxpayer->id)
-            ->where('payment_channel', 'BRI')
-            ->where('method', 'VA')
-            ->where('status', 'pending')
-            ->where('expires_at', '>', now())
-            ->latest('id')
-            ->get()
-            ->first(fn (PaymentRequest $paymentRequest) => $paymentRequest->items->pluck('bill_id')->sort()->values()->all() === $billIds->all());
-
-        if ($existing) {
-            return response()->json(['data' => $this->payload($existing)]);
-        }
-
         $prefix = preg_replace('/\D/', '', (string) config('snap.briva.va_prefix'));
         $length = (int) config('snap.briva.va_length', 18);
         if ($prefix === '' || strlen($prefix) >= $length) {
             return response()->json(['message' => 'Channel BRIVA belum dikonfigurasi untuk sandbox.'], 422);
         }
 
-        $expiresAt = now()->addMinutes((int) config('snap.briva.payment_request_expiry_minutes', 1440));
-        foreach ($bills as $bill) {
-            if ($bill->due_date && $bill->due_date->lessThan($expiresAt)) {
-                $expiresAt = $bill->due_date->copy();
+        [$paymentRequest, $reused] = DB::transaction(function () use ($billIds, $taxpayer, $prefix, $length) {
+            PaymentRequest::where('taxpayer_id', $taxpayer->id)
+                ->where('payment_channel', 'BRI')
+                ->where('method', 'VA')
+                ->where('status', 'pending')
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '<=', now())
+                ->update(['status' => 'expired']);
+
+            $bills = Bill::with(['taxpayer', 'taxObject'])
+                ->where('taxpayer_id', $taxpayer->id)
+                ->whereIn('id', $billIds)
+                ->whereIn('status', ['pending', 'overdue', 'unpaid'])
+                ->lockForUpdate()
+                ->get()
+                ->sortBy('id')
+                ->values();
+
+            if ($bills->count() !== $billIds->count()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'bill_ids' => 'Satu atau lebih tagihan tidak dapat dibayarkan melalui gateway.',
+                ]);
             }
-        }
 
-        if ($expiresAt->lessThanOrEqualTo(now())) {
-            return response()->json(['message' => 'Tagihan yang dipilih sudah melewati masa pembayaran.'], 422);
-        }
+            $hasManualClaim = Payment::whereIn('bill_id', $billIds)
+                ->whereIn('status', ['pending', 'success'])
+                ->exists();
 
-        $paymentRequest = DB::transaction(function () use ($bills, $taxpayer, $expiresAt, $prefix, $length) {
+            if ($hasManualClaim) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'bill_ids' => 'Satu atau lebih tagihan sudah lunas atau sedang menunggu verifikasi pembayaran manual.',
+                ]);
+            }
+
+            $activePaymentRequests = PaymentRequest::with('items.bill')
+                ->where('taxpayer_id', $taxpayer->id)
+                ->where('payment_channel', 'BRI')
+                ->where('method', 'VA')
+                ->where('status', 'pending')
+                ->where('expires_at', '>', now())
+                ->whereHas('items', fn ($query) => $query->whereIn('bill_id', $billIds))
+                ->lockForUpdate()
+                ->latest('id')
+                ->get();
+
+            $existing = $activePaymentRequests
+                ->first(fn (PaymentRequest $paymentRequest) => $paymentRequest->items->pluck('bill_id')->sort()->values()->all() === $billIds->all());
+
+            if ($existing) {
+                return [$existing, true];
+            }
+
+            if ($activePaymentRequests->isNotEmpty()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'bill_ids' => 'Satu atau lebih tagihan masih memiliki pembayaran BRIVA aktif.',
+                ]);
+            }
+
+            $expiresAt = now()->addMinutes((int) config('snap.briva.payment_request_expiry_minutes', 1440));
+            foreach ($bills as $bill) {
+                if ($bill->due_date && $bill->due_date->lessThan($expiresAt)) {
+                    $expiresAt = $bill->due_date->copy();
+                }
+            }
+
+            if ($expiresAt->lessThanOrEqualTo(now())) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'bill_ids' => 'Tagihan yang dipilih sudah melewati masa pembayaran.',
+                ]);
+            }
+
             $baseAmount = $bills->sum(fn (Bill $bill) => (float) $bill->amount);
             $adminFee = $bills->sum(fn (Bill $bill) => (float) $bill->admin_fee);
             $totalAmount = $bills->sum(fn (Bill $bill) => (float) $bill->total_amount);
@@ -101,10 +134,10 @@ class CitizenPaymentRequestController extends Controller
                 ]);
             }
 
-            return $paymentRequest->fresh(['items.bill.taxpayer']);
+            return [$paymentRequest->fresh(['items.bill.taxpayer']), false];
         });
 
-        return response()->json(['data' => $this->payload($paymentRequest)], 201);
+        return response()->json(['data' => $this->payload($paymentRequest)], $reused ? 200 : 201);
     }
 
     public function show(Request $request, PaymentRequest $paymentRequest): JsonResponse

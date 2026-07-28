@@ -101,12 +101,16 @@ class SnapBrivaService
     {
         [$bill, $paymentRequest] = $this->resolveBill($request);
 
-        if (! $bill) {
+        if (! $bill || ! $paymentRequest) {
             throw new SnapPaymentException("404{$serviceCode}12", 'Bill not found', 404);
         }
 
-        if ($paymentRequest && $paymentRequest->expires_at && $paymentRequest->expires_at->isPast()) {
+        if ($paymentRequest->status === 'expired' || ($paymentRequest->expires_at && $paymentRequest->expires_at->isPast())) {
             throw new SnapPaymentException("404{$serviceCode}19", 'Bill expired', 404);
+        }
+
+        if ($paymentRequest->status !== 'pending') {
+            throw new SnapPaymentException("404{$serviceCode}12", 'Bill not found', 404);
         }
 
         if ($this->isPaid($bill)) {
@@ -131,14 +135,6 @@ class SnapBrivaService
         }
 
         $bill = $paymentRequest?->bill;
-
-        if (! $bill && $customerNo !== '') {
-            $bill = Bill::where('bill_number', $customerNo)->first();
-        }
-
-        if (! $bill && $virtualAccountNo !== '') {
-            $bill = Bill::where('bill_number', $virtualAccountNo)->first();
-        }
 
         return [$bill, $paymentRequest];
     }

@@ -1,6 +1,6 @@
 # API Backlog
 
-Terakhir diperbarui: 2026-07-22
+Terakhir diperbarui: 2026-07-28
 
 ## Status
 
@@ -17,6 +17,7 @@ Terakhir diperbarui: 2026-07-22
 - [x] **PAY-TEST-001** Selaraskan unit test `SnapHeaderValidator`, `SnapSignatureService`, dan `SnapTokenService` dengan kontrak bank context service saat ini.
 - [x] **PAY-SPEC-001** Verifikasi response SNAP terhadap matriks SIT BRI; success inquiry/payment sesuai, sedangkan gap error mapping, schema, lifecycle, dan credential hygiene dicatat di `SNAP_RESPONSE_VERIFICATION.md`.
 - [x] **PAY-SNAP-ERR-001** Selaraskan error code/message inquiry dan payment yang sudah eksplisit di SIT, lalu tambahkan feature test untuk token invalid, mandatory/format, paid, expired, not found, dan invalid amount.
+- [x] **PAY-XCH-001** Tutup konflik lintas channel: klaim manual pending memblokir create BRIVA, BRIVA aktif memblokir klaim manual, approval manual ditolak bila bill sudah settled oleh pembayaran lain, serta callback SNAP hanya menerima `payment_request` BRIVA yang masih `pending`.
 - [BLOCKED] **PAY-SNAP-LIFE-001** Implementasikan status/create/update/delete/report VA setelah BRI mengonfirmasi scope produk, path, dan schema response.
 - [BLOCKED] **PAY-SEC-001** Konfirmasi status, rotasi bila aktif, dan redaksi credential-like values pada dokumen sandbox tracked; rewrite history hanya dengan otorisasi eksplisit.
 
