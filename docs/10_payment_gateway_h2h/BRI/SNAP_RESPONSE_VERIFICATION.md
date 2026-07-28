@@ -30,17 +30,17 @@ Kode `xx` pada skenario umum mengikuti service code endpoint: `24` untuk inquiry
 
 | SIT | Skenario | Expected SIT | Implementasi saat audit | Status |
 | --- | --- | --- | --- | --- |
-| 11.1 | Access token invalid | `401xx01`, `Access Token Invalid` | Inquiry `4012401`; payment `4012501`; keduanya memiliki feature test | PASS pada service aktif |
-| 11.2 | Unauthorized signature | `401xx00`, `Unauthorized Signature` | Inquiry `4012400`; payment `4012500`; message sesuai | PASS pada service aktif |
+| 11.1 | Access token invalid | `401xx01`, `Invalid Token (B2B)` | Inquiry `4012401`; payment `4012501`; keduanya memiliki feature test | PASS pada service aktif |
+| 11.2 | Unauthorized signature | `401xx00`, `Unauthorized. [reason]` | Inquiry `4012400`; payment `4012500`; message mengikuti reason signature | PASS pada service aktif |
 | 11.3 | Missing mandatory field | `400xx02`, `Invalid Mandatory Field {...}` | Header dan field body yang dipakai service menghasilkan `4002402`/`4002502` | PASS pada kontrak aktif; schema final belum tersedia |
 | 11.4 | Invalid field format | `400xx01`, `Invalid Field Format {...}` | Validator dasar identifier, paid amount, dan currency menghasilkan `4002401`/`4002501` | PASS pada kontrak aktif; schema final belum tersedia |
 | 11.5 | Duplicate `X-EXTERNAL-ID` | `409xx00`, `Conflict` | Payload berbeda ditolak `4092400`; replay payload sama mengembalikan response tersimpan; payment belum memakai service code `25` | PARTIAL, perlu keputusan BRI |
 | 11.6 | Inquiry VA valid | `2002400`, `Successful` | Sesuai dan memiliki feature test | PASS |
-| 11.7 | Inquiry VA sudah lunas | `4042414`, `Bill has been paid` | Kode dan message sesuai, memiliki feature test | PASS |
-| 11.8 | Inquiry VA kedaluwarsa | `4042419`, `Bill expired` | Kode dan message sesuai, memiliki feature test | PASS |
-| 11.9 | Inquiry VA tidak terdaftar | `4042412`, `Bill not found` | Kode dan message sesuai, memiliki feature test | PASS |
+| 11.7 | Inquiry VA sudah lunas | `4042414`, `Paid Bill` | Kode dan message sesuai, memiliki feature test | PASS |
+| 11.8 | Inquiry VA kedaluwarsa | `4032400`, `Transaction Expired` | Kode dan message sesuai, memiliki feature test | PASS |
+| 11.9 | Inquiry VA tidak terdaftar | `4042412`, `Invalid Bill/Virtual Account [Reason]` | Kode dan message sesuai, memiliki feature test | PASS |
 | 11.10 | Payment VA valid | `2002500`, `Successful` | Sesuai, termasuk settlement multi-bill | PASS |
-| 11.11 | Payment VA tidak terdaftar | `4042512`, `Bill not found` | Kode dan message sesuai, memiliki feature test | PASS |
+| 11.11 | Payment VA tidak terdaftar | `4042512`, `Invalid Bill/Virtual Account [Reason]` | Kode dan message sesuai, memiliki feature test | PASS |
 | 11.12 | Payment VA invalid amount | `4042513`, `Invalid Amount` | Kode dan message sesuai; settlement tidak terjadi | PASS |
 | 11.13-11.18 | Status/create/update/delete lifecycle VA | `2002600` sampai `2003100` | Route belum tersedia | BLOCKED, konfirmasi scope produk BRI |
 | 11.32 | Get report VA | `2003500`, `Successful` | Route belum tersedia | BLOCKED, konfirmasi kebutuhan rekonsiliasi/report BRI |

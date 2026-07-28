@@ -18,7 +18,7 @@ class SnapInvalidSignatureTest extends SnapFeatureTestCase
 
         $response->assertStatus(401)
             ->assertJsonPath('responseCode', '4012400')
-            ->assertJsonPath('responseMessage', 'Unauthorized Signature');
+            ->assertJsonPath('responseMessage', 'Unauthorized. Signature');
     }
 
     public function test_payment_with_invalid_signature_uses_payment_service_code(): void
@@ -35,6 +35,6 @@ class SnapInvalidSignatureTest extends SnapFeatureTestCase
 
         $response->assertUnauthorized()
             ->assertJsonPath('responseCode', '4012500')
-            ->assertJsonPath('responseMessage', 'Unauthorized Signature');
+            ->assertJsonPath('responseMessage', 'Unauthorized. Signature');
     }
 }

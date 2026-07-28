@@ -54,7 +54,7 @@ class SnapBrivaService
                 $lockedBill = Bill::whereKey($item->bill->id)->lockForUpdate()->firstOrFail();
 
                 if ($this->isPaid($lockedBill)) {
-                    throw new SnapPaymentException('4042514', 'Bill has been paid', 404);
+                    throw new SnapPaymentException('4042514', 'Paid Bill', 404);
                 }
 
                 $lockedBill->update([
@@ -108,19 +108,19 @@ class SnapBrivaService
         [$bill, $paymentRequest] = $this->resolveBill($request);
 
         if (! $bill || ! $paymentRequest) {
-            throw new SnapPaymentException("404{$serviceCode}12", 'Bill not found', 404);
+            throw new SnapPaymentException("404{$serviceCode}12", 'Invalid Bill/Virtual Account [Reason]', 404);
         }
 
         if ($paymentRequest->status === 'expired' || ($paymentRequest->expires_at && $paymentRequest->expires_at->isPast())) {
-            throw new SnapPaymentException("404{$serviceCode}19", 'Bill expired', 404);
+            throw new SnapPaymentException("403{$serviceCode}00", 'Transaction Expired', 403);
         }
 
         if ($paymentRequest->status !== 'pending') {
-            throw new SnapPaymentException("404{$serviceCode}12", 'Bill not found', 404);
+            throw new SnapPaymentException("404{$serviceCode}12", 'Invalid Bill/Virtual Account [Reason]', 404);
         }
 
         if ($this->isPaid($bill)) {
-            throw new SnapPaymentException("404{$serviceCode}14", 'Bill has been paid', 404);
+            throw new SnapPaymentException("404{$serviceCode}14", 'Paid Bill', 404);
         }
 
         return [$bill, $paymentRequest];

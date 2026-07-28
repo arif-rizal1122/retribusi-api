@@ -53,7 +53,7 @@ class SnapBrivaPaymentTest extends SnapFeatureTestCase
 
         $response->assertNotFound()
             ->assertJsonPath('responseCode', '4042512')
-            ->assertJsonPath('responseMessage', 'Bill not found');
+            ->assertJsonPath('responseMessage', 'Invalid Bill/Virtual Account [Reason]');
 
         $this->assertDatabaseMissing('payments', [
             'bill_id' => $bill->id,

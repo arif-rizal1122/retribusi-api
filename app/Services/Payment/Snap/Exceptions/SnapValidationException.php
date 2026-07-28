@@ -26,11 +26,13 @@ class SnapValidationException extends RuntimeException
 
     public static function unauthorized(string $message = 'Unauthorized Signature', string $serviceCode = '24'): self
     {
-        return new self("401{$serviceCode}00", $message, 401);
+        $reason = preg_replace('/^Unauthorized\.?\s*/', '', $message) ?: 'Request';
+
+        return new self("401{$serviceCode}00", "Unauthorized. {$reason}", 401);
     }
 
     public static function invalidToken(string $serviceCode = '24'): self
     {
-        return new self("401{$serviceCode}01", 'Access Token Invalid', 401);
+        return new self("401{$serviceCode}01", 'Invalid Token (B2B)', 401);
     }
 }

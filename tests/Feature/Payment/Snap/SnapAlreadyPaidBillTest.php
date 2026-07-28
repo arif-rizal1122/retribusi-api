@@ -16,6 +16,6 @@ class SnapAlreadyPaidBillTest extends SnapFeatureTestCase
 
         $response->assertNotFound()
             ->assertJsonPath('responseCode', '4042414')
-            ->assertJsonPath('responseMessage', 'Bill has been paid');
+            ->assertJsonPath('responseMessage', 'Paid Bill');
     }
 }

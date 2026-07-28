@@ -16,7 +16,7 @@ class SnapSitErrorResponseTest extends SnapFeatureTestCase
             'Authorization' => 'Bearer invalid-token',
         ]))->assertUnauthorized()
             ->assertJsonPath('responseCode', '4012401')
-            ->assertJsonPath('responseMessage', 'Access Token Invalid');
+            ->assertJsonPath('responseMessage', 'Invalid Token (B2B)');
     }
 
     public function test_payment_rejects_invalid_access_token_with_payment_service_code(): void
@@ -31,7 +31,7 @@ class SnapSitErrorResponseTest extends SnapFeatureTestCase
             'Authorization' => 'Bearer invalid-token',
         ]))->assertUnauthorized()
             ->assertJsonPath('responseCode', '4012501')
-            ->assertJsonPath('responseMessage', 'Access Token Invalid');
+            ->assertJsonPath('responseMessage', 'Invalid Token (B2B)');
     }
 
     public function test_inquiry_rejects_missing_mandatory_body_field(): void
@@ -150,9 +150,9 @@ class SnapSitErrorResponseTest extends SnapFeatureTestCase
         $path = '/api/snap/v1.0/transfer-va/inquiry';
 
         $this->postJson($path, $body, $this->transactionHeaders($path, $body))
-            ->assertNotFound()
-            ->assertJsonPath('responseCode', '4042419')
-            ->assertJsonPath('responseMessage', 'Bill expired');
+            ->assertForbidden()
+            ->assertJsonPath('responseCode', '4032400')
+            ->assertJsonPath('responseMessage', 'Transaction Expired');
     }
 
     public function test_inquiry_returns_sit_not_found_response(): void
@@ -168,7 +168,7 @@ class SnapSitErrorResponseTest extends SnapFeatureTestCase
         $this->postJson($path, $body, $this->transactionHeaders($path, $body))
             ->assertNotFound()
             ->assertJsonPath('responseCode', '4042412')
-            ->assertJsonPath('responseMessage', 'Bill not found');
+            ->assertJsonPath('responseMessage', 'Invalid Bill/Virtual Account [Reason]');
     }
 
     public function test_payment_returns_sit_not_found_response(): void
@@ -189,6 +189,6 @@ class SnapSitErrorResponseTest extends SnapFeatureTestCase
         $this->postJson($path, $body, $this->transactionHeaders($path, $body))
             ->assertNotFound()
             ->assertJsonPath('responseCode', '4042512')
-            ->assertJsonPath('responseMessage', 'Bill not found');
+            ->assertJsonPath('responseMessage', 'Invalid Bill/Virtual Account [Reason]');
     }
 }
