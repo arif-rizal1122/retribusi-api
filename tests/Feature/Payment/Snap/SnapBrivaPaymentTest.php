@@ -16,7 +16,11 @@ class SnapBrivaPaymentTest extends SnapFeatureTestCase
 
         $response->assertOk()
             ->assertJsonPath('responseCode', '2002500')
-            ->assertJsonPath('virtualAccountData.paymentFlagStatus', '00');
+            ->assertJsonPath('virtualAccountData.paymentFlagStatus', '00')
+            ->assertJsonPath('virtualAccountData.paymentRequestId', $body['paymentRequestId'])
+            ->assertJsonPath('virtualAccountData.paidAmount.value', '125000.00')
+            ->assertJsonPath('virtualAccountData.paymentFlagReason.english', 'Success')
+            ->assertJsonPath('virtualAccountData.paymentFlagReason.indonesia', 'Sukses');
 
         $this->assertDatabaseHas('bills', [
             'id' => $bill->id,

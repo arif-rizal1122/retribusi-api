@@ -49,6 +49,21 @@ class SnapSitErrorResponseTest extends SnapFeatureTestCase
             ->assertJsonPath('responseMessage', 'Invalid Mandatory Field {virtualAccountNo}');
     }
 
+    public function test_inquiry_rejects_missing_inquiry_request_id(): void
+    {
+        $bill = $this->createOpenBill();
+        $vaNumber = '777'.$bill->bill_number;
+        $this->createPaymentRequest($bill, $vaNumber);
+        $body = $this->inquiryBody($bill, $vaNumber);
+        unset($body['inquiryRequestId']);
+        $path = '/api/snap/v1.0/transfer-va/inquiry';
+
+        $this->postJson($path, $body, $this->transactionHeaders($path, $body))
+            ->assertBadRequest()
+            ->assertJsonPath('responseCode', '4002402')
+            ->assertJsonPath('responseMessage', 'Invalid Mandatory Field {inquiryRequestId}');
+    }
+
     public function test_payment_rejects_invalid_paid_amount_format(): void
     {
         $bill = $this->createOpenBill();
@@ -64,12 +79,43 @@ class SnapSitErrorResponseTest extends SnapFeatureTestCase
             ->assertJsonPath('responseMessage', 'Invalid Field Format {paidAmount.currency}');
     }
 
+    public function test_payment_rejects_amount_without_two_decimal_places(): void
+    {
+        $bill = $this->createOpenBill();
+        $vaNumber = '777'.$bill->bill_number;
+        $this->createPaymentRequest($bill, $vaNumber);
+        $body = $this->paymentBody($bill, $vaNumber);
+        $body['paidAmount']['value'] = '100000';
+        $path = '/api/snap/v1.0/transfer-va/payment';
+
+        $this->postJson($path, $body, $this->transactionHeaders($path, $body))
+            ->assertBadRequest()
+            ->assertJsonPath('responseCode', '4002501')
+            ->assertJsonPath('responseMessage', 'Invalid Field Format {paidAmount.value}');
+    }
+
+    public function test_payment_rejects_payment_request_id_different_from_inquiry_request_id(): void
+    {
+        $bill = $this->createOpenBill();
+        $vaNumber = '777'.$bill->bill_number;
+        $this->createPaymentRequest($bill, $vaNumber);
+        $body = $this->paymentBody($bill, $vaNumber);
+        $body['paymentRequestId'] = 'different-payment-request';
+        $path = '/api/snap/v1.0/transfer-va/payment';
+
+        $this->postJson($path, $body, $this->transactionHeaders($path, $body))
+            ->assertBadRequest()
+            ->assertJsonPath('responseCode', '4002501')
+            ->assertJsonPath('responseMessage', 'Invalid Field Format {paymentRequestId}');
+    }
+
     public function test_payment_rejects_missing_mandatory_paid_amount(): void
     {
         $bill = $this->createOpenBill();
         $vaNumber = '777'.$bill->bill_number;
         $this->createPaymentRequest($bill, $vaNumber);
         $body = $this->inquiryBody($bill, $vaNumber);
+        $body['paymentRequestId'] = $body['inquiryRequestId'];
         $path = '/api/snap/v1.0/transfer-va/payment';
 
         $this->postJson($path, $body, $this->transactionHeaders($path, $body))
@@ -115,6 +161,7 @@ class SnapSitErrorResponseTest extends SnapFeatureTestCase
             'partnerServiceId' => '777',
             'customerNo' => 'UNKNOWN-BILL',
             'virtualAccountNo' => '777UNKNOWN-BILL',
+            'inquiryRequestId' => 'unknown-inquiry-request',
         ];
         $path = '/api/snap/v1.0/transfer-va/inquiry';
 
@@ -134,6 +181,7 @@ class SnapSitErrorResponseTest extends SnapFeatureTestCase
                 'value' => '100000.00',
                 'currency' => 'IDR',
             ],
+            'paymentRequestId' => 'unknown-payment-request',
             'referenceNo' => 'BRI-REF-NOT-FOUND',
         ];
         $path = '/api/snap/v1.0/transfer-va/payment';

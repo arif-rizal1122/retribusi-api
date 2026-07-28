@@ -21,7 +21,10 @@ class SnapBrivaService
 
         return $this->virtualAccountData($request, $bill, [
             'inquiryStatus' => '00',
-            'inquiryReason' => 'Success',
+            'inquiryReason' => [
+                'english' => 'Success',
+                'indonesia' => 'Sukses',
+            ],
         ], $paymentRequest);
     }
 
@@ -92,7 +95,10 @@ class SnapBrivaService
 
             return $this->virtualAccountData($request, $lockedBill, [
                 'paymentFlagStatus' => '00',
-                'paymentFlagReason' => 'Success',
+                'paymentFlagReason' => [
+                    'english' => 'Success',
+                    'indonesia' => 'Sukses',
+                ],
             ], $paymentRequest);
         });
     }
@@ -154,13 +160,11 @@ class SnapBrivaService
             ],
         ])->all();
 
-        return array_merge([
+        $data = array_merge([
             'partnerServiceId' => $partnerServiceId,
             'customerNo' => $customerNo,
             'virtualAccountNo' => $virtualAccountNo,
             'virtualAccountName' => $bill->taxpayer->name ?? 'Wajib Pajak',
-            'virtualAccountEmail' => $bill->taxpayer->email ?? '',
-            'virtualAccountPhone' => $bill->taxpayer->phone ?? '',
             'totalAmount' => [
                 'value' => $totalAmount,
                 'currency' => 'IDR',
@@ -176,6 +180,20 @@ class SnapBrivaService
                 ],
             ],
         ], $status);
+
+        if (array_key_exists('inquiryStatus', $status)) {
+            $data['inquiryRequestId'] = (string) $request->input('inquiryRequestId');
+        }
+
+        if (array_key_exists('paymentFlagStatus', $status)) {
+            $data['paymentRequestId'] = (string) $request->input('paymentRequestId');
+            $data['paidAmount'] = [
+                'value' => $this->money($this->extractAmount($request)),
+                'currency' => 'IDR',
+            ];
+        }
+
+        return $data;
     }
 
     private function expectedAmount(Bill $bill, ?PaymentRequest $paymentRequest): float

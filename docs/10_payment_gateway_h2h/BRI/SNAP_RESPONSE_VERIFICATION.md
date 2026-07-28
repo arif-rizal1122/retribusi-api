@@ -5,7 +5,7 @@ Scope: endpoint inbound BRIVA yang aktif pada `retribusi-api`, yaitu access toke
 
 ## Kesimpulan
 
-Response code dan message yang eksplisit pada SIT untuk token invalid, signature, mandatory/format, inquiry, payment, paid, expired, not found, serta invalid amount sudah diselaraskan pada scope endpoint aktif. Sistem tetap belum dapat dinyatakan siap UAT karena ekspor SIT tidak memuat contoh response body/schema final, replay identik masih memerlukan keputusan BRI, dan lifecycle/status/report VA belum dikonfirmasi.
+Response code dan message yang eksplisit pada SIT untuk token invalid, signature, mandatory/format, inquiry, payment, paid, expired, not found, serta invalid amount sudah diselaraskan pada scope endpoint aktif. Artefak dokumentasi BRIAPI Virtual Account/BRIVA Online v2.0 yang diberikan pada 2026-07-28 kini menjadi sumber schema resmi untuk field inti Inquiry dan Payment. Sistem tetap belum dapat dinyatakan siap UAT karena canonical signing, replay identik, konfigurasi VA produksi, dan lifecycle/status/report VA masih memerlukan konfirmasi operasional BRI.
 
 ## Sumber yang Dibandingkan
 
@@ -14,6 +14,7 @@ Response code dan message yang eksplisit pada SIT untuk token invalid, signature
 - `routes/api.php` untuk route runtime.
 - `SnapBIController`, `SnapResponseMapper`, `SnapBrivaService`, dan service security SNAP untuk perilaku response saat ini.
 - `tests/Feature/Payment/Snap` dan `tests/Unit/Payment/Snap` untuk bukti test lokal.
+- Artefak dokumentasi BRIAPI Virtual Account/BRIVA Online v2.0 yang memuat schema request/response Inquiry dan Payment, response code, timeout, serta aturan rekonsiliasi.
 
 ## Path Endpoint
 
@@ -49,11 +50,23 @@ Skenario 11.19-11.31 adalah alur Partner A-PJP-Partner B dan tidak dimasukkan ke
 
 ## Status Implementasi PAY-SNAP-ERR-001
 
-Implementasi memakai service code `24` untuk inquiry, `25` untuk payment, `73` untuk access token, dan `52` untuk QR notification pada pipeline security. `SnapRequestValidator` menutup validasi minimum field yang benar-benar dipakai endpoint aktif. Regression lokal feature dan unit SNAP lulus 33 test dengan 114 assertion.
+Implementasi memakai service code `24` untuk inquiry, `25` untuk payment, `73` untuk access token, dan `52` untuk QR notification pada pipeline security. `SnapRequestValidator` menutup field inti dan field tambahan yang didokumentasikan untuk endpoint aktif. Regression lokal feature dan unit SNAP lulus 39 test dengan 140 assertion.
 
-## Response Body
+## Response Body dan Schema BRIAPI v2.0
 
-Kolom `Response Body` pada ekspor SIT lokal kosong. Implementasi saat ini mengembalikan `virtualAccountData` berisi identitas VA, wajib pajak, total, `billDetails`, dan status inquiry/payment. Struktur ini belum dapat diberi status PASS karena tidak ada schema, contoh JSON, panjang field, mandatory/optional rule, atau aturan masking resmi pada sumber yang diaudit.
+Artefak BRIAPI v2.0 menyediakan contoh JSON serta mandatory/optional rule untuk field inti. Implementasi kini mengembalikan:
+
+- Inquiry: `virtualAccountData` dengan `partnerServiceId`, `customerNo`, `virtualAccountNo`, `virtualAccountName`, `inquiryRequestId`, `totalAmount`, `inquiryStatus`, dan object `inquiryReason` berisi `english` serta `indonesia`.
+- Payment: `virtualAccountData` dengan identitas VA, `paymentRequestId`, `paidAmount`, `paymentFlagStatus`, dan object `paymentFlagReason` berisi `english` serta `indonesia`.
+- Validator menerima field tambahan Payment yang didokumentasikan, yaitu `trxId`, `trxDateTime`, `hashedSourceAccountNo`, dan `additionalInfo.hashedSourceAccountName`, serta memastikan `paymentRequestId` sama dengan `inquiryRequestId` bila alur dimulai dari Inquiry.
+
+`additionalInfo.info1` sampai `info5` tetap optional dan belum diisi karena belum ada kebutuhan bisnis M-PAD untuk mengirim catatan tambahan kepada customer. `billDetails` tetap dipertahankan sebagai extension internal untuk multi-tagihan, sedangkan data kontak internal tidak lagi dikirim dalam response BRIVA.
+
+Status schema field inti: PASS berdasarkan artefak BRIAPI v2.0 dan feature regression lokal. Status UAT keseluruhan tetap OPEN karena aturan canonical string-to-sign, konfigurasi VA partner resmi, serta lifecycle/status/report belum dikonfirmasi.
+
+## Discrepancy Signature
+
+Tabel header pada artefak BRIAPI v2.0 menyebut `X-SIGNATURE` menggunakan `HMAC_SHA512`, sedangkan implementasi dan artefak integrasi lokal saat ini memakai verifikasi asymmetric RSA dengan `SHA256` melalui public key partner. Perbedaan ini tidak diubah otomatis karena mengganti algoritma akan memutus kontrak security yang sedang diuji. PIC BRI perlu mengonfirmasi algoritma, canonical string, dan key material yang berlaku khusus untuk endpoint M-PAD sebelum sandbox/UAT.
 
 Data yang masih dibutuhkan dari BRI:
 
