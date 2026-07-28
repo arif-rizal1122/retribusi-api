@@ -49,6 +49,40 @@ class CitizenBillingReadTest extends TestCase
             ->assertUnauthorized();
     }
 
+    public function test_citizen_tax_objects_are_owner_scoped_and_include_sptpd_contract(): void
+    {
+        $this->classification->update([
+            'is_self_assessment' => true,
+            'calculation_formula' => 'turnover_amount * 0.1',
+        ]);
+        $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
+        $otherTaxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
+        $ownObject = TaxObject::factory()->create([
+            'opd_id' => $this->opd->id,
+            'taxpayer_id' => $taxpayer->id,
+            'retribution_type_id' => $this->retributionType->id,
+            'retribution_classification_id' => $this->classification->id,
+        ]);
+        $otherObject = TaxObject::factory()->create([
+            'opd_id' => $this->opd->id,
+            'taxpayer_id' => $otherTaxpayer->id,
+            'retribution_type_id' => $this->retributionType->id,
+            'retribution_classification_id' => $this->classification->id,
+        ]);
+
+        Sanctum::actingAs($taxpayer);
+
+        $response = $this->getJson('/api/citizen/tax-objects');
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $ownObject->id)
+            ->assertJsonPath('data.0.classification.is_self_assessment', true)
+            ->assertJsonPath('data.0.classification.calculation_formula', 'turnover_amount * 0.1');
+
+        $this->assertNotSame($otherObject->id, $response->json('data.0.id'));
+    }
+
     public function test_citizen_bill_list_is_owner_scoped_and_paginated(): void
     {
         $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
@@ -195,6 +229,7 @@ class CitizenBillingReadTest extends TestCase
 
         $this->getJson('/api/citizen/bills')->assertForbidden();
         $this->getJson('/api/citizen/payments/history')->assertForbidden();
+        $this->getJson('/api/citizen/tax-objects')->assertForbidden();
     }
 
     private function createBill(Taxpayer $taxpayer, array $overrides = []): Bill

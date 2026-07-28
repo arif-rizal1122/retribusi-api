@@ -194,6 +194,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     // Citizen Specific Actions
     Route::group(['prefix' => 'citizen'], function () {
         Route::get('/bills', [BillController::class, 'citizenBills']);
+        Route::get('/tax-objects', [\App\Http\Controllers\CitizenServiceController::class, 'taxObjects']);
 
         // Pembayaran
         Route::get('/payments/history', [PaymentController::class, 'history']);
