@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bill;
-use App\Models\Taxpayer;
-use App\Models\TaxObject;
 use App\Models\RetributionType;
+use App\Models\TaxObject;
+use App\Models\Taxpayer;
 use App\Services\BillCreationService;
 use App\Services\BillPeriodService;
 use Illuminate\Http\Request;
@@ -14,16 +14,17 @@ use Illuminate\Support\Str;
 class BillController extends Controller
 {
     protected $billCreationService;
+
     protected $periodService;
 
     public function __construct(
         BillCreationService $billCreationService,
         BillPeriodService $periodService
-    )
-    {
+    ) {
         $this->billCreationService = $billCreationService;
         $this->periodService = $periodService;
     }
+
     /**
      * List bills (OPD-scoped)
      */
@@ -34,14 +35,14 @@ class BillController extends Controller
 
         if ($user && in_array($user->role, ['opd', 'petugas'])) {
             $query->where('opd_id', $user->opd_id);
-            
+
             // If petugas, filter by assigned types and classifications
             if ($user->role === 'petugas') {
                 $assignments = $user->assignments;
                 if ($assignments->isNotEmpty()) {
-                    $query->where(function($q) use ($assignments) {
+                    $query->where(function ($q) use ($assignments) {
                         foreach ($assignments as $assignment) {
-                            $q->orWhere(function($sq) use ($assignment) {
+                            $q->orWhere(function ($sq) use ($assignment) {
                                 $sq->where('retribution_type_id', $assignment->retribution_type_id);
                                 if ($assignment->retribution_classification_id) {
                                     $sq->where('retribution_classification_id', $assignment->retribution_classification_id);
@@ -59,7 +60,7 @@ class BillController extends Controller
         if ($request->has('status')) {
             if ($request->status === 'overdue') {
                 $query->where('status', 'pending')
-                      ->where('due_date', '<', now());
+                    ->where('due_date', '<', now());
             } elseif ($request->status === 'lunas') {
                 $query->whereIn('status', ['lunas', 'paid']);
             } else {
@@ -69,11 +70,11 @@ class BillController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('bill_number', 'like', "%{$search}%")
-                  ->orWhereHas('taxpayer', function($sq) use ($search) {
-                      $sq->where('name', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('taxpayer', function ($sq) use ($search) {
+                        $sq->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -103,8 +104,8 @@ class BillController extends Controller
         if ($request->tax_object_id) {
             // New flow: bill is linked to a specific tax object
             $taxObject = TaxObject::with(['taxpayer', 'retributionType', 'classification'])->findOrFail($request->tax_object_id);
-            
-            if (!$user->isSuperAdmin() && $taxObject->opd_id !== $user->opd_id) {
+
+            if (! $user->isSuperAdmin() && $taxObject->opd_id !== $user->opd_id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
@@ -128,8 +129,8 @@ class BillController extends Controller
         } else {
             // Legacy flow: bill is linked to taxpayer + retribution type (no specific object)
             $taxpayer = Taxpayer::find($request->taxpayer_id);
-            
-            if (!$user->isSuperAdmin() && $taxpayer->opd_id !== $user->opd_id) {
+
+            if (! $user->isSuperAdmin() && $taxpayer->opd_id !== $user->opd_id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
@@ -145,7 +146,7 @@ class BillController extends Controller
                 'tax_object_id' => null,
                 'opd_id' => $taxpayer->opd_id,
                 'retribution_type_id' => $request->retribution_type_id,
-                'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
+                'bill_number' => 'INV-'.date('Ymd').'-'.strtoupper(Str::random(6)),
                 'amount' => $request->amount ?? $type->base_amount,
                 'status' => 'pending',
                 'period' => $periodInfo['period'],
@@ -158,7 +159,7 @@ class BillController extends Controller
 
         return response()->json([
             'message' => 'Tagihan berhasil dibuat',
-            'data' => $bill->load(['retributionType', 'opd', 'taxObject', 'taxpayer'])
+            'data' => $bill->load(['retributionType', 'opd', 'taxObject', 'taxpayer']),
         ], 201);
     }
 
@@ -168,7 +169,7 @@ class BillController extends Controller
     public function bulkStore(Request $request)
     {
         $user = $request->user();
-        
+
         $request->validate([
             'retribution_type_id' => 'required|exists:retribution_types,id',
             'retribution_classification_id' => 'nullable|exists:retribution_classifications,id',
@@ -178,7 +179,7 @@ class BillController extends Controller
 
         $type = RetributionType::find($request->retribution_type_id);
 
-        if (!$user->isSuperAdmin() && $type->opd_id !== $user->opd_id) {
+        if (! $user->isSuperAdmin() && $type->opd_id !== $user->opd_id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -186,13 +187,13 @@ class BillController extends Controller
         $query = TaxObject::where('retribution_type_id', $type->id)
             ->where('status', 'active')
             ->with(['retributionType', 'classification', 'taxpayer']);
-            
+
         if ($request->retribution_classification_id) {
             $query->where('retribution_classification_id', $request->retribution_classification_id);
         }
 
         $objects = $query->get();
-        
+
         $createdCount = 0;
         foreach ($objects as $obj) {
             $bill = $this->billCreationService->createForTaxObject(
@@ -214,7 +215,7 @@ class BillController extends Controller
 
         return response()->json([
             'message' => "Berhasil generate {$createdCount} tagihan",
-            'count' => $createdCount
+            'count' => $createdCount,
         ]);
     }
 
@@ -224,14 +225,14 @@ class BillController extends Controller
     public function show(Request $request, Bill $bill)
     {
         $user = $request->user();
-        
+
         // Ownership / Authorization check
         if ($user instanceof \App\Models\User) {
             // Admin/Petugas: restrict by OPD if not super admin
-            if (!$user->isSuperAdmin() && $bill->opd_id !== $user->opd_id) {
+            if (! $user->isSuperAdmin() && $bill->opd_id !== $user->opd_id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
-        } else if ($user instanceof \App\Models\Taxpayer) {
+        } elseif ($user instanceof \App\Models\Taxpayer) {
             // Citizen: restrict by their own record
             if ($bill->taxpayer_id !== $user->id) {
                 return response()->json(['message' => 'Forbidden: This is not your bill.'], 403);
@@ -239,7 +240,7 @@ class BillController extends Controller
         }
 
         return response()->json([
-            'data' => $bill->load(['retributionType', 'opd', 'payments', 'taxObject', 'taxpayer'])
+            'data' => $bill->load(['retributionType', 'opd', 'payments', 'taxObject', 'taxpayer']),
         ]);
     }
 
@@ -258,6 +259,12 @@ class BillController extends Controller
         $bills = Bill::with(['retributionType', 'opd', 'taxObject', 'classification'])
             ->withExists([
                 'payments as has_pending_payment_claim' => fn ($query) => $query->where('status', 'pending'),
+                'paymentRequestItems as has_active_payment_request' => fn ($query) => $query->whereHas(
+                    'paymentRequest',
+                    fn ($paymentRequestQuery) => $paymentRequestQuery
+                        ->where('status', 'pending')
+                        ->where('expires_at', '>', now())
+                ),
             ])
             ->where('taxpayer_id', $taxpayer->id)
             ->latest()
@@ -281,13 +288,15 @@ class BillController extends Controller
         $payload = $bill->toArray();
         $status = $this->citizenBillStatus($bill);
 
-        unset($payload['has_pending_payment_claim']);
+        unset($payload['has_pending_payment_claim'], $payload['has_active_payment_request']);
 
         $payload['status'] = $status;
         $payload['status_label'] = match ($status) {
             'overdue' => 'Jatuh tempo',
             'paid' => 'Lunas',
-            'pending_verification' => 'Menunggu verifikasi pembayaran',
+            'pending_verification' => (bool) $bill->has_active_payment_request
+                ? 'Menunggu pembayaran BRIVA'
+                : 'Menunggu verifikasi pembayaran',
             'cancelled' => 'Dibatalkan',
             default => 'Menunggu pembayaran',
         };
@@ -361,6 +370,10 @@ class BillController extends Controller
             return 'pending_verification';
         }
 
+        if ((bool) $bill->has_active_payment_request) {
+            return 'pending_verification';
+        }
+
         if ($storedStatus === 'overdue' || $bill->due_date?->isPast()) {
             return 'overdue';
         }
@@ -379,7 +392,7 @@ class BillController extends Controller
         }
 
         $data = $docService->generateSKRD($bill->load(['retributionType', 'taxpayer']));
-        
+
         return view('pdf.skrd', $data);
     }
 
@@ -395,6 +408,7 @@ class BillController extends Controller
 
         try {
             $data = $docService->generateSSPD($bill->load(['retributionType', 'taxpayer', 'payments']));
+
             return view('pdf.sspd', $data);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 400);
@@ -414,20 +428,21 @@ class BillController extends Controller
         try {
             // Verify if this is actually a PBB bill
             $name = strtolower($bill->retributionType->name ?? '');
-            if (!str_contains($name, 'pbb') && !str_contains($name, 'pajak bumi')) {
+            if (! str_contains($name, 'pbb') && ! str_contains($name, 'pajak bumi')) {
                 return response()->json(['message' => 'Hanya tagihan PBB yang dapat mencetak SPPT.'], 400);
             }
 
             $data = $docService->generateSPPT($bill);
-            
+
             if ($request->query('download') === 'pdf') {
                 $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.sppt', $data);
+
                 return $pdf->download("SPPT-{$bill->taxObject->nop}-{$data['year']}.pdf");
             }
 
             return view('pdf.sppt', $data);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Gagal generate SPPT: ' . $e->getMessage()], 500);
+            return response()->json(['message' => 'Gagal generate SPPT: '.$e->getMessage()], 500);
         }
     }
 
@@ -439,26 +454,28 @@ class BillController extends Controller
         ]);
 
         $bill = Bill::findOrFail($validated['bill_id']);
-        
+
         // Authorization check (Higher authority or OPD Admin)
         $user = $request->user();
-        if (!$user->isSuperAdmin() && !in_array($user->role, ['kadis', 'kabid', 'opd'])) {
+        if (! $user->isSuperAdmin() && ! in_array($user->role, ['kadis', 'kabid', 'opd'])) {
             return response()->json(['message' => 'Unauthorized to sign. Higher authority required.'], 403);
         }
 
         try {
             $signedDoc = $docService->signDocument('bill', $bill->id, $user, $validated['notes'] ?? null);
+
             return response()->json([
                 'message' => 'Dokumen berhasil ditandatangani secara elektronik.',
-                'signed_document' => $signedDoc
+                'signed_document' => $signedDoc,
             ]);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error("TTE Signing Error: " . $e->getMessage(), [
+            \Illuminate\Support\Facades\Log::error('TTE Signing Error: '.$e->getMessage(), [
                 'exception' => $e,
                 'user_id' => $user->id,
-                'bill_id' => $bill->id
+                'bill_id' => $bill->id,
             ]);
-            return response()->json(['message' => 'Gagal menandatangani: ' . $e->getMessage()], 500);
+
+            return response()->json(['message' => 'Gagal menandatangani: '.$e->getMessage()], 500);
         }
     }
 
@@ -488,16 +505,16 @@ class BillController extends Controller
 
         if ($bills->isEmpty()) {
             return response()->json([
-                'message' => 'Tidak ada tagihan valid yang dipilih'
+                'message' => 'Tidak ada tagihan valid yang dipilih',
             ], 422);
         }
 
         $subtotal = $bills->sum('amount');
-        $penaltyTotal = $bills->sum(fn($b) => (float) ($b->penalty_amount ?? 0));
+        $penaltyTotal = $bills->sum(fn ($b) => (float) ($b->penalty_amount ?? 0));
         $grandTotal = $subtotal + $penaltyTotal;
 
         return response()->json([
-            'bills' => $bills->map(fn($b) => [
+            'bills' => $bills->map(fn ($b) => [
                 'id' => $b->id,
                 'bill_number' => $b->bill_number,
                 'retribution_type' => $b->retributionType->name ?? 'N/A',
@@ -512,7 +529,7 @@ class BillController extends Controller
                 'subtotal' => $subtotal,
                 'penalty_total' => $penaltyTotal,
                 'grand_total' => $grandTotal,
-                'formatted_total' => 'Rp ' . number_format($grandTotal, 0, ',', '.'),
+                'formatted_total' => 'Rp '.number_format($grandTotal, 0, ',', '.'),
             ],
         ]);
     }
