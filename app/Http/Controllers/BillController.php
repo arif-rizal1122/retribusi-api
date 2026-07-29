@@ -258,15 +258,22 @@ class BillController extends Controller
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $bills = Bill::with(['retributionType', 'opd', 'taxObject', 'classification'])
+        $activePaymentRequest = fn ($paymentRequestQuery) => $paymentRequestQuery
+            ->where('status', 'pending')
+            ->where('expires_at', '>', now());
+
+        $bills = Bill::with([
+            'retributionType',
+            'opd',
+            'taxObject',
+            'classification',
+            'paymentRequestItems' => fn ($query) => $query
+                ->whereHas('paymentRequest', $activePaymentRequest)
+                ->with(['paymentRequest' => $activePaymentRequest]),
+        ])
             ->withExists([
                 'payments as has_pending_payment_claim' => fn ($query) => $query->where('status', 'pending'),
-                'paymentRequestItems as has_active_payment_request' => fn ($query) => $query->whereHas(
-                    'paymentRequest',
-                    fn ($paymentRequestQuery) => $paymentRequestQuery
-                        ->where('status', 'pending')
-                        ->where('expires_at', '>', now())
-                ),
+                'paymentRequestItems as has_active_payment_request' => fn ($query) => $query->whereHas('paymentRequest', $activePaymentRequest),
             ])
             ->where('taxpayer_id', $taxpayer->id)
             ->latest()
@@ -304,8 +311,50 @@ class BillController extends Controller
         };
         $payload['can_pay'] = in_array($status, ['pending', 'overdue'], true);
         $payload['payment_options'] = $this->citizenPaymentOptions($bill, $payload['can_pay']);
+        $payload['active_payment_request'] = $this->activePaymentRequestPayload($bill);
 
         return $payload;
+    }
+
+    private function activePaymentRequestPayload(Bill $bill): ?array
+    {
+        $paymentRequest = $bill->paymentRequestItems
+            ->map(fn ($item) => $item->paymentRequest)
+            ->filter()
+            ->sortByDesc('id')
+            ->first();
+
+        if (! $paymentRequest) {
+            return null;
+        }
+
+        return [
+            'id' => (string) $paymentRequest->id,
+            'provider' => $paymentRequest->payment_channel,
+            'method' => strtolower($paymentRequest->payment_channel) === 'bri' && strtoupper($paymentRequest->method) === 'VA'
+                ? 'bri_va'
+                : strtolower($paymentRequest->method),
+            'status' => $paymentRequest->status,
+            'status_label' => $this->paymentRequestStatusLabel($paymentRequest->status),
+            'va_number' => $paymentRequest->va_number,
+            'expired_at' => $paymentRequest->expires_at?->toIso8601String(),
+            'total_amount' => (float) $paymentRequest->amount_snapshot
+                + (float) $paymentRequest->admin_fee_snapshot
+                + (float) $paymentRequest->penalty_snapshot,
+            'can_refresh' => $paymentRequest->status === 'pending',
+            'can_cancel' => $paymentRequest->status === 'pending',
+        ];
+    }
+
+    private function paymentRequestStatusLabel(string $status): string
+    {
+        return match ($status) {
+            'pending' => 'Menunggu pembayaran melalui channel BRI.',
+            'paid' => 'Pembayaran diterima.',
+            'expired' => 'Payment request kedaluwarsa.',
+            'cancelled' => 'Payment request dibatalkan.',
+            default => 'Payment request sedang diproses.',
+        };
     }
 
     private function citizenPaymentOptions(Bill $bill, bool $canPay): array

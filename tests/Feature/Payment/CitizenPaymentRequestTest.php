@@ -128,6 +128,32 @@ class CitizenPaymentRequestTest extends TestCase
         $this->assertMatchesRegularExpression('/^\d{28}$/', $paymentRequest->va_number);
     }
 
+    public function test_citizen_briva_va_can_use_bri_confirmed_prefix_for_local_smoke(): void
+    {
+        config([
+            'snap.partners.BRI.signature_algorithm' => 'rsa_sha256',
+            'snap.partners.BRI.signature_secret' => '',
+            'snap.partners.BRI.public_key' => $this->publicKey(),
+            'snap.briva.partner_service_id' => '',
+            'snap.briva.va_prefix' => '19960',
+            'snap.briva.va_length' => 18,
+        ]);
+
+        $bill = $this->createBill();
+        Sanctum::actingAs($this->taxpayer);
+
+        $response = $this->postJson('/api/citizen/payment-requests', [
+            'bill_ids' => [$bill->id],
+            'method' => 'bri_va',
+        ])->assertCreated();
+
+        $paymentRequest = PaymentRequest::findOrFail($response->json('data.id'));
+        $expectedVa = '19960'.str_pad((string) $paymentRequest->id, 13, '0', STR_PAD_LEFT);
+
+        $this->assertSame($expectedVa, $paymentRequest->va_number);
+        $this->assertSame($paymentRequest->va_number, $response->json('data.va_number'));
+    }
+
     public function test_citizen_cannot_read_another_taxpayers_payment_request(): void
     {
         $bill = $this->createBill();
@@ -245,5 +271,20 @@ class CitizenPaymentRequestTest extends TestCase
             'period' => '2026-07',
             'due_date' => now()->addWeek(),
         ], $overrides));
+    }
+
+    private function publicKey(): string
+    {
+        return <<<'PEM'
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwYlN41PX9hRBKFRzmtsl
+V+E2ON+xxbGUrA0wOwFgmrQNFBuQFqQ2Oe5w15Zu0E5mnNl8EHby3cLU1Kue0JiO
+K970LMuSyc57x1I+FWOxuBNoi1YxdPjZBdznxk/DzdIPqIVBFHIHJho+ZNCPG+Ch
+spWMD5lo4T+sHhnXxzgLKkBeQcVI2fmCUCp6iTaIwgNWl6L7mG9qo60z/1ae6b+1
+GdW6EnuwEgRaXPZDW/zwxV0xAU8XoIB/1DNu4qE5QJrB4u5NVTNvAHjtmo8R7cwp
+v4B8OlqYl0c3Ki6pGLMZUqZ/7ZLz3aV+3jsihMVACFiPqtBGUCk2Ie4PuuRxw8/7
+5QIDAQAB
+-----END PUBLIC KEY-----
+PEM;
     }
 }

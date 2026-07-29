@@ -30,6 +30,8 @@ class CitizenBillingReadTest extends TestCase
     {
         parent::setUp();
 
+        config(['snap.briva.enabled' => false]);
+
         $this->opd = Opd::factory()->create();
         $this->retributionType = RetributionType::factory()->create([
             'opd_id' => $this->opd->id,
@@ -132,7 +134,7 @@ class CitizenBillingReadTest extends TestCase
             'status' => 'pending',
             'due_date' => now()->addDay(),
         ]);
-        $this->createPaymentRequest($activeBrivaBill);
+        $activePaymentRequest = $this->createPaymentRequest($activeBrivaBill);
 
         Sanctum::actingAs($taxpayer);
 
@@ -158,6 +160,10 @@ class CitizenBillingReadTest extends TestCase
         $this->assertSame('Menunggu pembayaran BRIVA', $bills[$activeBrivaBill->id]['status_label']);
         $this->assertFalse($bills[$activeBrivaBill->id]['can_pay']);
         $this->assertArrayNotHasKey('has_active_payment_request', $bills[$activeBrivaBill->id]);
+        $this->assertSame((string) $activePaymentRequest->id, $bills[$activeBrivaBill->id]['active_payment_request']['id']);
+        $this->assertSame('bri_va', $bills[$activeBrivaBill->id]['active_payment_request']['method']);
+        $this->assertSame('777'.$activeBrivaBill->bill_number, $bills[$activeBrivaBill->id]['active_payment_request']['va_number']);
+        $this->assertTrue($bills[$activeBrivaBill->id]['active_payment_request']['can_cancel']);
     }
 
     public function test_briva_option_is_advertised_only_when_runtime_config_is_ready(): void

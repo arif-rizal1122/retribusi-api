@@ -27,8 +27,9 @@ Sumber kebenaran nama variable adalah `config/snap.php`. Isi nilai sebenarnya me
 | `BRI_SNAP_ENABLED` | `true` setelah konfigurasi lengkap | Default `false`; selama `false`, API tidak mengiklankan BRIVA ke mobile dan create payment request BRIVA ditolak. |
 | `BRI_SNAP_PARTNER_ID` | Partner ID resmi | Dipakai untuk mencocokkan header transaksi `X-PARTNER-ID`. |
 | `BRI_SNAP_CLIENT_KEY` | Client key resmi | Dipakai untuk mencocokkan `X-CLIENT-KEY` saat meminta token. |
-| `BRI_SNAP_SIGNATURE_ALGORITHM` | `hmac_sha512` | Keputusan implementasi saat ini berdasarkan tabel header BRIVA v2.0; konfirmasi encoding dan canonical string kepada BRI. |
-| `BRI_SNAP_SIGNATURE_SECRET` | Shared secret BRI | Simpan hanya di secret manager atau `.env` server yang tidak dilacak Git. |
+| `BRI_SNAP_SIGNATURE_ALGORITHM` | `hmac_sha512` atau `rsa_sha256` sesuai konfirmasi BRI | Untuk `hmac_sha512`, isi shared secret. Untuk `rsa_sha256`, pakai public key BRI melalui `BRI_SNAP_PUBLIC_KEY` atau `BRI_SNAP_PUBLIC_KEY_PATH`. |
+| `BRI_SNAP_SIGNATURE_SECRET` | Shared secret BRI untuk HMAC | Jangan diisi public key. Simpan hanya di secret manager atau `.env` server yang tidak dilacak Git. |
+| `BRI_SNAP_PUBLIC_KEY_PATH` | Path public key BRI untuk RSA | Dipakai saat `BRI_SNAP_SIGNATURE_ALGORITHM=rsa_sha256`; file key jangan berada dalam Git. |
 | `BRI_SNAP_PARTNER_SERVICE_ID` | `partnerServiceId` resmi 8 digit | Turunan dari `X-PARTNER-ID`; jangan diisi sebelum BRI memberikan nilai resmi. |
 | `BRI_SNAP_CUSTOMER_NO_LENGTH` | Panjang `customerNo` | Default `20`; sesuaikan jika provisioning BRI menetapkan panjang berbeda. |
 | `BRI_SNAP_VA_PREFIX` | Prefix dummy local smoke | Hanya dipakai saat `partnerServiceId` kosong di local/testing; jangan digunakan sandbox/produksi. |
@@ -77,8 +78,8 @@ Aturan minimum:
 
 ## Urutan Konfigurasi Sandbox
 
-1. Konfirmasikan dengan BRI: domain HTTPS, path callback, partner ID, `partnerServiceId`, client key, shared secret HMAC, IP sumber, panjang `customerNo`/VA, expiry, dan canonical string-to-sign.
-2. Simpan shared secret BRI melalui secret manager atau `.env` server yang tidak dilacak Git.
+1. Konfirmasikan dengan BRI: domain HTTPS, path callback, partner ID, `partnerServiceId` atau prefix VA, client key, algoritma signature (`hmac_sha512` atau `rsa_sha256`), IP sumber, panjang `customerNo`/VA, expiry, dan canonical string-to-sign.
+2. Simpan shared secret HMAC atau public key RSA BRI melalui secret manager/file server yang tidak dilacak Git.
 3. Isi environment server menggunakan nama variable pada tabel di atas.
 4. Pastikan database memiliki migration `payment_requests`, `payment_request_items`, dan `snap_idempotency_keys`. Jalankan migration hanya melalui prosedur deployment yang diotorisasi.
 5. Pastikan cache store dapat dipakai bersama oleh semua instance API.
@@ -111,7 +112,7 @@ Baseline lokal 2026-07-28: suite feature dan unit SNAP lulus 39 test dengan 140 
 - [ ] Path `/api/snap/v1.0/...` telah dikonfirmasi BRI.
 - [ ] `BRI_SNAP_ENABLED=true` hanya setelah seluruh konfigurasi di bawah lengkap.
 - [ ] `BRI_SNAP_PARTNER_ID` dan `BRI_SNAP_CLIENT_KEY` bukan nilai contoh.
-- [ ] Shared secret HMAC BRI tersedia melalui secret manager atau `.env` server tanpa berada di Git.
+- [ ] Algoritma signature sudah dikonfirmasi BRI; jika HMAC, shared secret tersedia tanpa berada di Git; jika RSA, public key BRI tersedia dan bisa dibaca aplikasi.
 - [ ] IP BRI sudah masuk `SNAP_ALLOWED_IPS`.
 - [ ] Prefix, panjang, dan expiry VA sudah dikonfirmasi.
 - [ ] Cache token konsisten pada seluruh instance.
@@ -122,4 +123,10 @@ Baseline lokal 2026-07-28: suite feature dan unit SNAP lulus 39 test dengan 140 
 
 ## Batas Local Smoke
 
-Local smoke boleh memakai prefix VA dummy dan key test yang hanya hidup selama test. Local smoke tidak boleh disebut sandbox/UAT dan tidak boleh memakai nilai dummy pada server yang diserahkan kepada BRI.
+Local smoke boleh memakai prefix VA dummy atau prefix yang diberikan BRI tetapi belum aktif di channel bank. Local smoke tidak boleh disebut sandbox/UAT dan tidak boleh memakai nilai dummy pada server yang diserahkan kepada BRI.
+
+Catatan smoke lokal 2026-07-29:
+
+- Public key BRI disimpan sebagai file di luar repo API, lalu `.env` lokal menunjuk ke `BRI_SNAP_PUBLIC_KEY_PATH`.
+- Dengan asumsi sementara `BRI_SNAP_SIGNATURE_ALGORITHM=rsa_sha256` dan prefix `BRI_SNAP_VA_PREFIX=19960`, API berhasil membuat payment request lokal dengan VA `199600000000000003`, membaca ulang status `pending`, lalu membatalkan request menjadi `cancelled`.
+- Uji BRImo production terhadap VA tersebut belum valid. Ini belum membuktikan bug kode karena prefix/produk/channel bank, panjang VA final, path callback, IP whitelist, dan environment sandbox/production masih harus dikonfirmasi BRI.

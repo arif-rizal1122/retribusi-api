@@ -32,8 +32,13 @@ class SnapBrivaReadiness
 
         $signatureAlgorithm = strtolower((string) config('snap.partners.BRI.signature_algorithm', 'rsa_sha256'));
         if ($signatureAlgorithm === 'hmac_sha512') {
-            if (trim((string) config('snap.partners.BRI.signature_secret')) === '') {
+            $signatureSecret = trim((string) config('snap.partners.BRI.signature_secret'));
+            if ($signatureSecret === '') {
                 return 'BRI_SNAP_SIGNATURE_SECRET belum dikonfigurasi.';
+            }
+
+            if ($this->looksLikePublicKeyMaterial($signatureSecret)) {
+                return 'BRI_SNAP_SIGNATURE_SECRET terlihat seperti public key. Gunakan BRI_SNAP_PUBLIC_KEY_PATH untuk RSA.';
             }
         } else {
             $publicKey = trim((string) config('snap.partners.BRI.public_key'));
@@ -44,6 +49,11 @@ class SnapBrivaReadiness
 
             if ($publicKeyPath !== '' && ! is_readable($publicKeyPath)) {
                 return 'Public key BRI tidak dapat dibaca aplikasi.';
+            }
+
+            $resolvedPublicKey = $publicKey !== '' ? str_replace('\n', "\n", $publicKey) : (string) file_get_contents($publicKeyPath);
+            if (! openssl_pkey_get_public($resolvedPublicKey)) {
+                return 'Public key BRI tidak valid.';
             }
         }
 
@@ -90,5 +100,14 @@ class SnapBrivaReadiness
     private function allowsLocalSmoke(): bool
     {
         return app()->environment(['local', 'testing']);
+    }
+
+    private function looksLikePublicKeyMaterial(string $value): bool
+    {
+        $normalized = preg_replace('/\s+/', '', $value) ?? '';
+
+        return str_contains($value, 'BEGIN PUBLIC KEY')
+            || str_contains($value, 'BEGIN RSA PUBLIC KEY')
+            || str_starts_with($normalized, 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A');
     }
 }
