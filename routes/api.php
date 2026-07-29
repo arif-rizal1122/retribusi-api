@@ -286,6 +286,14 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/map-potentials', [DashboardController::class, 'getMapPotentials']);
         });
 
+        // WA Gateway Management (Baileys)
+        Route::prefix('admin/wa-gateway')->group(function () {
+            Route::get('/status', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'status']);
+            Route::get('/qr', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'qr']);
+            Route::post('/send-test', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'sendTest']);
+            Route::post('/logout', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'logout']);
+        });
+
         Route::prefix('pengawas')->group(function () {
             Route::get('/audit-logs', [\App\Http\Controllers\Pengawas\AuditLogController::class, 'index']);
             Route::get('/anomalies', [\App\Http\Controllers\Pengawas\SurveillanceController::class, 'getAnomalies']);
