@@ -105,6 +105,7 @@ class PbbBapendaTest extends TestCase
         $response->assertStatus(503)
             ->assertJsonFragment([
                 'status' => 'error',
+                'message' => 'Layanan Bapenda sedang tidak tersedia. (Error: Gagal login ke server Bapenda: No data found)'
             ]);
     }
 
