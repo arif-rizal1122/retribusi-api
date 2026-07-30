@@ -50,6 +50,48 @@ class SnapSignatureServiceTest extends TestCase
         $this->assertTrue(true);
     }
 
+    public function test_it_verifies_valid_rsa_sha256_signature(): void
+    {
+        [$privateKey, $publicKey] = $this->keys();
+        config([
+            'snap.partners.BRI.signature_algorithm' => 'rsa_sha256',
+            'snap.partners.BRI.signature_secret' => '',
+            'snap.partners.BRI.public_key' => $publicKey,
+        ]);
+
+        $timestamp = now()->toIso8601String();
+        $body = ['customerNo' => '00000000000000000001'];
+        $canonicalBody = app(SnapCanonicalRequest::class)->canonicalBodyFromArray($body);
+        $stringToSign = app(SnapCanonicalRequest::class)->stringToSign(
+            'POST',
+            '/api/snap/v1.0/transfer-va/inquiry',
+            $canonicalBody,
+            $timestamp
+        );
+
+        openssl_sign($stringToSign, $rawSignature, $privateKey, OPENSSL_ALGO_SHA256);
+        $signature = base64_encode($rawSignature);
+
+        $request = Request::create(
+            '/api/snap/v1.0/transfer-va/inquiry',
+            'POST',
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_TIMESTAMP' => $timestamp,
+                'HTTP_X_SIGNATURE' => $signature,
+            ],
+            $canonicalBody
+        );
+        $request->attributes->set('snap_bank_code', 'BRI');
+
+        app(SnapSignatureService::class)->verify($request);
+
+        $this->assertTrue(true);
+    }
+
     public function test_it_rejects_invalid_signature(): void
     {
         config([

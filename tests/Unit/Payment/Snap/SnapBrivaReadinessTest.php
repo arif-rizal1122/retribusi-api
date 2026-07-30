@@ -26,6 +26,61 @@ class SnapBrivaReadinessTest extends TestCase
         $this->assertNull(app(SnapBrivaReadiness::class)->unavailableReason());
     }
 
+    public function test_it_accepts_bri_confirmed_prefix_without_partner_service_id_for_sandbox(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+
+        try {
+            config([
+                'snap.briva.enabled' => true,
+                'snap.partners.BRI.partner_id' => 'BRI-PARTNER-SANDBOX',
+                'snap.partners.BRI.client_key' => 'BRI-CLIENT-SANDBOX',
+                'snap.partners.BRI.signature_algorithm' => 'rsa_sha256',
+                'snap.partners.BRI.signature_secret' => '',
+                'snap.partners.BRI.public_key' => $this->publicKey(),
+                'snap.partners.BRI.public_key_path' => '',
+                'snap.briva.partner_service_id' => '',
+                'snap.briva.va_prefix' => '19960',
+                'snap.briva.customer_no_length' => 20,
+                'snap.briva.va_length' => 18,
+                'snap.allowed_ips' => ['127.0.0.1'],
+            ]);
+
+            $this->assertNull(app(SnapBrivaReadiness::class)->unavailableReason());
+        } finally {
+            $this->app->detectEnvironment(fn () => 'testing');
+        }
+    }
+
+    public function test_it_rejects_dummy_prefix_outside_local_smoke(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+
+        try {
+            config([
+                'snap.briva.enabled' => true,
+                'snap.partners.BRI.partner_id' => 'BRI-PARTNER-SANDBOX',
+                'snap.partners.BRI.client_key' => 'BRI-CLIENT-SANDBOX',
+                'snap.partners.BRI.signature_algorithm' => 'rsa_sha256',
+                'snap.partners.BRI.signature_secret' => '',
+                'snap.partners.BRI.public_key' => $this->publicKey(),
+                'snap.partners.BRI.public_key_path' => '',
+                'snap.briva.partner_service_id' => '',
+                'snap.briva.va_prefix' => '777',
+                'snap.briva.customer_no_length' => 20,
+                'snap.briva.va_length' => 18,
+                'snap.allowed_ips' => ['127.0.0.1'],
+            ]);
+
+            $this->assertSame(
+                'Prefix VA dummy hanya boleh dipakai untuk local smoke.',
+                app(SnapBrivaReadiness::class)->unavailableReason()
+            );
+        } finally {
+            $this->app->detectEnvironment(fn () => 'testing');
+        }
+    }
+
     public function test_it_rejects_public_key_material_in_hmac_secret(): void
     {
         config([

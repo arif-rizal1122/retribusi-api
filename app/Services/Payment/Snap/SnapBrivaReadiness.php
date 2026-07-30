@@ -62,10 +62,6 @@ class SnapBrivaReadiness
             return 'BRI_SNAP_PARTNER_SERVICE_ID harus 8 digit.';
         }
 
-        if (! $this->allowsLocalSmoke() && $partnerServiceId === '') {
-            return 'BRI_SNAP_PARTNER_SERVICE_ID belum dikonfigurasi.';
-        }
-
         $prefix = preg_replace('/\D/', '', (string) config('snap.briva.va_prefix'));
         $length = (int) config('snap.briva.va_length', 18);
         $customerNoLength = (int) config('snap.briva.customer_no_length', 20);
@@ -79,6 +75,10 @@ class SnapBrivaReadiness
             }
         } elseif ($prefix === '' || strlen($prefix) >= $length) {
             return 'Prefix atau panjang VA BRIVA belum valid.';
+        }
+
+        if (! $this->allowsLocalSmoke() && $partnerServiceId === '' && $prefix === '') {
+            return 'BRI_SNAP_PARTNER_SERVICE_ID atau BRI_SNAP_VA_PREFIX resmi belum dikonfigurasi.';
         }
 
         if ($prefix === '777' && ! $this->allowsLocalSmoke()) {

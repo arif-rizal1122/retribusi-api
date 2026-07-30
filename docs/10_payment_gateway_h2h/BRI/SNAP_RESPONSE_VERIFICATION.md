@@ -5,7 +5,7 @@ Scope: endpoint inbound BRIVA yang aktif pada `retribusi-api`, yaitu access toke
 
 ## Kesimpulan
 
-Response code dan message yang eksplisit pada SIT untuk token invalid, signature, mandatory/format, inquiry, payment, paid, expired, not found, serta invalid amount sudah diselaraskan pada scope endpoint aktif. Artefak dokumentasi BRIAPI Virtual Account/BRIVA Online v2.0 yang diberikan pada 2026-07-28 kini menjadi sumber schema resmi untuk field inti Inquiry dan Payment. Sistem tetap belum dapat dinyatakan siap UAT karena canonical signing, replay identik, konfigurasi VA produksi, dan lifecycle/status/report VA masih memerlukan konfirmasi operasional BRI.
+Response code dan message yang eksplisit pada SIT untuk token invalid, signature, mandatory/format, inquiry, payment, paid, expired, not found, serta invalid amount sudah diselaraskan pada scope endpoint aktif. Artefak dokumentasi BRIAPI Virtual Account/BRIVA Online v2.0 yang diberikan pada 2026-07-28 kini menjadi sumber schema resmi untuk field inti Inquiry dan Payment. Jawaban BRI pada 2026-07-30 mengonfirmasi bahwa prefix `19960` adalah sandbox-only, BRImo production tidak dapat men-trigger VA tersebut, path sebelum `/snap` bebas, dan signature request memakai RSA-SHA256. Sistem tetap belum dapat dinyatakan siap UAT karena contoh request lengkap, canonical string, replay identik, total panjang/expiry VA operasional, IP whitelist, dan lifecycle/status/report VA masih memerlukan bukti operasional BRI.
 
 ## Sumber yang Dibandingkan
 
@@ -15,6 +15,7 @@ Response code dan message yang eksplisit pada SIT untuk token invalid, signature
 - `SnapBIController`, `SnapResponseMapper`, `SnapBrivaService`, dan service security SNAP untuk perilaku response saat ini.
 - `tests/Feature/Payment/Snap` dan `tests/Unit/Payment/Snap` untuk bukti test lokal.
 - Artefak dokumentasi BRIAPI Virtual Account/BRIVA Online v2.0 yang memuat schema request/response Inquiry dan Payment, response code, timeout, serta aturan rekonsiliasi.
+- Jawaban teknis BRI 2026-07-30 tentang environment sandbox, channel sandbox, path callback, RSA-SHA256, dan mekanisme trigger inquiry/payment oleh BRI.
 
 ## Path Endpoint
 
@@ -62,11 +63,11 @@ Artefak BRIAPI v2.0 menyediakan contoh JSON serta mandatory/optional rule untuk 
 
 `additionalInfo.info1` sampai `info5` tetap optional dan belum diisi karena belum ada kebutuhan bisnis M-PAD untuk mengirim catatan tambahan kepada customer. `billDetails` tetap dipertahankan sebagai extension internal untuk multi-tagihan, sedangkan data kontak internal tidak lagi dikirim dalam response BRIVA.
 
-Status schema field inti: PASS berdasarkan artefak BRIAPI v2.0 dan feature regression lokal. Status UAT keseluruhan tetap OPEN karena aturan canonical string-to-sign, konfigurasi VA partner resmi, serta lifecycle/status/report belum dikonfirmasi.
+Status schema field inti: PASS berdasarkan artefak BRIAPI v2.0 dan feature regression lokal. Status UAT keseluruhan tetap OPEN karena aturan canonical string-to-sign, contoh request resmi, total panjang/expiry VA operasional, IP whitelist, serta lifecycle/status/report belum dikonfirmasi.
 
 ## Keputusan Signature
 
-Implementasi BRI saat ini memakai `HMAC-SHA512` untuk `X-SIGNATURE`, mengikuti tabel header pada artefak BRIAPI v2.0. Signature dibuat sebagai Base64 dari HMAC binary atas string canonical yang dipakai service. BRI tetap perlu mengonfirmasi canonical string, encoding, dan shared secret final sebelum sandbox/UAT. Partner SNAP lain tetap dapat memakai algoritma signature yang dikonfigurasi masing-masing.
+Konfirmasi BRI 2026-07-30 menyatakan request dari BRI memakai `RSA-SHA256` untuk `X-SIGNATURE`. Implementasi sekarang mendukung konfigurasi `rsa_sha256` dengan public key BRI dari `BRI_SNAP_PUBLIC_KEY` atau `BRI_SNAP_PUBLIC_KEY_PATH`; HMAC-SHA512 tetap tersedia hanya sebagai compatibility konfigurasi partner lain. BRI masih perlu memberi contoh request lengkap agar canonical string-to-sign, path yang masuk signature, dan encoding signature dapat dibuktikan terhadap sandbox mereka.
 
 Data yang masih dibutuhkan dari BRI:
 
@@ -74,7 +75,8 @@ Data yang masih dibutuhkan dari BRI:
 - aturan canonical string-to-sign serta path yang masuk ke signature;
 - konfirmasi service code final untuk error umum pada endpoint payment terhadap contoh response resmi;
 - aturan replay `X-EXTERNAL-ID` dengan payload identik;
-- daftar field mandatory, format, panjang, enum, dan decimal amount;
+- daftar field mandatory, format, panjang, enum, decimal amount, total panjang VA, dan expiry;
+- IP sumber BRI untuk whitelist bila sandbox ditembak dari IP tetap;
 - scope lifecycle/status/report VA yang benar-benar wajib untuk produk BRIVA M-PAD.
 
 ## Temuan Credential Hygiene

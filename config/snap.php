@@ -8,7 +8,7 @@ return [
             'partner_id' => env('BRI_SNAP_PARTNER_ID', 'test-partner'),
             'client_key' => env('BRI_SNAP_CLIENT_KEY', 'test-client'),
             'client_secret' => env('BRI_SNAP_CLIENT_SECRET', ''),
-            'signature_algorithm' => env('BRI_SNAP_SIGNATURE_ALGORITHM', 'hmac_sha512'),
+            'signature_algorithm' => env('BRI_SNAP_SIGNATURE_ALGORITHM', 'rsa_sha256'),
             'signature_secret' => env('BRI_SNAP_SIGNATURE_SECRET', ''),
             'public_key' => env('BRI_SNAP_PUBLIC_KEY', ''),
             'public_key_path' => env('BRI_SNAP_PUBLIC_KEY_PATH', ''),
