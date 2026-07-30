@@ -45,12 +45,21 @@ class MeController extends Controller
             'phone' => 'nullable|string|max:20',
             'avatar' => 'nullable|image|max:2048',
             'surat_penugasan' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'district' => 'nullable|string',
+            'sub_district' => 'nullable|string',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'mother_name' => 'nullable|string|max:255',
         ]);
 
         // Basic fields
         if ($request->has('name')) $user->name = $request->name;
         if ($request->has('address')) $user->address = $request->address;
         if ($request->has('phone')) $user->phone = $request->phone;
+        if ($request->has('district')) $user->district = $request->district;
+        if ($request->has('sub_district')) $user->sub_district = $request->sub_district;
+        if ($request->has('latitude')) $user->latitude = $request->latitude;
+        if ($request->has('longitude')) $user->longitude = $request->longitude;
         
         // Email update (with unique check)
         if ($request->has('email')) {
@@ -61,6 +70,10 @@ class MeController extends Controller
         $metadata = $user->metadata ?? [];
         if (is_string($metadata)) {
             $metadata = json_decode($metadata, true) ?: [];
+        }
+
+        if ($request->has('mother_name')) {
+            $metadata['mother_name'] = $request->mother_name;
         }
 
         // Handle Avatar/Photo Upload

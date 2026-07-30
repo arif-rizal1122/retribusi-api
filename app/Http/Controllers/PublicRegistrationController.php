@@ -53,11 +53,16 @@ class PublicRegistrationController extends Controller
         );
     }
 
-    public function checkNik($nik, \App\Services\IdentityValidationService $validationService)
+    public function checkNik(Request $request, $nik, \App\Services\IdentityValidationService $validationService)
     {
         $validation = $validationService->validateNik($nik);
         if (!$validation['valid']) {
             return response()->json(['found' => false, 'message' => $validation['message']], 422);
+        }
+
+        $motherName = $request->query('mother_name');
+        if (empty($motherName)) {
+            return response()->json(['found' => false, 'message' => 'Nama ibu kandung wajib diisi untuk verifikasi data'], 422);
         }
 
         $taxpayer = Taxpayer::with(['opd'])
@@ -68,6 +73,25 @@ class PublicRegistrationController extends Controller
 
         if (!$taxpayer) {
             return response()->json(['found' => false]);
+        }
+        
+        $metadata = $taxpayer->metadata ?? [];
+        if (is_string($metadata)) {
+            $metadata = json_decode($metadata, true) ?: [];
+        }
+        
+        $storedMotherName = $metadata['mother_name'] ?? null;
+        
+        // Match logic: if stored is empty, we can't verify (or we force them to manual).
+        // Let's make it case-insensitive and ignore spaces for robustness.
+        $cleanInput = strtolower(preg_replace('/\s+/', '', $motherName));
+        $cleanStored = $storedMotherName ? strtolower(preg_replace('/\s+/', '', $storedMotherName)) : '';
+        
+        if (!$storedMotherName || $cleanInput !== $cleanStored) {
+            return response()->json([
+                'found' => false, 
+                'message' => 'Data tidak cocok atau belum terverifikasi'
+            ]);
         }
 
         $assets = TaxObject::with(['opd:id,name', 'retributionType:id,name', 'classification:id,name'])
@@ -95,6 +119,8 @@ class PublicRegistrationController extends Controller
                 'npwpd' => $taxpayer->npwpd,
                 'district' => $taxpayer->district,
                 'sub_district' => $taxpayer->sub_district,
+                'latitude' => $taxpayer->latitude,
+                'longitude' => $taxpayer->longitude,
                 'is_active' => $taxpayer->is_active,
                 'opd' => $taxpayer->opd,
             ],
