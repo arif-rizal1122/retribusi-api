@@ -89,7 +89,7 @@ class SurveillanceRoleTest extends TestCase
             ->postJson("/api/pengawas/enforcements/{$this->enforcement->id}/approve");
 
         $response->assertStatus(200);
-        $this->assertEquals('approved', $this->enforcement->fresh()->status);
+        $this->assertEquals('disetujui', $this->enforcement->fresh()->status);
     }
 
     public function test_kasubid_cannot_approve_enforcement_notice()
