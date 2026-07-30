@@ -14,7 +14,7 @@ Laravel memberi prefix `/api` pada `routes/api.php`. Endpoint runtime saat ini a
 | Inquiry BRIVA | `POST /api/snap/v1.0/transfer-va/inquiry` |
 | Callback pembayaran BRIVA | `POST /api/snap/v1.0/transfer-va/payment` |
 
-Route token `/api/snap/v1.0/access-token/b2b` tetap tersedia sebagai compatibility alias, tetapi matriks akses sandbox lokal mencantumkan versi `v1.1`. Semua URL sandbox harus memakai domain publik HTTPS. Konfirmasikan path lengkap dengan BRI sebelum menyerahkan formulir callback karena dokumen lokal lama tidak konsisten antara path dengan dan tanpa `/api`.
+Route token `/api/snap/v1.0/access-token/b2b` tetap tersedia sebagai compatibility alias, tetapi matriks akses sandbox lokal mencantumkan versi `v1.1`. Semua URL sandbox harus memakai domain publik HTTPS. Konfirmasi BRI pada 2026-07-30 menyatakan path/subdomain sebelum `/snap` dibebaskan; bagian setelah `/snap` tetap harus mengikuti template. Dengan konfirmasi ini, prefix Laravel `/api` dapat dipakai selama endpoint akhir tetap `/api/snap/v1.1/access-token/b2b`, `/api/snap/v1.0/transfer-va/inquiry`, dan `/api/snap/v1.0/transfer-va/payment`.
 
 ## Environment Variable Runtime
 
@@ -24,12 +24,16 @@ Sumber kebenaran nama variable adalah `config/snap.php`. Isi nilai sebenarnya me
 
 | Variable | Isi | Catatan |
 | --- | --- | --- |
+| `BRI_SNAP_ENABLED` | `true` setelah konfigurasi lengkap | Default `false`; selama `false`, API tidak mengiklankan BRIVA ke mobile dan create payment request BRIVA ditolak. |
 | `BRI_SNAP_PARTNER_ID` | Partner ID resmi | Dipakai untuk mencocokkan header transaksi `X-PARTNER-ID`. |
 | `BRI_SNAP_CLIENT_KEY` | Client key resmi | Dipakai untuk mencocokkan `X-CLIENT-KEY` saat meminta token. |
-| `BRI_SNAP_PUBLIC_KEY` | Public key BRI format PEM | Pilih ini atau `BRI_SNAP_PUBLIC_KEY_PATH`, jangan keduanya. Inline key harus menyimpan newline sebagai `\n`. |
-| `BRI_SNAP_PUBLIC_KEY_PATH` | Path public key BRI | Pilihan yang disarankan. Gunakan path absolut yang dapat dibaca user proses PHP. |
-| `BRI_SNAP_VA_PREFIX` | Prefix VA resmi | Tidak boleh ditebak. Nilai dummy seperti `777` hanya boleh untuk smoke lokal. |
-| `BRI_SNAP_VA_LENGTH` | Panjang VA resmi | Default kode adalah `18`; samakan dengan hasil provisioning BRI. |
+| `BRI_SNAP_SIGNATURE_ALGORITHM` | `rsa_sha256` untuk sandbox BRI saat ini | Konfirmasi BRI 2026-07-30 menyatakan `X-SIGNATURE` memakai RSA-SHA256. HMAC tetap tersedia di kode hanya untuk compatibility bila partner lain memerlukannya. |
+| `BRI_SNAP_SIGNATURE_SECRET` | Shared secret BRI untuk HMAC | Jangan diisi public key. Simpan hanya di secret manager atau `.env` server yang tidak dilacak Git. |
+| `BRI_SNAP_PUBLIC_KEY_PATH` | Path public key BRI untuk RSA | Dipakai saat `BRI_SNAP_SIGNATURE_ALGORITHM=rsa_sha256`; file key jangan berada dalam Git. |
+| `BRI_SNAP_PARTNER_SERVICE_ID` | `partnerServiceId` resmi 8 digit bila diberikan BRI | Jika BRI hanya memberikan prefix VA seperti `19960`, kosongkan nilai ini dan pakai `BRI_SNAP_VA_PREFIX`. |
+| `BRI_SNAP_CUSTOMER_NO_LENGTH` | Panjang `customerNo` | Default `20`; sesuaikan jika provisioning BRI menetapkan panjang berbeda. |
+| `BRI_SNAP_VA_PREFIX` | Prefix resmi BRI atau prefix dummy local smoke | Prefix `19960` dikonfirmasi BRI sebagai environment sandbox dan hanya valid pada channel sandbox. Prefix dummy `777` hanya boleh dipakai local smoke. |
+| `BRI_SNAP_VA_LENGTH` | Panjang VA final | Default `28` untuk format `partnerServiceId + customerNo`; bila memakai prefix `19960`, set sesuai total panjang yang disetujui sandbox. Smoke lokal 2026-07-29 memakai 18 digit. |
 | `BRI_SNAP_PAYMENT_REQUEST_EXPIRY_MINUTES` | Masa aktif request | Default `1440`; harus disepakati dengan aturan produk bank. |
 
 ### Kontrol keamanan bersama
@@ -47,7 +51,7 @@ Token B2B disimpan melalui Laravel Cache. Sandbox bersama atau deployment multi-
 
 ### Variable yang sudah tersedia tetapi belum dipakai alur inbound
 
-- `BRI_SNAP_CLIENT_SECRET` tersedia di config partner, tetapi token endpoint saat ini mengautentikasi client key dan RSA signature, bukan secret.
+- `BRI_SNAP_CLIENT_SECRET` tersedia di config partner, tetapi token endpoint saat ini mengautentikasi client key dan signature request, bukan client secret secara langsung.
 - `SNAP_CALLBACK_BASE_URL` tersedia di config, tetapi endpoint inbound berasal dari route Laravel dan belum membangun URL dari nilai ini.
 - `SNAP_MPAD_PRIVATE_KEY_PATH` dan `SNAP_MPAD_PUBLIC_KEY_PATH` tersedia untuk kebutuhan signing/key exchange berikutnya, tetapi belum dikonsumsi oleh alur token, inquiry, atau payment saat ini.
 
@@ -69,13 +73,13 @@ Aturan minimum:
 - berikan hak baca hanya kepada user proses PHP;
 - jangan simpan private key dalam source code, database umum, atau log;
 - jangan mencetak isi key saat validasi;
-- hanya tukarkan public key melalui kanal onboarding resmi;
+- hanya tukarkan shared secret melalui kanal onboarding resmi;
 - catat pemilik, tanggal berlaku, dan prosedur rotasi key di luar repository publik.
 
 ## Urutan Konfigurasi Sandbox
 
-1. Konfirmasikan dengan BRI: domain HTTPS, path callback, partner ID, client key, public key BRI, IP sumber, prefix/panjang VA, expiry, dan canonical string-to-sign.
-2. Pasang public key BRI pada path server yang aman.
+1. Konfirmasikan dengan BRI: domain HTTPS, partner ID, client key, IP sumber, panjang final VA/customer number, expiry, dan canonical string-to-sign. Per 2026-07-30, BRI sudah mengonfirmasi environment sandbox, prefix `19960` hanya channel sandbox, path sebelum `/snap` bebas, dan signature RSA-SHA256.
+2. Simpan public key RSA BRI melalui secret manager/file server yang tidak dilacak Git. Shared secret HMAC hanya dipakai bila ada partner lain yang secara eksplisit memakai HMAC.
 3. Isi environment server menggunakan nama variable pada tabel di atas.
 4. Pastikan database memiliki migration `payment_requests`, `payment_request_items`, dan `snap_idempotency_keys`. Jalankan migration hanya melalui prosedur deployment yang diotorisasi.
 5. Pastikan cache store dapat dipakai bersama oleh semua instance API.
@@ -100,16 +104,27 @@ php artisan test tests/Feature/Payment/Snap tests/Unit/Payment/Snap --do-not-cac
 
 9. Lakukan test positif dan negatif memakai credential sandbox resmi: token, signature salah, timestamp kedaluwarsa, IP tidak diizinkan, inquiry valid/tidak ditemukan/lunas/expired, payment valid, amount mismatch, dan duplicate `X-EXTERNAL-ID`.
 
-Baseline lokal 2026-07-22: suite feature dan unit SNAP lulus 33 test dengan 114 assertion. Hasil lokal ini tetap bukan bukti kelulusan sandbox/UAT dengan credential dan skenario resmi BRI.
+Baseline lokal 2026-07-28: suite feature dan unit SNAP lulus 39 test dengan 140 assertion untuk scope SNAP. Hasil lokal ini tetap bukan bukti kelulusan sandbox/UAT dengan credential dan skenario resmi BRI.
+
+## Menyiapkan VA untuk Trigger BRI
+
+Setelah payment request BRIVA aktif dibuat dari aplikasi warga/API, operator dapat mencetak paket handoff yang aman dibagikan ke BRI sandbox:
+
+```powershell
+php artisan snap:briva-sandbox-handoff {payment_request_id} --base-url=https://apimpad.baubaukota.go.id --json
+```
+
+Output command berisi nomor VA, `partnerServiceId`/`customerNo` hasil mapping konfigurasi saat ini, nominal, expiry, daftar nomor tagihan, serta URL token/inquiry/payment. Command ini read-only dan tidak mencetak credential, token, public key, private key, NIK, atau nomor HP.
 
 ## Checklist Sebelum Menyerahkan Callback ke BRI
 
 - [ ] Domain sandbox dapat diakses melalui HTTPS dengan sertifikat valid.
-- [ ] Path `/api/snap/v1.0/...` telah dikonfirmasi BRI.
+- [x] Path dengan prefix `/api` dapat dipakai karena BRI membebaskan path/subdomain sebelum `/snap`, selama bagian setelah `/snap` mengikuti template.
+- [ ] `BRI_SNAP_ENABLED=true` hanya setelah seluruh konfigurasi di bawah lengkap.
 - [ ] `BRI_SNAP_PARTNER_ID` dan `BRI_SNAP_CLIENT_KEY` bukan nilai contoh.
-- [ ] Public key BRI terbaca aplikasi tanpa berada di Git.
+- [x] Algoritma signature untuk sandbox BRI dikonfirmasi RSA-SHA256; public key BRI harus tersedia dan bisa dibaca aplikasi.
 - [ ] IP BRI sudah masuk `SNAP_ALLOWED_IPS`.
-- [ ] Prefix, panjang, dan expiry VA sudah dikonfirmasi.
+- [ ] Prefix `19960` dikonfirmasi sebagai sandbox-only; total panjang VA dan expiry operasional masih perlu bukti dari spesifikasi/contoh request BRI.
 - [ ] Cache token konsisten pada seluruh instance.
 - [ ] Migration payment request dan idempotency sudah diterapkan pada environment sandbox.
 - [ ] Config cache dibangun ulang setelah perubahan environment.
@@ -118,4 +133,17 @@ Baseline lokal 2026-07-22: suite feature dan unit SNAP lulus 33 test dengan 114 
 
 ## Batas Local Smoke
 
-Local smoke boleh memakai prefix VA dummy dan key test yang hanya hidup selama test. Local smoke tidak boleh disebut sandbox/UAT dan tidak boleh memakai nilai dummy pada server yang diserahkan kepada BRI.
+Local smoke boleh memakai prefix VA dummy atau prefix yang diberikan BRI tetapi belum aktif di channel bank. Local smoke tidak boleh disebut sandbox/UAT dan tidak boleh memakai nilai dummy pada server yang diserahkan kepada BRI.
+
+Konfirmasi BRI 2026-07-30:
+
+- Prefix `19960` adalah environment sandbox dan tidak aktif pada BRImo/ATM production.
+- VA sandbox tidak bisa diuji melalui BRImo biasa; BRI dapat membantu trigger inquiry dan payment pada channel sandbox jika M-PAD menyediakan VA.
+- Endpoint token, inquiry, dan payment yang aktif saat ini sudah sesuai selama suffix setelah `/snap` mengikuti template.
+- Signature request dari BRI memakai RSA-SHA256 dan diverifikasi dengan public key BRI yang sudah dikirimkan.
+
+Catatan smoke lokal 2026-07-29:
+
+- Public key BRI disimpan sebagai file di luar repo API, lalu `.env` lokal menunjuk ke `BRI_SNAP_PUBLIC_KEY_PATH`.
+- Dengan asumsi sementara `BRI_SNAP_SIGNATURE_ALGORITHM=rsa_sha256` dan prefix `BRI_SNAP_VA_PREFIX=19960`, API berhasil membuat payment request lokal dengan VA `199600000000000003`, membaca ulang status `pending`, lalu membatalkan request menjadi `cancelled`.
+- Uji BRImo production terhadap VA tersebut memang tidak valid karena prefix/credential masih sandbox. Langkah berikutnya adalah menyediakan VA aktif kepada BRI agar mereka men-trigger inquiry dan payment dari channel sandbox.

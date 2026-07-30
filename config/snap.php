@@ -8,6 +8,8 @@ return [
             'partner_id' => env('BRI_SNAP_PARTNER_ID', 'test-partner'),
             'client_key' => env('BRI_SNAP_CLIENT_KEY', 'test-client'),
             'client_secret' => env('BRI_SNAP_CLIENT_SECRET', ''),
+            'signature_algorithm' => env('BRI_SNAP_SIGNATURE_ALGORITHM', 'rsa_sha256'),
+            'signature_secret' => env('BRI_SNAP_SIGNATURE_SECRET', ''),
             'public_key' => env('BRI_SNAP_PUBLIC_KEY', ''),
             'public_key_path' => env('BRI_SNAP_PUBLIC_KEY_PATH', ''),
         ],
@@ -15,6 +17,8 @@ return [
             'partner_id' => env('BTN_SNAP_PARTNER_ID', 'test-partner-btn'),
             'client_key' => env('BTN_SNAP_CLIENT_KEY', 'test-client-btn'),
             'client_secret' => env('BTN_SNAP_CLIENT_SECRET', ''),
+            'signature_algorithm' => env('BTN_SNAP_SIGNATURE_ALGORITHM', 'rsa_sha256'),
+            'signature_secret' => env('BTN_SNAP_SIGNATURE_SECRET', ''),
             'public_key' => env('BTN_SNAP_PUBLIC_KEY', ''),
             'public_key_path' => env('BTN_SNAP_PUBLIC_KEY_PATH', ''),
         ],
@@ -28,8 +32,11 @@ return [
     'idempotency_ttl_minutes' => (int) env('SNAP_IDEMPOTENCY_TTL_MINUTES', 1440),
 
     'briva' => [
+        'enabled' => env('BRI_SNAP_ENABLED', false),
+        'partner_service_id' => env('BRI_SNAP_PARTNER_SERVICE_ID', ''),
         'va_prefix' => env('BRI_SNAP_VA_PREFIX', ''),
-        'va_length' => (int) env('BRI_SNAP_VA_LENGTH', 18),
+        'customer_no_length' => (int) env('BRI_SNAP_CUSTOMER_NO_LENGTH', 20),
+        'va_length' => (int) env('BRI_SNAP_VA_LENGTH', 28),
         'payment_request_expiry_minutes' => (int) env('BRI_SNAP_PAYMENT_REQUEST_EXPIRY_MINUTES', 1440),
     ],
 

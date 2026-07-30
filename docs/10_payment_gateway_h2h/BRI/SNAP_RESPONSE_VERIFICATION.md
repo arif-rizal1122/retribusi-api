@@ -5,7 +5,7 @@ Scope: endpoint inbound BRIVA yang aktif pada `retribusi-api`, yaitu access toke
 
 ## Kesimpulan
 
-Response code dan message yang eksplisit pada SIT untuk token invalid, signature, mandatory/format, inquiry, payment, paid, expired, not found, serta invalid amount sudah diselaraskan pada scope endpoint aktif. Sistem tetap belum dapat dinyatakan siap UAT karena ekspor SIT tidak memuat contoh response body/schema final, replay identik masih memerlukan keputusan BRI, dan lifecycle/status/report VA belum dikonfirmasi.
+Response code dan message yang eksplisit pada SIT untuk token invalid, signature, mandatory/format, inquiry, payment, paid, expired, not found, serta invalid amount sudah diselaraskan pada scope endpoint aktif. Artefak dokumentasi BRIAPI Virtual Account/BRIVA Online v2.0 yang diberikan pada 2026-07-28 kini menjadi sumber schema resmi untuk field inti Inquiry dan Payment. Jawaban BRI pada 2026-07-30 mengonfirmasi bahwa prefix `19960` adalah sandbox-only, BRImo production tidak dapat men-trigger VA tersebut, path sebelum `/snap` bebas, dan signature request memakai RSA-SHA256. Sistem tetap belum dapat dinyatakan siap UAT karena contoh request lengkap, canonical string, replay identik, total panjang/expiry VA operasional, IP whitelist, dan lifecycle/status/report VA masih memerlukan bukti operasional BRI.
 
 ## Sumber yang Dibandingkan
 
@@ -14,6 +14,8 @@ Response code dan message yang eksplisit pada SIT untuk token invalid, signature
 - `routes/api.php` untuk route runtime.
 - `SnapBIController`, `SnapResponseMapper`, `SnapBrivaService`, dan service security SNAP untuk perilaku response saat ini.
 - `tests/Feature/Payment/Snap` dan `tests/Unit/Payment/Snap` untuk bukti test lokal.
+- Artefak dokumentasi BRIAPI Virtual Account/BRIVA Online v2.0 yang memuat schema request/response Inquiry dan Payment, response code, timeout, serta aturan rekonsiliasi.
+- Jawaban teknis BRI 2026-07-30 tentang environment sandbox, channel sandbox, path callback, RSA-SHA256, dan mekanisme trigger inquiry/payment oleh BRI.
 
 ## Path Endpoint
 
@@ -29,17 +31,17 @@ Kode `xx` pada skenario umum mengikuti service code endpoint: `24` untuk inquiry
 
 | SIT | Skenario | Expected SIT | Implementasi saat audit | Status |
 | --- | --- | --- | --- | --- |
-| 11.1 | Access token invalid | `401xx01`, `Access Token Invalid` | Inquiry `4012401`; payment `4012501`; keduanya memiliki feature test | PASS pada service aktif |
-| 11.2 | Unauthorized signature | `401xx00`, `Unauthorized Signature` | Inquiry `4012400`; payment `4012500`; message sesuai | PASS pada service aktif |
+| 11.1 | Access token invalid | `401xx01`, `Invalid Token (B2B)` | Inquiry `4012401`; payment `4012501`; keduanya memiliki feature test | PASS pada service aktif |
+| 11.2 | Unauthorized signature | `401xx00`, `Unauthorized. [reason]` | Inquiry `4012400`; payment `4012500`; message mengikuti reason signature | PASS pada service aktif |
 | 11.3 | Missing mandatory field | `400xx02`, `Invalid Mandatory Field {...}` | Header dan field body yang dipakai service menghasilkan `4002402`/`4002502` | PASS pada kontrak aktif; schema final belum tersedia |
 | 11.4 | Invalid field format | `400xx01`, `Invalid Field Format {...}` | Validator dasar identifier, paid amount, dan currency menghasilkan `4002401`/`4002501` | PASS pada kontrak aktif; schema final belum tersedia |
 | 11.5 | Duplicate `X-EXTERNAL-ID` | `409xx00`, `Conflict` | Payload berbeda ditolak `4092400`; replay payload sama mengembalikan response tersimpan; payment belum memakai service code `25` | PARTIAL, perlu keputusan BRI |
 | 11.6 | Inquiry VA valid | `2002400`, `Successful` | Sesuai dan memiliki feature test | PASS |
-| 11.7 | Inquiry VA sudah lunas | `4042414`, `Bill has been paid` | Kode dan message sesuai, memiliki feature test | PASS |
-| 11.8 | Inquiry VA kedaluwarsa | `4042419`, `Bill expired` | Kode dan message sesuai, memiliki feature test | PASS |
-| 11.9 | Inquiry VA tidak terdaftar | `4042412`, `Bill not found` | Kode dan message sesuai, memiliki feature test | PASS |
+| 11.7 | Inquiry VA sudah lunas | `4042414`, `Paid Bill` | Kode dan message sesuai, memiliki feature test | PASS |
+| 11.8 | Inquiry VA kedaluwarsa | `4032400`, `Transaction Expired` | Kode dan message sesuai, memiliki feature test | PASS |
+| 11.9 | Inquiry VA tidak terdaftar | `4042412`, `Invalid Bill/Virtual Account [Reason]` | Kode dan message sesuai, memiliki feature test | PASS |
 | 11.10 | Payment VA valid | `2002500`, `Successful` | Sesuai, termasuk settlement multi-bill | PASS |
-| 11.11 | Payment VA tidak terdaftar | `4042512`, `Bill not found` | Kode dan message sesuai, memiliki feature test | PASS |
+| 11.11 | Payment VA tidak terdaftar | `4042512`, `Invalid Bill/Virtual Account [Reason]` | Kode dan message sesuai, memiliki feature test | PASS |
 | 11.12 | Payment VA invalid amount | `4042513`, `Invalid Amount` | Kode dan message sesuai; settlement tidak terjadi | PASS |
 | 11.13-11.18 | Status/create/update/delete lifecycle VA | `2002600` sampai `2003100` | Route belum tersedia | BLOCKED, konfirmasi scope produk BRI |
 | 11.32 | Get report VA | `2003500`, `Successful` | Route belum tersedia | BLOCKED, konfirmasi kebutuhan rekonsiliasi/report BRI |
@@ -49,11 +51,23 @@ Skenario 11.19-11.31 adalah alur Partner A-PJP-Partner B dan tidak dimasukkan ke
 
 ## Status Implementasi PAY-SNAP-ERR-001
 
-Implementasi memakai service code `24` untuk inquiry, `25` untuk payment, `73` untuk access token, dan `52` untuk QR notification pada pipeline security. `SnapRequestValidator` menutup validasi minimum field yang benar-benar dipakai endpoint aktif. Regression lokal feature dan unit SNAP lulus 33 test dengan 114 assertion.
+Implementasi memakai service code `24` untuk inquiry, `25` untuk payment, `73` untuk access token, dan `52` untuk QR notification pada pipeline security. `SnapRequestValidator` menutup field inti dan field tambahan yang didokumentasikan untuk endpoint aktif. Regression lokal feature dan unit SNAP lulus 39 test dengan 140 assertion.
 
-## Response Body
+## Response Body dan Schema BRIAPI v2.0
 
-Kolom `Response Body` pada ekspor SIT lokal kosong. Implementasi saat ini mengembalikan `virtualAccountData` berisi identitas VA, wajib pajak, total, `billDetails`, dan status inquiry/payment. Struktur ini belum dapat diberi status PASS karena tidak ada schema, contoh JSON, panjang field, mandatory/optional rule, atau aturan masking resmi pada sumber yang diaudit.
+Artefak BRIAPI v2.0 menyediakan contoh JSON serta mandatory/optional rule untuk field inti. Implementasi kini mengembalikan:
+
+- Inquiry: `virtualAccountData` dengan `partnerServiceId`, `customerNo`, `virtualAccountNo`, `virtualAccountName`, `inquiryRequestId`, `totalAmount`, `inquiryStatus`, dan object `inquiryReason` berisi `english` serta `indonesia`.
+- Payment: `virtualAccountData` dengan identitas VA, `paymentRequestId`, `paidAmount`, `paymentFlagStatus`, dan object `paymentFlagReason` berisi `english` serta `indonesia`.
+- Validator menerima field tambahan Payment yang didokumentasikan, yaitu `trxId`, `trxDateTime`, `hashedSourceAccountNo`, dan `additionalInfo.hashedSourceAccountName`, serta memastikan `paymentRequestId` sama dengan `inquiryRequestId` bila alur dimulai dari Inquiry.
+
+`additionalInfo.info1` sampai `info5` tetap optional dan belum diisi karena belum ada kebutuhan bisnis M-PAD untuk mengirim catatan tambahan kepada customer. `billDetails` tetap dipertahankan sebagai extension internal untuk multi-tagihan, sedangkan data kontak internal tidak lagi dikirim dalam response BRIVA.
+
+Status schema field inti: PASS berdasarkan artefak BRIAPI v2.0 dan feature regression lokal. Status UAT keseluruhan tetap OPEN karena aturan canonical string-to-sign, contoh request resmi, total panjang/expiry VA operasional, IP whitelist, serta lifecycle/status/report belum dikonfirmasi.
+
+## Keputusan Signature
+
+Konfirmasi BRI 2026-07-30 menyatakan request dari BRI memakai `RSA-SHA256` untuk `X-SIGNATURE`. Implementasi sekarang mendukung konfigurasi `rsa_sha256` dengan public key BRI dari `BRI_SNAP_PUBLIC_KEY` atau `BRI_SNAP_PUBLIC_KEY_PATH`; HMAC-SHA512 tetap tersedia hanya sebagai compatibility konfigurasi partner lain. BRI masih perlu memberi contoh request lengkap agar canonical string-to-sign, path yang masuk signature, dan encoding signature dapat dibuktikan terhadap sandbox mereka.
 
 Data yang masih dibutuhkan dari BRI:
 
@@ -61,7 +75,8 @@ Data yang masih dibutuhkan dari BRI:
 - aturan canonical string-to-sign serta path yang masuk ke signature;
 - konfirmasi service code final untuk error umum pada endpoint payment terhadap contoh response resmi;
 - aturan replay `X-EXTERNAL-ID` dengan payload identik;
-- daftar field mandatory, format, panjang, enum, dan decimal amount;
+- daftar field mandatory, format, panjang, enum, decimal amount, total panjang VA, dan expiry;
+- IP sumber BRI untuk whitelist bila sandbox ditembak dari IP tetap;
 - scope lifecycle/status/report VA yang benar-benar wajib untuk produk BRIVA M-PAD.
 
 ## Temuan Credential Hygiene

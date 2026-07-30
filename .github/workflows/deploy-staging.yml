@@ -3,7 +3,6 @@ name: Deploy to Staging (api.sipanda.online)
 on:
   push:
     branches:
-      - main
       - staging
 
 jobs:

@@ -20,18 +20,18 @@ abstract class SnapFeatureTestCase extends TestCase
     use RefreshDatabase;
 
     protected string $privateKey;
+
     protected string $publicKey;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        [$this->privateKey, $this->publicKey] = $this->keys();
-
         config([
             'snap.partners.BRI.partner_id' => 'BRI-PARTNER-TEST',
             'snap.partners.BRI.client_key' => 'BRI-CLIENT-TEST',
-            'snap.partners.BRI.public_key' => $this->publicKey,
+            'snap.partners.BRI.signature_algorithm' => 'hmac_sha512',
+            'snap.partners.BRI.signature_secret' => 'bri-test-signature-secret',
             'snap.security.require_bearer_token' => true,
             'snap.timestamp_tolerance_seconds' => 300,
             'snap.token_ttl_seconds' => 900,
@@ -57,10 +57,10 @@ abstract class SnapFeatureTestCase extends TestCase
 
         $headers = [
             'X-PARTNER-ID' => config('snap.partners.BRI.partner_id'),
-            'X-EXTERNAL-ID' => 'EXT-' . Str::uuid()->toString(),
+            'X-EXTERNAL-ID' => 'EXT-'.Str::uuid()->toString(),
             'X-TIMESTAMP' => $timestamp,
             'X-SIGNATURE' => $this->signature($path, $body, $timestamp),
-            'Authorization' => 'Bearer ' . $this->issueToken(),
+            'Authorization' => 'Bearer '.$this->issueToken(),
         ];
 
         return array_merge($headers, $overrides);
@@ -87,7 +87,7 @@ abstract class SnapFeatureTestCase extends TestCase
         ]);
 
         return Bill::factory()->create(array_merge([
-            'bill_number' => 'SKRD-SNAP-' . Str::upper(Str::random(8)),
+            'bill_number' => 'SKRD-SNAP-'.Str::upper(Str::random(8)),
             'taxpayer_id' => $taxpayer->id,
             'tax_object_id' => $taxObject->id,
             'opd_id' => $opd->id,
@@ -113,7 +113,7 @@ abstract class SnapFeatureTestCase extends TestCase
             'tax_object_id' => $bill->tax_object_id,
             'payment_channel' => 'BRI',
             'method' => 'VA',
-            'va_number' => $vaNumber ?? '777' . $bill->bill_number,
+            'va_number' => $vaNumber ?? '777'.$bill->bill_number,
             'amount_snapshot' => $bill->amount,
             'admin_fee_snapshot' => $bill->admin_fee ?? 0,
             'penalty_snapshot' => $bill->total_amount - $bill->amount - ($bill->admin_fee ?? 0),
@@ -128,17 +128,21 @@ abstract class SnapFeatureTestCase extends TestCase
             'partnerServiceId' => '777',
             'customerNo' => $bill->bill_number,
             'virtualAccountNo' => $vaNumber,
+            'inquiryRequestId' => (string) Str::uuid(),
         ];
     }
 
     protected function paymentBody(Bill $bill, string $vaNumber, ?string $amount = null): array
     {
-        return array_merge($this->inquiryBody($bill, $vaNumber), [
+        $body = $this->inquiryBody($bill, $vaNumber);
+
+        return array_merge($body, [
             'paidAmount' => [
                 'value' => $amount ?? number_format($bill->total_amount, 2, '.', ''),
                 'currency' => 'IDR',
             ],
-            'referenceNo' => 'BRI-REF-' . Str::upper(Str::random(6)),
+            'paymentRequestId' => $body['inquiryRequestId'],
+            'referenceNo' => 'BRI-REF-'.Str::upper(Str::random(6)),
         ]);
     }
 
@@ -147,9 +151,7 @@ abstract class SnapFeatureTestCase extends TestCase
         $canonical = app(SnapCanonicalRequest::class)->canonicalBodyFromArray($body);
         $stringToSign = app(SnapCanonicalRequest::class)->stringToSign('POST', $path, $canonical, $timestamp);
 
-        openssl_sign($stringToSign, $signature, $this->privateKey, OPENSSL_ALGO_SHA256);
-
-        return base64_encode($signature);
+        return base64_encode(hash_hmac('sha512', $stringToSign, 'bri-test-signature-secret', true));
     }
 
     private function issueToken(): string

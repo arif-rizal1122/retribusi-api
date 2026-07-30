@@ -14,7 +14,56 @@ class WaGatewayService
 
     public function __construct()
     {
-        $this->baseUrl = config('services.wa_gateway.url', 'http://localhost:3001');
+        $this->baseUrl = config('services.wa_gateway.url', 'http://localhost:5001');
+    }
+
+    /**
+     * Get WA Gateway Connection Status & QR Code
+     *
+     * @return array
+     */
+    public function getStatus(): array
+    {
+        try {
+            $response = Http::timeout(5)->get("{$this->baseUrl}/status");
+            if ($response->successful()) {
+                return $response->json();
+            }
+            return [
+                'status' => 'OFFLINE',
+                'connected' => false,
+                'user' => null,
+                'qr' => null,
+                'error' => 'WA Gateway service un-reachable'
+            ];
+        } catch (\Exception $e) {
+            Log::warning("WA Gateway Connection Error: " . $e->getMessage());
+            return [
+                'status' => 'OFFLINE',
+                'connected' => false,
+                'user' => null,
+                'qr' => null,
+                'error' => 'Service Gateway offline atau tidak aktif'
+            ];
+        }
+    }
+
+    /**
+     * Get QR Code Data URL
+     *
+     * @return array
+     */
+    public function getQrCode(): array
+    {
+        try {
+            $response = Http::timeout(5)->get("{$this->baseUrl}/qr");
+            if ($response->successful()) {
+                return $response->json();
+            }
+            return ['status' => 'OFFLINE', 'qr' => null];
+        } catch (\Exception $e) {
+            return ['status' => 'OFFLINE', 'qr' => null];
+        }
     }
 
     /**
@@ -28,27 +77,9 @@ class WaGatewayService
     {
         try {
             $message = "Halo! Ini adalah kode OTP M-PAD Kota Baubau Anda: *$otp*\n\nKode ini bersifat rahasia. JANGAN BERIKAN kepada siapapun termasuk petugas Bapenda.\n\nBerlaku selama 5 menit.";
-            
-            // Format phone number to start with 62
-            if (str_starts_with($phone, '0')) {
-                $phone = '62' . substr($phone, 1);
-            }
-            
-            $response = Http::timeout(10)->post("{$this->baseUrl}/send-message", [
-                'number' => $phone . '@s.whatsapp.net',
-                'message' => $message,
-            ]);
-
-            if ($response->successful()) {
-                Log::info("OTP sent to {$phone} successfully.");
-                return true;
-            }
-
-            Log::error("Failed to send OTP to {$phone}. WA Gateway returned: " . $response->body());
-            return false;
-
+            return $this->sendMessage($phone, $message);
         } catch (\Exception $e) {
-            Log::error("WA Gateway Exception: " . $e->getMessage());
+            Log::error("WA Gateway Exception (OTP): " . $e->getMessage());
             return false;
         }
     }
@@ -63,19 +94,44 @@ class WaGatewayService
     public function sendMessage(string $phone, string $message): bool
     {
         try {
-            if (str_starts_with($phone, '0')) {
-                $phone = '62' . substr($phone, 1);
+            $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+            if (str_starts_with($cleanPhone, '0')) {
+                $cleanPhone = '62' . substr($cleanPhone, 1);
             }
 
             $response = Http::timeout(10)->post("{$this->baseUrl}/send-message", [
-                'number' => $phone . '@s.whatsapp.net',
+                'number' => $cleanPhone,
                 'message' => $message,
             ]);
 
-            return $response->successful();
+            if ($response->successful()) {
+                Log::info("WhatsApp message sent to +{$cleanPhone} successfully.");
+                return true;
+            }
+
+            Log::error("Failed to send WhatsApp message to +{$cleanPhone}: " . $response->body());
+            return false;
         } catch (\Exception $e) {
             Log::error("WA Gateway Exception: " . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Logout / Disconnect current session
+     *
+     * @return array
+     */
+    public function logoutSession(): array
+    {
+        try {
+            $response = Http::timeout(5)->post("{$this->baseUrl}/logout");
+            if ($response->successful()) {
+                return $response->json();
+            }
+            return ['success' => false, 'error' => 'Gagal memutus koneksi gateway'];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 }

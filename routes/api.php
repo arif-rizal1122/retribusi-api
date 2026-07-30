@@ -194,6 +194,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     // Citizen Specific Actions
     Route::group(['prefix' => 'citizen'], function () {
         Route::get('/bills', [BillController::class, 'citizenBills']);
+        Route::get('/tax-objects', [\App\Http\Controllers\CitizenServiceController::class, 'taxObjects']);
 
         // Pembayaran
         Route::get('/payments/history', [PaymentController::class, 'history']);
@@ -212,7 +213,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'store']);
         Route::get('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
         Route::post('/complaints', [ComplaintController::class, 'store']);
-        Route::get('/complaints', [ComplaintController::class, 'index']);
+        Route::get('/complaints', [ComplaintController::class, 'citizenIndex']);
 
         // Pendaftaran NOP Mandiri (Warga)
         Route::post('/pbb/nop-applications', [PbbNopApplicationController::class, 'store']);
@@ -225,6 +226,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::delete('/unlink-nop/{id}', [PbbBapendaController::class, 'unlinkNop']);
         Route::get('/my-objects', [PbbBapendaController::class, 'myObjects']);
         Route::get('/my-transactions', [PbbBapendaController::class, 'myTransactions']);
+        Route::get('/transactions/{transaction}/receipt', [PbbBapendaController::class, 'downloadReceipt']);
         Route::post('/pay', [PbbBapendaController::class, 'pay']);
         Route::get('/download-sppt', [PbbBapendaController::class, 'downloadSPPT']);
     });
@@ -282,6 +284,14 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/stats', [DashboardController::class, 'getStats']);
             Route::get('/revenue-trend', [DashboardController::class, 'getRevenueTrend']);
             Route::get('/map-potentials', [DashboardController::class, 'getMapPotentials']);
+        });
+
+        // WA Gateway Management (Baileys)
+        Route::prefix('admin/wa-gateway')->group(function () {
+            Route::get('/status', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'status']);
+            Route::get('/qr', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'qr']);
+            Route::post('/send-test', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'sendTest']);
+            Route::post('/logout', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'logout']);
         });
 
         Route::prefix('pengawas')->group(function () {

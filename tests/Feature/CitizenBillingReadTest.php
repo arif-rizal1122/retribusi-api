@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Bill;
 use App\Models\Opd;
 use App\Models\Payment;
+use App\Models\PaymentRequest;
+use App\Models\PaymentRequestItem;
 use App\Models\RetributionClassification;
 use App\Models\RetributionType;
 use App\Models\TaxObject;
@@ -19,12 +21,16 @@ class CitizenBillingReadTest extends TestCase
     use RefreshDatabase;
 
     private Opd $opd;
+
     private RetributionType $retributionType;
+
     private RetributionClassification $classification;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        config(['snap.briva.enabled' => false]);
 
         $this->opd = Opd::factory()->create();
         $this->retributionType = RetributionType::factory()->create([
@@ -41,8 +47,42 @@ class CitizenBillingReadTest extends TestCase
         $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
         $this->createBill($taxpayer);
 
-        $this->getJson('/api/citizen/bills?nik=' . $taxpayer->nik)
+        $this->getJson('/api/citizen/bills?nik='.$taxpayer->nik)
             ->assertUnauthorized();
+    }
+
+    public function test_citizen_tax_objects_are_owner_scoped_and_include_sptpd_contract(): void
+    {
+        $this->classification->update([
+            'is_self_assessment' => true,
+            'calculation_formula' => 'turnover_amount * 0.1',
+        ]);
+        $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
+        $otherTaxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
+        $ownObject = TaxObject::factory()->create([
+            'opd_id' => $this->opd->id,
+            'taxpayer_id' => $taxpayer->id,
+            'retribution_type_id' => $this->retributionType->id,
+            'retribution_classification_id' => $this->classification->id,
+        ]);
+        $otherObject = TaxObject::factory()->create([
+            'opd_id' => $this->opd->id,
+            'taxpayer_id' => $otherTaxpayer->id,
+            'retribution_type_id' => $this->retributionType->id,
+            'retribution_classification_id' => $this->classification->id,
+        ]);
+
+        Sanctum::actingAs($taxpayer);
+
+        $response = $this->getJson('/api/citizen/tax-objects');
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $ownObject->id)
+            ->assertJsonPath('data.0.classification.is_self_assessment', true)
+            ->assertJsonPath('data.0.classification.calculation_formula', 'turnover_amount * 0.1');
+
+        $this->assertNotSame($otherObject->id, $response->json('data.0.id'));
     }
 
     public function test_citizen_bill_list_is_owner_scoped_and_paginated(): void
@@ -58,7 +98,7 @@ class CitizenBillingReadTest extends TestCase
 
         Sanctum::actingAs($taxpayer);
 
-        $response = $this->getJson('/api/citizen/bills?per_page=2&nik=' . $otherTaxpayer->nik);
+        $response = $this->getJson('/api/citizen/bills?per_page=2&nik='.$otherTaxpayer->nik);
 
         $response->assertOk()
             ->assertJsonCount(2, 'data')
@@ -90,6 +130,11 @@ class CitizenBillingReadTest extends TestCase
             'due_date' => now()->addDay(),
         ]);
         $this->createPayment($pendingVerificationBill);
+        $activeBrivaBill = $this->createBill($taxpayer, [
+            'status' => 'pending',
+            'due_date' => now()->addDay(),
+        ]);
+        $activePaymentRequest = $this->createPaymentRequest($activeBrivaBill);
 
         Sanctum::actingAs($taxpayer);
 
@@ -100,6 +145,7 @@ class CitizenBillingReadTest extends TestCase
 
         $this->assertSame('pending', $bills[$pendingBill->id]['status']);
         $this->assertTrue($bills[$pendingBill->id]['can_pay']);
+        $this->assertFalse($bills[$pendingBill->id]['payment_options']['bri_va']['available']);
         $this->assertSame('overdue', $bills[$overdueBill->id]['status']);
         $this->assertTrue($bills[$overdueBill->id]['can_pay']);
         $this->assertSame('paid', $bills[$paidBill->id]['status']);
@@ -110,6 +156,47 @@ class CitizenBillingReadTest extends TestCase
         $this->assertSame('Menunggu verifikasi pembayaran', $bills[$pendingVerificationBill->id]['status_label']);
         $this->assertFalse($bills[$pendingVerificationBill->id]['can_pay']);
         $this->assertArrayNotHasKey('has_pending_payment_claim', $bills[$pendingVerificationBill->id]);
+        $this->assertSame('pending_verification', $bills[$activeBrivaBill->id]['status']);
+        $this->assertSame('Menunggu pembayaran BRIVA', $bills[$activeBrivaBill->id]['status_label']);
+        $this->assertFalse($bills[$activeBrivaBill->id]['can_pay']);
+        $this->assertArrayNotHasKey('has_active_payment_request', $bills[$activeBrivaBill->id]);
+        $this->assertSame((string) $activePaymentRequest->id, $bills[$activeBrivaBill->id]['active_payment_request']['id']);
+        $this->assertSame('bri_va', $bills[$activeBrivaBill->id]['active_payment_request']['method']);
+        $this->assertSame('777'.$activeBrivaBill->bill_number, $bills[$activeBrivaBill->id]['active_payment_request']['va_number']);
+        $this->assertTrue($bills[$activeBrivaBill->id]['active_payment_request']['can_cancel']);
+    }
+
+    public function test_briva_option_is_advertised_only_when_runtime_config_is_ready(): void
+    {
+        $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
+        $bill = $this->createBill($taxpayer, [
+            'status' => 'pending',
+            'due_date' => now()->addDay(),
+        ]);
+
+        Sanctum::actingAs($taxpayer);
+
+        $this->getJson('/api/citizen/bills?per_page=100')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $bill->id)
+            ->assertJsonPath('data.0.payment_options.bri_va.available', false)
+            ->assertJsonPath('data.0.payment_options.bri_va.message', 'Channel BRIVA belum tersedia. Gunakan metode pembayaran lain.');
+
+        config([
+            'snap.briva.enabled' => true,
+            'snap.partners.BRI.partner_id' => 'BRI-PARTNER-LOCAL',
+            'snap.partners.BRI.client_key' => 'BRI-CLIENT-LOCAL',
+            'snap.partners.BRI.signature_algorithm' => 'hmac_sha512',
+            'snap.partners.BRI.signature_secret' => 'bri-test-signature-secret',
+            'snap.briva.va_prefix' => '777',
+            'snap.briva.va_length' => 18,
+        ]);
+
+        $this->getJson('/api/citizen/bills?per_page=100')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $bill->id)
+            ->assertJsonPath('data.0.payment_options.bri_va.available', true)
+            ->assertJsonPath('data.0.payment_options.bri_va.message', null);
     }
 
     public function test_citizen_payment_history_is_owner_scoped_and_hides_internal_payloads(): void
@@ -149,6 +236,7 @@ class CitizenBillingReadTest extends TestCase
 
         $this->getJson('/api/citizen/bills')->assertForbidden();
         $this->getJson('/api/citizen/payments/history')->assertForbidden();
+        $this->getJson('/api/citizen/tax-objects')->assertForbidden();
     }
 
     private function createBill(Taxpayer $taxpayer, array $overrides = []): Bill
@@ -176,7 +264,7 @@ class CitizenBillingReadTest extends TestCase
             'bill_id' => $bill->id,
             'taxpayer_id' => $bill->taxpayer_id,
             'tax_object_id' => $bill->tax_object_id,
-            'transaction_id' => 'PAY-' . $bill->id,
+            'transaction_id' => 'PAY-'.$bill->id,
             'reference_number' => null,
             'receipt_number' => null,
             'payment_method' => 'transfer',
@@ -187,5 +275,31 @@ class CitizenBillingReadTest extends TestCase
             'paid_at' => now(),
             'proof_url' => 'https://example.test/proof.jpg',
         ], $overrides));
+    }
+
+    private function createPaymentRequest(Bill $bill): PaymentRequest
+    {
+        $paymentRequest = PaymentRequest::create([
+            'bill_id' => $bill->id,
+            'taxpayer_id' => $bill->taxpayer_id,
+            'tax_object_id' => $bill->tax_object_id,
+            'payment_channel' => 'BRI',
+            'method' => 'VA',
+            'va_number' => '777'.$bill->bill_number,
+            'amount_snapshot' => $bill->amount,
+            'admin_fee_snapshot' => $bill->admin_fee ?? 0,
+            'penalty_snapshot' => $bill->total_amount - $bill->amount - ($bill->admin_fee ?? 0),
+            'expires_at' => now()->addDay(),
+            'status' => 'pending',
+        ]);
+
+        PaymentRequestItem::create([
+            'payment_request_id' => $paymentRequest->id,
+            'bill_id' => $bill->id,
+            'amount_snapshot' => $bill->total_amount,
+            'status' => 'pending',
+        ]);
+
+        return $paymentRequest;
     }
 }

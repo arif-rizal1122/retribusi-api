@@ -21,7 +21,10 @@ class SnapBrivaService
 
         return $this->virtualAccountData($request, $bill, [
             'inquiryStatus' => '00',
-            'inquiryReason' => 'Success',
+            'inquiryReason' => [
+                'english' => 'Success',
+                'indonesia' => 'Sukses',
+            ],
         ], $paymentRequest);
     }
 
@@ -51,7 +54,7 @@ class SnapBrivaService
                 $lockedBill = Bill::whereKey($item->bill->id)->lockForUpdate()->firstOrFail();
 
                 if ($this->isPaid($lockedBill)) {
-                    throw new SnapPaymentException('4042514', 'Bill has been paid', 404);
+                    throw new SnapPaymentException('4042514', 'Paid Bill', 404);
                 }
 
                 $lockedBill->update([
@@ -92,7 +95,10 @@ class SnapBrivaService
 
             return $this->virtualAccountData($request, $lockedBill, [
                 'paymentFlagStatus' => '00',
-                'paymentFlagReason' => 'Success',
+                'paymentFlagReason' => [
+                    'english' => 'Success',
+                    'indonesia' => 'Sukses',
+                ],
             ], $paymentRequest);
         });
     }
@@ -101,16 +107,20 @@ class SnapBrivaService
     {
         [$bill, $paymentRequest] = $this->resolveBill($request);
 
-        if (! $bill) {
-            throw new SnapPaymentException("404{$serviceCode}12", 'Bill not found', 404);
+        if (! $bill || ! $paymentRequest) {
+            throw new SnapPaymentException("404{$serviceCode}12", 'Invalid Bill/Virtual Account [Reason]', 404);
         }
 
-        if ($paymentRequest && $paymentRequest->expires_at && $paymentRequest->expires_at->isPast()) {
-            throw new SnapPaymentException("404{$serviceCode}19", 'Bill expired', 404);
+        if ($paymentRequest->status === 'expired' || ($paymentRequest->expires_at && $paymentRequest->expires_at->isPast())) {
+            throw new SnapPaymentException("403{$serviceCode}00", 'Transaction Expired', 403);
+        }
+
+        if ($paymentRequest->status !== 'pending') {
+            throw new SnapPaymentException("404{$serviceCode}12", 'Invalid Bill/Virtual Account [Reason]', 404);
         }
 
         if ($this->isPaid($bill)) {
-            throw new SnapPaymentException("404{$serviceCode}14", 'Bill has been paid', 404);
+            throw new SnapPaymentException("404{$serviceCode}14", 'Paid Bill', 404);
         }
 
         return [$bill, $paymentRequest];
@@ -132,14 +142,6 @@ class SnapBrivaService
 
         $bill = $paymentRequest?->bill;
 
-        if (! $bill && $customerNo !== '') {
-            $bill = Bill::where('bill_number', $customerNo)->first();
-        }
-
-        if (! $bill && $virtualAccountNo !== '') {
-            $bill = Bill::where('bill_number', $virtualAccountNo)->first();
-        }
-
         return [$bill, $paymentRequest];
     }
 
@@ -158,13 +160,11 @@ class SnapBrivaService
             ],
         ])->all();
 
-        return array_merge([
+        $data = array_merge([
             'partnerServiceId' => $partnerServiceId,
             'customerNo' => $customerNo,
             'virtualAccountNo' => $virtualAccountNo,
             'virtualAccountName' => $bill->taxpayer->name ?? 'Wajib Pajak',
-            'virtualAccountEmail' => $bill->taxpayer->email ?? '',
-            'virtualAccountPhone' => $bill->taxpayer->phone ?? '',
             'totalAmount' => [
                 'value' => $totalAmount,
                 'currency' => 'IDR',
@@ -180,6 +180,20 @@ class SnapBrivaService
                 ],
             ],
         ], $status);
+
+        if (array_key_exists('inquiryStatus', $status)) {
+            $data['inquiryRequestId'] = (string) $request->input('inquiryRequestId');
+        }
+
+        if (array_key_exists('paymentFlagStatus', $status)) {
+            $data['paymentRequestId'] = (string) $request->input('paymentRequestId');
+            $data['paidAmount'] = [
+                'value' => $this->money($this->extractAmount($request)),
+                'currency' => 'IDR',
+            ];
+        }
+
+        return $data;
     }
 
     private function expectedAmount(Bill $bill, ?PaymentRequest $paymentRequest): float
