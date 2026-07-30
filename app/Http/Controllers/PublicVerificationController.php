@@ -18,7 +18,7 @@ class PublicVerificationController extends Controller
             ->first();
 
         if (!$bill) {
-            return view('verification.invalid', ['number' => $number]);
+            return view('verification.invalid', ['number' => $number, 'title' => 'Dokumen Tidak Ditemukan']);
         }
 
         // --- Advanced Billing V2: Real-time Penalty Sync on Verification ---
@@ -51,7 +51,7 @@ class PublicVerificationController extends Controller
             ->first();
 
         if (!$bill || $bill->status !== 'lunas' && $bill->status !== 'paid') {
-            return view('verification.invalid', ['number' => $number]);
+            return view('verification.invalid', ['number' => $number, 'title' => 'Dokumen Tidak Ditemukan']);
         }
 
         return view('verification.payment', [
