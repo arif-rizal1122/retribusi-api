@@ -20,6 +20,7 @@ Terakhir diperbarui: 2026-07-30
 - [x] **PAY-XCH-001** Tutup konflik lintas channel: klaim manual pending memblokir create BRIVA, BRIVA aktif memblokir klaim manual, approval manual ditolak bila bill sudah settled oleh pembayaran lain, serta callback SNAP hanya menerima `payment_request` BRIVA yang masih `pending`.
 - [x] **PAY-GATE-001** Tambahkan readiness gate BRIVA default-off: `BRI_SNAP_ENABLED=false`, validasi partner/client key, public key, prefix/length VA, prefix dummy hanya untuk local/testing, serta IP whitelist untuk non-local sebelum API mengiklankan atau menerima BRIVA.
 - [x] **PAY-GATE-001** Jawaban BRI 2026-07-30 diterapkan pada readiness/docs: signature sandbox BRI memakai RSA-SHA256, prefix `19960` boleh menjadi prefix sandbox resmi tanpa `partnerServiceId`, path sebelum `/snap` bebas, dan BRImo production bukan channel uji sandbox.
+- [x] **PAY-GATE-001** Tambahkan command read-only `snap:briva-sandbox-handoff` untuk mencetak paket VA/endpoint sandbox yang aman dibagikan ke BRI tanpa credential, token, key, NIK, atau nomor HP.
 - [BLOCKED] **PAY-SNAP-LIFE-001** Implementasikan status/create/update/delete/report VA setelah BRI mengonfirmasi scope produk, path, dan schema response.
 - [BLOCKED] **PAY-SEC-001** Konfirmasi status, rotasi bila aktif, dan redaksi credential-like values pada dokumen sandbox tracked; rewrite history hanya dengan otorisasi eksplisit.
 

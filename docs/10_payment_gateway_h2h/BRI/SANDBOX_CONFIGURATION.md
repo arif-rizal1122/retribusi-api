@@ -106,6 +106,16 @@ php artisan test tests/Feature/Payment/Snap tests/Unit/Payment/Snap --do-not-cac
 
 Baseline lokal 2026-07-28: suite feature dan unit SNAP lulus 39 test dengan 140 assertion untuk scope SNAP. Hasil lokal ini tetap bukan bukti kelulusan sandbox/UAT dengan credential dan skenario resmi BRI.
 
+## Menyiapkan VA untuk Trigger BRI
+
+Setelah payment request BRIVA aktif dibuat dari aplikasi warga/API, operator dapat mencetak paket handoff yang aman dibagikan ke BRI sandbox:
+
+```powershell
+php artisan snap:briva-sandbox-handoff {payment_request_id} --base-url=https://apimpad.baubaukota.go.id --json
+```
+
+Output command berisi nomor VA, `partnerServiceId`/`customerNo` hasil mapping konfigurasi saat ini, nominal, expiry, daftar nomor tagihan, serta URL token/inquiry/payment. Command ini read-only dan tidak mencetak credential, token, public key, private key, NIK, atau nomor HP.
+
 ## Checklist Sebelum Menyerahkan Callback ke BRI
 
 - [ ] Domain sandbox dapat diakses melalui HTTPS dengan sertifikat valid.
