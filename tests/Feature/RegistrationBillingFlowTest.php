@@ -143,8 +143,8 @@ class RegistrationBillingFlowTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors([
                 'tax_object.address',
-                'taxpayer.district',
-                'taxpayer.sub_district',
+                'tax_object.district',
+                'tax_object.sub_district',
             ]);
 
         $this->assertDatabaseHas('tax_objects', [
