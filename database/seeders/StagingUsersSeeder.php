@@ -49,7 +49,7 @@ class StagingUsersSeeder extends Seeder
 
         // 3. Mobile/Citizen Staging (mpad.online)
         Taxpayer::updateOrCreate(
-            ['nik' => '0000000000000001'],
+            ['nik' => '0000000000000001', 'email' => 'wajibpajak@mpad.online'],
             [
                 'name' => 'Staging Mobile User',
                 'password' => Hash::make('password123'),
