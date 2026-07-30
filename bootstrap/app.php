@@ -31,6 +31,9 @@ return Application::configure(basePath: dirname(__DIR__))
             $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
             return $response;
         });
+        $exceptions->reportable(function (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::error('Validation Failed:', $e->errors());
+        });
         \Sentry\Laravel\Integration::handles($exceptions);
     })->create();
 // Deploy trigger: Wed Mar 11 08:02:35 WITA 2026

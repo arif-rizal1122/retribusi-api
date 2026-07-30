@@ -318,6 +318,9 @@ class AuthController extends Controller
 
         $token = $taxpayer->createToken('citizen_token')->plainTextToken;
 
+        // Dispatch background job to sync BPN assets
+        \App\Jobs\SyncBpnTaxpayerAssetsJob::dispatch($taxpayer);
+
         return response()->json([
             'user' => $taxpayer,
             'token' => $token,
