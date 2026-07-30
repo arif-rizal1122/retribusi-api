@@ -177,16 +177,15 @@ class AuthController extends Controller
     public function requestCitizenOtp(Request $request, WaGatewayService $waGateway)
     {
         $request->validate([
-            'nik' => 'required|string|size:16',
             'phone' => 'required|string',
         ]);
 
-        $taxpayer = \App\Models\Taxpayer::where('nik', $request->nik)->first();
+        // Clean phone number (remove +62, leading 0, etc to standardize? For now we just exact match)
+        $taxpayer = \App\Models\Taxpayer::where('phone', $request->phone)->first();
 
         if (!$taxpayer) {
-            // Auto register taxpayer if not found? No, they should register, but for now we just return error
             return response()->json([
-                'message' => 'NIK tidak terdaftar'
+                'message' => 'Nomor WhatsApp tidak terdaftar di sistem'
             ], 404);
         }
 
@@ -200,12 +199,7 @@ class AuthController extends Controller
         $otp = (string) random_int(100000, 999999);
         
         // Save OTP to Cache for 5 minutes
-        Cache::put("otp_citizen_{$request->nik}", $otp, now()->addMinutes(5));
-
-        // Update phone if different
-        if ($taxpayer->phone !== $request->phone) {
-            $taxpayer->update(['phone' => $request->phone]);
-        }
+        Cache::put("otp_citizen_{$request->phone}", $otp, now()->addMinutes(5));
 
         // Send via WA
         $sent = $waGateway->sendOtp($request->phone, $otp);
@@ -227,14 +221,14 @@ class AuthController extends Controller
     public function verifyCitizenOtp(Request $request)
     {
         $request->validate([
-            'nik' => 'required|string|size:16',
+            'phone' => 'required|string',
             'otp' => 'required|string|size:6',
         ]);
 
-        $cachedOtp = Cache::get("otp_citizen_{$request->nik}");
+        $cachedOtp = Cache::get("otp_citizen_{$request->phone}");
 
         // Bypass for demo account logic (1234567890123456)
-        $isDemo = ($request->nik === '1234567890123456' || $request->nik === '1234567890123457') && $request->otp === '123456';
+        $isDemo = ($request->phone === '081234567890') && $request->otp === '123456';
 
         if (!$isDemo && (!$cachedOtp || $cachedOtp !== $request->otp)) {
             return response()->json([
@@ -242,16 +236,16 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $taxpayer = \App\Models\Taxpayer::where('nik', $request->nik)->first();
+        $taxpayer = \App\Models\Taxpayer::where('phone', $request->phone)->first();
 
         if (!$taxpayer) {
             return response()->json([
-                'message' => 'NIK tidak terdaftar'
+                'message' => 'Nomor WhatsApp tidak terdaftar'
             ], 404);
         }
 
         // Clear OTP after successful login
-        Cache::forget("otp_citizen_{$request->nik}");
+        Cache::forget("otp_citizen_{$request->phone}");
 
         $token = $taxpayer->createToken('citizen_token')->plainTextToken;
 
@@ -263,22 +257,57 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Login citizen (taxpayer) using NIK and Password (DEPRECATED - keep for backward compat)
-     */
     public function citizenLogin(Request $request)
     {
         $request->validate([
-            'nik' => 'required|string',
-            'password' => 'required|string',
+            'method' => 'required|in:email,nik',
+            'identifier' => 'required|string',
+            'password' => 'required_if:method,email|string',
         ]);
 
-        $taxpayer = \App\Models\Taxpayer::where('nik', $request->nik)->first();
+        $query = \App\Models\Taxpayer::query();
+        
+        if ($request->method === 'email') {
+            $query->where('email', $request->identifier);
+        } else {
+            $query->where('nik', $request->identifier);
+        }
+        
+        $taxpayer = $query->first();
 
-        if (!$taxpayer || !Hash::check($request->password, $taxpayer->password)) {
+        if (!$taxpayer) {
             return response()->json([
-                'message' => 'NIK atau password salah'
-            ], 401);
+                'message' => 'Akun tidak ditemukan'
+            ], 404);
+        }
+
+        if ($request->method === 'email') {
+            if (!$taxpayer->password || !Hash::check($request->password, $taxpayer->password)) {
+                return response()->json([
+                    'message' => 'Email atau password salah'
+                ], 401);
+            }
+        } else {
+            // For NIK (IKD Dummy), require mother_name check
+            if (!$request->has('mother_name')) {
+                return response()->json([
+                    'message' => 'Nama Ibu Kandung wajib diisi untuk verifikasi NIK'
+                ], 401);
+            }
+
+            $metadata = $taxpayer->metadata ?? [];
+            if (is_string($metadata)) {
+                $metadata = json_decode($metadata, true) ?: [];
+            }
+            $storedMotherName = $metadata['mother_name'] ?? null;
+            $cleanInput = strtolower(preg_replace('/\s+/', '', $request->mother_name));
+            $cleanStored = $storedMotherName ? strtolower(preg_replace('/\s+/', '', $storedMotherName)) : '';
+            
+            if (!$storedMotherName || $cleanInput !== $cleanStored) {
+                return response()->json([
+                    'message' => 'Nama Ibu Kandung tidak cocok dengan data verifikasi'
+                ], 401);
+            }
         }
 
         if (!$taxpayer->is_active) {
@@ -305,19 +334,36 @@ class AuthController extends Controller
         $request->validate([
             'nik' => 'required|string|size:16|unique:taxpayers,nik',
             'name' => 'required|string',
+            'email' => 'nullable|email|unique:taxpayers,email',
             'opd_id' => 'nullable|exists:opds,id',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => 'nullable|string|min:6|confirmed',
             'address' => 'nullable|string',
             'phone' => 'nullable|string',
+            'district' => 'nullable|string',
+            'sub_district' => 'nullable|string',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'mother_name' => 'nullable|string'
         ]);
+
+        $metadata = [];
+        if ($request->has('mother_name')) {
+            $metadata['mother_name'] = $request->mother_name;
+        }
 
         $taxpayer = \App\Models\Taxpayer::create([
             'nik' => strip_tags($request->nik),
             'name' => strip_tags($request->name),
+            'email' => $request->email,
             'opd_id' => $request->opd_id, // Will be null if not provided
             'address' => strip_tags($request->address),
             'phone' => strip_tags($request->phone),
-            'password' => Hash::make($request->password),
+            'district' => strip_tags($request->district),
+            'sub_district' => strip_tags($request->sub_district),
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'password' => $request->password ? Hash::make($request->password) : null,
+            'metadata' => $metadata,
             'is_active' => true,
         ]);
 

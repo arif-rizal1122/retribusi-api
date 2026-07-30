@@ -22,6 +22,7 @@ class Taxpayer extends Authenticatable
 
     protected $fillable = [
         'opd_id',
+        'email',
         'nik',
         'name',
         'address',
