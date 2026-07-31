@@ -65,7 +65,7 @@ class CitizenServiceController extends Controller
 
                 return [
                     'id' => $cls->id,
-                    'name' => $cls->name,
+                    'name' => $this->shortServiceName($cls->name),
                     'type_id' => $cls->retribution_type_id,
                     'type_name' => $cls->retributionType->name,
                     'category' => $cls->retributionType->category,
@@ -80,6 +80,49 @@ class CitizenServiceController extends Controller
             });
 
         return response()->json(['data' => $classifications]);
+    }
+
+    /**
+     * Short display names for citizen-facing service list (home beranda).
+     * Mapping based on official classification names in retribution_classifications.
+     */
+    private function shortServiceName(string $name): string
+    {
+        $shortNames = [
+            'PBB-P2' => 'PBB',
+            'BPHTB' => 'BPHTB',
+            'Pajak Reklame' => 'Reklame',
+            'Pajak MBLB' => 'MBLB',
+            'Pajak Sarang Burung Walet' => 'Walet',
+            'Opsen Pajak' => 'PKB',
+            'PBJT - Makan dan Minum' => 'Makan Minum',
+            'PBJT - Jasa Perhotelan' => 'Hotel',
+            'PBJT - Jasa Kesenian dan Hiburan' => 'Hiburan',
+            'Hiburan Malam (Khusus)' => 'Hiburan Malam',
+            'PBJT - Tenaga Listrik' => 'Listrik',
+            'PBJT - Jasa Parkir' => 'Parkir',
+            'Pajak Air Tanah' => 'Air Tanah',
+            'Retribusi Persampahan' => 'Sampah',
+            'Retribusi Pelayanan Parkir' => 'Parkir',
+            'Retribusi PKD (Kios/Pasar)' => 'PKD/Pasar',
+            'Retribusi Pelayanan Kesehatan' => 'Kesehatan',
+            'Retribusi Pelayanan Pasar' => 'Pasar',
+            'Retribusi Jasa Umum Lainnya' => 'Jasa Umum',
+            'Tempat Kegiatan Usaha (Pasar Grosir, Pertokoan)' => 'Tempat Kegiatan Usaha',
+            'Tempat Pelelangan (Ikan, Ternak, Hasil Bumi)' => 'Pelelangan',
+            'Tempat Khusus Parkir (Luar Badan Jalan)' => 'Parkir Khusus',
+            'Penginapan / Pesanggrahan / Vila' => 'Penginapan',
+            'Rumah Pemotongan Hewan' => 'RPH',
+            'Jasa Kepelabuhanan' => 'Kepelabuhanan',
+            'Rekreasi, Pariwisata & Olahraga' => 'Rekreasi',
+            'Penjualan Hasil Produksi Pemda' => 'Hasil Produksi',
+            'Pemanfaatan Aset Daerah' => 'Aset Daerah',
+            'Persetujuan Bangunan Gedung (PBG)' => 'PBG',
+            'Penggunaan Tenaga Kerja Asing (TKA)' => 'TKA',
+            'Pemanfaatan Aset Daerah Lainnya' => 'Aset Lainnya',
+        ];
+
+        return $shortNames[$name] ?? $name;
     }
 
     /**
