@@ -265,7 +265,7 @@ class BillController extends Controller
         $bills = Bill::with([
             'retributionType',
             'opd',
-            'taxObject',
+            'taxObject.classification',
             'classification',
             'paymentRequestItems' => fn ($query) => $query
                 ->whereHas('paymentRequest', $activePaymentRequest)
