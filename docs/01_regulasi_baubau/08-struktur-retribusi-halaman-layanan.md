@@ -1,7 +1,7 @@
 # Struktur Retribusi Daerah — Halaman Layanan-Retribusi
 
 > Dokumen acuan implementasi tabulasi Retribusi di halaman `/layanan-retribusi`.
-> Disusun berdasarkan **Perda No. 1 Tahun 2024 tentang Pajak Daerah dan Retribusi Daerah Kota Baubau** dan **Pasal 88 ayat (3) UU No. 1 Tahun 2022 (UU HKPD)**.
+> Disusun berdasarkan **Perda No. 1 Tahun 2024 tentang Pajak Daerah dan Retribusi Daerah Kota Baubau** dan **Pasal 88 ayat (3) & Pasal 87 ayat (1) UU No. 1 Tahun 2022 (UU HKPD)**.
 > Sumber teks pasal: https://djpk.kemenkeu.go.id/wp-content/uploads/2022/01/Salinan-UU-Nomor-1-Tahun-2022.pdf
 
 ---
@@ -68,12 +68,21 @@ Jenis penyediaan/pelayanan barang dan/atau jasa yang menjadi objek Retribusi Jas
 
 ---
 
-## 4. Retribusi Perizinan Tertentu — Catatan Perubahan
+## 4. Retribusi Perizinan Tertentu — Objek Pasal 87 ayat (1) huruf c
+
+Jenis pelayanan pemberian izin yang menjadi objek Retribusi Perizinan Tertentu:
+
+- **a.** Persetujuan bangunan gedung (PBG).
+- **b.** Penggunaan tenaga kerja asing (TKA).
+
+**Total objek Perizinan Tertentu yang diimplementasikan: 2** (a–b).
+
+### Perubahan & Catatan
 
 - **Izin Gangguan** (Perda 34/2012) — ❌ **TIDAK BERLAKU** (terhapus, tidak diimplementasikan).
 - **Izin Trayek** (Perda 23/2012) — ❌ **TIDAK BERLAKU** (tidak diimplementasikan).
 - **Izin Usaha Perikanan** (Perda 35/2012) — 🔄 **GANTI NAMA** (menyesuaikan regulasi terbaru; verifikasi penamaan final).
-- **IMB** (Perda 7/2018) — perlu verifikasi status (IMB/PBG) sebelum dimasukkan.
+- **IMB** — digantikan konsep **Persetujuan Bangunan Gedung (PBG)** sesuai objek (a).
 
 ---
 
@@ -99,15 +108,15 @@ Tab: [Pajak] [Retribusi] [Aset lainnya]
              │   • Penjualan Hasil Produksi Pemda (i)
              │   • Pemanfaatan Aset Daerah (j)
              │
-             └─ 🟠 Perizinan Tertentu (aktif saja)
-                 • IMB/PBG (verifikasi status)
-                 • (jenis aktif lainnya)
+             └─ 🟠 Perizinan Tertentu (2 — Pasal 87(1)c)
+                 • Persetujuan Bangunan Gedung (PBG)
+                 • Penggunaan Tenaga Kerja Asing (TKA)
 ```
 
 ### Catatan Implementasi
 
 1. **Tab Pajak** — tidak berubah, tetap seperti biasa (PBB-P2, BPHTB, Pajak Reklame, MBLB, Walet, Opsen, PBJT, Air Tanah, dll).
-2. **Tab Retribusi** — 3 sub-grup: Jasa Umum (4), Jasa Usaha (9), Perizinan Tertentu (aktif).
+2. **Tab Retribusi** — 3 sub-grup: Jasa Umum (4), Jasa Usaha (9), Perizinan Tertentu (2).
 3. **Tab Aset lainnya** — layanan terkait aset daerah.
 4. **Grouping backend**: service `category` diarahkan ke nilai: `pajak`, `jasa_umum`, `jasa_usaha`, `perizinan`, `aset` — frontend cukup render grouping.
 5. **Jasa Usaha huruf h (penyeberangan air)**: dipastikan tidak ada di data/klasifikasi aktif M-PAD.
