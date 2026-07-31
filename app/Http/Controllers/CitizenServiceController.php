@@ -93,7 +93,7 @@ class CitizenServiceController extends Controller
             'BPHTB' => 'BPHTB',
             'Pajak Reklame' => 'Reklame',
             'Pajak MBLB' => 'MBLB',
-            'Pajak Sarang Burung Walet' => 'Walet',
+            'Pajak Sarang Burung Walet' => 'Sarang Walet',
             'Opsen Pajak' => 'PKB',
             'PBJT - Makan dan Minum' => 'Makan Minum',
             'PBJT - Jasa Perhotelan' => 'Hotel',
