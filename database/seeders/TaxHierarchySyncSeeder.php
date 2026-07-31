@@ -73,11 +73,11 @@ class TaxHierarchySyncSeeder extends Seeder
             'code' => 'BPHTB', 'icon' => self::ICON_BPHTB, 'formula' => '(npop - npoptkp) * 0.05'
         ]);
 
-        $this->syncClassification($bapenda, $w1, 'Pajak Reklame', [
+        $this->syncClassification($bapenda, $w1, 'Reklame', [
             'code' => 'REKLAME', 'icon' => self::ICON_REKLAME, 'formula' => 'nsr * 0.25'
         ]);
 
-        $this->syncClassification($bapenda, $w1, 'Pajak MBLB', [
+        $this->syncClassification($bapenda, $w1, 'MBLB', [
             'code' => 'MBLB', 'icon' => self::ICON_MBLB, 'formula' => '(volume * harga) * 0.15'
         ]);
 
