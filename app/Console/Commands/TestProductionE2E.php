@@ -21,7 +21,7 @@ class TestProductionE2E extends Command
      */
     protected $description = 'Runs E2E test against the production environment';
 
-    private $baseUrl = 'https://api.sipanda.online/api';
+    private $baseUrl = 'https://apimpad.baubaukota.go.id/api';
     private $adminToken = '';
     private $petugasToken = '';
     
@@ -129,11 +129,19 @@ class TestProductionE2E extends Command
             'phone' => '081234567890',
             'address' => 'Jl. Pengujian No. ' . rand(1, 100),
             'npwp' => '12.345.678.9-012.000',
+            'object_name' => '[TEST] Objek Uji Coba ' . rand(1000, 9999),
+            'object_address' => 'Jl. Objek Pengujian No. ' . rand(1, 100),
+            'district' => 'Kecamatan Uji Coba',
+            'sub_district' => 'Kelurahan Uji Coba',
             'retribution_type_ids' => [$retributionType['id']]
         ];
         
         if (isset($classification)) {
             $payload['retribution_classification_ids'] = [$classification['id']];
+            $payload['metadata'] = [
+                "_object_name_{$classification['id']}" => '[TEST] Objek Uji Coba ' . rand(1000, 9999),
+                'omzet' => rand(1000000, 9999999),
+            ];
         }
 
         $response = Http::withToken($this->petugasToken)->acceptJson()->post("{$this->baseUrl}/taxpayers", $payload);
