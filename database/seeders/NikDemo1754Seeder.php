@@ -7,34 +7,30 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Seed demo NIK 0000000000000001 — beberapa pembayaran pajak berdasarkan layanan.
- *
- * Layanan yang di-seed (semua opd_id 5 = Bapenda):
- *  1. PBJT - Jasa Parkir          (class 172)
- *  2. PBJT - Makan dan Minum      (class 192)
- *  3. PBJT - Jasa Perhotelan      (class 193)
- *  4. Pajak Reklame               (class 188)
- *  5. Retribusi Persampahan       (class 198)
- *  6. PBB-P2                      (class 186)
- *
- * Idempotent: kalau objek pajak dengan nama penanda sudah ada → skip.
+ * Seed demo NIK 0000000000000001 → user id 1754 (Wajib Pajak Test).
+ * 6 layanan pajak: objek + 2 bill (1 paid, 1 pending) + 1 payment per layanan.
+ * Idempotent: skip kalau objek dengan nama yang sama sudah ada.
  */
-class NikDemoSeeder extends Seeder
+class NikDemo1754Seeder extends Seeder
 {
-    protected const NIK = '0000000000000001';
+    protected const TAXPAYER_ID = 1754;
 
     public function run(): void
     {
-        $taxpayer = DB::table('taxpayers')->where('nik', self::NIK)->orderBy('id')->first();
+        $taxpayer = DB::table('taxpayers')->where('id', self::TAXPAYER_ID)->first();
         if (!$taxpayer) {
-            $this->command->error("Taxpayer NIK " . self::NIK . " tidak ditemukan. Jalankan BapendaTestingSeeder dulu.");
+            $this->command->error('Taxpayer 1754 tidak ditemukan');
             return;
         }
+        $tid = self::TAXPAYER_ID;
 
-        $tid = $taxpayer->id;
-        $this->command->info("Taxpayer: #{$tid} {$taxpayer->name}");
+        // Set mother_name biar login NIK berfungsi
+        $meta = json_decode($taxpayer->metadata ?? '{}', true) ?: [];
+        $meta['mother_name'] = 'Siti Aminah';
+        DB::table('taxpayers')->where('id', $tid)->update(['metadata' => json_encode($meta)]);
+        $this->command->info("mother_name set: Siti Aminah");
 
-        // [classification_id, kode, nama objek, formula label, amount/bill]
+        // [class, type, kode, nama objek, desc, amount, method, bank]
         $layanan = [
             ['class' => 172, 'type' => 16, 'kode' => 'PRK', 'objek' => 'Area Parkir Mall Lippo Baubau',
              'desc' => 'PBJT Jasa Parkir — omzet bulanan', 'bill' => 1500000, 'method' => 'qris', 'bank' => 6],
@@ -56,7 +52,6 @@ class NikDemoSeeder extends Seeder
         $countPay = 0;
 
         foreach ($layanan as $i => $lv) {
-            // ── Tax Object ──
             $exists = DB::table('tax_objects')
                 ->where('taxpayer_id', $tid)
                 ->where('name', $lv['objek'])
@@ -99,7 +94,6 @@ class NikDemoSeeder extends Seeder
             ]);
             $countObjek++;
 
-            // ── 2 Bills per layanan: 1 lunas (paid), 1 pending ──
             for ($m = 1; $m <= 2; $m++) {
                 $period = $now->copy()->subMonths($m)->format('Y-m');
                 $billNumber = 'MPAD-' . str_replace('-', '', $period) . '-' . $tid . '-' . $lv['kode'];
@@ -135,7 +129,6 @@ class NikDemoSeeder extends Seeder
                 ]);
                 $countBill++;
 
-                // ── Payment untuk bill lunas ──
                 if ($m === 1) {
                     $paidAt = $now->copy()->subMonths($m)->addDays(5);
                     DB::table('payments')->insert([
@@ -167,7 +160,7 @@ class NikDemoSeeder extends Seeder
             $this->command->info("  + {$lv['kode']} — {$lv['objek']} (objek + 2 bill, 1 paid)");
         }
 
-        $this->command->info("SELESAI: {$countObjek} objek, {$countBill} bill, {$countPay} payment untuk NIK " . self::NIK);
+        $this->command->info("SELESAI: {$countObjek} objek, {$countBill} bill, {$countPay} payment untuk taxpayer #{$tid}");
     }
 
     private function bankCode(int $bankId): string
