@@ -48,6 +48,8 @@ Route::group(['middleware' => 'throttle:10,1'], function () {
 Route::get('/opds', [OpdController::class, 'index']); // Public access
 Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyBill']);
 Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
+Route::get('/verify/taxpayer/{token}', [\App\Http\Controllers\QrController::class, 'verifyTaxpayer']);
+Route::get('/verify/officer/{token}', [\App\Http\Controllers\QrController::class, 'verifyOfficer']);
 
 // Public: Documents (PDF)
 Route::get('/public/pdf/npwpd/{id}', [\App\Http\Controllers\PdfController::class, 'generateNpwpd']);
@@ -174,6 +176,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::post('/upload', [\App\Http\Controllers\UploadController::class, 'uploadImage']);
     Route::get('/me', [\App\Http\Controllers\MeController::class, 'show']);
     Route::post('/me/update', [\App\Http\Controllers\MeController::class, 'update']);
+    Route::get('/officer/my-qr', [\App\Http\Controllers\QrController::class, 'officerMyQr']);
     
     // Citizen Service Registration (Shared, but usually for citizens)
     Route::group(['prefix' => 'citizen/services'], function () {
@@ -194,6 +197,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     // Citizen Specific Actions
     Route::group(['prefix' => 'citizen'], function () {
         Route::get('/bills', [BillController::class, 'citizenBills']);
+        Route::get('/my-qr', [\App\Http\Controllers\QrController::class, 'citizenMyQr']);
         Route::get('/tax-objects', [\App\Http\Controllers\CitizenServiceController::class, 'taxObjects']);
 
         // Pembayaran
