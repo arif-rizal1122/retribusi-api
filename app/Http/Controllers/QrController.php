@@ -130,7 +130,7 @@ class QrController extends Controller
             ->whereIn('status', ['pending', 'overdue'])
             ->orderBy('due_date', 'asc')
             ->limit(10)
-            ->get(['id', 'bill_number', 'period', 'status', 'total_amount', 'amount', 'due_date']);
+            ->get(['id', 'bill_number', 'period', 'status', 'amount', 'admin_fee', 'penalty_amount', 'due_date']);
 
         return response()->json([
             'success' => true,
