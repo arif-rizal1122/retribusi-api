@@ -587,4 +587,37 @@ class BillController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Generate QR for a bill (admin) — skema QR Payment M18 F1 (1 Agu 2026)
+     * Returns QR URL (verify/bill) + PNG data URI untuk scan WP.
+     * QR berisi bill_number saja (bukan NIK/NOP mentah).
+     */
+    public function generateQr(Request $request, Bill $bill)
+    {
+        $base = env('QR_BASE_URL', 'https://apimpad.baubaukota.go.id');
+        $qrUrl = rtrim($base, '/') . '/api/verify/bill/' . $bill->bill_number;
+
+        // SVG QR — tanpa imagick, selalu tersedia (PHP murni)
+        $qrImage = null;
+        try {
+            $qrSvg = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+                ->size(400)
+                ->margin(2)
+                ->generate($qrUrl);
+            $qrImage = 'data:image/svg+xml;base64,' . base64_encode($qrSvg);
+        } catch (\Throwable $e) {
+            $qrImage = null;
+        }
+
+        return response()->json([
+            'success' => true,
+            'bill_id' => $bill->id,
+            'bill_number' => $bill->bill_number,
+            'status' => $bill->status,
+            'qr_url' => $qrUrl,
+            'qr_image' => $qrImage,
+        ]);
+    }
 }
+

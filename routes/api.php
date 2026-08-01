@@ -262,6 +262,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::apiResource('taxpayers', TaxpayerController::class);
         Route::apiResource('tax-objects', TaxObjectController::class);
         Route::apiResource('bills', BillController::class)->only(['index', 'store']);
+        Route::post('/bills/{bill}/generate-qr', [BillController::class, 'generateQr']);
         Route::post('/bills/checkout', [BillController::class, 'checkout']);
 
         // Mutasi Objek Pajak (Balik Nama / Transfer Aset)
