@@ -370,6 +370,17 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::post('/{id}/reject', [\App\Http\Controllers\NotarisApprovalController::class, 'reject']);
         });
 
+        // SPPT PBB Records (lokal fallback + reconciliation layer vs BPN)
+        Route::prefix('sppt-records')->group(function () {
+            Route::get('/', [\App\Http\Controllers\SpptRecordController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\SpptRecordController::class, 'store']);
+            Route::get('/stats', [\App\Http\Controllers\SpptRecordController::class, 'stats']);
+            Route::get('/{id}', [\App\Http\Controllers\SpptRecordController::class, 'show']);
+            Route::post('/{id}/reconcile', [\App\Http\Controllers\SpptRecordController::class, 'reconcile']);
+            Route::put('/{id}', [\App\Http\Controllers\SpptRecordController::class, 'update']);
+            Route::delete('/{id}', [\App\Http\Controllers\SpptRecordController::class, 'destroy']);
+        });
+
         // Official BAPENDA Documents
         Route::prefix('documents')->group(function () {
             // Pendaftaran
