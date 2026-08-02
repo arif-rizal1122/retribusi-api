@@ -662,6 +662,8 @@ class PbbBapendaController extends Controller
             $taxObject = TaxObject::create([
                 'nop' => $request->nop,
                 'taxpayer_id' => $taxpayerId,
+                'retribution_type_id' => 16, // Pajak (PBB-P2)
+                'opd_id' => 5, // Badan Pendapatan Daerah
                 'name' => $inquiry['nama_wp'] ?? 'Objek PBB '.$request->nop,
                 'address' => $inquiry['alamat_wp'] ?? '',
                 'status' => 'active',
