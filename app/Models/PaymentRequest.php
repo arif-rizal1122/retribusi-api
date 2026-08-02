@@ -22,6 +22,7 @@ class PaymentRequest extends Model
         'expires_at',
         'external_id',
         'provider_reference',
+        'ntpd',
         'status',
         'paid_at',
         'raw_request_safe',
