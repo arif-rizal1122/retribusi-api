@@ -3,6 +3,7 @@
 namespace App\Services\Payment\Snap;
 
 use App\Models\Bill;
+use App\Models\BphtbSubmission;
 use App\Models\Payment;
 use App\Models\PaymentRequest;
 use App\Models\TransactionPbb;
@@ -118,6 +119,17 @@ class SnapBrivaService
                             'api_response' => $this->masker->mask($request->all()),
                         ]
                     );
+                }
+
+                // M21: Sync BphtbSubmission bila bill terkait BPHTB (metadata bphtb)
+                $bphtbMeta = $lockedBill->metadata ?? [];
+                if (! empty($bphtbMeta['bphtb'])) {
+                    BphtbSubmission::where('bill_id', $lockedBill->id)
+                        ->update([
+                            'status' => 'paid',
+                            'paid_at' => now(),
+                            'ntpd' => $referenceNumber,
+                        ]);
                 }
             }
 

@@ -372,6 +372,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/mappings', [\App\Http\Controllers\H2HBphtbController::class, 'mappings']);
             Route::post('/simulate', [\App\Http\Controllers\H2HBphtbController::class, 'simulate']);
             Route::post('/submit', [\App\Http\Controllers\H2HBphtbController::class, 'submit']);
+            Route::post('/{submission}/pay', [\App\Http\Controllers\H2HBphtbController::class, 'pay']);
+            Route::get('/{submission}', [\App\Http\Controllers\H2HBphtbController::class, 'show']);
         });
 
         // Notaris / PPAT Approval
