@@ -26,6 +26,7 @@ use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\PublicRegistrationController;
 use App\Http\Controllers\Api\SimpadKoneksiController;
 use App\Http\Controllers\PbbNopApplicationController;
+use App\Http\Controllers\TaxObjectChangeRequestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -219,6 +220,10 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/complaints', [ComplaintController::class, 'store']);
         Route::get('/complaints', [ComplaintController::class, 'citizenIndex']);
 
+        // Ajukan Perubahan Data Unit Pajak (Change Request - M19)
+        Route::post('/tax-objects/{taxObject}/change-request', [TaxObjectChangeRequestController::class, 'store']);
+        Route::get('/change-requests', [TaxObjectChangeRequestController::class, 'citizenIndex']);
+
         // Pendaftaran NOP Mandiri (Warga)
         Route::post('/pbb/nop-applications', [PbbNopApplicationController::class, 'store']);
         Route::get('/pbb/nop-applications', [PbbNopApplicationController::class, 'index']);
@@ -273,6 +278,11 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/mutations', [MutationController::class, 'index']);
         Route::post('/mutations', [MutationController::class, 'store']);
         Route::get('/tax-objects/{taxObject}/pending-periods', [PaymentController::class, 'getPendingPeriods']);
+
+        // Change Request Objek Pajak (M19): antrian + approve/reject
+        Route::get('/change-requests', [TaxObjectChangeRequestController::class, 'index']);
+        Route::put('/change-requests/{changeRequest}/status', [TaxObjectChangeRequestController::class, 'updateStatus']);
+
         Route::get('/payments', [PaymentController::class, 'index']);
         Route::post('/payments', [PaymentController::class, 'store']);
         Route::post('/bills/{bill}/pay', [PaymentController::class, 'store']);
