@@ -378,6 +378,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
         // H2H BPN / BPHTB
         Route::prefix('h2h/bphtb')->group(function () {
+            Route::get('/', [\App\Http\Controllers\H2HBphtbController::class, 'index']);
             Route::get('/mappings', [\App\Http\Controllers\H2HBphtbController::class, 'mappings']);
             Route::post('/simulate', [\App\Http\Controllers\H2HBphtbController::class, 'simulate']);
             Route::post('/submit', [\App\Http\Controllers\H2HBphtbController::class, 'submit']);

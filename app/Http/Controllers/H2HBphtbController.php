@@ -26,6 +26,39 @@ class H2HBphtbController extends Controller
         $this->formulaService = $formulaService;
     }
 
+    /**
+     * List semua submission BPHTB (role petugas/admin Bapenda).
+     * GET /api/h2h/bphtb
+     */
+    public function index(Request $request)
+    {
+        $user = $request->user();
+        $isBackoffice = $user && method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
+        $allowedRoles = ['petugas', 'opd', 'kepala_bapenda', 'kabid_pengawas', 'kasubid_pengawas'];
+
+        if (! $isBackoffice && ! in_array($user?->role, $allowedRoles)) {
+            return response()->json(['message' => 'Hanya petugas/admin Bapenda yang dapat mengakses daftar BPHTB.'], 403);
+        }
+
+        $query = BphtbSubmission::query()->with(['bill', 'documents']);
+
+        if ($request->has('status') && $request->status !== '') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('search') && $request->search !== '') {
+            $query->where(function ($q) use ($request) {
+                $q->where('billing_code', 'like', "%{$request->search}%")
+                  ->orWhere('nib', 'like', "%{$request->search}%")
+                  ->orWhere('nop', 'like', "%{$request->search}%")
+                  ->orWhere('nama_wp', 'like', "%{$request->search}%")
+                  ->orWhere('nik_wp', 'like', "%{$request->search}%");
+            });
+        }
+
+        return response()->json($query->orderByDesc('id')->paginate(15));
+    }
+
     public function mappings(Request $request)
     {
         $query = BpnH2hMapping::query();
