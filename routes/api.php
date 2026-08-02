@@ -166,6 +166,9 @@ Route::post('/pbb/calculate', [PbbClassificationController::class, 'calculate'])
 // Public: PBB Bapenda Inquiry (cek tagihan tanpa login) - Throttled
 Route::post('/pbb/bapenda/inquiry', [PbbBapendaController::class, 'inquiry'])->middleware('throttle:10,1');
 
+// Public: H2H BPN — cek tunggakan PBB (dipanggil sistem BPN, auth X-H2H-Key)
+Route::post('/h2h/bpn/check-pbb', [\App\Http\Controllers\H2HBpnController::class, 'checkPbb'])->middleware('throttle:30,1');
+
 // Protected routes
 Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     // Shared Routes (Admin, Petugas, Citizen)

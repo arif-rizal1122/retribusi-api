@@ -76,4 +76,10 @@ return [
         'private_key_path' => env('BTN_PRIVATE_KEY_PATH', storage_path('app/keys/btn_private.pem')),
     ],
 
+    'bpn' => [
+        // H2H BPN — key untuk endpoint check-pbb (BPN -> M-PAD).
+        // Kosong = dev mode (endpoint bisa diuji tanpa key). Isi saat PKS.
+        'h2h_key' => env('BPN_H2H_KEY', ''),
+    ],
+
 ];
