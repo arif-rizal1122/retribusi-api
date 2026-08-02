@@ -258,6 +258,70 @@ class H2HBphtbController extends Controller
     }
 
     /**
+     * F5 — Verifikasi dokumen oleh Bapenda + terbitkan/tautkan NOP.
+     * Konsep Pak Massad: NOP diterbitkan Bapenda setelah notaris unggah dokumen.
+     * POST /api/h2h/bphtb/{submission}/verify
+     * Body: { nop?: string, notes?: string }
+     */
+    public function verify(Request $request, $submission)
+    {
+        $user = $request->user();
+        $isBackoffice = $user && method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
+
+        if (! $isBackoffice && ! in_array($user?->role, ['petugas', 'kepala_bapenda', 'kabid_pengawas', 'kasubid_pengawas'])) {
+            return response()->json(['message' => 'Hanya petugas/admin Bapenda yang dapat memverifikasi berkas.'], 403);
+        }
+
+        $submission = BphtbSubmission::findOrFail($submission);
+
+        if ($submission->status === 'skb_issued') {
+            return response()->json(['message' => 'Berkas sudah selesai (SKB terbit), tidak bisa diverifikasi ulang.'], 422);
+        }
+
+        $request->validate([
+            'nop' => 'nullable|string|max:50',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        // NOP: prioritas dari request, fallback dari mapping BPN, lalu existing
+        $nop = $request->nop ?: $submission->nop;
+        if (! $nop) {
+            $mapping = BpnH2hMapping::where('nib', $submission->nib)->first();
+            $nop = $mapping?->nop;
+        }
+        if (! $nop) {
+            return response()->json([
+                'message' => 'NOP wajib diisi (atau tautkan NIB ke mapping BPN) untuk menerbitkan NOP.',
+            ], 422);
+        }
+
+        $submission->update([
+            'nop' => $nop,
+            'status' => 'verified',
+            'verified_at' => now(),
+            'verified_by' => $user?->id,
+            'verified_notes' => $request->notes,
+        ]);
+
+        // Tautkan NOP ke mapping NIB (jika belum ada mapping, buatkan)
+        BpnH2hMapping::updateOrCreate(
+            ['nib' => $submission->nib],
+            ['nop' => $nop]
+        );
+
+        Log::info('BPHTB verified + NOP issued', [
+            'submission_id' => $submission->id,
+            'nop' => $nop,
+            'by' => $user?->id,
+        ]);
+
+        return response()->json([
+            'message' => 'Berkas terverifikasi, NOP diterbitkan.',
+            'data' => $submission->fresh(),
+        ]);
+    }
+
+    /**
      * F4.1 — Terbitkan SKB digital (role admin/petugas Bapenda).
      * Prasyarat: submission lunas. Output: nomor SKB + QR hash (TTE digital).
      */

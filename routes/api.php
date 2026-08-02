@@ -386,6 +386,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::post('/{submission}/documents', [\App\Http\Controllers\H2HBphtbController::class, 'uploadDocument']);
             Route::delete('/{submission}/documents/{document}', [\App\Http\Controllers\H2HBphtbController::class, 'deleteDocument']);
             Route::post('/{submission}/skb', [\App\Http\Controllers\H2HBphtbController::class, 'issueSkb']);
+            Route::post('/{submission}/verify', [\App\Http\Controllers\H2HBphtbController::class, 'verify']);
             Route::get('/{submission}', [\App\Http\Controllers\H2HBphtbController::class, 'show']);
         });
 
