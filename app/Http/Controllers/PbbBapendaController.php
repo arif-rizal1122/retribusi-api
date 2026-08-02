@@ -785,4 +785,89 @@ class PbbBapendaController extends Controller
             STR_PAD_LEFT
         );
     }
+
+    // ─── Rekonsiliasi Harian (M20 task 1455) ────────────────────────────
+
+    /**
+     * Laporan rekonsiliasi harian transaksi PBB untuk Bapenda.
+     * Menggabungkan transaksi gateway M-PAD (PaymentRequest) + H2H SIMPBB (TransactionPbb).
+     *
+     * ?date=YYYY-MM-DD (default hari ini) → CSV siap diserahkan ke Bapenda.
+     */
+    public function reconciliation(Request $request)
+    {
+        $date = $request->query('date', now()->format('Y-m-d'));
+
+        $start = $date.' 00:00:00';
+        $end = $date.' 23:59:59';
+
+        // 1. Transaksi via gateway M-PAD (BRIVA/SNAP) — bill PBB lunas
+        $gatewayPayments = DB::table('payments')
+            ->join('bills', 'bills.id', '=', 'payments.bill_id')
+            ->whereBetween('payments.paid_at', [$start, $end])
+            ->where('payments.status', 'success')
+            ->where(function ($q) {
+                $q->where('bills.bill_number', 'like', '%-PBB')
+                  ->orWhere('bills.bill_number', 'like', 'V-SPPT-%');
+            })
+            ->get([
+                'payments.id as payment_id',
+                'payments.receipt_number',
+                'payments.reference_number',
+                'payments.amount',
+                'payments.paid_at',
+                'bills.bill_number',
+                'bills.period',
+            ]);
+
+        // 2. Transaksi via H2H SIMPBB (legacy, selama masa transisi)
+        $h2hTransactions = TransactionPbb::whereBetween('created_at', [$start, $end])
+            ->where('payment_status', 'success')
+            ->get(['nop', 'tahun', 'total_bayar', 'ntpd', 'created_at']);
+
+        // Build CSV
+        $csv = [];
+        $csv[] = ['LAPORAN REKONSILIASI PBB - '.$date];
+        $csv[] = ['Sumber', 'NOP', 'Periode', 'Nomor Bill', 'Receipt/NTPD', 'Reference', 'Jumlah (Rp)', 'Waktu Bayar'];
+
+        foreach ($gatewayPayments as $p) {
+            $csv[] = [
+                'GATEWAY M-PAD',
+                '',
+                $p->period ?? '',
+                $p->bill_number ?? '',
+                $p->receipt_number ?? '',
+                $p->reference_number ?? '',
+                number_format((float) $p->amount, 0, ',', '.'),
+                $p->paid_at ?? '',
+            ];
+        }
+
+        foreach ($h2hTransactions as $t) {
+            $csv[] = [
+                'H2H SIMPBB',
+                $t->nop,
+                $t->tahun,
+                'V-SPPT-'.$t->nop,
+                $t->ntpd ?? '',
+                '',
+                number_format((float) $t->total_bayar, 0, ',', '.'),
+                $t->created_at ?? '',
+            ];
+        }
+
+        $totalGateway = $gatewayPayments->sum(fn ($p) => (float) $p->amount);
+        $totalH2H = $h2hTransactions->sum(fn ($t) => (float) $t->total_bayar);
+        $csv[] = [];
+        $csv[] = ['TOTAL GATEWAY M-PAD', number_format($totalGateway, 0, ',', '.')];
+        $csv[] = ['TOTAL H2H SIMPBB', number_format($totalH2H, 0, ',', '.')];
+        $csv[] = ['GRAND TOTAL', number_format($totalGateway + $totalH2H, 0, ',', '.')];
+
+        $lines = collect($csv)->map(fn ($row) => implode(';', $row))->implode("\n");
+
+        return response($lines, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="rekonsiliasi-pbb-'.$date.'.csv"',
+        ]);
+    }
 }
