@@ -282,6 +282,50 @@ class CitizenServiceController extends Controller
             }
         }
 
+        // Dukungan pendaftaran proxy: unit PBB untuk orang lain (non-user M-PAD).
+        // Pendaftar tetap tercatat sebagai taxpayer (taxpayer_id), data pemilik asli
+        // disimpan di metadata untuk keperluan verifikasi admin.
+        $registeredFor = $request->input('registered_for', 'self');
+        if (! in_array($registeredFor, ['self', 'other'], true)) {
+            throw ValidationException::withMessages([
+                'registered_for' => 'Nilai registered_for harus self atau other.',
+            ]);
+        }
+
+        if ($registeredFor === 'other') {
+            $request->validate([
+                'owner_nik' => 'required|string|size:16',
+                'owner_name' => 'required|string|max:255',
+                'owner_address' => 'required|string',
+                'owner_ktp_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'owner_surat_kuasa_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            ]);
+
+            $nikService = app(\App\Services\DukcapilNikService::class);
+            if (! $nikService->validateFormat($request->owner_nik)) {
+                throw ValidationException::withMessages([
+                    'owner_nik' => 'Format NIK pemilik tidak valid (harus 16 digit).',
+                ]);
+            }
+
+            $metadata['registered_for'] = 'other';
+            $metadata['owner_nik'] = $request->owner_nik;
+            $metadata['owner_name'] = $request->owner_name;
+            $metadata['owner_address'] = $request->owner_address;
+            $metadata['owner_ktp_url'] = $cloudinary->upload(
+                $request->file('owner_ktp_file'),
+                'citizen/documents/'.$service->id.'/owner'
+            );
+            if ($request->hasFile('owner_surat_kuasa_file')) {
+                $metadata['owner_surat_kuasa_url'] = $cloudinary->upload(
+                    $request->file('owner_surat_kuasa_file'),
+                    'citizen/documents/'.$service->id.'/owner'
+                );
+            }
+        } else {
+            $metadata['registered_for'] = 'self';
+        }
+
         [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata) {
             // Create the tax object
             $taxObject = TaxObject::create([
