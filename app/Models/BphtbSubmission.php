@@ -22,10 +22,10 @@ class BphtbSubmission extends Model
         'bill_id',
         'paid_at',
         'ntpd',
-        'skb_number',
-        'skb_issued_at',
-        'skb_issued_by',
-        'skb_qr_hash',
+        'sspd_number',
+        'sspd_issued_at',
+        'sspd_issued_by',
+        'sspd_qr_hash',
         'verified_at',
         'verified_by',
         'verified_notes',
@@ -33,7 +33,7 @@ class BphtbSubmission extends Model
 
     protected $casts = [
         'paid_at' => 'datetime',
-        'skb_issued_at' => 'datetime',
+        'sspd_issued_at' => 'datetime',
         'verified_at' => 'datetime',
     ];
 
@@ -49,11 +49,11 @@ class BphtbSubmission extends Model
 
     public function isPaid(): bool
     {
-        return $this->status === 'paid' || $this->status === 'skb_issued' || $this->status === 'verified';
+        return $this->status === 'paid' || $this->status === 'sspd_issued' || $this->status === 'verified';
     }
 
     public function isVerified(): bool
     {
-        return in_array($this->status, ['verified', 'paid', 'skb_issued']);
+        return in_array($this->status, ['verified', 'paid', 'sspd_issued']);
     }
 }

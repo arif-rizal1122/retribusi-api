@@ -307,8 +307,8 @@ class H2HBphtbController extends Controller
 
         $submission = BphtbSubmission::findOrFail($submission);
 
-        if ($submission->status === 'skb_issued') {
-            return response()->json(['message' => 'Berkas sudah selesai (SKB terbit), tidak bisa diverifikasi ulang.'], 422);
+        if ($submission->status === 'sspd_issued') {
+            return response()->json(['message' => 'Berkas sudah selesai (SSPD terbit), tidak bisa diverifikasi ulang.'], 422);
         }
 
         $request->validate([
@@ -355,76 +355,76 @@ class H2HBphtbController extends Controller
     }
 
     /**
-     * F4.1 — Terbitkan SKB digital (role admin/petugas Bapenda).
-     * Prasyarat: submission lunas. Output: nomor SKB + QR hash (TTE digital).
+     * F4.1 — Terbitkan SSPD digital (role admin/petugas Bapenda).
+     * Prasyarat: submission lunas. Output: nomor SSPD + QR hash (TTE digital).
      */
-    public function issueSkb(Request $request, $submission)
+    public function issueSspd(Request $request, $submission)
     {
         $user = $request->user();
         $isBackoffice = $user && method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
 
         if (! $isBackoffice && ! in_array($user?->role, ['petugas', 'kepala_bapenda', 'kabid_pengawas', 'kasubid_pengawas'])) {
-            return response()->json(['message' => 'Hanya petugas/admin Bapenda yang dapat menerbitkan SKB.'], 403);
+            return response()->json(['message' => 'Hanya petugas/admin Bapenda yang dapat menerbitkan SSPD.'], 403);
         }
 
         $submission = BphtbSubmission::with('bill')->findOrFail($submission);
 
         if (! $submission->isPaid()) {
-            return response()->json(['message' => 'SKB hanya dapat diterbitkan setelah pembayaran lunas.'], 422);
+            return response()->json(['message' => 'SSPD hanya dapat diterbitkan setelah pembayaran lunas.'], 422);
         }
-        if ($submission->skb_number) {
-            return response()->json(['message' => 'SKB sudah diterbitkan.', 'data' => $submission], 200);
+        if ($submission->sspd_number) {
+            return response()->json(['message' => 'SSPD sudah diterbitkan.', 'data' => $submission], 200);
         }
 
-        // Nomor SKB: SKB-BPHTB-YYYY-XXXXXX
+        // Nomor SSPD: SSPD-BPHTB-YYYY-XXXXXX
         $year = now()->year;
         $seq = str_pad((string) random_int(1, 999999), 6, '0', STR_PAD_LEFT);
-        $skbNumber = "SKB-BPHTB-{$year}-{$seq}";
-        $qrHash = hash('sha256', $skbNumber . '|' . $submission->id . '|' . config('app.key'));
+        $sspdNumber = "SSPD-BPHTB-{$year}-{$seq}";
+        $qrHash = hash('sha256', $sspdNumber . '|' . $submission->id . '|' . config('app.key'));
 
         $submission->update([
-            'status' => 'skb_issued',
-            'skb_number' => $skbNumber,
-            'skb_issued_at' => now(),
-            'skb_issued_by' => $user?->id,
-            'skb_qr_hash' => $qrHash,
+            'status' => 'sspd_issued',
+            'sspd_number' => $sspdNumber,
+            'sspd_issued_at' => now(),
+            'sspd_issued_by' => $user?->id,
+            'sspd_qr_hash' => $qrHash,
         ]);
 
-        Log::info('BPHTB SKB issued', [
+        Log::info('BPHTB SSPD issued', [
             'submission_id' => $submission->id,
-            'skb_number' => $skbNumber,
+            'sspd_number' => $sspdNumber,
             'by' => $user?->id,
         ]);
 
         return response()->json([
-            'message' => 'SKB digital berhasil diterbitkan.',
+            'message' => 'SSPD digital berhasil diterbitkan.',
             'data' => $submission->fresh(),
         ], 201);
     }
 
     /**
-     * F4.1 — Verifikasi keaslian SKB digital (publik, tanpa login).
-     * GET /api/public/skb/verify/{skbNumber}
+     * F4.1 — Verifikasi keaslian SSPD digital (publik, tanpa login).
+     * GET /api/public/sspd/verify/{sspdNumber}
      */
-    public function verifySkb(Request $request, $skbNumber)
+    public function verifySspd(Request $request, $sspdNumber)
     {
-        $submission = BphtbSubmission::where('skb_number', $skbNumber)
+        $submission = BphtbSubmission::where('sspd_number', $sspdNumber)
             ->with('bill')
             ->first();
 
-        if (! $submission || ! $submission->skb_issued_at) {
+        if (! $submission || ! $submission->sspd_issued_at) {
             return response()->json([
                 'status' => 'invalid',
-                'message' => 'Nomor SKB tidak ditemukan atau belum diterbitkan.',
+                'message' => 'Nomor SSPD tidak ditemukan atau belum diterbitkan.',
             ], 404);
         }
 
         return response()->json([
             'status' => 'valid',
-            'message' => 'SKB terverifikasi — dokumen asli diterbitkan Bapenda Kota Baubau.',
+            'message' => 'SSPD terverifikasi — dokumen asli diterbitkan Bapenda Kota Baubau.',
             'data' => [
-                'skb_number' => $submission->skb_number,
-                'skb_issued_at' => $submission->skb_issued_at?->toIso8601String(),
+                'sspd_number' => $submission->sspd_number,
+                'sspd_issued_at' => $submission->sspd_issued_at?->toIso8601String(),
                 'status_submission' => $submission->status,
                 'nop' => $submission->nop,
                 'nib' => $submission->nib,
