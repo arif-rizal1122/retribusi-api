@@ -29,6 +29,14 @@ class PbbBapendaService
      */
     public function getToken(): string
     {
+        // Jika kredensial H2H belum dikonfigurasi di .env, jangan buang waktu
+        // menunggu timeout HTTP ke server SIMPBB — langsung lempar exception
+        // agar inquiryWithFallback() jatuh ke SPPT lokal secara instan.
+        if (empty($this->username) || empty($this->password)) {
+            Log::warning('PBB Bapenda skip: kredensial H2H belum dikonfigurasi');
+            throw new \Exception('Kredensial H2H SIMPBB belum dikonfigurasi');
+        }
+
         return Cache::remember('pbb_bapenda_token', 23 * 60 * 60, function () {
             $response = Http::asForm()->timeout(8)
                 ->post("{$this->baseUrl}/login", [
