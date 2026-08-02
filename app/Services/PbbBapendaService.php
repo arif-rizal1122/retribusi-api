@@ -30,7 +30,7 @@ class PbbBapendaService
     public function getToken(): string
     {
         return Cache::remember('pbb_bapenda_token', 23 * 60 * 60, function () {
-            $response = Http::asForm()->timeout(30)
+            $response = Http::asForm()->timeout(8)
                 ->post("{$this->baseUrl}/login", [
                     'username' => $this->username,
                     'password' => $this->password,
@@ -209,7 +209,7 @@ class PbbBapendaService
             try {
                 $token = $this->getToken();
 
-                $response = Http::asForm()->timeout(30)
+                $response = Http::asForm()->timeout(8)
                     ->withToken($token)
                     ->post("{$this->baseUrl}/{$endpoint}", $data);
 
