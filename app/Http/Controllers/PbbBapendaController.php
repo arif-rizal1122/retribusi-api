@@ -41,7 +41,10 @@ class PbbBapendaController extends Controller
         ]);
 
         try {
-            $result = $this->bapendaService->inquiryWithFallback($request->nop, $request->tahun);
+            $result = $this->bapendaService->inquiryWithFallback(
+                trim($request->nop),
+                trim($request->tahun)
+            );
 
             if (($result['status'] ?? 0) === 200) {
                 // Skema 2026 mengembalikan data di dalam key 'data'
