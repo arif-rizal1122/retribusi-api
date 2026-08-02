@@ -32,4 +32,9 @@ class BphtbSubmission extends Model
     {
         return $this->belongsTo(Bill::class);
     }
+
+    public function documents()
+    {
+        return $this->hasMany(BphtbDocument::class, 'bphtb_submission_id');
+    }
 }

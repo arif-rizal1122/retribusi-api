@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bill;
 use App\Models\BpnH2hMapping;
+use App\Models\BphtbDocument;
 use App\Models\BphtbSubmission;
 use App\Models\PaymentRequest;
 use App\Models\PaymentRequestItem;
@@ -151,16 +152,109 @@ class H2HBphtbController extends Controller
     }
 
     /**
-     * Tampilkan detail submission + status pembayaran.
+     * Tampilkan detail submission + status pembayaran + dokumen.
      */
     public function show(Request $request, $submission)
     {
-        $submission = BphtbSubmission::with('bill')->findOrFail($submission);
+        $submission = BphtbSubmission::with(['bill', 'documents'])->findOrFail($submission);
 
         return response()->json([
             'data' => $submission,
             'bill' => $submission->bill,
+            'documents' => $submission->documents,
         ]);
+    }
+
+    /**
+     * Dashboard PPAT — daftar submission milik notaris yang login.
+     */
+    public function mySubmissions(Request $request)
+    {
+        $query = BphtbSubmission::query()
+            ->with(['bill', 'documents'])
+            ->where('ppat_user_id', $request->user()?->id);
+
+        if ($request->has('status') && $request->status !== '') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('search') && $request->search !== '') {
+            $query->where(function ($q) use ($request) {
+                $q->where('billing_code', 'like', "%{$request->search}%")
+                  ->orWhere('nib', 'like', "%{$request->search}%")
+                  ->orWhere('nama_wp', 'like', "%{$request->search}%")
+                  ->orWhere('nik_wp', 'like', "%{$request->search}%")
+                  ->orWhere('nop', 'like', "%{$request->search}%");
+            });
+        }
+
+        return response()->json($query->orderByDesc('id')->paginate(15));
+    }
+
+    /**
+     * Upload dokumen pendukung submission (AJB, KTP, NPWP, SPPT, akta, SK).
+     */
+    public function uploadDocument(Request $request, $submission)
+    {
+        $submission = BphtbSubmission::findOrFail($submission);
+
+        $user = $request->user();
+        $isOwner = $submission->ppat_user_id === $user?->id;
+        $isBackoffice = $user && method_exists($user, 'isAdmin') && $user->isAdmin();
+
+        if (! $isOwner && ! $isBackoffice) {
+            return response()->json(['message' => 'Anda tidak berhak mengunggah dokumen submission ini.'], 403);
+        }
+
+        $request->validate([
+            'document_type' => 'required|in:ajb,ktp,npwp,sppt,akta,sk,other',
+            'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $file = $request->file('file');
+        $fileName = 'bphtb-' . $submission->id . '-' . time() . '-' . Str::random(6) . '.' . $file->getClientOriginalExtension();
+        $filePath = $file->storeAs('bphtb_documents/' . $submission->id, $fileName, 'public');
+
+        $document = BphtbDocument::create([
+            'bphtb_submission_id' => $submission->id,
+            'document_type' => $request->document_type,
+            'file_path' => $filePath,
+            'original_name' => $file->getClientOriginalName(),
+            'uploaded_by' => $user?->id,
+            'notes' => $request->notes,
+        ]);
+
+        return response()->json([
+            'message' => 'Dokumen berhasil diunggah.',
+            'data' => $document,
+        ], 201);
+    }
+
+    /**
+     * Hapus dokumen pendukung.
+     */
+    public function deleteDocument(Request $request, $submission, $document)
+    {
+        $submission = BphtbSubmission::findOrFail($submission);
+
+        $user = $request->user();
+        $isOwner = $submission->ppat_user_id === $user?->id;
+        $isBackoffice = $user && method_exists($user, 'isAdmin') && $user->isAdmin();
+
+        if (! $isOwner && ! $isBackoffice) {
+            return response()->json(['message' => 'Anda tidak berhak menghapus dokumen submission ini.'], 403);
+        }
+
+        $document = BphtbDocument::where('bphtb_submission_id', $submission->id)->findOrFail($document);
+
+        if (\Storage::disk('public')->exists($document->file_path)) {
+            \Storage::disk('public')->delete($document->file_path);
+        }
+
+        $document->delete();
+
+        return response()->json(['message' => 'Dokumen dihapus.']);
     }
 
     /**

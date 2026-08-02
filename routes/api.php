@@ -372,7 +372,10 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/mappings', [\App\Http\Controllers\H2HBphtbController::class, 'mappings']);
             Route::post('/simulate', [\App\Http\Controllers\H2HBphtbController::class, 'simulate']);
             Route::post('/submit', [\App\Http\Controllers\H2HBphtbController::class, 'submit']);
+            Route::get('/mine', [\App\Http\Controllers\H2HBphtbController::class, 'mySubmissions']);
             Route::post('/{submission}/pay', [\App\Http\Controllers\H2HBphtbController::class, 'pay']);
+            Route::post('/{submission}/documents', [\App\Http\Controllers\H2HBphtbController::class, 'uploadDocument']);
+            Route::delete('/{submission}/documents/{document}', [\App\Http\Controllers\H2HBphtbController::class, 'deleteDocument']);
             Route::get('/{submission}', [\App\Http\Controllers\H2HBphtbController::class, 'show']);
         });
 
