@@ -237,6 +237,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/my-transactions', [PbbBapendaController::class, 'myTransactions']);
         Route::get('/transactions/{transaction}/receipt', [PbbBapendaController::class, 'downloadReceipt']);
         Route::post('/pay', [PbbBapendaController::class, 'pay']);
+        Route::post('/payment-request', [PbbBapendaController::class, 'paymentRequest']);
         Route::get('/download-sppt', [PbbBapendaController::class, 'downloadSPPT']);
     });
 

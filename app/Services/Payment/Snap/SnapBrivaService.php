@@ -5,6 +5,7 @@ namespace App\Services\Payment\Snap;
 use App\Models\Bill;
 use App\Models\Payment;
 use App\Models\PaymentRequest;
+use App\Models\TransactionPbb;
 use App\Services\Payment\Snap\Exceptions\SnapPaymentException;
 use App\Services\Payment\Snap\Exceptions\SnapValidationException;
 use Illuminate\Http\Request;
@@ -87,10 +88,37 @@ class SnapBrivaService
             if ($paymentRequest) {
                 $paymentRequest->update([
                     'provider_reference' => $referenceNumber,
+                    'ntpd' => $referenceNumber,
                     'status' => 'paid',
                     'paid_at' => now(),
                     'raw_request_safe' => $this->masker->mask($request->all()),
                 ]);
+
+                // M20: Sync TransactionPbb bila bill terkait PBB (NOP di metadata tax object)
+                $pbbNop = $lockedBill->taxObject?->metadata['nop_pbb'] ?? null;
+                if ($pbbNop) {
+                    $pbbMeta = $lockedBill->taxObject->metadata ?? [];
+                    TransactionPbb::updateOrCreate(
+                        [
+                            'nop' => (string) $pbbNop,
+                            'tahun' => (string) ($pbbMeta['tahun_pajak'] ?? $lockedBill->period ?? now()->format('Y')),
+                        ],
+                        [
+                            'user_id' => null,
+                            'taxpayer_id' => $lockedBill->taxpayer_id,
+                            'amount' => (float) ($pbbMeta['pbb_pokok'] ?? 0),
+                            'denda' => (float) ($pbbMeta['denda'] ?? 0),
+                            'total_bayar' => (float) $paidAmount,
+                            'ntpd' => $referenceNumber,
+                            'payment_status' => 'success',
+                            'wp_name' => $pbbMeta['nama_wp'] ?? null,
+                            'wp_address' => $pbbMeta['alamat_wp'] ?? null,
+                            'kelurahan' => $pbbMeta['kelurahan'] ?? null,
+                            'kota' => $pbbMeta['kota'] ?? null,
+                            'api_response' => $this->masker->mask($request->all()),
+                        ]
+                    );
+                }
             }
 
             return $this->virtualAccountData($request, $lockedBill, [
