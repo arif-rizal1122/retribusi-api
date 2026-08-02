@@ -33,7 +33,7 @@ class PbbBapendaController extends Controller
         ]);
 
         try {
-            $result = $this->bapendaService->inquiry($request->nop, $request->tahun);
+            $result = $this->bapendaService->inquiryWithFallback($request->nop, $request->tahun);
 
             if (($result['status'] ?? 0) === 200) {
                 // Skema 2026 mengembalikan data di dalam key 'data'
@@ -53,6 +53,9 @@ class PbbBapendaController extends Controller
                         'denda' => (float) ($data['denda'] ?? 0),
                         'total_harus_dibayar' => (float) ($data['total_harus_dibayar'] ?? 0),
                         'status_bayar' => $data['status_bayar'] ?? '-',
+                        'source' => $result['source'] ?? 'simpbb',
+                        'fallback_used' => $result['fallback_used'] ?? false,
+                        'data_source' => $result['data_source'] ?? null,
                     ],
                 ]);
             }
@@ -60,7 +63,7 @@ class PbbBapendaController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => $result['msg'] ?? 'Data tidak ditemukan',
-            ], 404);
+            ], ($result['status'] ?? 0) === 503 ? 503 : 404);
 
         } catch (\Exception $e) {
             Log::error('PBB Inquiry Service Error', [
@@ -106,16 +109,22 @@ class PbbBapendaController extends Controller
             ], 422);
         }
 
-        // Validasi ke Bapenda
+        // Validasi ke Bapenda (dengan fallback SPPT lokal)
         $tahun = $request->tahun ?? date('Y');
         try {
-            $result = $this->bapendaService->inquiry($request->nop, $tahun);
+            $result = $this->bapendaService->inquiryWithFallback($request->nop, $tahun);
 
             if (($result['status'] ?? 0) !== 200) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'NOP tidak ditemukan di database Bapenda.',
                 ], 404);
+            }
+
+            $fallbackUsed = $result['fallback_used'] ?? false;
+            $notes = $request->description;
+            if ($fallbackUsed) {
+                $notes = trim(($notes ? $notes.' | ' : '').'Sumber: SPPT lokal (fallback H2H)');
             }
 
             $pbbObject = TaxpayerPbbObject::create([
@@ -126,12 +135,15 @@ class PbbBapendaController extends Controller
                 'kelurahan' => $result['kelurahan'] ?? null,
                 'kota' => $result['kota'] ?? null,
                 'is_verified' => true,
+                'notes' => $notes,
             ]);
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'NOP berhasil ditautkan ke akun Anda.',
                 'data' => $pbbObject,
+                'source' => $result['source'] ?? 'simpbb',
+                'fallback_used' => $fallbackUsed,
             ]);
 
         } catch (\Exception $e) {
@@ -189,8 +201,10 @@ class PbbBapendaController extends Controller
 
         foreach ($objects as $obj) {
             $tagihan = null;
+            $source = 'simpbb';
+            $fallbackUsed = false;
             try {
-                $inquiry = $this->bapendaService->inquiry($obj->nop, $tahun);
+                $inquiry = $this->bapendaService->inquiryWithFallback($obj->nop, $tahun);
                 if (($inquiry['status'] ?? 0) === 200) {
                     $tagihan = [
                         'pbb_pokok' => (float) ($inquiry['pbb_pokok'] ?? 0),
@@ -198,6 +212,8 @@ class PbbBapendaController extends Controller
                         'total_harus_dibayar' => (float) ($inquiry['total_harus_dibayar'] ?? 0),
                         'status_bayar' => $inquiry['status_bayar'] ?? '-',
                     ];
+                    $source = $inquiry['source'] ?? 'simpbb';
+                    $fallbackUsed = $inquiry['fallback_used'] ?? false;
                 }
             } catch (\Exception $e) {
                 Log::warning('PBB Inquiry for my-objects failed', [
@@ -214,6 +230,8 @@ class PbbBapendaController extends Controller
                 'kota' => $obj->kota,
                 'tahun' => $tahun,
                 'tagihan' => $tagihan,
+                'source' => $source,
+                'fallback_used' => $fallbackUsed,
             ];
         }
 
@@ -322,8 +340,8 @@ class PbbBapendaController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal memproses pembayaran. Silakan coba lagi.',
-            ], 500);
+                'message' => 'Layanan Bapenda sedang tidak tersedia (H2H). Coba lagi nanti.',
+            ], 503);
         }
     }
 

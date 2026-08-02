@@ -17,6 +17,7 @@ class TaxpayerPbbObject extends Model
         'kelurahan',
         'kota',
         'is_verified',
+        'notes',
     ];
 
     protected $casts = [

@@ -24,6 +24,7 @@ class Taxpayer extends Authenticatable
         'opd_id',
         'email',
         'nik',
+        'nik_verified_source',
         'name',
         'address',
         'district',

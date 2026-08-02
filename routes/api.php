@@ -391,6 +391,17 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::delete('/{id}', [\App\Http\Controllers\SpptRecordController::class, 'destroy']);
         });
 
+        // H2H BHUMI: Mapping NIB-NOP (kerangka, default not_configured)
+        Route::prefix('pbb/nib-nop-mappings')->group(function () {
+            Route::get('/', [\App\Http\Controllers\NibNopMappingController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\NibNopMappingController::class, 'store']);
+            Route::get('/stats', [\App\Http\Controllers\NibNopMappingController::class, 'stats']);
+            Route::post('/{id}/sync', [\App\Http\Controllers\NibNopMappingController::class, 'syncOne']);
+        });
+
+        // H2H Connector Logs (monitoring SIMPBB/Dukcapil/BHUMI)
+        Route::get('/h2h-connector-logs', [\App\Http\Controllers\H2hConnectorLogController::class, 'index']);
+
         // Official BAPENDA Documents
         Route::prefix('documents')->group(function () {
             // Pendaftaran

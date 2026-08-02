@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Models\PbbNopApplication;
+use App\Services\DukcapilNikService;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -41,6 +43,26 @@ class PbbNopApplicationController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Validasi format NIK 16 digit + H2H Dukcapil (default not_configured → tidak memblokir)
+        $dukcapilService = app(DukcapilNikService::class);
+
+        if (! $dukcapilService->validateFormat($request->nik)) {
+            return response()->json(['errors' => ['nik' => ['Format NIK tidak valid.']]], 422);
+        }
+
+        if ($dukcapilService->available()) {
+            $dukcapil = $dukcapilService->validate($request->nik, $request->name);
+            if (($dukcapil['valid'] ?? false) !== true) {
+                return response()->json([
+                    'errors' => ['nik' => [$dukcapil['reason'] ?? 'NIK tidak valid menurut Dukcapil.']],
+                ], 422);
+            }
+        } else {
+            Log::info('DUKCAPIL not configured, NIK validation skipped (nop application)', [
+                'nik' => substr($request->nik, 0, 6).'****',
+            ]);
         }
 
         $ktpPath = $request->file('ktp_file')->store('pbb_applications/ktp', 'public');

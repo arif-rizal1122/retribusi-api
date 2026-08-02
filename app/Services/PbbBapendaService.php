@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\H2hConnectorLog;
+use App\Models\SpptRecord;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -66,6 +68,105 @@ class PbbBapendaService
             'nop'   => $nop,
             'tahun' => $tahun,
         ]);
+    }
+
+    /**
+     * Inquiry dengan fallback ke SPPT lokal.
+     * Primary H2H SIMPBB tetap dicoba lebih dulu (tidak diubah).
+     * Fallback hanya dipakai saat H2H gagal (exception/timeout/non-200)
+     * dan data SPPT lokal tersedia di tabel sppt_records.
+     */
+    public function inquiryWithFallback(string $nop, string $tahun): array
+    {
+        try {
+            $result = $this->inquiry($nop, $tahun);
+
+            if (($result['status'] ?? 0) === 200) {
+                $result['source']        = 'simpbb';
+                $result['fallback_used'] = false;
+
+                return $result;
+            }
+
+            // H2H merespons tapi status != 200 → fallback ke SPPT lokal
+            return $this->fallbackToLocalSppt($nop, $tahun, 'H2H status ' . ($result['status'] ?? 'unknown'));
+
+        } catch (\Exception $e) {
+            // Exception/timeout → fallback ke SPPT lokal
+            return $this->fallbackToLocalSppt($nop, $tahun, $e->getMessage());
+        }
+    }
+
+    /**
+     * Baca SPPT lokal sebagai pengganti saat H2H SIMPBB tidak tersedia.
+     */
+    protected function fallbackToLocalSppt(string $nop, string $tahun, string $reason): array
+    {
+        $record = SpptRecord::where('nop', $nop)
+            ->where('tax_year', $tahun)
+            ->first();
+
+        if (! $record) {
+            Log::warning('PBB inquiry FALLBACK ke SPPT lokal — data tidak ditemukan', [
+                'nop' => $nop, 'tahun' => $tahun, 'reason' => $reason,
+            ]);
+            H2hConnectorLog::record('simpbb', 'fallback', 'inquiry', 'Fallback SPPT lokal gagal: data tidak ada', [
+                'nop' => $nop, 'tahun' => $tahun,
+            ]);
+
+            return [
+                'status'        => 503,
+                'msg'           => 'Layanan Bapenda tidak tersedia dan tidak ada data SPPT lokal.',
+                'source'        => 'sppt_local',
+                'fallback_used' => true,
+            ];
+        }
+
+        Log::warning('PBB inquiry FALLBACK ke SPPT lokal', [
+            'nop' => $nop, 'tahun' => $tahun, 'reason' => $reason,
+        ]);
+        H2hConnectorLog::record('simpbb', 'fallback', 'inquiry', 'Fallback ke SPPT lokal', [
+            'nop' => $nop, 'tahun' => $tahun,
+        ]);
+
+        $statusBayar = strtoupper((string) $record->payment_status) === 'PAID' ? 'LUNAS' : 'BELUM BAYAR';
+        $alamat      = $record->taxpayer_address ?: $record->object_address;
+        $pokok       = (float) $record->tax_amount;
+
+        $data = [
+            'status'              => 200,
+            'nop'                 => $nop,
+            'tahun'               => $tahun,
+            'nama_wp'             => $record->taxpayer_name,
+            'alamat_wp'           => $alamat,
+            'kelurahan'           => $record->kelurahan,
+            'kota'                => '-',
+            'pbb_pokok'           => $pokok,
+            'denda'               => 0,
+            'total_harus_dibayar' => $pokok,
+            'status_bayar'        => $statusBayar,
+            'luas_bumi'           => (float) $record->land_area_m2,
+            'luas_bangunan'       => (float) $record->building_area_m2,
+            'data'                => [
+                'nop'                 => $nop,
+                'tahun'               => $tahun,
+                'nama_wp'             => $record->taxpayer_name,
+                'alamat_wp'           => $alamat,
+                'kelurahan'           => $record->kelurahan,
+                'kota'                => '-',
+                'pbb_pokok'           => $pokok,
+                'denda'               => 0,
+                'total_harus_dibayar' => $pokok,
+                'status_bayar'        => $statusBayar,
+                'luas_bumi'           => (float) $record->land_area_m2,
+                'luas_bangunan'       => (float) $record->building_area_m2,
+            ],
+            'source'        => 'sppt_local',
+            'fallback_used' => true,
+            'data_source'   => $record->data_source,
+        ];
+
+        return $data;
     }
 
     /**
