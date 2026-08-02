@@ -169,6 +169,12 @@ Route::post('/pbb/bapenda/inquiry', [PbbBapendaController::class, 'inquiry'])->m
 // Public: H2H BPN — cek tunggakan PBB (dipanggil sistem BPN, auth X-H2H-Key)
 Route::post('/h2h/bpn/check-pbb', [\App\Http\Controllers\H2HBpnController::class, 'checkPbb'])->middleware('throttle:30,1');
 
+// Public: H2H BPN — verifikasi pembayaran BPHTB lunas (BPN pull, auth X-H2H-Key)
+Route::post('/h2h/bpn/verify-payment', [\App\Http\Controllers\H2HBpnController::class, 'verifyPayment'])->middleware('throttle:30,1');
+
+// Public: Verifikasi keaslian SKB digital BPHTB (tanpa login)
+Route::get('/public/skb/verify/{skbNumber}', [\App\Http\Controllers\H2HBphtbController::class, 'verifySkb']);
+
 // Protected routes
 Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     // Shared Routes (Admin, Petugas, Citizen)
@@ -379,6 +385,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::post('/{submission}/pay', [\App\Http\Controllers\H2HBphtbController::class, 'pay']);
             Route::post('/{submission}/documents', [\App\Http\Controllers\H2HBphtbController::class, 'uploadDocument']);
             Route::delete('/{submission}/documents/{document}', [\App\Http\Controllers\H2HBphtbController::class, 'deleteDocument']);
+            Route::post('/{submission}/skb', [\App\Http\Controllers\H2HBphtbController::class, 'issueSkb']);
             Route::get('/{submission}', [\App\Http\Controllers\H2HBphtbController::class, 'show']);
         });
 

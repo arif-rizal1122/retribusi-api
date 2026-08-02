@@ -200,7 +200,7 @@ class H2HBphtbController extends Controller
 
         $user = $request->user();
         $isOwner = $submission->ppat_user_id === $user?->id;
-        $isBackoffice = $user && method_exists($user, 'isAdmin') && $user->isAdmin();
+        $isBackoffice = $user && method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
 
         if (! $isOwner && ! $isBackoffice) {
             return response()->json(['message' => 'Anda tidak berhak mengunggah dokumen submission ini.'], 403);
@@ -240,7 +240,7 @@ class H2HBphtbController extends Controller
 
         $user = $request->user();
         $isOwner = $submission->ppat_user_id === $user?->id;
-        $isBackoffice = $user && method_exists($user, 'isAdmin') && $user->isAdmin();
+        $isBackoffice = $user && method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
 
         if (! $isOwner && ! $isBackoffice) {
             return response()->json(['message' => 'Anda tidak berhak menghapus dokumen submission ini.'], 403);
@@ -255,6 +255,91 @@ class H2HBphtbController extends Controller
         $document->delete();
 
         return response()->json(['message' => 'Dokumen dihapus.']);
+    }
+
+    /**
+     * F4.1 — Terbitkan SKB digital (role admin/petugas Bapenda).
+     * Prasyarat: submission lunas. Output: nomor SKB + QR hash (TTE digital).
+     */
+    public function issueSkb(Request $request, $submission)
+    {
+        $user = $request->user();
+        $isBackoffice = $user && method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
+
+        if (! $isBackoffice && ! in_array($user?->role, ['petugas', 'kepala_bapenda', 'kabid_pengawas', 'kasubid_pengawas'])) {
+            return response()->json(['message' => 'Hanya petugas/admin Bapenda yang dapat menerbitkan SKB.'], 403);
+        }
+
+        $submission = BphtbSubmission::with('bill')->findOrFail($submission);
+
+        if (! $submission->isPaid()) {
+            return response()->json(['message' => 'SKB hanya dapat diterbitkan setelah pembayaran lunas.'], 422);
+        }
+        if ($submission->skb_number) {
+            return response()->json(['message' => 'SKB sudah diterbitkan.', 'data' => $submission], 200);
+        }
+
+        // Nomor SKB: SKB-BPHTB-YYYY-XXXXXX
+        $year = now()->year;
+        $seq = str_pad((string) random_int(1, 999999), 6, '0', STR_PAD_LEFT);
+        $skbNumber = "SKB-BPHTB-{$year}-{$seq}";
+        $qrHash = hash('sha256', $skbNumber . '|' . $submission->id . '|' . config('app.key'));
+
+        $submission->update([
+            'status' => 'skb_issued',
+            'skb_number' => $skbNumber,
+            'skb_issued_at' => now(),
+            'skb_issued_by' => $user?->id,
+            'skb_qr_hash' => $qrHash,
+        ]);
+
+        Log::info('BPHTB SKB issued', [
+            'submission_id' => $submission->id,
+            'skb_number' => $skbNumber,
+            'by' => $user?->id,
+        ]);
+
+        return response()->json([
+            'message' => 'SKB digital berhasil diterbitkan.',
+            'data' => $submission->fresh(),
+        ], 201);
+    }
+
+    /**
+     * F4.1 — Verifikasi keaslian SKB digital (publik, tanpa login).
+     * GET /api/public/skb/verify/{skbNumber}
+     */
+    public function verifySkb(Request $request, $skbNumber)
+    {
+        $submission = BphtbSubmission::where('skb_number', $skbNumber)
+            ->with('bill')
+            ->first();
+
+        if (! $submission || ! $submission->skb_issued_at) {
+            return response()->json([
+                'status' => 'invalid',
+                'message' => 'Nomor SKB tidak ditemukan atau belum diterbitkan.',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'valid',
+            'message' => 'SKB terverifikasi — dokumen asli diterbitkan Bapenda Kota Baubau.',
+            'data' => [
+                'skb_number' => $submission->skb_number,
+                'skb_issued_at' => $submission->skb_issued_at?->toIso8601String(),
+                'status_submission' => $submission->status,
+                'nop' => $submission->nop,
+                'nib' => $submission->nib,
+                'nama_wp' => $submission->nama_wp,
+                'nik_wp' => $submission->nik_wp,
+                'npoptkp' => $submission->bill?->metadata['npoptkp'] ?? null,
+                'taxable' => $submission->bill?->metadata['taxable'] ?? null,
+                'tax' => $submission->bill?->amount,
+                'ntpd' => $submission->ntpd,
+                'paid_at' => $submission->paid_at?->toIso8601String(),
+            ],
+        ]);
     }
 
     /**

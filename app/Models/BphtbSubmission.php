@@ -22,10 +22,15 @@ class BphtbSubmission extends Model
         'bill_id',
         'paid_at',
         'ntpd',
+        'skb_number',
+        'skb_issued_at',
+        'skb_issued_by',
+        'skb_qr_hash',
     ];
 
     protected $casts = [
         'paid_at' => 'datetime',
+        'skb_issued_at' => 'datetime',
     ];
 
     public function bill()
@@ -36,5 +41,10 @@ class BphtbSubmission extends Model
     public function documents()
     {
         return $this->hasMany(BphtbDocument::class, 'bphtb_submission_id');
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->status === 'paid' || $this->status === 'skb_issued' || $this->status === 'verified';
     }
 }
