@@ -67,6 +67,16 @@ class PbbBapendaController extends Controller
                         'source' => $result['source'] ?? 'simpbb',
                         'fallback_used' => $result['fallback_used'] ?? false,
                         'data_source' => $result['data_source'] ?? null,
+                        'luas_bumi' => (float) ($data['luas_bumi'] ?? 0),
+                        'luas_bangunan' => (float) ($data['luas_bangunan'] ?? 0),
+                        'njop_bumi' => (float) ($data['njop_bumi'] ?? 0),
+                        'njop_bangunan' => (float) ($data['njop_bangunan'] ?? 0),
+                        'njop_total' => (float) ($data['njop_total'] ?? 0),
+                        'njop_tkp' => (float) ($data['njop_tkp'] ?? 0),
+                        'njop_kena_pajak' => (float) ($data['njop_kena_pajak'] ?? 0),
+                        'tarif' => (float) ($data['tarif'] ?? 0),
+                        'kelas_bumi' => $data['kelas_bumi'] ?? null,
+                        'kelas_bangunan' => $data['kelas_bangunan'] ?? null,
                     ],
                 ]);
             }
