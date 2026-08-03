@@ -220,6 +220,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         // Merchant AFT (Kalkulator Bisnis)
         Route::prefix('merchant')->group(function () {
             Route::post('/submit-omzet', [\App\Http\Controllers\Api\Merchant\KalkulatorBisnisController::class, 'submitOmzet']);
+            Route::get('/aft-availability', [\App\Http\Controllers\Api\Merchant\KalkulatorBisnisController::class, 'getAftAvailability']);
             Route::get('/aft-history', [\App\Http\Controllers\Api\Merchant\KalkulatorBisnisController::class, 'getAftHistory']);
         });
 

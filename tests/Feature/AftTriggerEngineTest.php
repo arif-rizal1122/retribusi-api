@@ -170,6 +170,122 @@ class AftTriggerEngineTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+    public function test_aft_availability_returns_safe_mobile_contract_without_runtime_details(): void
+    {
+        [$taxpayer] = $this->createMerchantAftFixture();
+        Sanctum::actingAs($taxpayer);
+
+        $response = $this->getJson('/api/citizen/merchant/aft-availability');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.available', false)
+            ->assertJsonPath('data.can_submit', false)
+            ->assertJsonPath('data.message', 'AFT Bank Sultra belum tersedia. Gunakan pencatatan manual sementara.')
+            ->assertJsonPath('data.required_fields', ['tax_object_id', 'bill_id', 'transaction_amount'])
+            ->assertJsonMissingPath('data.unavailable_reason')
+            ->assertJsonMissingPath('data.base_url')
+            ->assertJsonMissingPath('data.partner_id')
+            ->assertJsonMissingPath('data.client_secret')
+            ->assertJsonMissingPath('data.source_account_no')
+            ->assertJsonMissingPath('data.destination_account_no')
+            ->assertJsonMissingPath('data.signature');
+    }
+
+    public function test_aft_history_returns_safe_owner_scoped_status_contract_for_mobile(): void
+    {
+        [$taxpayer, $taxObject, $bill] = $this->createMerchantAftFixture();
+        [$otherTaxpayer] = $this->createMerchantAftFixture();
+        Sanctum::actingAs($taxpayer);
+
+        AutoDeductLog::create([
+            'city_id' => 7472,
+            'taxpayer_id' => $taxpayer->id,
+            'tax_object_id' => $taxObject->id,
+            'bill_id' => $bill->id,
+            'source' => 'm-pad_mobile_calculator',
+            'transaction_type' => 'pbjt_tax_deduction',
+            'transaction_amount' => 100000,
+            'tax_amount' => 10000,
+            'deducted_amount' => 10000,
+            'reference_number' => 'AFT-SAFE-001',
+            'payment_channel' => 'BPD_SULTRA_DIRECT_DEBIT',
+            'status' => 'pending',
+            'escrow_settlement_status' => 'pending',
+            'failure_reason' => 'Request In Progress',
+            'metadata' => [
+                'bank_sultra_aft' => [
+                    'merchant_id' => 'MERCHANT-AFT-001',
+                    'sourceAccountNo' => '116010001234567',
+                    'destinationAccountNo' => '116010009876543',
+                    'payment_request' => [
+                        'headers' => [
+                            'Authorization' => 'Bearer token-aft',
+                            'X-SIGNATURE' => 'secret-signature',
+                        ],
+                    ],
+                    'payment_response' => [
+                        'raw' => [
+                            'responseCode' => '2025400',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+        AutoDeductLog::create([
+            'taxpayer_id' => $otherTaxpayer->id,
+            'source' => 'm-pad_mobile_calculator',
+            'transaction_type' => 'pbjt_tax_deduction',
+            'transaction_amount' => 900000,
+            'tax_amount' => 90000,
+            'deducted_amount' => 90000,
+            'reference_number' => 'AFT-OTHER-001',
+            'payment_channel' => 'BPD_SULTRA_DIRECT_DEBIT',
+            'status' => 'success',
+            'metadata' => [],
+        ]);
+
+        $response = $this->getJson('/api/citizen/merchant/aft-history');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonCount(1, 'data.history')
+            ->assertJsonPath('data.history.0.reference_number', 'AFT-SAFE-001')
+            ->assertJsonPath('data.history.0.status', 'processing')
+            ->assertJsonPath('data.history.0.status_label', 'Sedang diproses Bank Sultra')
+            ->assertJsonPath('data.history.0.transaction_amount', 100000)
+            ->assertJsonPath('data.history.0.tax_amount', 10000)
+            ->assertJsonPath('data.history.0.can_retry', false)
+            ->assertJsonPath('data.history.0.can_cancel', false)
+            ->assertJsonPath('data.history.0.bill_reference', $bill->bill_number)
+            ->assertJsonPath('data.history.0.tax_object.name', $taxObject->name)
+            ->assertJsonPath('data.stats.processing_count', 1)
+            ->assertJsonPath('data.stats.success_count', 0)
+            ->assertJsonMissingPath('data.history.0.id')
+            ->assertJsonMissingPath('data.history.0.taxpayer_id')
+            ->assertJsonMissingPath('data.history.0.bill_id')
+            ->assertJsonMissingPath('data.history.0.tax_object_id')
+            ->assertJsonMissingPath('data.history.0.metadata')
+            ->assertJsonMissingPath('data.history.0.payment_channel')
+            ->assertJsonMissingPath('data.history.0.escrow_settlement_status')
+            ->assertJsonMissingPath('data.history.0.failure_reason')
+            ->assertJsonMissing(['AFT-OTHER-001'])
+            ->assertJsonMissing(['Bearer token-aft'])
+            ->assertJsonMissing(['secret-signature'])
+            ->assertJsonMissing(['116010001234567'])
+            ->assertJsonMissing(['116010009876543'])
+            ->assertJsonMissing(['responseCode']);
+    }
+
+    public function test_aft_history_rejects_non_taxpayer_user(): void
+    {
+        Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
+
+        $this->getJson('/api/citizen/merchant/aft-history')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Endpoint AFT hanya untuk wajib pajak merchant.');
+    }
+
     public function test_incoming_transfer_webhook_creates_log_and_dispatches_job()
     {
         Queue::fake();

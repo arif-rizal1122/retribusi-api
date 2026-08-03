@@ -254,45 +254,149 @@ class KalkulatorBisnisController extends Controller
     /**
      * Mengambil riwayat AFT (Auto Deduct Log) milik Wajib Pajak ini.
      */
-    public function getAftHistory(Request $request)
+    public function getAftAvailability(Request $request, BankSultraAftReadiness $readiness)
     {
-        $user = $request->user();
+        $taxpayer = $this->merchantTaxpayerOrAbort($request);
+        $available = $this->isAuthorizedMerchant($taxpayer) && $readiness->available();
 
-        if (! $user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized.',
-            ], 401);
-        }
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'available' => $available,
+                'status' => $available ? 'available' : 'unavailable',
+                'can_submit' => $available,
+                'message' => $available ? 'AFT Bank Sultra tersedia.' : $readiness->publicMessage(),
+                'required_fields' => ['tax_object_id', 'bill_id', 'transaction_amount'],
+            ],
+        ]);
+    }
 
-        $history = AutoDeductLog::where('taxpayer_id', $user->id)
+    /**
+     * Mengambil riwayat AFT (Auto Deduct Log) milik Wajib Pajak ini.
+     */
+    public function getAftHistory(Request $request, BankSultraAftReadiness $readiness)
+    {
+        $taxpayer = $this->merchantTaxpayerOrAbort($request);
+
+        $history = AutoDeductLog::with(['bill:id,bill_number,period,due_date', 'taxObject:id,name,nop'])
+            ->where('taxpayer_id', $taxpayer->id)
             ->where('source', 'm-pad_mobile_calculator')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $totalTaxDeductedThisMonth = AutoDeductLog::where('taxpayer_id', $user->id)
+        $totalTaxDeductedThisMonth = AutoDeductLog::where('taxpayer_id', $taxpayer->id)
+            ->where('source', 'm-pad_mobile_calculator')
             ->where('status', 'success')
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->sum('deducted_amount');
 
-        $totalOmzet = AutoDeductLog::where('taxpayer_id', $user->id)
+        $totalOmzet = AutoDeductLog::where('taxpayer_id', $taxpayer->id)
+            ->where('source', 'm-pad_mobile_calculator')
             ->sum('transaction_amount');
 
-        $successCount = AutoDeductLog::where('taxpayer_id', $user->id)
-            ->where('status', 'success')
-            ->count();
+        $statusCounts = $history
+            ->map(fn (AutoDeductLog $log) => $this->mobileAftStatus($log))
+            ->countBy();
+
+        $available = $this->isAuthorizedMerchant($taxpayer) && $readiness->available();
 
         return response()->json([
             'success' => true,
             'data' => [
-                'history' => $history,
+                'availability' => [
+                    'available' => $available,
+                    'status' => $available ? 'available' : 'unavailable',
+                    'can_submit' => $available,
+                    'message' => $available ? 'AFT Bank Sultra tersedia.' : $readiness->publicMessage(),
+                ],
+                'history' => $history
+                    ->map(fn (AutoDeductLog $log) => $this->mobileAftHistoryPayload($log))
+                    ->values(),
                 'stats' => [
-                    'total_tax_this_month' => $totalTaxDeductedThisMonth,
-                    'total_omzet' => $totalOmzet,
-                    'success_count' => $successCount,
+                    'total_tax_this_month' => (float) $totalTaxDeductedThisMonth,
+                    'total_omzet' => (float) $totalOmzet,
+                    'pending_count' => (int) ($statusCounts['pending'] ?? 0),
+                    'processing_count' => (int) ($statusCounts['processing'] ?? 0),
+                    'success_count' => (int) ($statusCounts['success'] ?? 0),
+                    'failed_count' => (int) ($statusCounts['failed'] ?? 0),
+                    'cancelled_count' => (int) ($statusCounts['cancelled'] ?? 0),
                 ],
             ],
         ]);
+    }
+
+    private function merchantTaxpayerOrAbort(Request $request): Taxpayer
+    {
+        $taxpayer = $request->user();
+        if (! $taxpayer instanceof Taxpayer) {
+            abort(response()->json([
+                'success' => false,
+                'message' => 'Endpoint AFT hanya untuk wajib pajak merchant.',
+            ], 403));
+        }
+
+        return $taxpayer;
+    }
+
+    private function mobileAftHistoryPayload(AutoDeductLog $log): array
+    {
+        $status = $this->mobileAftStatus($log);
+
+        return [
+            'reference_number' => $log->reference_number,
+            'status' => $status,
+            'status_label' => $this->mobileAftStatusLabel($status),
+            'created_at' => $log->created_at?->toIso8601String(),
+            'processed_at' => $log->processed_at?->toIso8601String(),
+            'transaction_amount' => (float) $log->transaction_amount,
+            'tax_amount' => (float) $log->tax_amount,
+            'bill_reference' => $log->bill?->bill_number,
+            'period' => $log->bill?->period,
+            'tax_object' => $log->taxObject ? [
+                'name' => $log->taxObject->name,
+                'nop' => $log->taxObject->nop,
+            ] : null,
+            'can_retry' => false,
+            'can_cancel' => false,
+        ];
+    }
+
+    private function mobileAftStatus(AutoDeductLog $log): string
+    {
+        $status = strtolower((string) $log->status);
+
+        if (in_array($status, ['success', 'settled', 'paid'], true)) {
+            return 'success';
+        }
+
+        if (in_array($status, ['failed', 'error', 'rejected'], true)) {
+            return 'failed';
+        }
+
+        if (in_array($status, ['cancelled', 'canceled', 'void', 'voided'], true)) {
+            return 'cancelled';
+        }
+
+        if (
+            data_get($log->metadata, 'bank_sultra_aft.payment_request') !== null
+            || data_get($log->metadata, 'bank_sultra_aft.payment_response') !== null
+            || filled($log->failure_reason)
+        ) {
+            return 'processing';
+        }
+
+        return 'pending';
+    }
+
+    private function mobileAftStatusLabel(string $status): string
+    {
+        return match ($status) {
+            'processing' => 'Sedang diproses Bank Sultra',
+            'success' => 'Berhasil',
+            'failed' => 'Gagal',
+            'cancelled' => 'Dibatalkan',
+            default => 'Menunggu diproses',
+        };
     }
 }
