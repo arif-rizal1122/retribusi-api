@@ -286,6 +286,55 @@ class AftTriggerEngineTest extends TestCase
             ->assertJsonPath('message', 'Endpoint AFT hanya untuk wajib pajak merchant.');
     }
 
+    public function test_aft_availability_rejects_taxpayer_without_merchant_aft_access(): void
+    {
+        [$taxpayer] = $this->createMerchantAftFixture([
+            'taxpayer' => [
+                'metadata' => [
+                    'role' => 'merchant',
+                    'aft_enabled' => false,
+                ],
+            ],
+        ]);
+        Sanctum::actingAs($taxpayer);
+
+        $this->getJson('/api/citizen/merchant/aft-availability')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Endpoint AFT hanya untuk wajib pajak merchant.');
+    }
+
+    public function test_aft_history_rejects_taxpayer_without_merchant_aft_access(): void
+    {
+        [$taxpayer] = $this->createMerchantAftFixture([
+            'taxpayer' => [
+                'metadata' => [
+                    'role' => 'merchant',
+                    'aft_enabled' => false,
+                ],
+            ],
+        ]);
+        Sanctum::actingAs($taxpayer);
+
+        AutoDeductLog::create([
+            'city_id' => 7472,
+            'taxpayer_id' => $taxpayer->id,
+            'source' => 'm-pad_mobile_calculator',
+            'transaction_type' => 'pbjt_tax_deduction',
+            'transaction_amount' => 100000,
+            'tax_amount' => 10000,
+            'deducted_amount' => 10000,
+            'reference_number' => 'AFT-UNAUTHORIZED-001',
+            'payment_channel' => 'BPD_SULTRA_DIRECT_DEBIT',
+            'status' => 'pending',
+            'metadata' => [],
+        ]);
+
+        $this->getJson('/api/citizen/merchant/aft-history')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Endpoint AFT hanya untuk wajib pajak merchant.')
+            ->assertJsonMissing(['AFT-UNAUTHORIZED-001']);
+    }
+
     public function test_incoming_transfer_webhook_creates_log_and_dispatches_job()
     {
         Queue::fake();
@@ -585,7 +634,7 @@ class AftTriggerEngineTest extends TestCase
             'calculation_formula' => $classification->calculation_formula,
             'is_active' => true,
         ]);
-        $taxpayer = Taxpayer::factory()->create([
+        $taxpayer = Taxpayer::factory()->create(array_merge([
             'opd_id' => $opd->id,
             'is_active' => true,
             'metadata' => [
@@ -595,7 +644,7 @@ class AftTriggerEngineTest extends TestCase
                     'merchant_id' => 'MERCHANT-AFT-001',
                 ],
             ],
-        ]);
+        ], $overrides['taxpayer'] ?? []));
         $taxObject = TaxObject::factory()->create(array_merge([
             'opd_id' => $opd->id,
             'taxpayer_id' => $taxpayer->id,

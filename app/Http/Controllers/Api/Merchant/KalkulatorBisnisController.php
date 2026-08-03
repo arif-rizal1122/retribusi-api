@@ -256,8 +256,8 @@ class KalkulatorBisnisController extends Controller
      */
     public function getAftAvailability(Request $request, BankSultraAftReadiness $readiness)
     {
-        $taxpayer = $this->merchantTaxpayerOrAbort($request);
-        $available = $this->isAuthorizedMerchant($taxpayer) && $readiness->available();
+        $this->merchantTaxpayerOrAbort($request);
+        $available = $readiness->available();
 
         return response()->json([
             'success' => true,
@@ -299,7 +299,7 @@ class KalkulatorBisnisController extends Controller
             ->map(fn (AutoDeductLog $log) => $this->mobileAftStatus($log))
             ->countBy();
 
-        $available = $this->isAuthorizedMerchant($taxpayer) && $readiness->available();
+        $available = $readiness->available();
 
         return response()->json([
             'success' => true,
@@ -329,7 +329,7 @@ class KalkulatorBisnisController extends Controller
     private function merchantTaxpayerOrAbort(Request $request): Taxpayer
     {
         $taxpayer = $request->user();
-        if (! $taxpayer instanceof Taxpayer) {
+        if (! $taxpayer instanceof Taxpayer || ! $this->isAuthorizedMerchant($taxpayer)) {
             abort(response()->json([
                 'success' => false,
                 'message' => 'Endpoint AFT hanya untuk wajib pajak merchant.',
