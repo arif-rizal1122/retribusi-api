@@ -6,6 +6,8 @@ use App\Jobs\ExecuteAutoDebitAFT;
 use App\Models\AutoDeductLog;
 use App\Models\Taxpayer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
@@ -68,10 +70,15 @@ class AftTriggerEngineTest extends TestCase
         $this->configureReadyBankSultraAft();
 
         Http::fake([
-            'sandbox.bank-sultra.test/*' => Http::response([
-                'responseCode' => '2000000',
+            'sandbox.bank-sultra.test/v1.0/access-token/b2b' => Http::response([
+                'accessToken' => 'token-aft',
+                'tokenType' => 'Bearer',
+                'expiresIn' => '900',
+            ], 200),
+            'sandbox.bank-sultra.test/v1.0/debit/payment-host-to-host' => Http::response([
+                'responseCode' => '2005400',
                 'responseMessage' => 'Successful',
-                'status' => 'SUCCESS',
+                'referenceNo' => 'BANK-SULTRA-REF-001',
             ], 200),
         ]);
 
@@ -92,11 +99,139 @@ class AftTriggerEngineTest extends TestCase
         $job = new ExecuteAutoDebitAFT($log->id);
         $job->handle();
 
-        $this->assertDatabaseHas('auto_deduct_logs', [
-            'id' => $log->id,
-            'status' => 'success',
-            'escrow_settlement_status' => 'settled',
+        $log->refresh();
+
+        $this->assertSame('success', $log->status);
+        $this->assertSame('settled', $log->escrow_settlement_status);
+        $this->assertSame('2005400', $log->metadata['bank_sultra_aft']['payment_response']['response_code']);
+        $this->assertSame('BANK-SULTRA-REF-001', $log->metadata['bank_sultra_aft']['bank_reference_no']);
+        $this->assertNotNull($log->processed_at);
+
+        Http::assertSent(function (Request $request) {
+            return $request->url() === 'https://sandbox.bank-sultra.test/v1.0/debit/payment-host-to-host'
+                && $request->header('Authorization')[0] === 'Bearer token-aft'
+                && $request->header('X-EXTERNAL-ID')[0] !== ''
+                && $request->data()['amount'] === ['value' => '10000.00', 'currency' => 'IDR'];
+        });
+    }
+
+    public function test_execute_auto_debit_job_keeps_log_pending_when_bank_returns_request_in_progress()
+    {
+        $this->configureReadyBankSultraAft();
+        $log = $this->createPendingAftLog('TEST-AFT-PENDING');
+
+        Http::fake([
+            'sandbox.bank-sultra.test/v1.0/access-token/b2b' => Http::response([
+                'accessToken' => 'token-aft',
+            ], 200),
+            'sandbox.bank-sultra.test/v1.0/debit/payment-host-to-host' => Http::response([
+                'responseCode' => '2025400',
+                'responseMessage' => 'Request In Progress',
+            ], 202),
         ]);
+
+        (new ExecuteAutoDebitAFT($log->id))->handle();
+
+        $log->refresh();
+
+        $this->assertSame('pending', $log->status);
+        $this->assertSame('pending', $log->escrow_settlement_status);
+        $this->assertSame('2025400', $log->metadata['bank_sultra_aft']['payment_response']['response_code']);
+        $this->assertSame('Request In Progress', $log->failure_reason);
+        $this->assertNull($log->processed_at);
+    }
+
+    public function test_execute_auto_debit_job_fails_from_snap_failure_response_code()
+    {
+        $this->configureReadyBankSultraAft();
+        $log = $this->createPendingAftLog('TEST-AFT-FAILED');
+
+        Http::fake([
+            'sandbox.bank-sultra.test/v1.0/access-token/b2b' => Http::response([
+                'accessToken' => 'token-aft',
+            ], 200),
+            'sandbox.bank-sultra.test/v1.0/debit/payment-host-to-host' => Http::response([
+                'responseCode' => '4005401',
+                'responseMessage' => 'Invalid Merchant',
+            ], 400),
+        ]);
+
+        (new ExecuteAutoDebitAFT($log->id))->handle();
+
+        $log->refresh();
+
+        $this->assertSame('failed', $log->status);
+        $this->assertSame('failed', $log->escrow_settlement_status);
+        $this->assertSame('4005401', $log->metadata['bank_sultra_aft']['payment_response']['response_code']);
+        $this->assertSame('Invalid Merchant', $log->failure_reason);
+        $this->assertNotNull($log->processed_at);
+    }
+
+    public function test_execute_auto_debit_job_does_not_settle_from_legacy_success_status_without_snap_response_code()
+    {
+        $this->configureReadyBankSultraAft();
+        $log = $this->createPendingAftLog('TEST-AFT-LEGACY-SUCCESS');
+
+        Http::fake([
+            'sandbox.bank-sultra.test/v1.0/access-token/b2b' => Http::response([
+                'accessToken' => 'token-aft',
+            ], 200),
+            'sandbox.bank-sultra.test/v1.0/debit/payment-host-to-host' => Http::response([
+                'responseCode' => '2000000',
+                'responseMessage' => 'Legacy placeholder response',
+                'status' => 'SUCCESS',
+            ], 200),
+        ]);
+
+        (new ExecuteAutoDebitAFT($log->id))->handle();
+
+        $log->refresh();
+
+        $this->assertSame('failed', $log->status);
+        $this->assertSame('failed', $log->escrow_settlement_status);
+        $this->assertSame('Unexpected Bank Sultra AFT service code.', $log->failure_reason);
+    }
+
+    public function test_execute_auto_debit_job_keeps_timeout_retryable_without_changing_external_id()
+    {
+        $this->configureReadyBankSultraAft();
+        $log = $this->createPendingAftLog('TEST-AFT-TIMEOUT');
+
+        Http::fake([
+            'sandbox.bank-sultra.test/v1.0/access-token/b2b' => Http::response([
+                'accessToken' => 'token-aft',
+            ], 200),
+            'sandbox.bank-sultra.test/v1.0/debit/payment-host-to-host' => function () {
+                throw new ConnectionException('cURL error 28: Operation timed out');
+            },
+        ]);
+
+        (new ExecuteAutoDebitAFT($log->id))->handle();
+
+        $log->refresh();
+        $firstExternalId = $log->metadata['bank_sultra_aft']['external_id'];
+
+        $this->assertSame('pending', $log->status);
+        $this->assertSame('pending', $log->escrow_settlement_status);
+        $this->assertSame('Bank Sultra AFT timeout; akan dicoba ulang.', $log->failure_reason);
+        $this->assertNull($log->processed_at);
+
+        Http::fake([
+            'sandbox.bank-sultra.test/v1.0/access-token/b2b' => Http::response([
+                'accessToken' => 'token-aft',
+            ], 200),
+            'sandbox.bank-sultra.test/v1.0/debit/payment-host-to-host' => Http::response([
+                'responseCode' => '2025400',
+                'responseMessage' => 'Request In Progress',
+            ], 202),
+        ]);
+
+        (new ExecuteAutoDebitAFT($log->id))->handle();
+
+        $log->refresh();
+
+        $this->assertSame($firstExternalId, $log->metadata['bank_sultra_aft']['external_id']);
+        $this->assertSame($firstExternalId, $log->metadata['bank_sultra_aft']['payment_request']['headers']['X-EXTERNAL-ID']);
     }
 
     public function test_execute_auto_debit_job_does_not_send_outbound_request_when_gate_is_default_off()
@@ -127,6 +262,24 @@ class AftTriggerEngineTest extends TestCase
             'status' => 'failed',
             'escrow_settlement_status' => 'failed',
             'failure_reason' => 'AFT Bank Sultra belum tersedia. Gunakan pencatatan manual sementara.',
+        ]);
+    }
+
+    private function createPendingAftLog(string $referenceNumber): AutoDeductLog
+    {
+        return AutoDeductLog::create([
+            'city_id' => 1,
+            'taxpayer_id' => 1,
+            'source' => 'bpd_webhook',
+            'transaction_type' => 'income_transfer',
+            'transaction_amount' => 100000,
+            'tax_amount' => 10000,
+            'deducted_amount' => 10000,
+            'reference_number' => $referenceNumber,
+            'payment_channel' => 'BPD',
+            'status' => 'pending',
+            'escrow_settlement_status' => 'pending',
+            'metadata' => [],
         ]);
     }
 
