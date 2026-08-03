@@ -5,31 +5,39 @@ namespace App\Http\Controllers\Api\Merchant;
 use App\Http\Controllers\Controller;
 use App\Jobs\ExecuteAutoDebitAFT;
 use App\Models\AutoDeductLog;
+use App\Models\Bill;
+use App\Models\TaxObject;
+use App\Models\Taxpayer;
 use App\Services\Payment\Snap\BankSultraAftReadiness;
+use App\Services\TaxCalculationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class KalkulatorBisnisController extends Controller
 {
     /**
      * Menerima input omzet harian dari Kalkulator Bisnis.
-     * Mengkalkulasi pajak PBJT (10%) dan membuat antrean (Job) AFT.
+     * Mengkalkulasi pajak PBJT dari tarif backend dan membuat antrean AFT.
      */
-    public function submitOmzet(Request $request, BankSultraAftReadiness $readiness)
-    {
-        $request->validate([
+    public function submitOmzet(
+        Request $request,
+        BankSultraAftReadiness $readiness,
+        TaxCalculationService $taxCalculationService
+    ) {
+        $validated = $request->validate([
             'transaction_amount' => 'required|numeric|min:1',
+            'tax_object_id' => 'required|integer|exists:tax_objects,id',
+            'bill_id' => 'required|integer|exists:bills,id',
         ]);
 
-        // Auth User (Taxpayer) via Sanctum
-        $user = $request->user();
+        $taxpayer = $request->user();
 
-        // Cek jika bukan Wajib Pajak Merchant
-        if (! $user) {
+        if (! $taxpayer instanceof Taxpayer || ! $this->isAuthorizedMerchant($taxpayer)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized. Harap login terlebih dahulu.',
-            ], 401);
+                'message' => 'Endpoint AFT hanya untuk wajib pajak merchant.',
+            ], 403);
         }
 
         if (! $readiness->available()) {
@@ -39,15 +47,34 @@ class KalkulatorBisnisController extends Controller
             ], 503);
         }
 
-        $omzet = $request->transaction_amount;
-        // Asumsi pajak PBJT 10%
-        $taxAmount = $omzet * 0.10;
+        $taxObject = TaxObject::with(['retributionType', 'classification'])
+            ->whereKey($validated['tax_object_id'])
+            ->where('taxpayer_id', $taxpayer->id)
+            ->first();
+        $bill = Bill::with(['retributionType', 'classification'])
+            ->whereKey($validated['bill_id'])
+            ->where('taxpayer_id', $taxpayer->id)
+            ->when($taxObject, fn ($query) => $query->where('tax_object_id', $taxObject->id))
+            ->first();
 
-        // Buat record AutoDeductLog
+        $this->validateMerchantAftContract($taxpayer, $taxObject, $bill);
+
+        $omzet = (float) $validated['transaction_amount'];
+        $calculation = $taxCalculationService->calculateForObject($taxObject, [
+            'turnover_amount' => $omzet,
+            'omzet' => $omzet,
+        ]);
+        $taxAmount = round((float) $calculation['amount'], 2);
+
+        $this->validateOfficialAmount($bill, $taxAmount);
+
+        $contract = $this->aftContract($taxpayer, $taxObject, $bill);
+
         $log = AutoDeductLog::create([
-            // Default 1 untuk simulasi, idealnya diambil dari relasi User/Taxpayer
-            'city_id' => 1,
-            'taxpayer_id' => $user->id,
+            'city_id' => $contract['city_id'],
+            'taxpayer_id' => $taxpayer->id,
+            'tax_object_id' => $taxObject->id,
+            'bill_id' => $bill->id,
             'source' => 'm-pad_mobile_calculator',
             'transaction_type' => 'pbjt_tax_deduction',
             'transaction_amount' => $omzet,
@@ -55,11 +82,19 @@ class KalkulatorBisnisController extends Controller
             'deducted_amount' => $taxAmount,
             'reference_number' => 'AFT-'.strtoupper(Str::random(10)),
             'payment_channel' => 'BPD_SULTRA_DIRECT_DEBIT',
+            'metadata' => [
+                'tax_calculation' => [
+                    'source' => 'backend_tariff',
+                    'engine_source' => $calculation['source'] ?? null,
+                    'formula' => $calculation['formula'] ?? null,
+                    'rate_id' => $calculation['rate_id'] ?? null,
+                ],
+                'bank_sultra_aft' => $contract,
+            ],
             'status' => 'pending',
             'escrow_settlement_status' => 'pending',
         ]);
 
-        // Trigger Queue Job AFT
         ExecuteAutoDebitAFT::dispatch($log->id);
 
         return response()->json([
@@ -69,8 +104,151 @@ class KalkulatorBisnisController extends Controller
                 'reference_number' => $log->reference_number,
                 'tax_amount' => $taxAmount,
                 'omzet' => $omzet,
+                'bill_id' => $bill->id,
+                'tax_object_id' => $taxObject->id,
             ],
         ], 201);
+    }
+
+    private function validateMerchantAftContract(Taxpayer $taxpayer, ?TaxObject $taxObject, ?Bill $bill): void
+    {
+        $errors = [];
+
+        if (! $taxObject) {
+            $errors['tax_object_id'][] = 'Objek pajak tidak ditemukan untuk wajib pajak ini.';
+        } elseif (! $this->isApprovedActiveTaxObject($taxObject)) {
+            $errors['tax_object_id'][] = 'Objek pajak belum aktif atau belum disetujui untuk AFT.';
+        }
+
+        if (! $bill) {
+            $errors['bill_id'][] = 'SKDR/tagihan tidak ditemukan untuk objek pajak ini.';
+        } elseif (! $this->isApprovedSkdr($bill)) {
+            $errors['bill_id'][] = 'SKDR/tagihan belum disetujui untuk AFT Bank Sultra.';
+        }
+
+        if ($taxObject && $bill) {
+            $contract = $this->aftContract($taxpayer, $taxObject, $bill);
+
+            if ($contract['merchant_id'] === '') {
+                $errors['tax_object_id'][] = 'Merchant ID resmi Bank Sultra belum tersedia.';
+            }
+
+            if ($contract['city_id'] === null) {
+                $errors['tax_object_id'][] = 'City resmi AFT belum tersedia pada profil objek/SKDR.';
+            }
+
+            if ($contract['contract_reference'] === '') {
+                $errors['bill_id'][] = 'Referensi kontrak SKDR AFT belum tersedia.';
+            }
+
+            if ($contract['source_profile_ref'] === '') {
+                $errors['bill_id'][] = 'Referensi rekening sumber merchant belum tersedia pada profil/kontrak resmi.';
+            }
+
+            if ($contract['destination_profile_ref'] === '') {
+                $errors['bill_id'][] = 'Referensi rekening tujuan penampung belum tersedia pada profil/kontrak resmi.';
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    private function validateOfficialAmount(Bill $bill, float $taxAmount): void
+    {
+        if ($taxAmount <= 0) {
+            throw ValidationException::withMessages([
+                'transaction_amount' => ['Nominal pajak hasil tarif backend harus lebih dari nol.'],
+            ]);
+        }
+
+        if (abs((float) $bill->amount - $taxAmount) > 0.01) {
+            throw ValidationException::withMessages([
+                'transaction_amount' => ['Nominal pajak tidak sesuai dengan SKDR/tagihan resmi.'],
+            ]);
+        }
+    }
+
+    private function isAuthorizedMerchant(Taxpayer $taxpayer): bool
+    {
+        if (! $taxpayer->is_active) {
+            return false;
+        }
+
+        return strtolower((string) data_get($taxpayer->metadata, 'role')) === 'merchant'
+            && filter_var(data_get($taxpayer->metadata, 'aft_enabled'), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    private function isApprovedActiveTaxObject(TaxObject $taxObject): bool
+    {
+        return $taxObject->is_active
+            && strtolower((string) $taxObject->status) === 'active'
+            && $taxObject->approved_at !== null;
+    }
+
+    private function isApprovedSkdr(Bill $bill): bool
+    {
+        $rawStatus = strtolower((string) $bill->getRawOriginal('status'));
+        $skdrStatus = strtolower((string) (
+            data_get($bill->metadata, 'skdr_status')
+            ?? data_get($bill->metadata, 'skdr.status')
+            ?? data_get($bill->metadata, 'official_document.skdr_status')
+        ));
+
+        return $rawStatus === 'pending'
+            && in_array($skdrStatus, ['approved', 'issued', 'signed'], true);
+    }
+
+    private function aftContract(Taxpayer $taxpayer, TaxObject $taxObject, Bill $bill): array
+    {
+        return [
+            'merchant_id' => $this->firstFilled([
+                data_get($bill->metadata, 'bank_sultra_aft.merchant_id'),
+                data_get($taxObject->metadata, 'bank_sultra_aft.merchant_id'),
+                data_get($taxpayer->metadata, 'bank_sultra_aft.merchant_id'),
+            ]),
+            'contract_reference' => $this->firstFilled([
+                data_get($bill->metadata, 'bank_sultra_aft.contract_reference'),
+                data_get($bill->metadata, 'skdr.number'),
+                $bill->bill_number,
+            ]),
+            'source_profile_ref' => $this->firstFilled([
+                data_get($bill->metadata, 'bank_sultra_aft.source_profile_ref'),
+                data_get($taxObject->metadata, 'bank_sultra_aft.source_profile_ref'),
+                data_get($taxpayer->metadata, 'bank_sultra_aft.source_profile_ref'),
+            ]),
+            'destination_profile_ref' => $this->firstFilled([
+                data_get($bill->metadata, 'bank_sultra_aft.destination_profile_ref'),
+                data_get($taxObject->metadata, 'bank_sultra_aft.destination_profile_ref'),
+                data_get($bill->classification?->bank_accounts, '0.account_ref'),
+            ]),
+            'city_id' => $this->cityId($taxpayer, $taxObject, $bill),
+            'skdr_number' => $bill->bill_number,
+        ];
+    }
+
+    private function cityId(Taxpayer $taxpayer, TaxObject $taxObject, Bill $bill): ?int
+    {
+        $cityId = $this->firstFilled([
+            data_get($bill->metadata, 'bank_sultra_aft.city_id'),
+            data_get($taxObject->metadata, 'bank_sultra_aft.city_id'),
+            data_get($taxpayer->metadata, 'bank_sultra_aft.city_id'),
+        ]);
+
+        return ctype_digit($cityId) ? (int) $cityId : null;
+    }
+
+    private function firstFilled(array $values): string
+    {
+        foreach ($values as $value) {
+            $value = trim((string) $value);
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
     }
 
     /**

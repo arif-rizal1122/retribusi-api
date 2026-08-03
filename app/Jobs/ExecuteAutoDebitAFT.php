@@ -52,7 +52,7 @@ class ExecuteAutoDebitAFT implements ShouldQueue
             $paymentRequest = $directDebit->buildPaymentRequest(
                 [
                     'partner_reference_no' => (string) $log->reference_number,
-                    'merchant_id' => (string) $log->taxpayer_id,
+                    'merchant_id' => $this->merchantId($log),
                     'amount' => (float) $log->deducted_amount,
                     'fee_amount' => 0,
                     'remark' => 'Auto-Debit Pajak PBJT',
@@ -207,6 +207,13 @@ class ExecuteAutoDebitAFT implements ShouldQueue
     private function metadata(AutoDeductLog $log): array
     {
         return is_array($log->metadata) ? $log->metadata : [];
+    }
+
+    private function merchantId(AutoDeductLog $log): string
+    {
+        $merchantId = trim((string) data_get($this->metadata($log), 'bank_sultra_aft.merchant_id'));
+
+        return $merchantId !== '' ? $merchantId : (string) $log->taxpayer_id;
     }
 
     private function bankReferenceNo(array $responseBody): ?string

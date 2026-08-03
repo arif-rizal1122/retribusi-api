@@ -4,7 +4,14 @@ namespace Tests\Feature;
 
 use App\Jobs\ExecuteAutoDebitAFT;
 use App\Models\AutoDeductLog;
+use App\Models\Bill;
+use App\Models\Opd;
+use App\Models\RetributionClassification;
+use App\Models\RetributionRate;
+use App\Models\RetributionType;
+use App\Models\TaxObject;
 use App\Models\Taxpayer;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
@@ -20,14 +27,144 @@ class AftTriggerEngineTest extends TestCase
     public function test_submit_omzet_is_rejected_when_bank_sultra_aft_gate_is_default_off()
     {
         Queue::fake();
-        Sanctum::actingAs(Taxpayer::factory()->create());
+        [$taxpayer, $taxObject, $bill] = $this->createMerchantAftFixture();
+        Sanctum::actingAs($taxpayer);
 
         $response = $this->postJson('/api/citizen/merchant/submit-omzet', [
             'transaction_amount' => 100000,
+            'tax_object_id' => $taxObject->id,
+            'bill_id' => $bill->id,
         ]);
 
         $response->assertStatus(503)
             ->assertJsonPath('message', 'AFT Bank Sultra belum tersedia. Gunakan pencatatan manual sementara.');
+
+        $this->assertDatabaseCount('auto_deduct_logs', 0);
+        Queue::assertNothingPushed();
+    }
+
+    public function test_submit_omzet_requires_citizen_merchant_authorization(): void
+    {
+        Queue::fake();
+        $this->configureReadyBankSultraAft();
+        [, $taxObject, $bill] = $this->createMerchantAftFixture();
+        Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
+
+        $response = $this->postJson('/api/citizen/merchant/submit-omzet', [
+            'transaction_amount' => 100000,
+            'tax_object_id' => $taxObject->id,
+            'bill_id' => $bill->id,
+        ]);
+
+        $response->assertForbidden()
+            ->assertJsonPath('message', 'Endpoint AFT hanya untuk wajib pajak merchant.');
+
+        $this->assertDatabaseCount('auto_deduct_logs', 0);
+        Queue::assertNothingPushed();
+    }
+
+    public function test_submit_omzet_uses_owned_active_tax_object_approved_skdr_and_backend_tariff(): void
+    {
+        Queue::fake();
+        $this->configureReadyBankSultraAft();
+        [$taxpayer, $taxObject, $bill] = $this->createMerchantAftFixture([
+            'classification' => ['calculation_formula' => 'turnover_amount * 0.125'],
+            'bill' => ['amount' => 12500],
+        ]);
+        Sanctum::actingAs($taxpayer);
+
+        $response = $this->postJson('/api/citizen/merchant/submit-omzet', [
+            'transaction_amount' => 100000,
+            'tax_object_id' => $taxObject->id,
+            'bill_id' => $bill->id,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.tax_amount', 12500)
+            ->assertJsonPath('data.omzet', 100000)
+            ->assertJsonPath('data.bill_id', $bill->id)
+            ->assertJsonPath('data.tax_object_id', $taxObject->id);
+
+        $log = AutoDeductLog::firstOrFail();
+
+        $this->assertSame($taxpayer->id, $log->taxpayer_id);
+        $this->assertSame($taxObject->id, $log->tax_object_id);
+        $this->assertSame($bill->id, $log->bill_id);
+        $this->assertSame(7472, $log->city_id);
+        $this->assertSame('100000.00', $log->transaction_amount);
+        $this->assertSame('12500.00', $log->tax_amount);
+        $this->assertSame('12500.00', $log->deducted_amount);
+        $this->assertSame('backend_tariff', $log->metadata['tax_calculation']['source']);
+        $this->assertSame('SKDR-AFT-001', $log->metadata['bank_sultra_aft']['contract_reference']);
+
+        Queue::assertPushed(ExecuteAutoDebitAFT::class);
+    }
+
+    public function test_submit_omzet_rejects_missing_or_unapproved_skdr(): void
+    {
+        Queue::fake();
+        $this->configureReadyBankSultraAft();
+        [$taxpayer, $taxObject, $bill] = $this->createMerchantAftFixture([
+            'bill' => [
+                'metadata' => [
+                    'skdr_status' => 'draft',
+                    'bank_sultra_aft' => [
+                        'contract_reference' => 'SKDR-AFT-DRAFT',
+                    ],
+                ],
+            ],
+        ]);
+        Sanctum::actingAs($taxpayer);
+
+        $this->postJson('/api/citizen/merchant/submit-omzet', [
+            'transaction_amount' => 100000,
+            'tax_object_id' => $taxObject->id,
+            'bill_id' => $bill->id,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('bill_id');
+
+        $this->assertDatabaseCount('auto_deduct_logs', 0);
+        Queue::assertNothingPushed();
+    }
+
+    public function test_submit_omzet_rejects_tax_object_or_skdr_owned_by_another_taxpayer(): void
+    {
+        Queue::fake();
+        $this->configureReadyBankSultraAft();
+        [$taxpayer] = $this->createMerchantAftFixture();
+        [, $otherTaxObject, $otherBill] = $this->createMerchantAftFixture();
+        Sanctum::actingAs($taxpayer);
+
+        $this->postJson('/api/citizen/merchant/submit-omzet', [
+            'transaction_amount' => 100000,
+            'tax_object_id' => $otherTaxObject->id,
+            'bill_id' => $otherBill->id,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['tax_object_id', 'bill_id']);
+
+        $this->assertDatabaseCount('auto_deduct_logs', 0);
+        Queue::assertNothingPushed();
+    }
+
+    public function test_submit_omzet_rejects_inactive_or_unapproved_tax_object(): void
+    {
+        Queue::fake();
+        $this->configureReadyBankSultraAft();
+        [$taxpayer, $taxObject, $bill] = $this->createMerchantAftFixture([
+            'tax_object' => [
+                'status' => 'pending',
+                'approved_at' => null,
+                'is_active' => false,
+            ],
+        ]);
+        Sanctum::actingAs($taxpayer);
+
+        $this->postJson('/api/citizen/merchant/submit-omzet', [
+            'transaction_amount' => 100000,
+            'tax_object_id' => $taxObject->id,
+            'bill_id' => $bill->id,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('tax_object_id');
 
         $this->assertDatabaseCount('auto_deduct_logs', 0);
         Queue::assertNothingPushed();
@@ -112,6 +249,38 @@ class AftTriggerEngineTest extends TestCase
                 && $request->header('Authorization')[0] === 'Bearer token-aft'
                 && $request->header('X-EXTERNAL-ID')[0] !== ''
                 && $request->data()['amount'] === ['value' => '10000.00', 'currency' => 'IDR'];
+        });
+    }
+
+    public function test_execute_auto_debit_job_uses_official_merchant_id_from_aft_contract_metadata()
+    {
+        $this->configureReadyBankSultraAft();
+
+        Http::fake([
+            'sandbox.bank-sultra.test/v1.0/access-token/b2b' => Http::response([
+                'accessToken' => 'token-aft',
+            ], 200),
+            'sandbox.bank-sultra.test/v1.0/debit/payment-host-to-host' => Http::response([
+                'responseCode' => '2005400',
+                'responseMessage' => 'Successful',
+            ], 200),
+        ]);
+
+        $log = $this->createPendingAftLog('TEST-AFT-OFFICIAL-MERCHANT');
+        $log->update([
+            'taxpayer_id' => 99,
+            'metadata' => [
+                'bank_sultra_aft' => [
+                    'merchant_id' => 'MERCHANT-AFT-001',
+                ],
+            ],
+        ]);
+
+        (new ExecuteAutoDebitAFT($log->id))->handle();
+
+        Http::assertSent(function (Request $request) {
+            return $request->url() === 'https://sandbox.bank-sultra.test/v1.0/debit/payment-host-to-host'
+                && $request->data()['merchantId'] === 'MERCHANT-AFT-001';
         });
     }
 
@@ -281,6 +450,76 @@ class AftTriggerEngineTest extends TestCase
             'escrow_settlement_status' => 'pending',
             'metadata' => [],
         ]);
+    }
+
+    private function createMerchantAftFixture(array $overrides = []): array
+    {
+        $opd = Opd::factory()->create();
+        $type = RetributionType::factory()->create(['opd_id' => $opd->id]);
+        $classification = RetributionClassification::factory()->create(array_merge([
+            'opd_id' => $opd->id,
+            'retribution_type_id' => $type->id,
+            'calculation_formula' => 'turnover_amount * 0.1',
+        ], $overrides['classification'] ?? []));
+        RetributionRate::factory()->create([
+            'opd_id' => $opd->id,
+            'retribution_type_id' => $type->id,
+            'retribution_classification_id' => $classification->id,
+            'amount' => 0,
+            'calculation_formula' => $classification->calculation_formula,
+            'is_active' => true,
+        ]);
+        $taxpayer = Taxpayer::factory()->create([
+            'opd_id' => $opd->id,
+            'is_active' => true,
+            'metadata' => [
+                'role' => 'merchant',
+                'aft_enabled' => true,
+                'bank_sultra_aft' => [
+                    'merchant_id' => 'MERCHANT-AFT-001',
+                ],
+            ],
+        ]);
+        $taxObject = TaxObject::factory()->create(array_merge([
+            'opd_id' => $opd->id,
+            'taxpayer_id' => $taxpayer->id,
+            'retribution_type_id' => $type->id,
+            'retribution_classification_id' => $classification->id,
+            'status' => 'active',
+            'approved_at' => now()->subDay(),
+            'is_active' => true,
+            'metadata' => [
+                'bank_sultra_aft' => [
+                    'city_id' => 7472,
+                    'source_profile_ref' => 'MERCHANT-BANK-PROFILE-001',
+                ],
+            ],
+        ], $overrides['tax_object'] ?? []));
+        $bill = Bill::factory()->create(array_merge([
+            'taxpayer_id' => $taxpayer->id,
+            'tax_object_id' => $taxObject->id,
+            'opd_id' => $opd->id,
+            'retribution_type_id' => $type->id,
+            'retribution_classification_id' => $classification->id,
+            'amount' => 10000,
+            'admin_fee' => 0,
+            'penalty_amount' => 0,
+            'fixed_fine_amount' => 0,
+            'surcharge_amount' => 0,
+            'waived_penalty_amount' => 0,
+            'status' => 'pending',
+            'period' => '2026-08',
+            'due_date' => now()->addWeek(),
+            'metadata' => [
+                'skdr_status' => 'approved',
+                'bank_sultra_aft' => [
+                    'contract_reference' => 'SKDR-AFT-001',
+                    'destination_profile_ref' => 'BAPENDA-ESCROW-001',
+                ],
+            ],
+        ], $overrides['bill'] ?? []));
+
+        return [$taxpayer, $taxObject, $bill, $classification, $type, $opd];
     }
 
     private function configureReadyBankSultraAft(): void
