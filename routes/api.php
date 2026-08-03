@@ -51,6 +51,8 @@ Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationCon
 Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
 Route::get('/verify/taxpayer/{token}', [\App\Http\Controllers\QrController::class, 'verifyTaxpayer']);
 Route::get('/verify/officer/{token}', [\App\Http\Controllers\QrController::class, 'verifyOfficer']);
+// IKD SSO (Dukcapil) — fallback aman sebelum PKS aktif
+Route::get('/auth/ikd/redirect', [\App\Http\Controllers\IkdController::class, 'redirect']);
 
 // Public: Documents (PDF)
 Route::get('/public/pdf/npwpd/{id}', [\App\Http\Controllers\PdfController::class, 'generateNpwpd']);
