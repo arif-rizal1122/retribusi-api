@@ -1,6 +1,6 @@
 # API Backlog
 
-Terakhir diperbarui: 2026-07-30
+Terakhir diperbarui: 2026-08-03
 
 ## Status
 
@@ -37,7 +37,13 @@ Terakhir diperbarui: 2026-07-30
 ## Merchant Auto Fund Transfer
 
 - [BLOCKED] **AFT-API-001** Jangan aktifkan AFT di production sebelum kontrak merchant/SKDR, tarif PBJT, city, rekening sumber/tujuan, signature SNAP, dan direct-debit Bank Sultra resmi menggantikan nilai placeholder pada controller/job.
-- [ ] Setelah kontrak tersedia, tambahkan authorization merchant yang eksplisit serta feature test ownership untuk submit omzet dan history AFT.
+- [x] **AFT-ASPI-001** Dokumentasikan kontrak target Bank Sultra terhadap ASPI sebelum coding runtime: kandidat produk final Direct Debit H2H (`54/55/56/57/58`) atau Direct Debit BI-FAST/e-Mandate (`70/71/72`), path, header, body wajib, responseCode, signature, token, idempotency, gap implementasi lokal, dan pertanyaan Bank Sultra sudah dicatat di `docs/10_payment_gateway_h2h/BPD/BANK_SULTRA_AFT_ASPI_CONTRACT.md`. Scope task ini hanya dokumen/guard; route/service BRIVA `/api/snap/v1.0/transfer-va/*` tidak diubah.
+- [ ] **AFT-API-002** Tambahkan readiness gate dan konfigurasi SNAP Bank Sultra yang default-off: base URL, client/partner/channel ID, key/secret path, algoritma signature, timeout, allowed IP, account source/destination, dan selected product. Gate harus mencegah outbound AFT jika konfigurasi belum lengkap dan tidak memakai fallback URL/credential placeholder.
+- [ ] **AFT-API-003** Buat service terpisah untuk Bank Sultra SNAP Direct Debit: token/header builder, canonical string/signature, `X-EXTERNAL-ID`, amount `{ value, currency }`, payload payment/status/notify sesuai produk terpilih, parser `responseCode` 7 digit, dan audit masking. Jangan reuse `BankSecurityCheck` generic HMAC untuk SNAP Bank Sultra kecuali sudah dipisahkan jelas dari flow BRIVA.
+- [ ] **AFT-API-004** Ganti `ExecuteAutoDebitAFT` agar tidak lagi memakai dummy payload atau success check `status === SUCCESS`; job hanya boleh menandai success dari response SNAP resmi, menyimpan reference bank, menangani `202 Request In Progress`, failure code, timeout, retry, serta idempotent replay tanpa menggandakan pemotongan.
+- [ ] **AFT-API-005** Harden endpoint merchant AFT: authorization merchant eksplisit, taxpayer/merchant ownership, city dari data resmi, tarif PBJT dari backend/config pajak, rekening sumber/tujuan dari profil/kontrak SKDR, dan penolakan bila SKDR belum disetujui. Hapus asumsi `city_id=1`, taxpayer simulasi, rekening dummy, dan pajak hardcoded dari jalur production.
+- [ ] **AFT-API-006** Tambahkan endpoint/status history AFT yang aman untuk mobile: expose status warga (`pending`, `processing`, `success`, `failed`, `cancelled`) tanpa credential, raw bank payload, rekening penuh, signature, atau internal audit fields; sertakan `can_retry/can_cancel` hanya jika API benar-benar mendukungnya.
+- [ ] **AFT-API-007** Tambahkan regression test AFT Bank Sultra tanpa credential nyata: readiness gate default-off, merchant ownership, SKDR required, payload Direct Debit/BI-FAST sesuai kontrak terpilih, signature/header builder, responseCode parser, `202` pending, success, failure, timeout, idempotency, dan audit masking. Pastikan test BRIVA SNAP tetap berjalan tanpa perubahan kontrak.
 
 ## Aturan Lanjutan
 

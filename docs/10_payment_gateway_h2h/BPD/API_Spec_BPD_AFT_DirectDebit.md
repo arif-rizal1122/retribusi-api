@@ -1,6 +1,8 @@
 # Spesifikasi API Direct Debit (Auto Fund Transfer)
 ## Terintegrasi dengan Standar SNAP BI
 
+> Status 2026-08-03: dokumen ini adalah draft historis dan belum boleh dipakai sebagai kontrak implementasi runtime. Path `/snap/v1.0/direct-debit/payment`, response `2000000`, dan field `status=SUCCESS` di bawah belum sesuai audit ASPI terbaru. Gunakan `BANK_SULTRA_AFT_ASPI_CONTRACT.md` sebagai rujukan kerja `AFT-ASPI-001`, lalu tunggu konfirmasi produk final Bank Sultra sebelum coding.
+
 ### 1. Tujuan Dokumen
 Spesifikasi ini disusun untuk tim IT Bank Pembangunan Daerah (Bank Sultra) agar mengekspos dua (2) endpoint API utama yang dibutuhkan oleh M-PAD (Sultra Connect) guna mengeksekusi mekanisme *Auto-Debit* (AFT) Pajak Daerah secara *Host-to-Host* (H2H).
 
