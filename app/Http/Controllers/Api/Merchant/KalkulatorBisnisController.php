@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Api\Merchant;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\AutoDeductLog;
 use App\Jobs\ExecuteAutoDebitAFT;
+use App\Models\AutoDeductLog;
+use App\Services\Payment\Snap\BankSultraAftReadiness;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class KalkulatorBisnisController extends Controller
@@ -14,7 +15,7 @@ class KalkulatorBisnisController extends Controller
      * Menerima input omzet harian dari Kalkulator Bisnis.
      * Mengkalkulasi pajak PBJT (10%) dan membuat antrean (Job) AFT.
      */
-    public function submitOmzet(Request $request)
+    public function submitOmzet(Request $request, BankSultraAftReadiness $readiness)
     {
         $request->validate([
             'transaction_amount' => 'required|numeric|min:1',
@@ -24,11 +25,18 @@ class KalkulatorBisnisController extends Controller
         $user = $request->user();
 
         // Cek jika bukan Wajib Pajak Merchant
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized. Harap login terlebih dahulu.'
+                'message' => 'Unauthorized. Harap login terlebih dahulu.',
             ], 401);
+        }
+
+        if (! $readiness->available()) {
+            return response()->json([
+                'success' => false,
+                'message' => $readiness->publicMessage(),
+            ], 503);
         }
 
         $omzet = $request->transaction_amount;
@@ -45,7 +53,7 @@ class KalkulatorBisnisController extends Controller
             'transaction_amount' => $omzet,
             'tax_amount' => $taxAmount,
             'deducted_amount' => $taxAmount,
-            'reference_number' => 'AFT-' . strtoupper(Str::random(10)),
+            'reference_number' => 'AFT-'.strtoupper(Str::random(10)),
             'payment_channel' => 'BPD_SULTRA_DIRECT_DEBIT',
             'status' => 'pending',
             'escrow_settlement_status' => 'pending',
@@ -60,8 +68,8 @@ class KalkulatorBisnisController extends Controller
             'data' => [
                 'reference_number' => $log->reference_number,
                 'tax_amount' => $taxAmount,
-                'omzet' => $omzet
-            ]
+                'omzet' => $omzet,
+            ],
         ], 201);
     }
 
@@ -72,10 +80,10 @@ class KalkulatorBisnisController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized.'
+                'message' => 'Unauthorized.',
             ], 401);
         }
 
@@ -92,7 +100,7 @@ class KalkulatorBisnisController extends Controller
 
         $totalOmzet = AutoDeductLog::where('taxpayer_id', $user->id)
             ->sum('transaction_amount');
-            
+
         $successCount = AutoDeductLog::where('taxpayer_id', $user->id)
             ->where('status', 'success')
             ->count();
@@ -104,9 +112,9 @@ class KalkulatorBisnisController extends Controller
                 'stats' => [
                     'total_tax_this_month' => $totalTaxDeductedThisMonth,
                     'total_omzet' => $totalOmzet,
-                    'success_count' => $successCount
-                ]
-            ]
+                    'success_count' => $successCount,
+                ],
+            ],
         ]);
     }
 }

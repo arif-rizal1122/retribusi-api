@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\AutoDeductLog;
+use App\Services\Payment\Snap\BankSultraAftReadiness;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -30,17 +31,26 @@ class ExecuteAutoDebitAFT implements ShouldQueue
         }
 
         try {
-            // Placeholder untuk Endpoint BPD Sultra Direct Debit
-            $bpdEndpoint = config('services.bpd.direct_debit_url', 'https://api.banksultra.co.id/snap/v1.0/direct-debit/payment');
-            $bpdClientId = config('services.bpd.client_id');
-            $bpdSecret = config('services.bpd.secret');
+            $readiness = app(BankSultraAftReadiness::class);
+            if (! $readiness->available()) {
+                $log->update([
+                    'status' => 'failed',
+                    'escrow_settlement_status' => 'failed',
+                    'failure_reason' => $readiness->publicMessage(),
+                    'processed_at' => now(),
+                ]);
 
-            // Dummy payload sesuai standar SNAP BI
+                return;
+            }
+
+            $bpdEndpoint = $this->paymentEndpoint();
+            $bpdClientId = config('snap.partners.BANK_SULTRA.partner_id');
+
             $payload = [
                 'partnerReferenceNo' => $log->reference_number,
                 'merchantId' => $log->taxpayer_id,
-                'sourceAccountNo' => '1234567890', // Didapat dari relasi Taxpayer/Merchant
-                'destinationAccountNo' => '0987654321', // Rekening Kas Daerah
+                'sourceAccountNo' => config('snap.bank_sultra_aft.source_account_no'),
+                'destinationAccountNo' => config('snap.bank_sultra_aft.destination_account_no'),
                 'amount' => [
                     'value' => number_format($log->deducted_amount, 2, '.', ''),
                     'currency' => 'IDR',
@@ -53,9 +63,10 @@ class ExecuteAutoDebitAFT implements ShouldQueue
             ];
 
             // Panggilan API H2H BPD
-            $response = Http::withHeaders([
+            $response = Http::timeout((int) config('snap.bank_sultra_aft.timeout_seconds', 15))->withHeaders([
                 'X-TIMESTAMP' => now()->toIso8601String(),
                 'X-PARTNER-ID' => $bpdClientId,
+                'CHANNEL-ID' => config('snap.partners.BANK_SULTRA.channel_id'),
                 // Akan ditambahkan signature generation
             ])->post($bpdEndpoint, $payload);
 
@@ -80,5 +91,18 @@ class ExecuteAutoDebitAFT implements ShouldQueue
                 'processed_at' => now(),
             ]);
         }
+    }
+
+    private function paymentEndpoint(): string
+    {
+        $product = (string) config('snap.bank_sultra_aft.selected_product');
+        $path = $product === 'direct_debit_bifast' ? 'debit/fast-payment' : 'debit/payment-host-to-host';
+
+        return sprintf(
+            '%s/%s/%s',
+            rtrim((string) config('snap.bank_sultra_aft.base_url'), '/'),
+            trim((string) config('snap.bank_sultra_aft.version', 'v1.0'), '/'),
+            $path
+        );
     }
 }

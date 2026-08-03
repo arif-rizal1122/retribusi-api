@@ -22,6 +22,16 @@ return [
             'public_key' => env('BTN_SNAP_PUBLIC_KEY', ''),
             'public_key_path' => env('BTN_SNAP_PUBLIC_KEY_PATH', ''),
         ],
+        'BANK_SULTRA' => [
+            'partner_id' => env('BANK_SULTRA_SNAP_PARTNER_ID', ''),
+            'client_key' => env('BANK_SULTRA_SNAP_CLIENT_KEY', ''),
+            'client_secret' => env('BANK_SULTRA_SNAP_CLIENT_SECRET', ''),
+            'channel_id' => env('BANK_SULTRA_SNAP_CHANNEL_ID', ''),
+            'signature_algorithm' => env('BANK_SULTRA_SNAP_SIGNATURE_ALGORITHM', 'rsa_sha256'),
+            'signature_secret' => env('BANK_SULTRA_SNAP_SIGNATURE_SECRET', ''),
+            'private_key_path' => env('BANK_SULTRA_SNAP_PRIVATE_KEY_PATH', ''),
+            'public_key_path' => env('BANK_SULTRA_SNAP_PUBLIC_KEY_PATH', ''),
+        ],
     ],
 
     'callback_base_url' => env('SNAP_CALLBACK_BASE_URL', env('APP_URL')),
@@ -38,6 +48,17 @@ return [
         'customer_no_length' => (int) env('BRI_SNAP_CUSTOMER_NO_LENGTH', 20),
         'va_length' => (int) env('BRI_SNAP_VA_LENGTH', 28),
         'payment_request_expiry_minutes' => (int) env('BRI_SNAP_PAYMENT_REQUEST_EXPIRY_MINUTES', 1440),
+    ],
+
+    'bank_sultra_aft' => [
+        'enabled' => env('BANK_SULTRA_AFT_ENABLED', false),
+        'selected_product' => env('BANK_SULTRA_AFT_SELECTED_PRODUCT', ''),
+        'base_url' => env('BANK_SULTRA_SNAP_BASE_URL', ''),
+        'version' => env('BANK_SULTRA_SNAP_VERSION', 'v1.0'),
+        'timeout_seconds' => (int) env('BANK_SULTRA_AFT_TIMEOUT_SECONDS', 15),
+        'allowed_ips' => array_filter(array_map('trim', explode(',', env('BANK_SULTRA_AFT_ALLOWED_IPS', '')))),
+        'source_account_no' => env('BANK_SULTRA_AFT_SOURCE_ACCOUNT_NO', ''),
+        'destination_account_no' => env('BANK_SULTRA_AFT_DESTINATION_ACCOUNT_NO', ''),
     ],
 
     'security' => [
