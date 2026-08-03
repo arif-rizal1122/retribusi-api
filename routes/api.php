@@ -46,6 +46,21 @@ Route::group(['middleware' => 'throttle:10,1'], function () {
 });
 
 // Other public routes
+// Public: Banners (homepage slideshow)
+Route::get('/public/banners', function () {
+    $now = now();
+    $banners = DB::table('banners')
+        ->where('is_active', 1)
+        ->where(function ($q) use ($now) {
+            $q->whereNull('start_at')->orWhere('start_at', '<=', $now);
+        })
+        ->where(function ($q) use ($now) {
+            $q->whereNull('end_at')->orWhere('end_at', '>=', $now);
+        })
+        ->orderBy('sort_order')
+        ->get(['id', 'title', 'subtitle', 'image_url', 'link_url', 'gradient_start', 'gradient_end']);
+    return response()->json(['data' => $banners]);
+});
 Route::get('/opds', [OpdController::class, 'index']); // Public access
 Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyBill']);
 Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
