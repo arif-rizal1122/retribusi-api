@@ -10,6 +10,10 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function () {
+            // Route SNAP publik tanpa prefix /api — untuk callback BRI & BTN
+            Route::middleware('api')->prefix('snap')->group(__DIR__.'/../routes/snap.php');
+        },
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->prepend(\App\Http\Middleware\QueryStringToken::class);
