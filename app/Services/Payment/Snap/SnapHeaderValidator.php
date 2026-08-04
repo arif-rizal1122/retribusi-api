@@ -15,6 +15,11 @@ class SnapHeaderValidator
         $bankCode = $this->resolveBankByClientKey($clientKey);
 
         if (! $bankCode) {
+            \Illuminate\Support\Facades\Log::warning('SNAP_CLIENT_KEY_MISMATCH', [
+                'ip' => $request->ip(),
+                'received_client_key' => $clientKey,
+                'configured' => collect(config('snap.partners'))->map(fn ($p) => $p['client_key'] ?? null)->toArray(),
+            ]);
             throw SnapValidationException::unauthorized('Unauthorized Client Key', '73');
         }
 
