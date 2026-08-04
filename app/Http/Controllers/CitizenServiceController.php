@@ -197,6 +197,7 @@ class CitizenServiceController extends Controller
                 'icon' => $classification->icon ?: $service->icon,
                 'base_amount' => $service->base_amount,
                 'unit' => $service->unit,
+                'billing_cycle' => $service->billing_cycle ?? 'monthly',
                 'opd' => $service->opd,
                 'form_schema' => $classification->form_schema,
                 'requirements' => $classification->requirements,
