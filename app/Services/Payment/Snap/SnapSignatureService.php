@@ -12,16 +12,21 @@ class SnapSignatureService
     public function verify(Request $request, string $serviceCode = '24'): void
     {
         $signature = (string) $request->header('X-SIGNATURE');
-        $stringToSign = $this->canonicalRequest->stringToSignFromRequest($request);
         $bankCode = $request->attributes->get('snap_bank_code');
 
         if (! $bankCode) {
             throw SnapValidationException::unauthorized('Unauthorized Signature', $serviceCode);
         }
 
-        if (! $this->verifyString($stringToSign, $signature, $bankCode, $serviceCode)) {
-            throw SnapValidationException::unauthorized('Unauthorized Signature', $serviceCode);
+        // Coba semua kandidat stringToSign (variasi path + body canonicalization)
+        // agar signature dari BRI / bank lain yang sah tetap diterima.
+        foreach ($this->canonicalRequest->stringToSignCandidates($request) as $stringToSign) {
+            if ($this->verifyString($stringToSign, $signature, $bankCode, $serviceCode)) {
+                return;
+            }
         }
+
+        throw SnapValidationException::unauthorized('Unauthorized Signature', $serviceCode);
     }
 
     public function verifyString(string $stringToSign, string $signature, string $bankCode, string $serviceCode = '24'): bool
@@ -53,7 +58,7 @@ class SnapSignatureService
     {
         $inlineKey = (string) config("snap.partners.{$bankCode}.public_key", '');
         if ($inlineKey !== '') {
-            return str_replace('\n', "\n", $inlineKey);
+            return str_replace('\\n', "\n", $inlineKey);
         }
 
         $path = (string) config("snap.partners.{$bankCode}.public_key_path", '');
