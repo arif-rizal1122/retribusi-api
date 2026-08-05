@@ -22,6 +22,8 @@ class SnapCanonicalRequest
      * BRI (dan beberapa bank) menghitung stringToSign dengan variasi:
      * - path: dengan /snap, tanpa /snap, dengan /api/snap, tanpa /api
      * - body: raw persis (spesifikasi SNAP) vs canonical re-encode
+     * - access token: format SNAP B2B menyisipkan token dari header Authorization
+     *   di antara path dan hash body (terbukti 05 Agu 2026 via debug-payload BRI)
      *
      * Kami coba SEMUA kombinasi agar signature BRI yang sah tetap diterima,
      * sambil tetap mewajibkan signature valid (tidak ada bypass keamanan).
@@ -32,20 +34,20 @@ class SnapCanonicalRequest
         $timestamp = (string) $request->header('X-TIMESTAMP');
         $rawBody = (string) $request->getContent();
         $canonicalBody = $this->canonicalBodyFromRaw($rawBody);
+        $accessToken = $this->bearerToken((string) $request->header('Authorization', ''));
 
         $paths = $this->pathVariants('/' . ltrim($request->path(), '/'));
-
-        // BRI inquiry/payment format: METHOD:path:<accessToken>:<sha256(body)>:<timestamp>
-        $authHeader = (string) $request->header('Authorization', '');
-        $accessToken = preg_replace('/^Bearer\s+/i', '', $authHeader);
 
         $candidates = [];
         foreach ($paths as $path) {
             foreach ([$rawBody, $canonicalBody] as $body) {
+                // Format dasar SNAP: METHOD:PATH:BODYHASH:TIMESTAMP
                 $candidates[] = $this->stringToSign($method, $path, $body, $timestamp);
-                if ($accessToken !== '' && $accessToken !== $authHeader) {
-                    // Format BRI: sisipkan access token antara path dan hash body
-                    $candidates[] = $this->stringToSignWithToken($method, $path, $accessToken, $body, $timestamp);
+
+                // Format SNAP B2B BRI (terbukti 05 Agu 2026 via debug-payload):
+                // METHOD:PATH:AccessToken:BODYHASH:TIMESTAMP — token dari header Authorization
+                if ($accessToken !== '') {
+                    $candidates[] = $this->stringToSignWithToken($method, $path, $body, $timestamp, $accessToken);
                 }
             }
         }
@@ -53,7 +55,19 @@ class SnapCanonicalRequest
         return array_values(array_unique($candidates));
     }
 
-    public function stringToSignWithToken(string $method, string $path, string $accessToken, string $canonicalBody, string $timestamp): string
+    private function bearerToken(string $authorizationHeader): string
+    {
+        if (preg_match('/^Bearer\s+(.+)$/i', trim($authorizationHeader), $m)) {
+            return trim($m[1]);
+        }
+
+        return '';
+    }
+
+    /**
+     * stringToSign versi SNAP B2B: METHOD:PATH:AccessToken:BODYHASH:TIMESTAMP
+     */
+    public function stringToSignWithToken(string $method, string $path, string $canonicalBody, string $timestamp, string $accessToken): string
     {
         return strtoupper($method) . ':' . $path . ':' . $accessToken . ':' . strtolower(hash('sha256', $canonicalBody)) . ':' . $timestamp;
     }
