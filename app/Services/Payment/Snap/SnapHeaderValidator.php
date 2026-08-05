@@ -70,6 +70,13 @@ class SnapHeaderValidator
             }
         }
 
+        // BRI pakai clientId sebagai X-PARTNER-ID (dikonfirmasi Sinyo 05 Agu 2026)
+        foreach ($partners as $code => $config) {
+            if (isset($config['client_key']) && $config['client_key'] === $partnerId) {
+                return (string) $code;
+            }
+        }
+
         return null;
     }
 }
