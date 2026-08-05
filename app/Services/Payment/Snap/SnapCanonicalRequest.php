@@ -35,14 +35,27 @@ class SnapCanonicalRequest
 
         $paths = $this->pathVariants('/' . ltrim($request->path(), '/'));
 
+        // BRI inquiry/payment format: METHOD:path:<accessToken>:<sha256(body)>:<timestamp>
+        $authHeader = (string) $request->header('Authorization', '');
+        $accessToken = preg_replace('/^Bearer\s+/i', '', $authHeader);
+
         $candidates = [];
         foreach ($paths as $path) {
             foreach ([$rawBody, $canonicalBody] as $body) {
                 $candidates[] = $this->stringToSign($method, $path, $body, $timestamp);
+                if ($accessToken !== '' && $accessToken !== $authHeader) {
+                    // Format BRI: sisipkan access token antara path dan hash body
+                    $candidates[] = $this->stringToSignWithToken($method, $path, $accessToken, $body, $timestamp);
+                }
             }
         }
 
         return array_values(array_unique($candidates));
+    }
+
+    public function stringToSignWithToken(string $method, string $path, string $accessToken, string $canonicalBody, string $timestamp): string
+    {
+        return strtoupper($method) . ':' . $path . ':' . $accessToken . ':' . strtolower(hash('sha256', $canonicalBody)) . ':' . $timestamp;
     }
 
     /**
