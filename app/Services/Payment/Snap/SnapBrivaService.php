@@ -168,8 +168,9 @@ class SnapBrivaService
 
     private function resolveBill(Request $request): array
     {
-        $virtualAccountNo = (string) $request->input('virtualAccountNo', '');
-        $customerNo = (string) $request->input('customerNo', '');
+        // Normalisasi: hilangkan spasi/left-padding supaya match apa pun format BRI kirim
+        $virtualAccountNo = $this->normalizeVa((string) $request->input('virtualAccountNo', ''));
+        $customerNo = $this->normalizeVa((string) $request->input('customerNo', ''));
 
         $paymentRequest = null;
         if ($virtualAccountNo !== '') {
@@ -178,11 +179,20 @@ class SnapBrivaService
 
         if (! $paymentRequest && $customerNo !== '') {
             $paymentRequest = PaymentRequest::where('external_id', $customerNo)->first();
+            // fallback: customerNo bisa jadi bagian VA yang kita simpan (tanpa padding)
+            if (! $paymentRequest) {
+                $paymentRequest = PaymentRequest::where('va_number', $customerNo)->first();
+            }
         }
 
         $bill = $paymentRequest?->bill;
 
         return [$bill, $paymentRequest];
+    }
+
+    private function normalizeVa(string $value): string
+    {
+        return trim((string) preg_replace('/\s+/', '', $value));
     }
 
     private function virtualAccountData(Request $request, Bill $bill, array $status, ?PaymentRequest $paymentRequest = null): array
