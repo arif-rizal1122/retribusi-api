@@ -253,6 +253,12 @@ class CitizenPaymentRequestController extends Controller
                     ?: $item->bill?->classification?->name
                     ?: $item->bill?->retributionType?->name
                     ?: 'Tagihan',
+                'tax_object_name' => $item->bill?->taxObject?->name ?: null,
+                'address' => $item->bill?->taxObject?->address ?: null,
+                'tax_type' => $item->bill?->taxObject?->retributionType?->name
+                    ?: $item->bill?->classification?->name
+                    ?: $item->bill?->retributionType?->name
+                    ?: null,
                 'period_start' => $item->bill?->period_start?->toDateString(),
                 'period_end' => $item->bill?->period_end?->toDateString(),
                 'due_date' => $item->bill?->due_date?->toDateString(),
