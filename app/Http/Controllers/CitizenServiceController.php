@@ -299,6 +299,26 @@ class CitizenServiceController extends Controller
     }
 
     /**
+     * Daftar objek pajak milik warga (untuk e-SPTD / self-assessment).
+     * GET /api/citizen/tax-objects
+     */
+    public function taxObjects(Request $request)
+    {
+        $taxpayer = $request->user();
+
+        if (!$taxpayer instanceof Taxpayer) {
+            return response()->json(['message' => 'Endpoint ini hanya untuk wajib pajak.'], 403);
+        }
+
+        $objects = TaxObject::with(['taxpayer', 'retributionType', 'opd', 'classification'])
+            ->where('taxpayer_id', $taxpayer->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json(['data' => $objects]);
+    }
+
+    /**
      * Get bills for a specific classification (aggregated across all objects)
      */
     public function bills(Request $request, $id)

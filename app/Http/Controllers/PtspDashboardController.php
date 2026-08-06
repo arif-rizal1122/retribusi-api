@@ -216,56 +216,47 @@ class PtspDashboardController extends Controller
      */
     public function taxpayers(Request $request)
     {
-        $limit = min((int) $request->query('limit', 100), 500);
+        // Pagination & filter (hemat request — tidak load semua baris)
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = min(max((int) $request->query('per_page', 20), 1), 100);
         $search = trim((string) $request->query('search', ''));
+        $statusFilter = trim((string) $request->query('match_status', ''));
+        $allowedStatuses = ['matched', 'pending', 'conflict', 'not_found', 'no_nib'];
+        if ($statusFilter !== '' && !in_array($statusFilter, $allowedStatuses, true)) {
+            $statusFilter = '';
+        }
 
         $nibTableExists = Schema::hasTable('nib_nop_mappings');
         $taxpayerNopsExists = Schema::hasTable('taxpayer_nops');
 
-        // 1) Kumpulkan NOP per taxpayer dari kedua sumber relasi
-        $nopsByTaxpayer = [];
-
-        $pbbNops = DB::table('taxpayer_pbb_objects')
-            ->select('taxpayer_id', 'nop')
-            ->whereNotNull('nop')
-            ->get();
-        foreach ($pbbNops as $row) {
-            $nopsByTaxpayer[(int) $row->taxpayer_id][strtoupper(trim($row->nop))] = true;
-        }
-
-        if ($taxpayerNopsExists) {
-            $legacyNops = DB::table('taxpayer_nops')
-                ->select('taxpayer_id', 'nop')
-                ->whereNotNull('nop')
-                ->get();
-            foreach ($legacyNops as $row) {
-                $nopsByTaxpayer[(int) $row->taxpayer_id][strtoupper(trim($row->nop))] = true;
-            }
-        }
-
-        // 2) Kumpulkan seluruh mapping NIB sekali (nama → nib, nop → nib)
+        // 1) Index mapping NIB (tabel kecil — sekali load, dipakai lintas filter)
         $nibByName = []; // strtolower(taxpayer_name) → nib record
         $nibByNop = [];  // strtoupper(nop) → nib record
+        $statusNops = [];   // status → [nop...]
+        $statusNames = [];  // status → [taxpayer_name...]
 
         if ($nibTableExists) {
             $mappings = DB::table('nib_nop_mappings')->get();
             foreach ($mappings as $m) {
                 $record = [
-                    'nib'          => $m->nib,
-                    'match_status' => $m->match_status,
-                    'source'       => $m->source,
+                    'nib'            => $m->nib,
+                    'match_status'   => $m->match_status,
+                    'source'         => $m->source,
                     'last_synced_at' => $m->last_synced_at,
                 ];
+                $statusKey = $m->match_status ?: 'pending';
                 if ($m->taxpayer_name && trim($m->taxpayer_name) !== '') {
                     $nibByName[strtolower(trim($m->taxpayer_name))] = $record;
+                    $statusNames[$statusKey][] = trim($m->taxpayer_name);
                 }
                 if ($m->nop && trim($m->nop) !== '') {
                     $nibByNop[strtoupper(trim($m->nop))] = $record;
+                    $statusNops[$statusKey][] = strtoupper(trim($m->nop));
                 }
             }
         }
 
-        // 3) Query taxpayers (tanpa global scope model agar konsisten lintas role)
+        // 2) Query taxpayers utama
         $query = DB::table('taxpayers')
             ->select('id', 'nik', 'name', 'address', 'district', 'sub_district', 'phone', 'npwpd', 'is_active', 'created_at');
 
@@ -277,8 +268,96 @@ class PtspDashboardController extends Controller
             });
         }
 
+        // 2b) Filter match_status diterapkan SEBELUM pagination
+        if ($statusFilter !== '' && $nibTableExists) {
+            if ($statusFilter === 'no_nib') {
+                // Semua taxpayer yang TIDAK ter-match NIB manapun (via NOP atau nama)
+                $allMatchedIds = [];
+                $allNops = array_keys($nibByNop);
+                if (!empty($allNops)) {
+                    $allMatchedIds = array_merge(
+                        $allMatchedIds,
+                        array_map('intval', DB::table('taxpayer_pbb_objects')->whereIn('nop', $allNops)->pluck('taxpayer_id')->all())
+                    );
+                    if ($taxpayerNopsExists) {
+                        $allMatchedIds = array_merge(
+                            $allMatchedIds,
+                            array_map('intval', DB::table('taxpayer_nops')->whereIn('nop', $allNops)->pluck('taxpayer_id')->all())
+                        );
+                    }
+                }
+                $allNames = array_keys($nibByName);
+                if (!empty($allNames)) {
+                    $allMatchedIds = array_merge(
+                        $allMatchedIds,
+                        array_map('intval', DB::table('taxpayers')->whereIn('name', $allNames)->pluck('id')->all())
+                    );
+                }
+                $allMatchedIds = array_values(array_unique($allMatchedIds));
+                if (!empty($allMatchedIds)) {
+                    $query->whereNotIn('id', $allMatchedIds);
+                }
+            } else {
+                // Cari taxpayer_id yang match status tertentu: via NOP + via nama
+                $statusIds = [];
+                $nops = $statusNops[$statusFilter] ?? [];
+                if (!empty($nops)) {
+                    $statusIds = array_merge(
+                        $statusIds,
+                        array_map('intval', DB::table('taxpayer_pbb_objects')->whereIn('nop', $nops)->pluck('taxpayer_id')->all())
+                    );
+                    if ($taxpayerNopsExists) {
+                        $statusIds = array_merge(
+                            $statusIds,
+                            array_map('intval', DB::table('taxpayer_nops')->whereIn('nop', $nops)->pluck('taxpayer_id')->all())
+                        );
+                    }
+                }
+                $names = $statusNames[$statusFilter] ?? [];
+                if (!empty($names)) {
+                    $statusIds = array_merge(
+                        $statusIds,
+                        array_map('intval', DB::table('taxpayers')->whereIn('name', $names)->pluck('id')->all())
+                    );
+                }
+                $statusIds = array_values(array_unique($statusIds));
+
+                if (empty($statusIds)) {
+                    $query->whereRaw('1 = 0'); // tidak ada yang match status ini
+                } else {
+                    $query->whereIn('id', $statusIds);
+                }
+            }
+        }
+
         $total = (clone $query)->count();
-        $rows = $query->orderByDesc('created_at')->limit($limit)->get();
+        $rows = $query->orderByDesc('created_at')->forPage($page, $perPage)->get();
+
+        // 3) Load NOP HANYA untuk baris di halaman ini (hemat — tidak seluruh tabel)
+        $ids = $rows->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $nopsByTaxpayer = [];
+
+        if (!empty($ids)) {
+            $pbbNops = DB::table('taxpayer_pbb_objects')
+                ->select('taxpayer_id', 'nop')
+                ->whereNotNull('nop')
+                ->whereIn('taxpayer_id', $ids)
+                ->get();
+            foreach ($pbbNops as $row) {
+                $nopsByTaxpayer[(int) $row->taxpayer_id][strtoupper(trim($row->nop))] = true;
+            }
+
+            if ($taxpayerNopsExists) {
+                $legacyNops = DB::table('taxpayer_nops')
+                    ->select('taxpayer_id', 'nop')
+                    ->whereNotNull('nop')
+                    ->whereIn('taxpayer_id', $ids)
+                    ->get();
+                foreach ($legacyNops as $row) {
+                    $nopsByTaxpayer[(int) $row->taxpayer_id][strtoupper(trim($row->nop))] = true;
+                }
+            }
+        }
 
         // 4) Tentukan status NIB tiap taxpayer
         $result = $rows->map(function ($t) use ($nopsByTaxpayer, $nibByName, $nibByNop) {
@@ -321,12 +400,16 @@ class PtspDashboardController extends Controller
             ];
         })->values()->all();
 
+        $lastPage = $perPage > 0 ? (int) ceil($total / $perPage) : 1;
+
         return response()->json([
             'success' => true,
             'data' => [
-                'total' => $total,
-                'limit' => $limit,
-                'taxpayers' => $result,
+                'total'        => $total,
+                'per_page'     => $perPage,
+                'current_page' => $page,
+                'last_page'    => $lastPage,
+                'taxpayers'    => $result,
             ],
         ]);
     }
