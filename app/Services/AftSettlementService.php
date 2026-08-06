@@ -104,16 +104,27 @@ class AftSettlementService
                 return;
             }
 
+            $firstBill = $request->bills()->first();
+
             $transaction = AftTransaction::create([
                 'payment_id' => $payments->first()?->id,
                 'payment_request_id' => $request->id,
                 'taxpayer_id' => $request->taxpayer_id,
+                'tax_object_id' => $firstBill?->tax_object_id,
+                'bill_id' => $firstBill?->id,
+                'source' => $this->resolveSource($request->method),
+                'transaction_type' => 'payment',
                 'transaction_amount' => $transactionAmount,
                 'tax_amount' => $taxAmount,
+                'deducted_amount' => $taxAmount,
                 'beneficiary_account' => $registration->beneficiary_account,
                 'beneficiary_bank' => $registration->bank,
-                'status' => AftTransaction::STATUS_SETTLED,
+                'reference_number' => $request->reference_number,
+                'payment_channel' => $request->method,
+                'status' => AftTransaction::STATUS_SUCCESS,
+                'escrow_settlement_status' => AftTransaction::ESCROW_SETTLED,
                 'settled_at' => now(),
+                'processed_at' => now(),
                 'metadata' => [
                     'payment_request_id' => $request->id,
                     'payment_ids' => $payments->pluck('id')->all(),
@@ -123,7 +134,7 @@ class AftSettlementService
             ]);
 
             Log::info('AFT settled', [
-                'aft_transaction_id' => $transaction->id,
+                'auto_deduct_log_id' => $transaction->id,
                 'taxpayer_id' => $request->taxpayer_id,
                 'transaction_amount' => $transactionAmount,
                 'tax_amount' => $taxAmount,
@@ -131,6 +142,20 @@ class AftSettlementService
         });
 
         return $transaction;
+    }
+
+    /**
+     * Peta metode payment request ke vocabulary source pada auto_deduct_logs
+     * (pos, qris, va, transfer, manual).
+     */
+    protected function resolveSource(string $method): string
+    {
+        return match ($method) {
+            PaymentRequest::METHOD_BRI_VA => 'va',
+            PaymentRequest::METHOD_QRIS => 'qris',
+            PaymentRequest::METHOD_OFFICER => 'pos',
+            default => 'manual',
+        };
     }
 
     /**
@@ -150,12 +175,17 @@ class AftSettlementService
         return AftTransaction::create([
             'payment_id' => null,
             'taxpayer_id' => $taxpayer->id,
+            'source' => 'manual',
+            'transaction_type' => 'sale',
             'transaction_amount' => $transactionAmount,
             'tax_amount' => $taxAmount,
+            'deducted_amount' => $taxAmount,
             'beneficiary_account' => $registration->beneficiary_account,
             'beneficiary_bank' => $registration->bank,
-            'status' => AftTransaction::STATUS_SETTLED,
+            'status' => AftTransaction::STATUS_SUCCESS,
+            'escrow_settlement_status' => AftTransaction::ESCROW_SETTLED,
             'settled_at' => now(),
+            'processed_at' => now(),
             'metadata' => [
                 'source' => AftTransaction::SOURCE_MERCHANT_OMZET,
             ],

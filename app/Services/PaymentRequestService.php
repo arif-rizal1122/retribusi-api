@@ -96,6 +96,7 @@ class PaymentRequestService
         $qrisString = null;
         $instructions = [];
         $provider = null;
+        $gatewayBankConfigId = null;
 
         if ($method !== PaymentRequest::METHOD_OFFICER && $this->gateway->supports($method)) {
             $gatewayResult = $this->gateway->adapter($method)->createPayment([
@@ -109,7 +110,8 @@ class PaymentRequestService
             $vaNumber = $gatewayResult['va_number'] ?? null;
             $qrisString = $gatewayResult['qris_string'] ?? null;
             $instructions = $gatewayResult['instructions'] ?? [];
-            $provider = $method === PaymentRequest::METHOD_BRI_VA ? 'BRI' : null;
+            $provider = $gatewayResult['provider'] ?? ($method === PaymentRequest::METHOD_BRI_VA ? 'BRI' : null);
+            $gatewayBankConfigId = $gatewayResult['bank_config_id'] ?? null;
         }
 
         $qrPayload = null;
@@ -142,6 +144,7 @@ class PaymentRequestService
             'metadata' => [
                 'amount_wp' => $amountWp,
                 'tax_deduction' => $method === PaymentRequest::METHOD_OFFICER ? $this->aftService->computeTaxDeduction($bills->values()) : 0,
+                'bank_config_id' => $gatewayBankConfigId,
             ],
         ]);
 
@@ -365,6 +368,10 @@ class PaymentRequestService
                     'tax_object_id' => $bill->tax_object_id,
                     'transaction_id' => 'PAY-' . date('Ymd') . '-' . strtoupper(Str::random(8)),
                     'payment_method' => $paymentMethod,
+                    'channel' => $this->resolveChannel($paymentMethod),
+                    'bank_config_id' => $this->resolveBankConfigId($paymentMethod),
+                    'reference_number' => $referenceNumber,
+                    'receipt_number' => $referenceNumber,
                     'amount' => (float) $bill->total_amount,
                     'status' => 'success',
                     'billing_period' => $bill->period ?: ($bill->period_start?->format('Y-m') ?: date('Y-m')),
@@ -441,7 +448,7 @@ class PaymentRequestService
     /**
      * Proses callback webhook dari payment gateway.
      */
-    public function handleWebhook(string $externalId, string $status, ?string $referenceNumber = null): PaymentRequest
+    public function handleWebhook(string $externalId, string $status, ?string $referenceNumber = null, ?array $rawPayload = null): PaymentRequest
     {
         $request = PaymentRequest::where('external_id', $externalId)->first();
 
@@ -453,7 +460,7 @@ class PaymentRequestService
 
         if (in_array($normalized, ['paid', 'success', 'settled', 'settlement', 'capture', 'completed'])) {
             if ($request->status !== PaymentRequest::STATUS_PAID) {
-                $this->markAsPaid($request, $referenceNumber);
+                $this->markAsPaid($request, $referenceNumber, $rawPayload);
             }
         } elseif (in_array($normalized, ['expired', 'expire'])) {
             $request->update(['status' => PaymentRequest::STATUS_EXPIRED, 'can_refresh' => false, 'can_cancel' => false]);
@@ -475,7 +482,7 @@ class PaymentRequestService
         }
     }
 
-    protected function markAsPaid(PaymentRequest $request, ?string $referenceNumber = null): void
+    protected function markAsPaid(PaymentRequest $request, ?string $referenceNumber = null, ?array $rawPayload = null): void
     {
         $referenceNumber = $referenceNumber ?: 'TRX-' . date('Ymd') . '-' . strtoupper(Str::random(8));
 
@@ -483,7 +490,7 @@ class PaymentRequestService
 
         // Row lock + transaksi: webhook bisa dikirim ulang, sehingga pembayaran
         // dan bill tidak boleh dibuat dua kali.
-        DB::transaction(function () use ($request, $referenceNumber, &$payments) {
+        DB::transaction(function () use ($request, $referenceNumber, $rawPayload, &$payments) {
             $locked = PaymentRequest::whereKey($request->id)->lockForUpdate()->first();
 
             if (!$locked || $locked->status === PaymentRequest::STATUS_PAID) {
@@ -491,6 +498,9 @@ class PaymentRequestService
             }
 
             $bills = $locked->bills();
+            $paymentMethod = $this->resolveGatewayPaymentMethod($locked->method);
+            $channel = $this->resolveChannel($paymentMethod);
+            $bankConfigId = $this->resolveBankConfigId($paymentMethod);
 
             foreach ($bills as $bill) {
                 if (in_array($bill->status, ['lunas', 'paid'])) {
@@ -503,7 +513,12 @@ class PaymentRequestService
                     'taxpayer_id' => $bill->taxpayer_id,
                     'tax_object_id' => $bill->tax_object_id,
                     'transaction_id' => 'PAY-' . date('Ymd') . '-' . strtoupper(Str::random(8)),
-                    'payment_method' => $this->resolveGatewayPaymentMethod($locked->method),
+                    'payment_method' => $paymentMethod,
+                    'channel' => $channel,
+                    'bank_config_id' => $bankConfigId,
+                    'reference_number' => $referenceNumber,
+                    'receipt_number' => $referenceNumber,
+                    'raw_callback_data' => $rawPayload,
                     'amount' => (float) $bill->total_amount,
                     'status' => 'success',
                     'billing_period' => $bill->period ?: ($bill->period_start?->format('Y-m') ?: date('Y-m')),
@@ -557,5 +572,35 @@ class PaymentRequestService
             PaymentRequest::METHOD_QRIS => 'qris',
             default => $method,
         };
+    }
+
+    /**
+     * Kanal pembayaran produksi (payments.channel) konsisten dengan payment_method.
+     */
+    protected function resolveChannel(string $paymentMethod): string
+    {
+        return in_array($paymentMethod, ['cash', 'va', 'qris', 'transfer']) ? $paymentMethod : 'cash';
+    }
+
+    /**
+     * Pilih konfigurasi bank aktif (bank_configs) untuk metode pembayaran,
+     * agar pembayaran baru terhubung dengan infrastruktur gateway produksi.
+     */
+    protected function resolveBankConfigId(string $paymentMethod): ?int
+    {
+        $driver = match ($paymentMethod) {
+            'va' => 'bri',
+            'qris' => 'qris',
+            default => null,
+        };
+
+        if (!$driver) {
+            return null;
+        }
+
+        return \App\Models\BankConfig::active()
+            ->where('tipe_driver', $driver)
+            ->orWhere('nama_singkat', strtoupper($driver))
+            ->value('id');
     }
 }

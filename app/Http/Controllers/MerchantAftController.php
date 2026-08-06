@@ -118,7 +118,7 @@ class MerchantAftController extends Controller
                 'history' => $transactions->map(function (AftTransaction $tx) {
                     return [
                         'id' => $tx->id,
-                        'status' => $tx->status === 'settled' ? 'success' : $tx->status,
+                        'status' => $tx->status,
                         'created_at' => $tx->created_at->toISOString(),
                         'transaction_amount' => (float) $tx->transaction_amount,
                         'tax_amount' => (float) $tx->tax_amount,
@@ -127,7 +127,7 @@ class MerchantAftController extends Controller
                 'stats' => [
                     'total_tax_this_month' => round($monthly->sum(fn ($tx) => (float) $tx->tax_amount), 2),
                     'total_omzet' => round($monthly->sum(fn ($tx) => (float) $tx->transaction_amount), 2),
-                    'success_count' => $monthly->where('status', 'settled')->count(),
+                    'success_count' => $monthly->whereIn('status', ['success', 'settled'])->count(),
                 ],
             ],
         ]);

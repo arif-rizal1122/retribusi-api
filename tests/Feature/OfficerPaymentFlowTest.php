@@ -210,8 +210,8 @@ class OfficerPaymentFlowTest extends TestCase
         $response->assertStatus(200);
         $this->assertSame(10000.0, (float) $response->json('data.tax_deduction'));
         $this->assertSame(90000.0, (float) $response->json('data.amount_wp'));
-        $this->assertSame('settled', $response->json('data.aft_transaction.status'));
-        $this->assertDatabaseHas('aft_transactions', [
+        $this->assertSame('success', $response->json('data.aft_transaction.status'));
+        $this->assertDatabaseHas('auto_deduct_logs', [
             'taxpayer_id' => $citizen->id,
             'transaction_amount' => 100000,
             'tax_amount' => 10000,
@@ -340,7 +340,7 @@ class OfficerPaymentFlowTest extends TestCase
             'transaction_status' => 'settlement',
         ])->assertStatus(200);
 
-        $this->assertDatabaseHas('aft_transactions', [
+        $this->assertDatabaseHas('auto_deduct_logs', [
             'payment_request_id' => $created['id'],
             'taxpayer_id' => $citizen->id,
             'transaction_amount' => 100000,
@@ -421,7 +421,7 @@ class OfficerPaymentFlowTest extends TestCase
 
         $this->assertNotNull($first);
         $this->assertNull($second);
-        $this->assertDatabaseCount('aft_transactions', 1);
+        $this->assertDatabaseCount('auto_deduct_logs', 1);
     }
 
     public function test_citizen_payment_request_refresh_and_cancel()

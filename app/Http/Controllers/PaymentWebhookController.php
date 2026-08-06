@@ -56,7 +56,7 @@ class PaymentWebhookController extends Controller
 
         $referenceNumber = $payload['payment_code'] ?? $payload['transaction_id'] ?? null;
 
-        $this->service->handleWebhook($externalId, $status, $referenceNumber);
+        $this->service->handleWebhook($externalId, $status, $referenceNumber, $payload);
 
         return response()->json(['success' => true, 'message' => 'Webhook processed.']);
     }

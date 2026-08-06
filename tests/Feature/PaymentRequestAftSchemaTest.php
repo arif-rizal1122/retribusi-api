@@ -228,18 +228,18 @@ class PaymentRequestAftSchemaTest extends TestCase
     }
 
     // ========================================================================
-    // SCHEMA #3: Database Schema - aft_transactions table
+    // SCHEMA #3: Database Schema - auto_deduct_logs (ledger AFT produksi)
     // ========================================================================
 
     /** @test */
-    public function schema_aft_transactions_table_has_all_required_columns()
+    public function schema_auto_deduct_logs_table_has_required_columns()
     {
         $this->assertTrue(
-            Schema::hasColumns('aft_transactions', [
-                'id', 'payment_id', 'payment_request_id', 'taxpayer_id',
-                'transaction_amount', 'tax_amount',
-                'beneficiary_account', 'beneficiary_bank',
-                'status', 'settled_at', 'metadata',
+            Schema::hasColumns('auto_deduct_logs', [
+                'id', 'payment_id', 'payment_request_id', 'taxpayer_id', 'tax_object_id', 'bill_id',
+                'source', 'transaction_type', 'transaction_amount', 'tax_amount', 'deducted_amount',
+                'beneficiary_account', 'beneficiary_bank', 'reference_number', 'payment_channel',
+                'status', 'escrow_settlement_status', 'settled_at', 'metadata',
                 'created_at', 'updated_at',
             ])
         );
@@ -290,7 +290,7 @@ class PaymentRequestAftSchemaTest extends TestCase
         $request->delete();
 
         $this->assertNull($transaction->fresh()->payment_request_id);
-        $this->assertDatabaseHas('aft_transactions', ['id' => $transaction->id]);
+        $this->assertDatabaseHas('auto_deduct_logs', ['id' => $transaction->id]);
     }
 
     /** @test */
@@ -405,7 +405,7 @@ class PaymentRequestAftSchemaTest extends TestCase
             'taxpayer_id' => $citizen->id,
             'transaction_amount' => 100000,
             'tax_amount' => 10000,
-            'status' => AftTransaction::STATUS_SETTLED,
+            'status' => AftTransaction::STATUS_SUCCESS,
         ]);
 
         $payment->delete();
@@ -536,7 +536,7 @@ class PaymentRequestAftSchemaTest extends TestCase
     public function schema_aft_transaction_status_constants_are_consistent()
     {
         $this->assertSame('pending', AftTransaction::STATUS_PENDING);
-        $this->assertSame('settled', AftTransaction::STATUS_SETTLED);
+        $this->assertSame('success', AftTransaction::STATUS_SUCCESS);
         $this->assertSame('failed', AftTransaction::STATUS_FAILED);
     }
 
@@ -625,7 +625,7 @@ class PaymentRequestAftSchemaTest extends TestCase
             'taxpayer_id' => $citizen->id,
             'transaction_amount' => 100000,
             'tax_amount' => 10000,
-            'status' => AftTransaction::STATUS_SETTLED,
+            'status' => AftTransaction::STATUS_SUCCESS,
         ]);
 
         $this->assertEquals($payment->id, $transaction->payment->id);
@@ -731,11 +731,11 @@ class PaymentRequestAftSchemaTest extends TestCase
             'taxpayer_id' => $citizen->id,
             'transaction_amount' => 100000,
             'tax_amount' => 10000,
-            'status' => AftTransaction::STATUS_SETTLED,
+            'status' => AftTransaction::STATUS_SUCCESS,
         ]);
 
         $this->assertDatabaseCount('tax_transactions', 1);
-        $this->assertDatabaseCount('aft_transactions', 1);
+        $this->assertDatabaseCount('auto_deduct_logs', 1);
         $this->assertSame(5000.0, (float) TaxTransaction::first()->tax_amount);
         $this->assertSame(10000.0, (float) AftTransaction::first()->tax_amount);
     }

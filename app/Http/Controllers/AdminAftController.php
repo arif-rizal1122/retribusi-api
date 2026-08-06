@@ -160,7 +160,7 @@ class AdminAftController extends Controller
                 'active_taxpayers' => AftRegistration::where('approval_status', 'approved')->where('status', 'active')->count(),
                 'total_tax_this_month' => round($monthlyTransactions->sum(fn ($tx) => (float) $tx->tax_amount), 2),
                 'total_omzet_this_month' => round($monthlyTransactions->sum(fn ($tx) => (float) $tx->transaction_amount), 2),
-                'settled_count' => $monthlyTransactions->where('status', 'settled')->count(),
+                'settled_count' => $monthlyTransactions->whereIn('status', ['success', 'settled'])->count(),
                 'pending_settlement_count' => $monthlyTransactions->where('status', 'pending')->count(),
             ],
         ]);
