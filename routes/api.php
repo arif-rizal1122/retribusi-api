@@ -204,6 +204,9 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::get('/me', [\App\Http\Controllers\MeController::class, 'show']);
     Route::post('/me/update', [\App\Http\Controllers\MeController::class, 'update']);
     Route::get('/officer/my-qr', [\App\Http\Controllers\QrController::class, 'officerMyQr']);
+
+    // Location resolve (reverse geocode + zone detect) for object registration
+    Route::post('/location/resolve', [\App\Http\Controllers\LocationController::class, 'resolve']);
     
     // Citizen Service Registration (Shared, but usually for citizens)
     Route::group(['prefix' => 'citizen/services'], function () {
