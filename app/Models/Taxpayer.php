@@ -31,6 +31,7 @@ class Taxpayer extends Authenticatable
         'sub_district',
         'phone',
         'npwpd',
+        'nib',
         'object_name',
         'object_address',
         'latitude',

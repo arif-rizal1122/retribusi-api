@@ -57,6 +57,10 @@ Route::get('/public/pdf/sppt/{billId}', [\App\Http\Controllers\DocumentControlle
 Route::get('/public/pdf/surat-teguran/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'suratTeguran']);
 
 // Tax Simulation (public, no auth needed)
+// Public: Cek NIB & Candidate Penyempurnaan Data Diri (PTSP-13)
+Route::get('/public/nib/check', [\App\Http\Controllers\NibPublicController::class, 'check']);
+Route::post('/public/nib/candidate', [\App\Http\Controllers\NibPublicController::class, 'storeCandidate']);
+
 Route::post('/simulate-tax', function (Request $request) {
     $request->validate([
         'classification_id' => 'nullable|exists:retribution_classifications,id',
@@ -260,6 +264,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/dashboard/growth', [\App\Http\Controllers\PtspDashboardController::class, 'growth']);
             Route::get('/dashboard/related-services', [\App\Http\Controllers\PtspDashboardController::class, 'relatedServices']);
             Route::get('/dashboard/taxpayers', [\App\Http\Controllers\PtspDashboardController::class, 'taxpayers']);
+            Route::get('/candidates', [\App\Http\Controllers\PtspCandidateController::class, 'index']);
+            Route::post('/candidates/{id}/nib', [\App\Http\Controllers\PtspCandidateController::class, 'markNib']);
         });
 
         Route::prefix('pengawas')->group(function () {
