@@ -35,6 +35,7 @@ class Taxpayer extends Authenticatable
         'longitude',
         'is_active',
         'metadata',
+        'aft_enabled',
         'created_by',
         'password'
     ];
@@ -45,6 +46,7 @@ class Taxpayer extends Authenticatable
 
     protected $casts = [
         'is_active' => 'boolean',
+        'aft_enabled' => 'boolean',
         'metadata' => 'array',
     ];
 
@@ -87,6 +89,30 @@ class Taxpayer extends Authenticatable
     public function taxObjects(): HasMany
     {
         return $this->hasMany(TaxObject::class);
+    }
+
+    /**
+     * Get the AFT registration record for this taxpayer
+     */
+    public function aftRegistration()
+    {
+        return $this->hasOne(\App\Models\AftRegistration::class)->latestOfMany();
+    }
+
+    /**
+     * Get all AFT transactions for this taxpayer
+     */
+    public function aftTransactions(): HasMany
+    {
+        return $this->hasMany(\App\Models\AftTransaction::class);
+    }
+
+    /**
+     * Get all payment requests for this taxpayer
+     */
+    public function paymentRequests(): HasMany
+    {
+        return $this->hasMany(\App\Models\PaymentRequest::class);
     }
 
     /**

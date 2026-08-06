@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('petugas_tasks', function (Blueprint $table) {
-            $table->string('completion_photo_path')->nullable()->after('completed_at');
+            if (!Schema::hasColumn('petugas_tasks', 'completion_photo_path')) {
+                $table->string('completion_photo_path')->nullable()->after('completed_at');
+            }
         });
     }
 

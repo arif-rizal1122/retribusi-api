@@ -22,6 +22,12 @@ use App\Http\Controllers\PbbBapendaController;
 use App\Http\Controllers\TaxEducationController;
 use App\Http\Controllers\BillboardAuditController;
 use App\Http\Controllers\ComplaintController;
+use App\Http\Controllers\CitizenPaymentRequestController;
+use App\Http\Controllers\CitizenBillingController;
+use App\Http\Controllers\OfficerPaymentController;
+use App\Http\Controllers\MerchantAftController;
+use App\Http\Controllers\AdminAftController;
+use App\Http\Controllers\PaymentWebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,9 +45,12 @@ Route::group(['middleware' => 'throttle:10,1'], function () {
 
 // Other public routes
 Route::get('/opds', [OpdController::class, 'index']); // Public access
-Route::get('/citizen/bills', [BillController::class, 'citizenBills']); // Public access for demo
+Route::get('/citizen/bills', [CitizenBillingController::class, 'bills']); // Auth taxpayer (token) atau publik via ?nik=
 Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyBill']);
 Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
+
+// Public: Payment gateway webhook (callback VA/QRIS)
+Route::post('/webhooks/payment', [PaymentWebhookController::class, 'handle'])->middleware('throttle:30,1');
 
 // Public: Documents (PDF)
 Route::get('/public/pdf/npwpd/{id}', [\App\Http\Controllers\PdfController::class, 'generateNpwpd']);
@@ -236,6 +245,35 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/complaints', [ComplaintController::class, 'index']);
     });
 
+    // Citizen Payment Requests (QR / VA / QRIS / Petugas)
+    Route::group(['prefix' => 'citizen/payment-requests'], function () {
+        Route::get('/', [CitizenPaymentRequestController::class, 'index']);
+        Route::post('/', [CitizenPaymentRequestController::class, 'store']);
+        Route::get('/{id}/qr', [CitizenPaymentRequestController::class, 'qrImage']);
+        Route::get('/{id}', [CitizenPaymentRequestController::class, 'show']);
+        Route::post('/{id}/refresh', [CitizenPaymentRequestController::class, 'refresh']);
+        Route::post('/{id}/cancel', [CitizenPaymentRequestController::class, 'cancel']);
+    });
+
+    // Citizen Billing & Payment History
+    Route::get('/citizen/payments/history', [CitizenBillingController::class, 'paymentHistory']);
+
+    // Merchant AFT (Auto From Transaction) - citizen self-service
+    Route::group(['prefix' => 'citizen/merchant'], function () {
+        Route::post('/enroll', [MerchantAftController::class, 'enroll']);
+        Route::delete('/enroll', [MerchantAftController::class, 'deactivate']);
+        Route::get('/aft-status', [MerchantAftController::class, 'status']);
+        Route::get('/aft-history', [MerchantAftController::class, 'history']);
+        Route::post('/submit-omzet', [MerchantAftController::class, 'submitOmzet']);
+    });
+
+    // Officer Payment (petugas memindai QR payment request)
+    Route::group(['prefix' => 'officer/payment-requests'], function () {
+        Route::get('/', [OfficerPaymentController::class, 'history']);
+        Route::get('/{token}', [OfficerPaymentController::class, 'verify']);
+        Route::post('/{token}/complete', [OfficerPaymentController::class, 'complete']);
+    });
+
     // PBB Bapenda Citizen Actions
     Route::group(['prefix' => 'pbb/bapenda'], function () {
         Route::post('/link-nop', [PbbBapendaController::class, 'linkNop']);
@@ -325,6 +363,15 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/transactions', [PbbBapendaController::class, 'transactions']);
             Route::get('/stats', [PbbBapendaController::class, 'stats']);
             Route::post('/sync-all', [PbbBapendaController::class, 'syncAllObjects']);
+        });
+
+        // Modul AFT (Admin) - persetujuan registrasi & monitoring pemotongan
+        Route::prefix('aft')->group(function () {
+            Route::get('/registrations', [AdminAftController::class, 'registrations']);
+            Route::post('/registrations/{id}/approve', [AdminAftController::class, 'approve']);
+            Route::post('/registrations/{id}/reject', [AdminAftController::class, 'reject']);
+            Route::get('/transactions', [AdminAftController::class, 'transactions']);
+            Route::get('/stats', [AdminAftController::class, 'stats']);
         });
 
         // Official BAPENDA Documents

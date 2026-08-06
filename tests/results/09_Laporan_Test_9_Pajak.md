@@ -4,12 +4,12 @@ Pengujian ini mengeksekusi lifecycle lengkap: Pendaftaran Objek -> Perhitungan T
 
 | Jenis Pajak | Waktu Pendaftaran (ms) | Waktu Tagihan (ms) | Waktu Pembayaran (ms) | Total Tagihan (Rp) | Status Akhir |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| PBJT - Makan dan Minum | 46 | 22 | 14 | 5.000.000 | SUCCESS |
-| PBJT - Jasa Perhotelan | 6 | 10 | 12 | 10.000.000 | SUCCESS |
-| Pajak Reklame | 6 | 11 | 8 | 2.500.000 | SUCCESS |
-| Pajak MBLB | 8 | 15 | 7 | 750.000 | SUCCESS |
-| PBJT - Jasa Kesenian dan Hiburan | 7 | 10 | 7 | 7.500.000 | SUCCESS |
-| PBJT - Tenaga Listrik | 6 | 13 | 17 | 2.000.000 | SUCCESS |
-| PBJT - Jasa Parkir | 6 | 18 | 9 | 1.500.000 | SUCCESS |
-| Air Tanah | 8 | 16 | 7 | 200.000 | SUCCESS |
-| Pajak Sarang Burung Walet | 6 | 12 | 9 | 4.000.000 | SUCCESS |
+| PBJT - Makan dan Minum | 7 | 7 | 6 | 5.000.000 | SUCCESS |
+| PBJT - Jasa Perhotelan | 4 | 7 | 6 | 10.000.000 | SUCCESS |
+| Pajak Reklame | 4 | 8 | 7 | 2.500.000 | SUCCESS |
+| Pajak MBLB | 6 | 9 | 7 | 750.000 | SUCCESS |
+| PBJT - Jasa Kesenian dan Hiburan | 6 | 10 | 7 | 7.500.000 | SUCCESS |
+| PBJT - Tenaga Listrik | 6 | 10 | 7 | 2.000.000 | SUCCESS |
+| PBJT - Jasa Parkir | 6 | 20 | 9 | 1.500.000 | SUCCESS |
+| Air Tanah | 9 | 13 | 8 | 200.000 | SUCCESS |
+| Pajak Sarang Burung Walet | 4 | 7 | 7 | 4.000.000 | SUCCESS |
