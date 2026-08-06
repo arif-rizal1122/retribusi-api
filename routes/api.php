@@ -201,6 +201,14 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/bills', [BillController::class, 'citizenBills']);
         Route::get('/tax-objects', [\App\Http\Controllers\CitizenServiceController::class, 'taxObjects']);
 
+        // ASET DAERAH (JU-ASET) — kategori, unit, form template, sewa
+        Route::get('/asset/categories', [\App\Http\Controllers\CitizenAssetController::class, 'categories']);
+        Route::get('/asset/items', [\App\Http\Controllers\CitizenAssetController::class, 'items']);
+        Route::get('/asset/form-template/{categoryId}', [\App\Http\Controllers\CitizenAssetController::class, 'formTemplate']);
+        Route::post('/asset/rentals', [\App\Http\Controllers\CitizenAssetController::class, 'storeRental']);
+        Route::get('/asset/rentals', [\App\Http\Controllers\CitizenAssetController::class, 'myRentals']);
+        Route::get('/asset/rentals/{id}', [\App\Http\Controllers\CitizenAssetController::class, 'showRental']);
+
         // Pembayaran
         Route::get('/payments/history', [PaymentController::class, 'history']);
         Route::post('/payments', [PaymentController::class, 'store']);
@@ -311,6 +319,22 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::apiResource('spot-checks', \App\Http\Controllers\SpotCheckController::class);
         Route::patch('spot-checks/{id}/status', [\App\Http\Controllers\SpotCheckController::class, 'updateStatus']);
         Route::get('spot-checks/tax-object/{id}/estimation', [\App\Http\Controllers\SpotCheckController::class, 'getEstimatedRevenue']);
+
+        // ASET DAERAH (JU-ASET) — Admin: dashboard, kelola kategori & unit, verifikasi sewa
+        Route::get('/asset/dashboard', [\App\Http\Controllers\AdminAssetController::class, 'dashboard']);
+        Route::get('/asset/rentals', [\App\Http\Controllers\AdminAssetController::class, 'rentals']);
+        Route::post('/asset/rentals/{id}/verify', [\App\Http\Controllers\AdminAssetController::class, 'verify']);
+        Route::post('/asset/rentals/{id}/approve', [\App\Http\Controllers\AdminAssetController::class, 'approve']);
+        Route::post('/asset/rentals/{id}/reject', [\App\Http\Controllers\AdminAssetController::class, 'reject']);
+        Route::post('/asset/rentals/{id}/complete', [\App\Http\Controllers\AdminAssetController::class, 'complete']);
+        Route::get('/asset/categories', [\App\Http\Controllers\AdminAssetController::class, 'categories']);
+        Route::post('/asset/categories', [\App\Http\Controllers\AdminAssetController::class, 'storeCategory']);
+        Route::put('/asset/categories/{id}', [\App\Http\Controllers\AdminAssetController::class, 'updateCategory']);
+        Route::delete('/asset/categories/{id}', [\App\Http\Controllers\AdminAssetController::class, 'deleteCategory']);
+        Route::get('/asset/items', [\App\Http\Controllers\AdminAssetController::class, 'items']);
+        Route::post('/asset/items', [\App\Http\Controllers\AdminAssetController::class, 'storeItem']);
+        Route::put('/asset/items/{id}', [\App\Http\Controllers\AdminAssetController::class, 'updateItem']);
+        Route::delete('/asset/items/{id}', [\App\Http\Controllers\AdminAssetController::class, 'deleteItem']);
         
         Route::get('/analytics/realization', [AnalyticsController::class, 'getRealization']);
         Route::get('/analytics/heatmap', [AnalyticsController::class, 'getHeatmapData']);
@@ -440,6 +464,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
         // Modul Pengaduan (Admin & Pengawas)
         Route::get('/complaints', [ComplaintController::class, 'index']);
+
         Route::get('/complaints/{complaint}', [ComplaintController::class, 'show']);
         Route::put('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus']);
     });
