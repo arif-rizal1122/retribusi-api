@@ -70,9 +70,6 @@ class CitizenServiceController extends Controller
             ->findOrFail($id);
         
         $service = $classification->retributionType;
-
-        // GATE NIB (PTSP-13): layanan usaha wajib NIB
-        \App\Http\Controllers\NibPublicController::enforceNibGate($request, $classification, $taxpayer);
         
         $objects = TaxObject::where('taxpayer_id', $taxpayer->id)
             ->where('retribution_classification_id', $classification->id)
@@ -118,6 +115,9 @@ class CitizenServiceController extends Controller
         }
         $classification = \App\Models\RetributionClassification::with('retributionType')->findOrFail($id);
         $service = $classification->retributionType;
+
+        // GATE NIB (PTSP-13): layanan usaha wajib NIB
+        \App\Http\Controllers\NibPublicController::enforceNibGate($request, $classification, $taxpayer);
 
         $request->validate([
             'name' => 'required|string|max:255',
