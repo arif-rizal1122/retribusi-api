@@ -139,11 +139,15 @@ class CitizenAssetController extends Controller
         // Guard 'citizens' → provider taxpayers: $request->user() adalah Taxpayer langsung
         $taxpayer = $request->user();
 
+        $asetType = $this->jasaUsahaType();
+        $asetClassification = $this->jasaUsahaClassification();
+
         $rental = AssetRental::create([
             'rental_code' => 'AST-' . strtoupper(Str::random(6)) . '-' . now()->format('Ymd'),
             'taxpayer_id' => $taxpayer->id,
             'asset_item_id' => $item->id,
-            'retribution_type_id' => $item->category_id ? $this->jasaUsahaTypeId() : null,
+            'retribution_type_id' => $asetType?->id,
+            'retribution_classification_id' => $asetClassification?->id,
             'tanggal_mulai' => $validated['tanggal_mulai'],
             'tanggal_selesai' => $validated['tanggal_selesai'] ?? null,
             'lama_sewa' => $lamaSewa,
@@ -205,14 +209,31 @@ class CitizenAssetController extends Controller
     }
 
     /**
-     * Cari retribution type Jasa Usaha (JU-ASET). Fallback null jika belum dibuat.
+     * Type JU-ASET yang SUDAH ADA di prod: "Retribusi Jasa Usaha" (id 106, OPD BAPENDA).
+     * Fallback: cari type lain bernama aset/jasa usaha.
      */
-    private function jasaUsahaTypeId()
+    private function jasaUsahaType()
     {
+        $type = DB::table('retribution_types')
+            ->where('name', 'Retribusi Jasa Usaha')
+            ->first();
+        if ($type) {
+            return $type;
+        }
         return DB::table('retribution_types')
             ->where('name', 'like', '%Aset%')
             ->orWhere('name', 'like', '%Jasa Usaha%')
-            ->value('id');
+            ->first();
+    }
+
+    /**
+     * Classification "Pemanfaatan Aset Daerah" (id 211) di bawah type JU-ASET.
+     */
+    private function jasaUsahaClassification()
+    {
+        return DB::table('retribution_classifications')
+            ->where('name', 'Pemanfaatan Aset Daerah')
+            ->first();
     }
 
     private function defaultTemplates(): array

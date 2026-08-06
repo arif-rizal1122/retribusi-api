@@ -12,6 +12,7 @@ class AssetRental extends Model
         'taxpayer_id',
         'asset_item_id',
         'retribution_type_id',
+        'retribution_classification_id',
         'tanggal_mulai',
         'tanggal_selesai',
         'lama_sewa',
