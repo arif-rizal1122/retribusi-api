@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\Billing;
+use App\Models\Bill;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -26,7 +26,7 @@ class SendDueDateNotifications extends Command
     {
         $targetDate = Carbon::now()->addDays(3)->toDateString();
 
-        $bills = Billing::where('status', 'pending')
+        $bills = Bill::where('status', 'pending')
             ->whereDate('due_date', $targetDate)
             ->with(['taxpayer', 'taxObject.taxpayer'])
             ->get();
