@@ -23,10 +23,8 @@ use App\Http\Controllers\PbbBapendaController;
 use App\Http\Controllers\TaxEducationController;
 use App\Http\Controllers\BillboardAuditController;
 use App\Http\Controllers\ComplaintController;
-use App\Http\Controllers\PublicRegistrationController;
 use App\Http\Controllers\Api\SimpadKoneksiController;
-use App\Http\Controllers\PbbNopApplicationController;
-use App\Http\Controllers\TaxObjectChangeRequestController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -42,32 +40,13 @@ Route::group(['middleware' => 'throttle:10,1'], function () {
     Route::post('/citizen/request-otp', [AuthController::class, 'requestCitizenOtp']);
     Route::post('/citizen/verify-otp', [AuthController::class, 'verifyCitizenOtp']);
     Route::post('/citizen/register', [AuthController::class, 'registerCitizen']);
-    Route::post('/notaris/register', [AuthController::class, 'registerNotaris']);
 });
 
 // Other public routes
-// Public: Banners (homepage slideshow)
-Route::get('/public/banners', function () {
-    $now = now();
-    $banners = DB::table('banners')
-        ->where('is_active', 1)
-        ->where(function ($q) use ($now) {
-            $q->whereNull('start_at')->orWhere('start_at', '<=', $now);
-        })
-        ->where(function ($q) use ($now) {
-            $q->whereNull('end_at')->orWhere('end_at', '>=', $now);
-        })
-        ->orderBy('sort_order')
-        ->get(['id', 'title', 'subtitle', 'image_url', 'link_url', 'gradient_start', 'gradient_end']);
-    return response()->json(['data' => $banners]);
-});
 Route::get('/opds', [OpdController::class, 'index']); // Public access
+Route::get('/citizen/bills', [BillController::class, 'citizenBills']); // Public access for demo
 Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyBill']);
 Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
-Route::get('/verify/taxpayer/{token}', [\App\Http\Controllers\QrController::class, 'verifyTaxpayer']);
-Route::get('/verify/officer/{token}', [\App\Http\Controllers\QrController::class, 'verifyOfficer']);
-// IKD SSO (Dukcapil) — fallback aman sebelum PKS aktif
-Route::get('/auth/ikd/redirect', [\App\Http\Controllers\IkdController::class, 'redirect']);
 
 // Public: Documents (PDF)
 Route::get('/public/pdf/npwpd/{id}', [\App\Http\Controllers\PdfController::class, 'generateNpwpd']);
@@ -76,15 +55,6 @@ Route::get('/public/pdf/skpd/{billId}', [\App\Http\Controllers\DocumentControlle
 Route::get('/public/pdf/sspd/{billId}', [\App\Http\Controllers\DocumentController::class, 'sspd']);
 Route::get('/public/pdf/sppt/{billId}', [\App\Http\Controllers\DocumentController::class, 'sppt']);
 Route::get('/public/pdf/surat-teguran/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'suratTeguran']);
-
-// Public self-registration portal
-Route::prefix('public')->group(function () {
-    Route::get('/retribution-types', [PublicRegistrationController::class, 'getTypes']);
-    Route::get('/retribution-classifications', [PublicRegistrationController::class, 'getClassifications']);
-    Route::get('/opds', [PublicRegistrationController::class, 'getOpds']);
-    Route::get('/taxpayers/check-nik/{nik}', [PublicRegistrationController::class, 'checkNik']);
-    Route::post('/register-taxpayer', [PublicRegistrationController::class, 'register']);
-});
 
 // Tax Simulation (public, no auth needed)
 Route::post('/simulate-tax', function (Request $request) {
@@ -183,15 +153,6 @@ Route::post('/pbb/calculate', [PbbClassificationController::class, 'calculate'])
 // Public: PBB Bapenda Inquiry (cek tagihan tanpa login) - Throttled
 Route::post('/pbb/bapenda/inquiry', [PbbBapendaController::class, 'inquiry'])->middleware('throttle:10,1');
 
-// Public: H2H BPN — cek tunggakan PBB (dipanggil sistem BPN, auth X-H2H-Key)
-Route::post('/h2h/bpn/check-pbb', [\App\Http\Controllers\H2HBpnController::class, 'checkPbb'])->middleware('throttle:30,1');
-
-// Public: H2H BPN — verifikasi pembayaran BPHTB lunas (BPN pull, auth X-H2H-Key)
-Route::post('/h2h/bpn/verify-payment', [\App\Http\Controllers\H2HBpnController::class, 'verifyPayment'])->middleware('throttle:30,1');
-
-// Public: Verifikasi keaslian SSPD digital BPHTB (tanpa login)
-Route::get('/public/sspd/verify/{sspdNumber}', [\App\Http\Controllers\H2HBphtbController::class, 'verifySspd']);
-
 // Protected routes
 Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     // Shared Routes (Admin, Petugas, Citizen)
@@ -203,10 +164,6 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::post('/upload', [\App\Http\Controllers\UploadController::class, 'uploadImage']);
     Route::get('/me', [\App\Http\Controllers\MeController::class, 'show']);
     Route::post('/me/update', [\App\Http\Controllers\MeController::class, 'update']);
-    Route::get('/officer/my-qr', [\App\Http\Controllers\QrController::class, 'officerMyQr']);
-
-    // Location resolve (reverse geocode + zone detect) for object registration
-    Route::post('/location/resolve', [\App\Http\Controllers\LocationController::class, 'resolve']);
     
     // Citizen Service Registration (Shared, but usually for citizens)
     Route::group(['prefix' => 'citizen/services'], function () {
@@ -226,37 +183,10 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
     // Citizen Specific Actions
     Route::group(['prefix' => 'citizen'], function () {
-        Route::get('/bills', [BillController::class, 'citizenBills']);
-        Route::get('/my-qr', [\App\Http\Controllers\QrController::class, 'citizenMyQr']);
-        Route::get('/tax-objects', [\App\Http\Controllers\CitizenServiceController::class, 'taxObjects']);
-
-        // Pembayaran
-        Route::get('/payments/history', [PaymentController::class, 'history']);
-        Route::post('/payment-requests', [\App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController::class, 'store']);
-        Route::get('/payment-requests/{paymentRequest}', [\App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController::class, 'show']);
-        Route::post('/payment-requests/{paymentRequest}/refresh', [\App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController::class, 'refresh']);
-        Route::post('/payment-requests/{paymentRequest}/cancel', [\App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController::class, 'cancel']);
-
-        // Merchant AFT (Kalkulator Bisnis)
-        Route::prefix('merchant')->group(function () {
-            Route::post('/submit-omzet', [\App\Http\Controllers\Api\Merchant\KalkulatorBisnisController::class, 'submitOmzet']);
-            Route::get('/aft-availability', [\App\Http\Controllers\Api\Merchant\KalkulatorBisnisController::class, 'getAftAvailability']);
-            Route::get('/aft-history', [\App\Http\Controllers\Api\Merchant\KalkulatorBisnisController::class, 'getAftHistory']);
-        });
-
-        Route::post('/payments', [PaymentController::class, 'store']);
         Route::post('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'store']);
         Route::get('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
         Route::post('/complaints', [ComplaintController::class, 'store']);
-        Route::get('/complaints', [ComplaintController::class, 'citizenIndex']);
-
-        // Ajukan Perubahan Data Unit Pajak (Change Request - M19)
-        Route::post('/tax-objects/{taxObject}/change-request', [TaxObjectChangeRequestController::class, 'store']);
-        Route::get('/change-requests', [TaxObjectChangeRequestController::class, 'citizenIndex']);
-
-        // Pendaftaran NOP Mandiri (Warga)
-        Route::post('/pbb/nop-applications', [PbbNopApplicationController::class, 'store']);
-        Route::get('/pbb/nop-applications', [PbbNopApplicationController::class, 'index']);
+        Route::get('/complaints', [ComplaintController::class, 'index']);
     });
 
     // PBB Bapenda Citizen Actions
@@ -265,9 +195,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::delete('/unlink-nop/{id}', [PbbBapendaController::class, 'unlinkNop']);
         Route::get('/my-objects', [PbbBapendaController::class, 'myObjects']);
         Route::get('/my-transactions', [PbbBapendaController::class, 'myTransactions']);
-        Route::get('/transactions/{transaction}/receipt', [PbbBapendaController::class, 'downloadReceipt']);
         Route::post('/pay', [PbbBapendaController::class, 'pay']);
-        Route::post('/payment-request', [PbbBapendaController::class, 'paymentRequest']);
         Route::get('/download-sppt', [PbbBapendaController::class, 'downloadSPPT']);
     });
 
@@ -302,18 +230,12 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::apiResource('taxpayers', TaxpayerController::class);
         Route::apiResource('tax-objects', TaxObjectController::class);
         Route::apiResource('bills', BillController::class)->only(['index', 'store']);
-        Route::post('/bills/{bill}/generate-qr', [BillController::class, 'generateQr']);
         Route::post('/bills/checkout', [BillController::class, 'checkout']);
 
         // Mutasi Objek Pajak (Balik Nama / Transfer Aset)
         Route::get('/mutations', [MutationController::class, 'index']);
         Route::post('/mutations', [MutationController::class, 'store']);
         Route::get('/tax-objects/{taxObject}/pending-periods', [PaymentController::class, 'getPendingPeriods']);
-
-        // Change Request Objek Pajak (M19): antrian + approve/reject
-        Route::get('/change-requests', [TaxObjectChangeRequestController::class, 'index']);
-        Route::put('/change-requests/{changeRequest}/status', [TaxObjectChangeRequestController::class, 'updateStatus']);
-
         Route::get('/payments', [PaymentController::class, 'index']);
         Route::post('/payments', [PaymentController::class, 'store']);
         Route::post('/bills/{bill}/pay', [PaymentController::class, 'store']);
@@ -332,12 +254,12 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/map-potentials', [DashboardController::class, 'getMapPotentials']);
         });
 
-        // WA Gateway Management (Baileys)
-        Route::prefix('admin/wa-gateway')->group(function () {
-            Route::get('/status', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'status']);
-            Route::get('/qr', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'qr']);
-            Route::post('/send-test', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'sendTest']);
-            Route::post('/logout', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'logout']);
+        // Dashboard Khusus Admin PTSP (DPMPTSP) — RBAC role admin_ptsp
+        Route::prefix('ptsp')->group(function () {
+            Route::get('/dashboard/stats', [\App\Http\Controllers\PtspDashboardController::class, 'stats']);
+            Route::get('/dashboard/growth', [\App\Http\Controllers\PtspDashboardController::class, 'growth']);
+            Route::get('/dashboard/related-services', [\App\Http\Controllers\PtspDashboardController::class, 'relatedServices']);
+            Route::get('/dashboard/taxpayers', [\App\Http\Controllers\PtspDashboardController::class, 'taxpayers']);
         });
 
         Route::prefix('pengawas')->group(function () {
@@ -384,11 +306,6 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/transactions', [PbbBapendaController::class, 'transactions']);
             Route::get('/stats', [PbbBapendaController::class, 'stats']);
             Route::post('/sync-all', [PbbBapendaController::class, 'syncAllObjects']);
-
-            // Pendaftaran NOP
-            Route::get('/nop-applications', [PbbNopApplicationController::class, 'index']);
-            Route::get('/nop-applications/{id}', [PbbNopApplicationController::class, 'show']);
-            Route::post('/nop-applications/{id}/status', [PbbNopApplicationController::class, 'updateStatus']);
         });
 
         // Bank H2H Monitoring Logs
@@ -396,50 +313,6 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/logs', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'logs']);
             Route::post('/reconcile', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'reconcile']);
         });
-
-        // H2H BPN / BPHTB
-        Route::prefix('h2h/bphtb')->group(function () {
-            Route::get('/', [\App\Http\Controllers\H2HBphtbController::class, 'index']);
-            Route::get('/mappings', [\App\Http\Controllers\H2HBphtbController::class, 'mappings']);
-            Route::post('/simulate', [\App\Http\Controllers\H2HBphtbController::class, 'simulate']);
-            Route::post('/submit', [\App\Http\Controllers\H2HBphtbController::class, 'submit']);
-            Route::get('/mine', [\App\Http\Controllers\H2HBphtbController::class, 'mySubmissions']);
-            Route::post('/{submission}/pay', [\App\Http\Controllers\H2HBphtbController::class, 'pay']);
-            Route::post('/{submission}/documents', [\App\Http\Controllers\H2HBphtbController::class, 'uploadDocument']);
-            Route::delete('/{submission}/documents/{document}', [\App\Http\Controllers\H2HBphtbController::class, 'deleteDocument']);
-            Route::post('/{submission}/sspd', [\App\Http\Controllers\H2HBphtbController::class, 'issueSspd']);
-            Route::post('/{submission}/verify', [\App\Http\Controllers\H2HBphtbController::class, 'verify']);
-            Route::get('/{submission}', [\App\Http\Controllers\H2HBphtbController::class, 'show']);
-        });
-
-        // Notaris / PPAT Approval
-        Route::prefix('notaris-approvals')->group(function () {
-            Route::get('/', [\App\Http\Controllers\NotarisApprovalController::class, 'index']);
-            Route::post('/{id}/approve', [\App\Http\Controllers\NotarisApprovalController::class, 'approve']);
-            Route::post('/{id}/reject', [\App\Http\Controllers\NotarisApprovalController::class, 'reject']);
-        });
-
-        // SPPT PBB Records (lokal fallback + reconciliation layer vs BPN)
-        Route::prefix('sppt-records')->group(function () {
-            Route::get('/', [\App\Http\Controllers\SpptRecordController::class, 'index']);
-            Route::post('/', [\App\Http\Controllers\SpptRecordController::class, 'store']);
-            Route::get('/stats', [\App\Http\Controllers\SpptRecordController::class, 'stats']);
-            Route::get('/{id}', [\App\Http\Controllers\SpptRecordController::class, 'show']);
-            Route::post('/{id}/reconcile', [\App\Http\Controllers\SpptRecordController::class, 'reconcile']);
-            Route::put('/{id}', [\App\Http\Controllers\SpptRecordController::class, 'update']);
-            Route::delete('/{id}', [\App\Http\Controllers\SpptRecordController::class, 'destroy']);
-        });
-
-        // H2H BHUMI: Mapping NIB-NOP (kerangka, default not_configured)
-        Route::prefix('pbb/nib-nop-mappings')->group(function () {
-            Route::get('/', [\App\Http\Controllers\NibNopMappingController::class, 'index']);
-            Route::post('/', [\App\Http\Controllers\NibNopMappingController::class, 'store']);
-            Route::get('/stats', [\App\Http\Controllers\NibNopMappingController::class, 'stats']);
-            Route::post('/{id}/sync', [\App\Http\Controllers\NibNopMappingController::class, 'syncOne']);
-        });
-
-        // H2H Connector Logs (monitoring SIMPBB/Dukcapil/BHUMI)
-        Route::get('/h2h-connector-logs', [\App\Http\Controllers\H2hConnectorLogController::class, 'index']);
 
         // Official BAPENDA Documents
         Route::prefix('documents')->group(function () {
@@ -484,48 +357,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 Route::middleware('bank_h2h')->prefix('v1/bank')->group(function () {
     Route::post('/inquiry', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'inquiry']);
     Route::post('/payment', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'payment']);
+    Route::post('/reversal', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'reversal']);
 });
-
-// ------------------------------------------------------------------------
-// BANK H2H GATEWAY SNAP BI (BRI)
-// ------------------------------------------------------------------------
-Route::group(['prefix' => 'snap', 'namespace' => '\App\Http\Controllers\Api\V1\Payment'], function () {
-    // Auth (B2B Access Token)
-    Route::post('/v1.1/access-token/b2b', 'SnapBIController@getAccessToken');
-    
-    // QRIS
-    Route::post('/v1.1/qr/qr-mpm-notify', 'SnapBIController@qrisNotify');
-    
-    // BRIVA
-    Route::post('/v1.0/access-token/b2b', 'SnapBIController@getAccessToken');
-    Route::post('/v1.0/transfer-va/inquiry', 'SnapBIController@brivaInquiry');
-    Route::post('/v1.0/transfer-va/payment', 'SnapBIController@brivaPayment');
-
-    // BTN Virtual Account
-    Route::post('/v1/transfer-va/inquiry', 'BtnSnapController@inquiry');
-    Route::post('/v1/transfer-va/payment', 'BtnSnapController@payment');
-});
-
-// ------------------------------------------------------------------------
-// AUTO DEDUCT & CORRECTION
-// ------------------------------------------------------------------------
-Route::middleware('auth:sanctum')->prefix('auto-deduct')->group(function () {
-    Route::post('/record', [\App\Http\Controllers\AutoDeductController::class, 'recordTransaction']);
-    Route::post('/process', [\App\Http\Controllers\AutoDeductController::class, 'processPayment']);
-    Route::get('/status', [\App\Http\Controllers\AutoDeductController::class, 'getStatus']);
-    Route::get('/notifications', [\App\Http\Controllers\AutoDeductController::class, 'getNotifications']);
-    Route::post('/reminders', [\App\Http\Controllers\AutoDeductController::class, 'sendReminders']);
-});
-
-Route::middleware('auth:sanctum')->prefix('corrections')->group(function () {
-    Route::post('/{transaction}/void', [\App\Http\Controllers\CorrectionController::class, 'void']);
-    Route::post('/{transaction}/adjust-price', [\App\Http\Controllers\CorrectionController::class, 'adjustPrice']);
-    Route::post('/{transaction}/refund', [\App\Http\Controllers\CorrectionController::class, 'refund']);
-    Route::get('/{transaction}/history', [\App\Http\Controllers\CorrectionController::class, 'history']);
-});
-
-Route::post('/auto-deduct/webhook', [\App\Http\Controllers\AutoDeductWebhookController::class, 'handle'])
-    ->middleware('auto_deduct_access:webhook');
 
 // ------------------------------------------------------------------------
 // DEPLOY HOOK (Staging only - protected by X-Deploy-Secret header)
