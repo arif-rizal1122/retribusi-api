@@ -26,12 +26,51 @@
             <div class="info-title">DATA WAJIB PAJAK</div>
             <div style="font-weight: bold; font-size: 14px;">{{ $taxpayer }}</div>
             <div>Alamat: {{ $address ?? 'Sesuai Database' }}</div>
+            @if(isset($object_name) && $object_name)
+            <div>Objek: {{ $object_name }}</div>
+            @endif
+        </div>
+        <div class="info-box">
+            <div class="info-title">DISETOR KEPADA</div>
+            <div style="font-weight: bold; font-size: 12px;">{{ $unit_name ?? 'BAPENDA Kota Baubau' }}</div>
+            <div>Unit Pemungut: BAPENDA Kota Baubau</div>
         </div>
         <div class="info-box">
             <div class="info-title">DATA TRANSAKSI</div>
             <div>Invoice: <strong>{{ $number }}</strong></div>
             <div>Dibayar Pada: {{ date('d/m/Y H:i', strtotime($paid_at)) }}</div>
-            <div>Metode: BANK SULTRA / QRIS / TUNAI</div>
+            <div>Metode: {{ $payment_method ?? 'Elektronik' }}</div>
+            @if(isset($payment_reference) && $payment_reference)
+            <div>NTPD: <strong>{{ $payment_reference }}</strong></div>
+            @endif
+        </div>
+        <div class="info-box">
+            <div class="info-title">PERIODE &amp; TENGGAT</div>
+            @php
+                $cycleLabel = 'Pembayaran';
+                if (isset($billing_cycle) && $billing_cycle) {
+                    $cycleLabel = strtolower((string) $billing_cycle) === 'yearly' || strtolower((string) $billing_cycle) === 'tahunan'
+                        ? 'Pembayaran Tahunan'
+                        : 'Pembayaran Bulanan';
+                } elseif (isset($period_start) && isset($period_end) && $period_start && $period_end) {
+                    $startTs = strtotime($period_start);
+                    $endTs = strtotime($period_end);
+                    if ($startTs && $endTs && ($endTs - $startTs) >= 300 * 86400) {
+                        $cycleLabel = 'Pembayaran Tahunan';
+                    } else {
+                        $cycleLabel = 'Pembayaran Bulanan';
+                    }
+                }
+            @endphp
+            <div style="font-weight: bold;">{{ $cycleLabel }}</div>
+            @if(isset($period_start) && $period_start)
+            <div>Periode: {{ $period_start }} s/d {{ $period_end ?? '...' }}</div>
+            @else
+            <div>Periode: {{ $period }}</div>
+            @endif
+            @if(isset($due_date) && $due_date)
+            <div>Jatuh Tempo: {{ $due_date }}</div>
+            @endif
         </div>
     </div>
 
@@ -44,7 +83,9 @@
         </thead>
         <tbody>
             <tr>
-                <td>{{ $title }} - {{ $period }} (Pokok)</td>
+                <td>{{ $title }} - {{ $period }} (Pokok)
+                    @if(isset($object_name) && $object_name)<br><span style="font-size: 9px; color: #666;">{{ $object_name }}</span>@endif
+                </td>
                 <td style="text-align: right;">{{ number_format($amount, 0, ',', '.') }}</td>
             </tr>
             @if(isset($penalty_amount) && $penalty_amount > 0)
