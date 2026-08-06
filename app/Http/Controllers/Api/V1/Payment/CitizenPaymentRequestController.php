@@ -246,6 +246,16 @@ class CitizenPaymentRequestController extends Controller
             'status_label' => $this->statusLabel($paymentRequest->status),
             'bill_ids' => $items->pluck('bill_id')->values(),
             'bill_numbers' => $items->map(fn (PaymentRequestItem $item) => $item->bill?->bill_number)->filter()->values(),
+            'bills' => $items->map(fn (PaymentRequestItem $item) => [
+                'bill_id' => $item->bill_id,
+                'bill_number' => $item->bill?->bill_number,
+                'label' => $item->bill?->taxObject?->name
+                    ?: $item->bill?->classification?->name
+                    ?: 'Tagihan',
+                'period_start' => $item->bill?->period_start?->toDateString(),
+                'period_end' => $item->bill?->period_end?->toDateString(),
+                'amount' => (float) $item->amount_snapshot,
+            ])->values(),
             'amount' => (float) $paymentRequest->amount_snapshot,
             'admin_fee' => (float) $paymentRequest->admin_fee_snapshot,
             'total_amount' => $totalAmount,
