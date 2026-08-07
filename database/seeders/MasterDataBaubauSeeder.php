@@ -56,7 +56,7 @@ class MasterDataBaubauSeeder extends Seeder
                 ]
             ],
             [
-                'type_id' => 16, 'name' => 'Pajak Reklame', 'code' => 'REKLAME', 'formula' => '((njopr + nspr) * luas * sisi) * 0.25',
+                'type_id' => 16, 'name' => 'Reklame', 'code' => 'REKLAME', 'formula' => '((njopr + nspr) * luas * sisi) * 0.25',
                 'schema' => [
                     ['key' => 'judul_reklame', 'label' => 'Naskah/Judul Reklame', 'type' => 'text', 'required' => true],
                     ['key' => 'luas', 'label' => 'Luas (m2)', 'type' => 'number', 'required' => true],
@@ -66,41 +66,41 @@ class MasterDataBaubauSeeder extends Seeder
                 ]
             ],
             [
-                'type_id' => 16, 'name' => 'Pajak MBLB', 'code' => 'MBLB', 'formula' => '(volume * harga) * 0.15',
+                'type_id' => 16, 'name' => 'MBLB', 'code' => 'MBLB', 'formula' => '(volume * harga) * 0.15',
                 'schema' => [
                     ['key' => 'volume', 'label' => 'Volume (m3 / Ton)', 'type' => 'number', 'required' => true],
                     ['key' => 'harga', 'label' => 'Harga Patokan Pasar', 'type' => 'number', 'required' => true],
                 ]
             ],
             [
-                'type_id' => 16, 'name' => 'Pajak Sarang Burung Walet', 'code' => 'WALET', 'formula' => '(volume * harga) * 0.10',
+                'type_id' => 16, 'name' => 'Sarang Burung Walet', 'code' => 'WALET', 'formula' => '(volume * harga) * 0.10',
                 'schema' => [
                     ['key' => 'volume', 'label' => 'Berat Panen (Kg)', 'type' => 'number', 'required' => true],
                     ['key' => 'harga', 'label' => 'Harga Pasar', 'type' => 'number', 'required' => true],
                 ]
             ],
             [
-                'type_id' => 16, 'name' => 'Opsen Pajak', 'code' => 'OPSEN', 'formula' => 'pokok_provinsi * 0.66',
+                'type_id' => 16, 'name' => 'Kendaraan Bermotor (PKB)', 'code' => 'OPSEN', 'formula' => 'pokok_provinsi * 0.66',
                 'schema' => [['key' => 'pokok_provinsi', 'label' => 'Pokok Pajak Provinsi', 'type' => 'number', 'required' => true]]
             ],
 
             // WILAYAH II (Konsumsi)
             [
-                'type_id' => 17, 'name' => 'PBJT - Makan dan Minum', 'code' => 'PBJT-FOOD', 'formula' => 'omzet * 0.1',
+                'type_id' => 17, 'name' => 'Makan dan Minum', 'code' => 'PBJT-FOOD', 'formula' => 'omzet * 0.1',
                 'schema' => [
                     ['key' => 'omzet', 'label' => 'Total Omzet (Pendapatan Kotor)', 'type' => 'number', 'required' => true],
                     ['key' => 'kapasitas_kursi', 'label' => 'Kapasitas Kursi', 'type' => 'number', 'required' => false],
                 ]
             ],
             [
-                'type_id' => 17, 'name' => 'PBJT - Jasa Perhotelan', 'code' => 'PBJT-HTL', 'formula' => 'omzet * 0.1',
+                'type_id' => 17, 'name' => 'Jasa Perhotelan', 'code' => 'PBJT-HTL', 'formula' => 'omzet * 0.1',
                 'schema' => [
                     ['key' => 'omzet', 'label' => 'Total Omzet (Pendapatan Kotor)', 'type' => 'number', 'required' => true],
                     ['key' => 'jumlah_kamar', 'label' => 'Jumlah Kamar Terisi', 'type' => 'number', 'required' => false],
                 ]
             ],
             [
-                'type_id' => 17, 'name' => 'PBJT - Jasa Kesenian dan Hiburan', 'code' => 'PBJT-HBR', 'formula' => 'omzet * 0.1',
+                'type_id' => 17, 'name' => 'Kesenian dan Hiburan', 'code' => 'PBJT-HBR', 'formula' => 'omzet * 0.1',
                 'schema' => [['key' => 'omzet', 'label' => 'Total Omzet (Nilai Tiket)', 'type' => 'number', 'required' => true]]
             ],
             [
@@ -108,30 +108,30 @@ class MasterDataBaubauSeeder extends Seeder
                 'schema' => [['key' => 'omzet', 'label' => 'Total Omzet', 'type' => 'number', 'required' => true]]
             ],
             [
-                'type_id' => 17, 'name' => 'PBJT - Jasa Parkir', 'code' => 'PBJT-PRK', 'formula' => 'omzet * 0.1',
+                'type_id' => 17, 'name' => 'Jasa Parkir', 'code' => 'PBJT-PRK', 'formula' => 'omzet * 0.1',
                 'schema' => [['key' => 'omzet', 'label' => 'Total Omzet Parkir', 'type' => 'number', 'required' => true]]
             ],
             [
-                'type_id' => 17, 'name' => 'PBJT - Tenaga Listrik', 'code' => 'PBJT-PLN', 'formula' => 'tagihan * 0.1',
+                'type_id' => 17, 'name' => 'Tenaga Listrik', 'code' => 'PBJT-PLN', 'formula' => 'tagihan * 0.1',
                 'schema' => [['key' => 'tagihan', 'label' => 'Nilai Tagihan Listrik', 'type' => 'number', 'required' => true]]
             ],
             [
-                'type_id' => 17, 'name' => 'Pajak Air Tanah', 'code' => 'AIR-TANAH', 'formula' => '(volume * hda) * 0.2',
+                'type_id' => 17, 'name' => 'Air Tanah', 'code' => 'AIR-TANAH', 'formula' => '(volume * hda) * 0.2',
                 'schema' => [
                     ['key' => 'volume', 'label' => 'Volume Pemakaian (M3)', 'type' => 'number', 'required' => true],
                     ['key' => 'hda', 'label' => 'Harga Dasar Air (HDA)', 'type' => 'number', 'required' => true],
                 ]
             ],
             [
-                'type_id' => 17, 'name' => 'Retribusi Persampahan', 'code' => 'RET-SMP', 'formula' => 'tarif_flat',
+                'type_id' => 17, 'name' => 'Persampahan', 'code' => 'RET-SMP', 'formula' => 'tarif_flat',
                 'schema' => [['key' => 'tarif_flat', 'label' => 'Nominal Retribusi Tetap', 'type' => 'number', 'required' => true]]
             ],
             [
-                'type_id' => 17, 'name' => 'Retribusi Pelayanan Parkir', 'code' => 'RET-PRK', 'formula' => 'tarif_flat',
+                'type_id' => 17, 'name' => 'Layanan Parkir', 'code' => 'RET-PRK', 'formula' => 'tarif_flat',
                 'schema' => [['key' => 'tarif_flat', 'label' => 'Setoran Harian', 'type' => 'number', 'required' => true]]
             ],
             [
-                'type_id' => 17, 'name' => 'Retribusi PKD (Kios/Pasar)', 'code' => 'RET-PKD', 'formula' => 'tarif_dasar * koefisien',
+                'type_id' => 17, 'name' => 'PKD (Kios/Pasar)', 'code' => 'RET-PKD', 'formula' => 'tarif_dasar * koefisien',
                 'schema' => [
                     ['key' => 'tarif_dasar', 'label' => 'Tarif Dasar Lapak', 'type' => 'number', 'required' => true],
                     ['key' => 'koefisien', 'label' => 'Koefisien Zona', 'type' => 'number', 'required' => true],

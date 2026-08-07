@@ -46,6 +46,26 @@ return [
         'outlet'   => env('PBB_BAPENDA_OUTLET', 'm-PAD'),
     ],
 
+    // H2H Dukcapil (validasi NIK) — kerangka siap pakai, default kosong (not_configured) sampai PKS selesai
+    'dukcapil' => [
+        'base_url' => env('DUKCAPIL_BASE_URL', ''),
+        'username' => env('DUKCAPIL_USERNAME', ''),
+        'password' => env('DUKCAPIL_PASSWORD', ''),
+    ],
+
+    // H2H BPN/BHUMI (matching NIB-NOP) — kerangka siap pakai, default kosong (not_configured) sampai PKS selesai
+    'bhumi' => [
+        'base_url' => env('BHUMI_BASE_URL', ''),
+        'token'    => env('BHUMI_TOKEN', ''),
+    ],
+
+    // Notifikasi status H2H ke admin via Telegram — default off
+    'h2h_notify' => [
+        'telegram_enabled' => env('H2H_NOTIFY_TELEGRAM', false),
+        'bot_token'        => env('MPAD_BOT_TOKEN', ''),
+        'chat_id'          => env('H2H_NOTIFY_CHAT_ID', '846880203'),
+    ],
+
     'btn' => [
         'base_url' => env('BTN_BASE_URL', 'https://devapi.btn.co.id'),
         'client_id' => env('BTN_CLIENT_ID', ''), // OAuth ID
@@ -54,6 +74,12 @@ return [
         'partner_id' => env('BTN_PARTNER_ID', '99017'),
         'channel_id' => env('BTN_CHANNEL_ID', '00001'),
         'private_key_path' => env('BTN_PRIVATE_KEY_PATH', storage_path('app/keys/btn_private.pem')),
+    ],
+
+    'bpn' => [
+        // H2H BPN — key untuk endpoint check-pbb (BPN -> M-PAD).
+        // Kosong = dev mode (endpoint bisa diuji tanpa key). Isi saat PKS.
+        'h2h_key' => env('BPN_H2H_KEY', ''),
     ],
 
 ];

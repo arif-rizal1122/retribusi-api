@@ -3,8 +3,10 @@
 namespace App\Services\Payment\Snap;
 
 use App\Models\Bill;
+use App\Models\BphtbSubmission;
 use App\Models\Payment;
 use App\Models\PaymentRequest;
+use App\Models\TransactionPbb;
 use App\Services\Payment\Snap\Exceptions\SnapPaymentException;
 use App\Services\Payment\Snap\Exceptions\SnapValidationException;
 use Illuminate\Http\Request;
@@ -87,10 +89,48 @@ class SnapBrivaService
             if ($paymentRequest) {
                 $paymentRequest->update([
                     'provider_reference' => $referenceNumber,
+                    'ntpd' => $referenceNumber,
                     'status' => 'paid',
                     'paid_at' => now(),
                     'raw_request_safe' => $this->masker->mask($request->all()),
                 ]);
+
+                // M20: Sync TransactionPbb bila bill terkait PBB (NOP di metadata tax object)
+                $pbbNop = $lockedBill->taxObject?->metadata['nop_pbb'] ?? null;
+                if ($pbbNop) {
+                    $pbbMeta = $lockedBill->taxObject->metadata ?? [];
+                    TransactionPbb::updateOrCreate(
+                        [
+                            'nop' => (string) $pbbNop,
+                            'tahun' => (string) ($pbbMeta['tahun_pajak'] ?? $lockedBill->period ?? now()->format('Y')),
+                        ],
+                        [
+                            'user_id' => null,
+                            'taxpayer_id' => $lockedBill->taxpayer_id,
+                            'amount' => (float) ($pbbMeta['pbb_pokok'] ?? 0),
+                            'denda' => (float) ($pbbMeta['denda'] ?? 0),
+                            'total_bayar' => (float) $paidAmount,
+                            'ntpd' => $referenceNumber,
+                            'payment_status' => 'success',
+                            'wp_name' => $pbbMeta['nama_wp'] ?? null,
+                            'wp_address' => $pbbMeta['alamat_wp'] ?? null,
+                            'kelurahan' => $pbbMeta['kelurahan'] ?? null,
+                            'kota' => $pbbMeta['kota'] ?? null,
+                            'api_response' => $this->masker->mask($request->all()),
+                        ]
+                    );
+                }
+
+                // M21: Sync BphtbSubmission bila bill terkait BPHTB (metadata bphtb)
+                $bphtbMeta = $lockedBill->metadata ?? [];
+                if (! empty($bphtbMeta['bphtb'])) {
+                    BphtbSubmission::where('bill_id', $lockedBill->id)
+                        ->update([
+                            'status' => 'paid',
+                            'paid_at' => now(),
+                            'ntpd' => $referenceNumber,
+                        ]);
+                }
             }
 
             return $this->virtualAccountData($request, $lockedBill, [
@@ -128,8 +168,9 @@ class SnapBrivaService
 
     private function resolveBill(Request $request): array
     {
-        $virtualAccountNo = (string) $request->input('virtualAccountNo', '');
-        $customerNo = (string) $request->input('customerNo', '');
+        // Normalisasi: hilangkan spasi/left-padding supaya match apa pun format BRI kirim
+        $virtualAccountNo = $this->normalizeVa((string) $request->input('virtualAccountNo', ''));
+        $customerNo = $this->normalizeVa((string) $request->input('customerNo', ''));
 
         $paymentRequest = null;
         if ($virtualAccountNo !== '') {
@@ -138,11 +179,20 @@ class SnapBrivaService
 
         if (! $paymentRequest && $customerNo !== '') {
             $paymentRequest = PaymentRequest::where('external_id', $customerNo)->first();
+            // fallback: customerNo bisa jadi bagian VA yang kita simpan (tanpa padding)
+            if (! $paymentRequest) {
+                $paymentRequest = PaymentRequest::where('va_number', $customerNo)->first();
+            }
         }
 
         $bill = $paymentRequest?->bill;
 
         return [$bill, $paymentRequest];
+    }
+
+    private function normalizeVa(string $value): string
+    {
+        return trim((string) preg_replace('/\s+/', '', $value));
     }
 
     private function virtualAccountData(Request $request, Bill $bill, array $status, ?PaymentRequest $paymentRequest = null): array

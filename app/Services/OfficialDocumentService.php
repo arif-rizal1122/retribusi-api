@@ -148,12 +148,19 @@ class OfficialDocumentService
      */
     public function generateSSPD(Bill $bill)
     {
-        $bill->load(['retributionType', 'taxpayer', 'payments']);
+        $bill->load(['retributionType', 'taxpayer', 'payments', 'opd', 'taxObject']);
         if ($bill->status !== 'paid' && $bill->status !== 'lunas') {
             throw new \Exception("Hanya tagihan LUNAS yang bisa mencetak SSPD.");
         }
 
         $total = (float) $bill->amount + (float) $bill->penalty_amount + (float) $bill->fixed_fine_amount + (float) $bill->surcharge_amount;
+
+        $payment = $bill->payments->first();
+        $method = $this->paymentMethodLabel($payment);
+
+        $billingCycle = $bill->retributionType?->billing_cycle
+            ?? $bill->retributionType?->category
+            ?? null;
 
         return [
             'title' => $bill->retributionType?->name ?? 'Pajak Daerah',
@@ -167,9 +174,36 @@ class OfficialDocumentService
             'total_amount' => $total,
             'terbilang' => self::terbilang($total) . " Rupiah",
             'period' => $bill->period,
-            'paid_at' => $bill->payments->first()?->paid_at ?? now(),
+            'period_start' => $bill->period_start?->translatedFormat('d M Y'),
+            'period_end' => $bill->period_end?->translatedFormat('d M Y'),
+            'due_date' => $bill->due_date?->translatedFormat('d M Y'),
+            'billing_cycle' => $billingCycle,
+            'paid_at' => $payment?->paid_at ?? now(),
+            'payment_method' => $method,
+            'payment_reference' => $payment?->receipt_number ?? $payment?->reference_number ?? null,
+            'unit_name' => $bill->opd?->name ?? ($bill->taxObject?->opd?->name ?? 'BAPENDA Kota Baubau'),
+            'object_name' => $bill->taxObject?->name ?? null,
             'qr_url' => url("/api/verify/payment/{$bill->bill_number}"),
         ];
+    }
+
+    private function paymentMethodLabel($payment): string
+    {
+        if (! $payment) {
+            return 'Elektronik';
+        }
+
+        $method = strtolower((string) $payment->payment_method);
+        $channel = strtolower((string) ($payment->channel ?? $payment->payment_channel ?? ''));
+
+        return match (true) {
+            $method === 'va' || $channel === 'bri' => 'BRIVA / Virtual Account (BRI)',
+            $method === 'qris' => 'QRIS',
+            $method === 'manual_transfer' || $method === 'transfer' => 'Transfer Manual',
+            $method === 'bank_sultra' => 'Bank Sultra',
+            $method === 'cash' || $method === 'tunai' => 'Tunai',
+            default => ucfirst($method ?: 'Elektronik'),
+        };
     }
 
     /**

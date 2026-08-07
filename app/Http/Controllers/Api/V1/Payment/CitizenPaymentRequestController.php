@@ -146,7 +146,7 @@ class CitizenPaymentRequestController extends Controller
                 ]);
             }
 
-            return [$paymentRequest->fresh(['items.bill.taxpayer']), false];
+            return [$paymentRequest->fresh(['items.bill.taxpayer', 'items.bill.retributionType', 'items.bill.opd', 'items.bill.taxObject.opd']), false];
         });
 
         return response()->json(['data' => $this->payload($paymentRequest)], $reused ? 200 : 201);
@@ -201,7 +201,7 @@ class CitizenPaymentRequestController extends Controller
             $paymentRequest->update(['status' => 'cancelled']);
         }
 
-        return response()->json(['data' => $this->payload($paymentRequest->fresh(['items.bill.taxpayer']))]);
+        return response()->json(['data' => $this->payload($paymentRequest->fresh(['items.bill.taxpayer', 'items.bill.retributionType', 'items.bill.opd', 'items.bill.taxObject.opd']))]);
     }
 
     private function taxpayer(Request $request): Taxpayer
@@ -246,6 +246,32 @@ class CitizenPaymentRequestController extends Controller
             'status_label' => $this->statusLabel($paymentRequest->status),
             'bill_ids' => $items->pluck('bill_id')->values(),
             'bill_numbers' => $items->map(fn (PaymentRequestItem $item) => $item->bill?->bill_number)->filter()->values(),
+            'bills' => $items->map(fn (PaymentRequestItem $item) => [
+                'bill_id' => $item->bill_id,
+                'bill_number' => $item->bill?->bill_number,
+                'label' => $item->bill?->taxObject?->name
+                    ?: $item->bill?->classification?->name
+                    ?: $item->bill?->retributionType?->name
+                    ?: 'Tagihan',
+                'tax_object_name' => $item->bill?->taxObject?->name ?: null,
+                'address' => $item->bill?->taxObject?->address ?: null,
+                'tax_type' => $item->bill?->taxObject?->retributionType?->name
+                    ?: $item->bill?->classification?->name
+                    ?: $item->bill?->retributionType?->name
+                    ?: null,
+                'period_start' => $item->bill?->period_start?->toDateString(),
+                'period_end' => $item->bill?->period_end?->toDateString(),
+                'due_date' => $item->bill?->due_date?->toDateString(),
+                'amount' => (float) $item->amount_snapshot,
+                'penalty' => (float) $item->bill?->penalty_amount,
+                'admin_fee' => (float) $item->bill?->admin_fee,
+                'billing_cycle' => $item->bill?->retributionType?->billing_cycle
+                    ?: $item->bill?->retributionType?->category
+                    ?: null,
+                'unit_name' => $item->bill?->opd?->name
+                    ?: $item->bill?->taxObject?->opd?->name
+                    ?: null,
+            ])->values(),
             'amount' => (float) $paymentRequest->amount_snapshot,
             'admin_fee' => (float) $paymentRequest->admin_fee_snapshot,
             'total_amount' => $totalAmount,

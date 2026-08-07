@@ -73,11 +73,11 @@ class TaxHierarchySyncSeeder extends Seeder
             'code' => 'BPHTB', 'icon' => self::ICON_BPHTB, 'formula' => '(npop - npoptkp) * 0.05'
         ]);
 
-        $this->syncClassification($bapenda, $w1, 'Pajak Reklame', [
+        $this->syncClassification($bapenda, $w1, 'Reklame', [
             'code' => 'REKLAME', 'icon' => self::ICON_REKLAME, 'formula' => 'nsr * 0.25'
         ]);
 
-        $this->syncClassification($bapenda, $w1, 'Pajak MBLB', [
+        $this->syncClassification($bapenda, $w1, 'MBLB', [
             'code' => 'MBLB', 'icon' => self::ICON_MBLB, 'formula' => '(volume * harga) * 0.15'
         ]);
 
@@ -85,30 +85,30 @@ class TaxHierarchySyncSeeder extends Seeder
             'code' => 'WALET', 'icon' => self::ICON_WALET, 'formula' => 'nilai_jual * 0.10'
         ]);
 
-        $this->syncClassification($bapenda, $w1, 'Opsen PKB/BBNKB', [
-            'code' => 'OPSEN', 'icon' => self::ICON_PAJAK, 'formula' => 'pokok * 0.66'
+        $this->syncClassification($bapenda, $w1, 'Pajak Kendaraan Bermotor (PKB)', [
+            'code' => 'PKB', 'icon' => self::ICON_PAJAK, 'formula' => 'pokok * 0.66'
         ]);
 
         // ─── Step 3: Wilayah II Classifications (Self Assessment / Service) ───
         $this->command->info('Configuring Wilayah II...');
 
-        $this->syncClassification($bapenda, $w2, 'PBJT - Makan dan Minum', [
+        $this->syncClassification($bapenda, $w2, 'Makan dan Minum', [
             'code' => 'PBJT-MNM', 'icon' => self::ICON_PASAR, 'formula' => 'omzet * 0.10'
         ]);
 
-        $this->syncClassification($bapenda, $w2, 'PBJT - Jasa Perhotelan', [
+        $this->syncClassification($bapenda, $w2, 'Jasa Perhotelan', [
             'code' => 'PBJT-HTL', 'icon' => self::ICON_BPHTB, 'formula' => 'omzet * 0.10'
         ]);
 
-        $this->syncClassification($bapenda, $w2, 'PBJT - Kesenian dan Hiburan', [
+        $this->syncClassification($bapenda, $w2, 'Kesenian dan Hiburan', [
             'code' => 'PBJT-HBR', 'icon' => self::ICON_TICKET, 'formula' => 'omzet * 0.10'
         ]);
 
-        $this->syncClassification($bapenda, $w2, 'PBJT - Parkir', [
+        $this->syncClassification($bapenda, $w2, 'Jasa Parkir', [
             'code' => 'PBJT-PRK', 'icon' => self::ICON_PARKIR, 'formula' => 'omzet * 0.10'
         ]);
 
-        $this->syncClassification($bapenda, $w2, 'PBJT - Tenaga Listrik', [
+        $this->syncClassification($bapenda, $w2, 'Tenaga Listrik', [
             'code' => 'PBJT-LIS',
             'icon' => self::ICON_INTERNET,
             'formula' => 'tagihan * 0.10',
@@ -117,19 +117,19 @@ class TaxHierarchySyncSeeder extends Seeder
             ],
         ]);
 
-        $this->syncClassification($bapenda, $w2, 'Pajak Air Tanah', [
+        $this->syncClassification($bapenda, $w2, 'Air Tanah', [
             'code' => 'PAT', 'icon' => self::ICON_PDAM, 'formula' => '(volume * hda) * 0.20'
         ]);
 
-        $this->syncClassification($bapenda, $w2, 'Retribusi Persampahan', [
+        $this->syncClassification($bapenda, $w2, 'Persampahan', [
             'code' => 'SAMPAH', 'icon' => self::ICON_SAMPAH, 'formula' => 'tarif_flat'
         ]);
 
-        $this->syncClassification($bapenda, $w2, 'Retribusi PKD', [
+        $this->syncClassification($bapenda, $w2, 'PKD', [
             'code' => 'PKD', 'icon' => self::ICON_UMK, 'formula' => 'tarif_kios'
         ]);
 
-        $this->syncClassification($bapenda, $w2, 'PBG (Building Permit)', [
+        $this->syncClassification($bapenda, $w2, 'PBG', [
             'code' => 'PBG', 'icon' => self::ICON_IMB, 'formula' => 'luas * indeks'
         ]);
 

@@ -38,6 +38,10 @@ cd /Users/pondokit/Herd/retribusi-pos/backend && php artisan serve --port=8001 >
 echo "🏪 Starting POS Web (Port 3004)..."
 cd /Users/pondokit/Herd/retribusi-pos/frontend && npm run dev -- --port=3004 > /dev/null 2>&1 &
 
+# Start WA Gateway
+echo "💬 Starting WA Gateway (Port 5001)..."
+cd /Users/pondokit/Herd/retribusi-api/wa-gateway && node index.js > /dev/null 2>&1 &
+
 echo "✨ All services are starting in the background."
 echo "   - API: http://localhost:8000"
 echo "   - Admin: http://localhost:3001"
@@ -45,6 +49,7 @@ echo "   - Mobile: http://localhost:3002"
 echo "   - Petugas: http://localhost:3003"
 echo "   - POS API: http://localhost:8001"
 echo "   - POS Web: http://localhost:3004"
+echo "   - WA Gateway: http://localhost:5001"
 echo "Press Ctrl+C to stop all services."
 
 wait

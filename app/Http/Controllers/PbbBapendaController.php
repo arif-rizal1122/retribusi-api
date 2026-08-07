@@ -4,11 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\TaxpayerPbbObject;
 use App\Models\TransactionPbb;
+use App\Models\Bill;
+use App\Models\PaymentRequest;
+use App\Models\PaymentRequestItem;
+use App\Models\TaxObject;
+use App\Services\BillCreationService;
 use App\Services\PbbBapendaService;
+use App\Services\Payment\Snap\SnapBrivaReadiness;
 use App\Support\SqlDate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PbbBapendaController extends Controller
 {
@@ -33,7 +41,10 @@ class PbbBapendaController extends Controller
         ]);
 
         try {
-            $result = $this->bapendaService->inquiry($request->nop, $request->tahun);
+            $result = $this->bapendaService->inquiryWithFallback(
+                trim($request->nop),
+                trim($request->tahun)
+            );
 
             if (($result['status'] ?? 0) === 200) {
                 // Skema 2026 mengembalikan data di dalam key 'data'
@@ -53,6 +64,19 @@ class PbbBapendaController extends Controller
                         'denda' => (float) ($data['denda'] ?? 0),
                         'total_harus_dibayar' => (float) ($data['total_harus_dibayar'] ?? 0),
                         'status_bayar' => $data['status_bayar'] ?? '-',
+                        'source' => $result['source'] ?? 'simpbb',
+                        'fallback_used' => $result['fallback_used'] ?? false,
+                        'data_source' => $result['data_source'] ?? null,
+                        'luas_bumi' => (float) ($data['luas_bumi'] ?? 0),
+                        'luas_bangunan' => (float) ($data['luas_bangunan'] ?? 0),
+                        'njop_bumi' => (float) ($data['njop_bumi'] ?? 0),
+                        'njop_bangunan' => (float) ($data['njop_bangunan'] ?? 0),
+                        'njop_total' => (float) ($data['njop_total'] ?? 0),
+                        'njop_tkp' => (float) ($data['njop_tkp'] ?? 0),
+                        'njop_kena_pajak' => (float) ($data['njop_kena_pajak'] ?? 0),
+                        'tarif' => (float) ($data['tarif'] ?? 0),
+                        'kelas_bumi' => $data['kelas_bumi'] ?? null,
+                        'kelas_bangunan' => $data['kelas_bangunan'] ?? null,
                     ],
                 ]);
             }
@@ -60,7 +84,7 @@ class PbbBapendaController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => $result['msg'] ?? 'Data tidak ditemukan',
-            ], 404);
+            ], ($result['status'] ?? 0) === 503 ? 503 : 404);
 
         } catch (\Exception $e) {
             Log::error('PBB Inquiry Service Error', [
@@ -106,16 +130,22 @@ class PbbBapendaController extends Controller
             ], 422);
         }
 
-        // Validasi ke Bapenda
+        // Validasi ke Bapenda (dengan fallback SPPT lokal)
         $tahun = $request->tahun ?? date('Y');
         try {
-            $result = $this->bapendaService->inquiry($request->nop, $tahun);
+            $result = $this->bapendaService->inquiryWithFallback($request->nop, $tahun);
 
             if (($result['status'] ?? 0) !== 200) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'NOP tidak ditemukan di database Bapenda.',
                 ], 404);
+            }
+
+            $fallbackUsed = $result['fallback_used'] ?? false;
+            $notes = $request->description;
+            if ($fallbackUsed) {
+                $notes = trim(($notes ? $notes.' | ' : '').'Sumber: SPPT lokal (fallback H2H)');
             }
 
             $pbbObject = TaxpayerPbbObject::create([
@@ -126,12 +156,15 @@ class PbbBapendaController extends Controller
                 'kelurahan' => $result['kelurahan'] ?? null,
                 'kota' => $result['kota'] ?? null,
                 'is_verified' => true,
+                'notes' => $notes,
             ]);
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'NOP berhasil ditautkan ke akun Anda.',
                 'data' => $pbbObject,
+                'source' => $result['source'] ?? 'simpbb',
+                'fallback_used' => $fallbackUsed,
             ]);
 
         } catch (\Exception $e) {
@@ -189,8 +222,10 @@ class PbbBapendaController extends Controller
 
         foreach ($objects as $obj) {
             $tagihan = null;
+            $source = 'simpbb';
+            $fallbackUsed = false;
             try {
-                $inquiry = $this->bapendaService->inquiry($obj->nop, $tahun);
+                $inquiry = $this->bapendaService->inquiryWithFallback($obj->nop, $tahun);
                 if (($inquiry['status'] ?? 0) === 200) {
                     $tagihan = [
                         'pbb_pokok' => (float) ($inquiry['pbb_pokok'] ?? 0),
@@ -198,6 +233,8 @@ class PbbBapendaController extends Controller
                         'total_harus_dibayar' => (float) ($inquiry['total_harus_dibayar'] ?? 0),
                         'status_bayar' => $inquiry['status_bayar'] ?? '-',
                     ];
+                    $source = $inquiry['source'] ?? 'simpbb';
+                    $fallbackUsed = $inquiry['fallback_used'] ?? false;
                 }
             } catch (\Exception $e) {
                 Log::warning('PBB Inquiry for my-objects failed', [
@@ -214,6 +251,8 @@ class PbbBapendaController extends Controller
                 'kota' => $obj->kota,
                 'tahun' => $tahun,
                 'tagihan' => $tagihan,
+                'source' => $source,
+                'fallback_used' => $fallbackUsed,
             ];
         }
 
@@ -322,8 +361,8 @@ class PbbBapendaController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal memproses pembayaran. Silakan coba lagi.',
-            ], 500);
+                'message' => 'Layanan Bapenda sedang tidak tersedia (H2H). Coba lagi nanti.',
+            ], 503);
         }
     }
 
@@ -571,5 +610,277 @@ class PbbBapendaController extends Controller
 
             return response()->json(['message' => 'Gagal mengunduh SPPT: '.$e->getMessage()], 500);
         }
+    }
+
+    // ─── Payment Request via Gateway M-PAD (M20) ─────────────────────────
+
+    /**
+     * Membuat PaymentRequest BRIVA untuk tagihan PBB.
+     *
+     * Alur M20 (keputusan 02 Agu 2026):
+     * 1. SIMPBB dipakai HANYA untuk validasi data (inquiry) — bukan payment.
+     * 2. Tagihan dibentuk sebagai Bill internal M-PAD (fallback sppt_records).
+     * 3. Pembayaran lewat Payment Gateway M-PAD (BRIVA) — NTPD dari bank persepsi.
+     * 4. Callback SNAP menyimpan NTPD + sync bill internal LUNAS.
+     */
+    public function paymentRequest(Request $request)
+    {
+        $request->validate([
+            'nop' => 'required|string|size:18',
+            'tahun' => 'required|string|size:4',
+        ]);
+
+        // --- Tentukan user & taxpayer ---
+        $user = Auth::guard('sanctum')->user();
+        $taxpayerId = null;
+
+        if ($user instanceof \App\Models\Taxpayer) {
+            $taxpayerId = $user->id;
+        } elseif ($user instanceof \App\Models\User) {
+            $taxpayer = \App\Models\Taxpayer::where('user_id', $user->id)->first();
+            $taxpayerId = $taxpayer?->id;
+        }
+
+        if (! $taxpayerId) {
+            return response()->json(['message' => 'Akun wajib pajak tidak ditemukan.'], 422);
+        }
+
+        // --- 1. Validasi data via SIMPBB (inquiry saja, bukan payment) ---
+        try {
+            $inquiry = $this->bapendaService->inquiryWithFallback($request->nop, $request->tahun);
+        } catch (\Exception $e) {
+            Log::warning('PBB paymentRequest inquiry gagal', ['nop' => $request->nop, 'error' => $e->getMessage()]);
+
+            return response()->json(['message' => 'Gagal memvalidasi NOP. Silakan coba lagi.'], 502);
+        }
+
+        if (($inquiry['status'] ?? 0) !== 200) {
+            return response()->json(['message' => 'Data tagihan tidak ditemukan di server Bapenda.'], 404);
+        }
+
+        $statusBayar = strtoupper($inquiry['status_bayar'] ?? '');
+        if (str_contains($statusBayar, 'LUNAS') || str_contains($statusBayar, 'SDH BAYAR')) {
+            return response()->json(['message' => 'Tagihan ini sudah lunas.'], 422);
+        }
+
+        $totalTagihan = (float) ($inquiry['total_harus_dibayar'] ?? $inquiry['data']['total_harus_dibayar'] ?? 0);
+        if ($totalTagihan <= 0) {
+            return response()->json(['message' => 'Nominal tagihan tidak valid (0).'], 422);
+        }
+
+        // --- 2. Cari / buat Bill internal M-PAD untuk NOP ini ---
+        $taxObject = TaxObject::where('nop', $request->nop)->where('taxpayer_id', $taxpayerId)->first();
+
+        if (! $taxObject) {
+            $taxObject = TaxObject::create([
+                'nop' => $request->nop,
+                'taxpayer_id' => $taxpayerId,
+                'retribution_type_id' => 16, // Pajak (PBB-P2)
+                'opd_id' => 5, // Badan Pendapatan Daerah
+                'name' => $inquiry['nama_wp'] ?? 'Objek PBB '.$request->nop,
+                'address' => $inquiry['alamat_wp'] ?? '',
+                'status' => 'active',
+                'metadata' => [
+                    'nop_pbb' => $request->nop,
+                    'tahun_pajak' => $request->tahun,
+                    'nama_wp' => $inquiry['nama_wp'] ?? '',
+                    'alamat_wp' => $inquiry['alamat_wp'] ?? '',
+                    'kelurahan' => $inquiry['kelurahan'] ?? '',
+                    'kota' => $inquiry['kota'] ?? '',
+                    'pbb_pokok' => (float) ($inquiry['pbb_pokok'] ?? 0),
+                    'denda' => (float) ($inquiry['denda'] ?? 0),
+                    'total_harus_dibayar' => $totalTagihan,
+                    'source' => $inquiry['source'] ?? 'simpbb',
+                ],
+            ]);
+        }
+
+        $billService = app(BillCreationService::class);
+        $bill = $billService->createForTaxObject(
+            $taxObject,
+            null,
+            $request->tahun,
+            [],
+            ['source' => 'pbb_gateway'],
+            null,
+            'pbb_gateway',
+            $totalTagihan
+        );
+
+        if (! $bill || in_array($bill->status, ['lunas', 'paid'], true)) {
+            return response()->json(['message' => 'Tagihan sudah lunas.'], 422);
+        }
+
+        // --- 3. Cek kesiapan BRIVA ---
+        $brivaReadiness = app(SnapBrivaReadiness::class);
+        if (! $brivaReadiness->available()) {
+            return response()->json(['message' => $brivaReadiness->publicMessage()], 422);
+        }
+
+        // --- 4. Buat PaymentRequest BRIVA ---
+        $paymentRequest = DB::transaction(function () use ($bill, $taxpayerId, $totalTagihan, $request) {
+            // Expire PR lama yang kedaluwarsa
+            PaymentRequest::where('taxpayer_id', $taxpayerId)
+                ->where('payment_channel', 'BRI')
+                ->where('method', 'VA')
+                ->where('status', 'pending')
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '<=', now())
+                ->update(['status' => 'expired']);
+
+            $expiresAt = now()->addHours(24);
+
+            $paymentRequest = PaymentRequest::create([
+                'bill_id' => $bill->id,
+                'tax_object_id' => $bill->tax_object_id,
+                'taxpayer_id' => $taxpayerId,
+                'payment_channel' => 'BRI',
+                'method' => 'VA',
+                'amount_snapshot' => (float) $bill->amount,
+                'admin_fee_snapshot' => (float) $bill->admin_fee,
+                'penalty_snapshot' => 0,
+                'expires_at' => $expiresAt,
+                'external_id' => 'PBB-'.Str::upper(Str::random(16)),
+                'status' => 'pending',
+            ]);
+
+            $paymentRequest->update([
+                'va_number' => $this->buildVaNumber($paymentRequest->id),
+            ]);
+
+            PaymentRequestItem::create([
+                'payment_request_id' => $paymentRequest->id,
+                'bill_id' => $bill->id,
+                'amount_snapshot' => (float) $bill->total_amount,
+                'status' => 'pending',
+            ]);
+
+            return $paymentRequest->fresh(['items.bill.taxpayer']);
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Virtual account berhasil dibuat. Silakan bayar melalui BRIVA.',
+            'data' => [
+                'payment_request_id' => $paymentRequest->id,
+                'va_number' => $paymentRequest->va_number,
+                'amount' => (float) $paymentRequest->amount_snapshot,
+                'total_bayar' => (float) ($paymentRequest->items->first()->amount_snapshot ?? $paymentRequest->amount_snapshot),
+                'expires_at' => $paymentRequest->expires_at?->toISOString(),
+                'bill_number' => $bill->bill_number,
+                'nop' => $request->nop,
+                'tahun' => $request->tahun,
+                'wp_name' => $inquiry['nama_wp'] ?? '-',
+            ],
+        ], 201);
+    }
+
+    /**
+     * Bangun nomor VA BRIVA dari config SNAP.
+     */
+    private function buildVaNumber(int $paymentRequestId): string
+    {
+        $partnerServiceId = preg_replace('/\D/', '', (string) config('snap.briva.partner_service_id'));
+        $prefix = preg_replace('/\D/', '', (string) config('snap.briva.va_prefix'));
+        $customerNoLength = (int) config('snap.briva.customer_no_length', 20);
+        $length = (int) config('snap.briva.va_length', 28);
+
+        if ($partnerServiceId !== '') {
+            $customerNo = str_pad((string) $paymentRequestId, $customerNoLength, '0', STR_PAD_LEFT);
+
+            return $partnerServiceId.$customerNo;
+        }
+
+        return $prefix.str_pad(
+            (string) $paymentRequestId,
+            $length - strlen($prefix),
+            '0',
+            STR_PAD_LEFT
+        );
+    }
+
+    // ─── Rekonsiliasi Harian (M20 task 1455) ────────────────────────────
+
+    /**
+     * Laporan rekonsiliasi harian transaksi PBB untuk Bapenda.
+     * Menggabungkan transaksi gateway M-PAD (PaymentRequest) + H2H SIMPBB (TransactionPbb).
+     *
+     * ?date=YYYY-MM-DD (default hari ini) → CSV siap diserahkan ke Bapenda.
+     */
+    public function reconciliation(Request $request)
+    {
+        $date = $request->query('date', now()->format('Y-m-d'));
+
+        $start = $date.' 00:00:00';
+        $end = $date.' 23:59:59';
+
+        // 1. Transaksi via gateway M-PAD (BRIVA/SNAP) — bill PBB lunas
+        $gatewayPayments = DB::table('payments')
+            ->join('bills', 'bills.id', '=', 'payments.bill_id')
+            ->whereBetween('payments.paid_at', [$start, $end])
+            ->where('payments.status', 'success')
+            ->where(function ($q) {
+                $q->where('bills.bill_number', 'like', '%-PBB')
+                  ->orWhere('bills.bill_number', 'like', 'V-SPPT-%');
+            })
+            ->get([
+                'payments.id as payment_id',
+                'payments.receipt_number',
+                'payments.reference_number',
+                'payments.amount',
+                'payments.paid_at',
+                'bills.bill_number',
+                'bills.period',
+            ]);
+
+        // 2. Transaksi via H2H SIMPBB (legacy, selama masa transisi)
+        $h2hTransactions = TransactionPbb::whereBetween('created_at', [$start, $end])
+            ->where('payment_status', 'success')
+            ->get(['nop', 'tahun', 'total_bayar', 'ntpd', 'created_at']);
+
+        // Build CSV
+        $csv = [];
+        $csv[] = ['LAPORAN REKONSILIASI PBB - '.$date];
+        $csv[] = ['Sumber', 'NOP', 'Periode', 'Nomor Bill', 'Receipt/NTPD', 'Reference', 'Jumlah (Rp)', 'Waktu Bayar'];
+
+        foreach ($gatewayPayments as $p) {
+            $csv[] = [
+                'GATEWAY M-PAD',
+                '',
+                $p->period ?? '',
+                $p->bill_number ?? '',
+                $p->receipt_number ?? '',
+                $p->reference_number ?? '',
+                number_format((float) $p->amount, 0, ',', '.'),
+                $p->paid_at ?? '',
+            ];
+        }
+
+        foreach ($h2hTransactions as $t) {
+            $csv[] = [
+                'H2H SIMPBB',
+                $t->nop,
+                $t->tahun,
+                'V-SPPT-'.$t->nop,
+                $t->ntpd ?? '',
+                '',
+                number_format((float) $t->total_bayar, 0, ',', '.'),
+                $t->created_at ?? '',
+            ];
+        }
+
+        $totalGateway = $gatewayPayments->sum(fn ($p) => (float) $p->amount);
+        $totalH2H = $h2hTransactions->sum(fn ($t) => (float) $t->total_bayar);
+        $csv[] = [];
+        $csv[] = ['TOTAL GATEWAY M-PAD', number_format($totalGateway, 0, ',', '.')];
+        $csv[] = ['TOTAL H2H SIMPBB', number_format($totalH2H, 0, ',', '.')];
+        $csv[] = ['GRAND TOTAL', number_format($totalGateway + $totalH2H, 0, ',', '.')];
+
+        $lines = collect($csv)->map(fn ($row) => implode(';', $row))->implode("\n");
+
+        return response($lines, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="rekonsiliasi-pbb-'.$date.'.csv"',
+        ]);
     }
 }

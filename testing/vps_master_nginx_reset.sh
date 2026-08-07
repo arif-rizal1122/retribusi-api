@@ -8,6 +8,7 @@ echo "--- STARTING DOMAIN-CORRECTED NGINX RECOVERY ---"
 API_DOMAIN="apimpad.baubaukota.go.id"
 ADMIN_DOMAIN="adminmpad.baubaukota.go.id"
 PETUGAS_DOMAIN="petugasmpad.baubaukota.go.id"
+MPAD_DOMAIN="mpad.baubaukota.go.id"
 
 API_BASE="/home/sipanda/retribusi-api"
 ADMIN_BASE="/home/sipanda/retribusi-admin"
@@ -26,6 +27,8 @@ get_path() {
 API_ROOT=$(get_path $API_BASE)
 ADMIN_ROOT=$(get_path $ADMIN_BASE)
 PETUGAS_ROOT=$(get_path $PETUGAS_BASE)
+MPAD_BASE="/home/sipanda/retribusi-mobile"
+MPAD_ROOT=$(get_path $MPAD_BASE)
 
 # 3. GENERATE TEST CONFIG
 TEMP_CONF="/tmp/mpad_test.conf"
@@ -77,6 +80,7 @@ generate_block() {
   generate_block "$API_DOMAIN" "$API_ROOT" "true"
   generate_block "$ADMIN_DOMAIN" "$ADMIN_ROOT" "false"
   generate_block "$PETUGAS_DOMAIN" "$PETUGAS_ROOT" "false"
+  generate_block "$MPAD_DOMAIN" "$MPAD_ROOT" "false"
 } > $TEMP_CONF
 
 # 4. PRE-FLIGHT VALIDATION

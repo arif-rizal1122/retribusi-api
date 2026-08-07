@@ -15,6 +15,11 @@ class SnapHeaderValidator
         $bankCode = $this->resolveBankByClientKey($clientKey);
 
         if (! $bankCode) {
+            \Illuminate\Support\Facades\Log::warning('SNAP_CLIENT_KEY_MISMATCH', [
+                'ip' => $request->ip(),
+                'received_client_key' => $clientKey,
+                'configured' => collect(config('snap.partners'))->map(fn ($p) => $p['client_key'] ?? null)->toArray(),
+            ]);
             throw SnapValidationException::unauthorized('Unauthorized Client Key', '73');
         }
 
@@ -61,6 +66,13 @@ class SnapHeaderValidator
         $partners = config('snap.partners', []);
         foreach ($partners as $code => $config) {
             if (isset($config['partner_id']) && $config['partner_id'] === $partnerId) {
+                return (string) $code;
+            }
+        }
+
+        // BRI pakai clientId sebagai X-PARTNER-ID (dikonfirmasi Sinyo 05 Agu 2026)
+        foreach ($partners as $code => $config) {
+            if (isset($config['client_key']) && $config['client_key'] === $partnerId) {
                 return (string) $code;
             }
         }

@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Cache;
 use App\Services\WaGatewayService;
+use App\Services\DukcapilNikService;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -354,6 +356,34 @@ class AuthController extends Controller
             $metadata['mother_name'] = $request->mother_name;
         }
 
+        // Validasi format NIK (16 digit) + H2H Dukcapil (default not_configured → tidak memblokir)
+        $dukcapilService = app(DukcapilNikService::class);
+        $nikVerifiedSource = 'none';
+
+        if (! $dukcapilService->validateFormat($request->nik)) {
+            return response()->json([
+                'message' => 'Format NIK tidak valid.',
+                'errors' => ['nik' => ['Format NIK tidak valid.']],
+            ], 422);
+        }
+
+        if ($dukcapilService->available()) {
+            $dukcapil = $dukcapilService->validate($request->nik, $request->name);
+            if (($dukcapil['valid'] ?? false) !== true) {
+                return response()->json([
+                    'message' => 'NIK tidak valid menurut Dukcapil.',
+                    'errors' => ['nik' => [$dukcapil['reason'] ?? 'NIK tidak valid menurut Dukcapil.']],
+                ], 422);
+            }
+            $nikVerifiedSource = 'dukcapil';
+        } else {
+            $nikVerifiedSource = 'local';
+            Log::info('DUKCAPIL not configured, NIK validation skipped', [
+                'nik' => substr($request->nik, 0, 6).'****',
+            ]);
+            \App\Models\H2hConnectorLog::record('dukcapil', 'not_configured', null, 'DUKCAPIL_BASE_URL kosong — validasi NIK lokal hanya format', ['nik_prefix' => substr($request->nik, 0, 6).'****']);
+        }
+
         $taxpayer = \App\Models\Taxpayer::create([
             'nik' => strip_tags($request->nik),
             'name' => strip_tags($request->name),
@@ -368,6 +398,7 @@ class AuthController extends Controller
             'password' => $request->password ? Hash::make($request->password) : null,
             'metadata' => $metadata,
             'is_active' => true,
+            'nik_verified_source' => $nikVerifiedSource,
         ]);
 
         $token = $taxpayer->createToken('citizen_token')->plainTextToken;

@@ -91,8 +91,9 @@ class User extends Authenticatable
     const ROLE_KASUBID_PENGAWAS = 'kasubid_pengawas';
     const ROLE_PETUGAS = 'petugas';
     const ROLE_WALIKOTA = 'walikota';
-    const ROLE_NOTARIS = 'notaris';
+    const ROLE_ADMIN_PTSP = 'admin_ptsp';
     const ROLE_KEPALA_BAPENDA = 'kepala_bapenda';
+    const ROLE_NOTARIS = 'notaris';
 
     /**
      * Check if user is super admin or admin
@@ -144,6 +145,14 @@ class User extends Authenticatable
     public function isWalikota(): bool
     {
         return $this->role === self::ROLE_WALIKOTA;
+    }
+
+    /**
+     * Check if user is Admin PTSP (DPMPTSP)
+     */
+    public function isAdminPtsp(): bool
+    {
+        return $this->role === self::ROLE_ADMIN_PTSP;
     }
 
     /**
