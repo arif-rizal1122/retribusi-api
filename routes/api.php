@@ -475,6 +475,9 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
         // Rating layanan (admin/pengawas) — PENILAIAN-1
         Route::get('/ratings', [RatingController::class, 'index']);
+
+        // M36 - Deteksi titik adopsi kalkulator (dashboard cakupan)
+        Route::get('/business-units', [\App\Http\Controllers\BusinessUnitController::class, 'index']);
     });
 });
 
