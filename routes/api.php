@@ -24,6 +24,7 @@ use App\Http\Controllers\TaxEducationController;
 use App\Http\Controllers\BillboardAuditController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\Api\SimpadKoneksiController;
+use App\Http\Controllers\Api\RatingController;
 
 
 /*
@@ -228,6 +229,10 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
         Route::post('/complaints', [ComplaintController::class, 'store']);
         Route::get('/complaints', [ComplaintController::class, 'citizenIndex']);
+
+        // Rating layanan (PENILAIAN-1) — 9 Agu 2026
+        Route::post('/ratings', [RatingController::class, 'store']);
+        Route::get('/ratings', [RatingController::class, 'citizenIndex']);
 
         // Pendaftaran NOP Mandiri (Warga)
         Route::post('/pbb/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'store']);
@@ -467,6 +472,9 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
         Route::get('/complaints/{complaint}', [ComplaintController::class, 'show']);
         Route::put('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus']);
+
+        // Rating layanan (admin/pengawas) — PENILAIAN-1
+        Route::get('/ratings', [RatingController::class, 'index']);
     });
 });
 
