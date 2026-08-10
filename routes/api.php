@@ -58,6 +58,7 @@ Route::get('/public/pdf/surat-teguran/{noticeId}', [\App\Http\Controllers\Docume
 
 // Tax Simulation (public, no auth needed)
 // Public: Cek NIB & Candidate Penyempurnaan Data Diri (PTSP-13)
+Route::get('/public/nib/lookup', [\App\Http\Controllers\NibPublicController::class, 'lookup']);
 Route::get('/public/nib/check', [\App\Http\Controllers\NibPublicController::class, 'check']);
 Route::post('/public/nib/candidate', [\App\Http\Controllers\NibPublicController::class, 'storeCandidate']);
 
