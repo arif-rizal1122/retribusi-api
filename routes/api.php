@@ -180,6 +180,14 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::post('/upload', [\App\Http\Controllers\UploadController::class, 'uploadImage']);
     Route::get('/me', [\App\Http\Controllers\MeController::class, 'show']);
     Route::post('/me/update', [\App\Http\Controllers\MeController::class, 'update']);
+
+    // Dashboard agregat M39 (semua role internal; scope OPD via middleware opd_scope)
+    Route::middleware('opd_scope')->prefix('dashboard')->group(function () {
+        Route::get('/pad-summary', [\App\Http\Controllers\Api\DashboardController::class, 'padSummary']);
+        Route::get('/sector-data', [\App\Http\Controllers\Api\DashboardController::class, 'sectorData']);
+        Route::get('/daily-tasks', [\App\Http\Controllers\Api\DashboardController::class, 'dailyTasks']);
+        Route::get('/anomalies', [\App\Http\Controllers\Api\DashboardController::class, 'anomalies']);
+    });
     
     // Citizen Service Registration (Shared, but usually for citizens)
     Route::group(['prefix' => 'citizen/services'], function () {

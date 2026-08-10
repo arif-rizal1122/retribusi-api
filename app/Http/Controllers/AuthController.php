@@ -50,7 +50,14 @@ class AuthController extends Controller
             }
         }
 
+        // Isi metadata role (role_code/opd_role/role_group) untuk deteksi role non-warga
+        // (FE resolveDashboardRole membaca user.metadata.role_code / opd_role / role).
+        \App\Support\RoleResolver::persistToMetadata($user);
+        $user->refresh();
+
         $token = $user->createToken('auth_token')->plainTextToken;
+
+        \App\Support\RoleResolver::enrich($user);
 
         return response()->json([
             'user' => $user->load('opd'),
@@ -76,8 +83,11 @@ class AuthController extends Controller
      */
     public function user(Request $request)
     {
+        $user = $request->user();
+        \App\Support\RoleResolver::enrich($user);
+
         return response()->json([
-            'user' => $request->user()->load('opd')
+            'user' => $user->load('opd')
         ]);
     }
 
@@ -249,6 +259,10 @@ class AuthController extends Controller
         // Clear OTP after successful login
         Cache::forget("otp_citizen_{$request->phone}");
 
+        \App\Support\RoleResolver::persistToMetadata($taxpayer);
+        $taxpayer->refresh();
+        \App\Support\RoleResolver::enrich($taxpayer);
+
         $token = $taxpayer->createToken('citizen_token')->plainTextToken;
 
         return response()->json([
@@ -318,6 +332,10 @@ class AuthController extends Controller
             ], 403);
         }
 
+        \App\Support\RoleResolver::persistToMetadata($taxpayer);
+        $taxpayer->refresh();
+        \App\Support\RoleResolver::enrich($taxpayer);
+
         $token = $taxpayer->createToken('citizen_token')->plainTextToken;
 
         return response()->json([
@@ -334,7 +352,7 @@ class AuthController extends Controller
     public function registerCitizen(Request $request)
     {
         $request->validate([
-            'nik' => 'required|string|size:16|unique:taxpayers,nik',
+            'nik' => 'nullable|string|size:16|unique:taxpayers,nik',
             'name' => 'required|string',
             'email' => 'nullable|email|unique:taxpayers,email',
             'opd_id' => 'nullable|exists:opds,id',
@@ -357,32 +375,34 @@ class AuthController extends Controller
         $dukcapilService = app(DukcapilNikService::class);
         $nikVerifiedSource = 'none';
 
-        if (! $dukcapilService->validateFormat($request->nik)) {
-            return response()->json([
-                'message' => 'Format NIK tidak valid.',
-                'errors' => ['nik' => ['Format NIK tidak valid.']],
-            ], 422);
-        }
-
-        if ($dukcapilService->available()) {
-            $dukcapil = $dukcapilService->validate($request->nik, $request->name);
-            if (($dukcapil['valid'] ?? false) !== true) {
+        if (! empty($request->nik)) {
+            if (! $dukcapilService->validateFormat($request->nik)) {
                 return response()->json([
-                    'message' => 'NIK tidak valid menurut Dukcapil.',
-                    'errors' => ['nik' => [$dukcapil['reason'] ?? 'NIK tidak valid menurut Dukcapil.']],
+                    'message' => 'Format NIK tidak valid.',
+                    'errors' => ['nik' => ['Format NIK tidak valid.']],
                 ], 422);
             }
-            $nikVerifiedSource = 'dukcapil';
-        } else {
-            $nikVerifiedSource = 'local';
-            Log::info('DUKCAPIL not configured, NIK validation skipped', [
-                'nik' => substr($request->nik, 0, 6).'****',
-            ]);
-            \App\Models\H2hConnectorLog::record('dukcapil', 'not_configured', null, 'DUKCAPIL_BASE_URL kosong — validasi NIK lokal hanya format', ['nik_prefix' => substr($request->nik, 0, 6).'****']);
+
+            if ($dukcapilService->available()) {
+                $dukcapil = $dukcapilService->validate($request->nik, $request->name);
+                if (($dukcapil['valid'] ?? false) !== true) {
+                    return response()->json([
+                        'message' => 'NIK tidak valid menurut Dukcapil.',
+                        'errors' => ['nik' => [$dukcapil['reason'] ?? 'NIK tidak valid menurut Dukcapil.']],
+                    ], 422);
+                }
+                $nikVerifiedSource = 'dukcapil';
+            } else {
+                $nikVerifiedSource = 'local';
+                Log::info('DUKCAPIL not configured, NIK validation skipped', [
+                    'nik' => substr($request->nik, 0, 6).'****',
+                ]);
+                \App\Models\H2hConnectorLog::record('dukcapil', 'not_configured', null, 'DUKCAPIL_BASE_URL kosong — validasi NIK lokal hanya format', ['nik_prefix' => substr($request->nik, 0, 6).'****']);
+            }
         }
 
         $taxpayer = \App\Models\Taxpayer::create([
-            'nik' => strip_tags($request->nik),
+            'nik' => ! empty($request->nik) ? strip_tags($request->nik) : null,
             'name' => strip_tags($request->name),
             'email' => $request->email,
             'opd_id' => $request->opd_id, // Will be null if not provided
@@ -397,6 +417,10 @@ class AuthController extends Controller
             'is_active' => true,
             'nik_verified_source' => $nikVerifiedSource,
         ]);
+
+        \App\Support\RoleResolver::persistToMetadata($taxpayer);
+        $taxpayer->refresh();
+        \App\Support\RoleResolver::enrich($taxpayer);
 
         $token = $taxpayer->createToken('citizen_token')->plainTextToken;
 

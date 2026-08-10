@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'query_token' => \App\Http\Middleware\QueryStringToken::class,
             'scope_user' => \App\Http\Middleware\SetScopeUser::class,
             'bank_h2h' => \App\Http\Middleware\BankSecurityCheck::class,
+            'opd_scope' => \App\Http\Middleware\EnsureOpdScope::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
