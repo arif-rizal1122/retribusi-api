@@ -486,6 +486,12 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
         // M36 - Deteksi titik adopsi kalkulator (dashboard cakupan)
         Route::get('/business-units', [\App\Http\Controllers\BusinessUnitController::class, 'index']);
+
+        // M37-2 - Integrasi akun OPD pengelola per sektor usaha (Dok 143)
+        // Scope OPD via middleware opd_scope (konsisten dengan pola dashboard agregat)
+        Route::prefix('opd')->middleware('opd_scope')->group(function () {
+            Route::get('/sector-data', [\App\Http\Controllers\OpdSectorDataController::class, 'index']);
+        });
     });
 });
 
