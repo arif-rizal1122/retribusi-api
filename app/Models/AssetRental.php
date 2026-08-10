@@ -40,6 +40,8 @@ class AssetRental extends Model
         'tanggal_approval',
         'catatan_verifikator',
         'catatan_approval',
+        'verified_by_user_id',
+        'approved_by_user_id',
         'tanggal_pengembalian',
         'kondisi_pengembalian',
         'catatan_pengembalian',
@@ -78,5 +80,15 @@ class AssetRental extends Model
     public function retributionType(): BelongsTo
     {
         return $this->belongsTo(RetributionType::class, 'retribution_type_id');
+    }
+
+    public function verifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by_user_id');
+    }
+
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by_user_id');
     }
 }

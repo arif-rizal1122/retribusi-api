@@ -5,11 +5,64 @@ namespace App\Http\Controllers;
 use App\Models\AssetCategory;
 use App\Models\AssetItem;
 use App\Models\AssetRental;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminAssetController extends Controller
 {
+    /** Role yang boleh melihat/memverifikasi aset seluruh OPD. */
+    private const GLOBAL_ASSET_ROLES = [
+        'super_admin',
+        'admin',
+        'kepala_bapenda',
+        'walikota',
+        'pengawas',
+        'kabid_pengawas',
+        'kasubid_pengawas',
+        'viewer',
+    ];
+
+    /**
+     * M39-2 — Batasi akses aset sesuai OPD pengampu.
+     * Role global bebas; role OPD/petugas/verifikator hanya boleh menyentuh
+     * aset yang opd_id-nya sama dengan opd_id akun.
+     */
+    private function authorizeAssetScope(AssetRental $rental)
+    {
+        $user = auth()->user();
+        if (! $user || ! ($user instanceof User)) {
+            abort(403, 'Forbidden: Internal staff access required.');
+        }
+
+        if (in_array($user->role, self::GLOBAL_ASSET_ROLES, true)) {
+            return;
+        }
+
+        $itemOpdId = $rental->assetItem?->opd_id;
+        if (! $user->opd_id || ! $itemOpdId || (int) $user->opd_id !== (int) $itemOpdId) {
+            abort(403, 'Forbidden: Anda hanya dapat memverifikasi aset pada OPD Anda sendiri.');
+        }
+    }
+
+    /** Scope query rental sesuai OPD user (role non-global). */
+    private function scopeQueryToUserOpd($query)
+    {
+        $user = auth()->user();
+        if (! $user || ! ($user instanceof User)) {
+            abort(403, 'Forbidden: Internal staff access required.');
+        }
+
+        if (in_array($user->role, self::GLOBAL_ASSET_ROLES, true)) {
+            return $query;
+        }
+        if (! $user->opd_id) {
+            abort(403, 'Forbidden: Akun Anda belum terhubung ke OPD.');
+        }
+
+        return $query->whereHas('assetItem', fn ($q) => $q->where('opd_id', $user->opd_id));
+    }
+
     /**
      * Daftar pengajuan sewa aset (admin) — filter status opsional.
      */
@@ -19,7 +72,11 @@ class AdminAssetController extends Controller
             'taxpayer:id,name,nik,npwpd,phone',
             'assetItem:id,name,code,category_id',
             'assetItem.category:id,name',
+            'verifiedBy:id,name',
+            'approvedBy:id,name',
         ]);
+
+        $query = $this->scopeQueryToUserOpd($query);
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
@@ -47,6 +104,7 @@ class AdminAssetController extends Controller
     public function verify(Request $request, $id)
     {
         $rental = AssetRental::findOrFail($id);
+        $this->authorizeAssetScope($rental);
         if ($rental->status !== 'Diajukan') {
             return response()->json(['message' => 'Hanya pengajuan berstatus Diajukan yang bisa diverifikasi.'], 422);
         }
@@ -55,6 +113,7 @@ class AdminAssetController extends Controller
             'status' => 'Diverifikasi',
             'tanggal_verifikasi' => now(),
             'catatan_verifikator' => $request->input('catatan'),
+            'verified_by_user_id' => auth()->id(),
         ]);
 
         return response()->json(['message' => 'Pengajuan diverifikasi.', 'data' => $rental]);
@@ -66,6 +125,7 @@ class AdminAssetController extends Controller
     public function approve(Request $request, $id)
     {
         $rental = AssetRental::findOrFail($id);
+        $this->authorizeAssetScope($rental);
         if (!in_array($rental->status, ['Diajukan', 'Diverifikasi'])) {
             return response()->json(['message' => 'Hanya pengajuan Diajukan/Diverifikasi yang bisa disetujui.'], 422);
         }
@@ -74,6 +134,7 @@ class AdminAssetController extends Controller
             'status' => 'Disetujui',
             'tanggal_approval' => now(),
             'catatan_approval' => $request->input('catatan'),
+            'approved_by_user_id' => auth()->id(),
         ]);
 
         return response()->json(['message' => 'Pengajuan disetujui.', 'data' => $rental]);
@@ -85,6 +146,7 @@ class AdminAssetController extends Controller
     public function reject(Request $request, $id)
     {
         $rental = AssetRental::findOrFail($id);
+        $this->authorizeAssetScope($rental);
         if (in_array($rental->status, ['Selesai', 'Ditolak'])) {
             return response()->json(['message' => 'Status pengajuan sudah final.'], 422);
         }
@@ -110,6 +172,7 @@ class AdminAssetController extends Controller
         ]);
 
         $rental = AssetRental::findOrFail($id);
+        $this->authorizeAssetScope($rental);
         if (!in_array($rental->status, ['Disetujui', 'Diverifikasi'])) {
             return response()->json(['message' => 'Pengajuan belum disetujui, tidak bisa dicatat pengembalian.'], 422);
         }
