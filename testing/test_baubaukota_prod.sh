@@ -4,7 +4,7 @@
 # Tests API + all 3 frontends + PBB Bapenda
 # ============================================================================
 
-API="https://api.mpad.online/api"
+API="https://apimpad.baubaukota.go.id/api"
 ADMIN_FE="https://adminmpad.baubaukota.go.id"
 MOBILE_FE="https://mpad.baubaukota.go.id"
 PETUGAS_FE="https://petugasmpad.baubaukota.go.id"
@@ -60,7 +60,7 @@ echo ""
 echo -e "${BLUE}[2] API Authentication${NC}"
 TOKEN=$($CURL -4 -X POST "$API/login" \
   -H "Content-Type: application/json" -H "Accept: application/json" \
-  -d '{"email":"admin@retribusi.id","password":"password123"}' | python3 -c "import sys,json; print(json.load(sys.stdin).get('token','FAIL'))" 2>/dev/null)
+  -d '{"email":"superadmin@sipanda.online","password":"password123"}' | python3 -c "import sys,json; print(json.load(sys.stdin).get('token','FAIL'))" 2>/dev/null)
 
 if [ "$TOKEN" == "FAIL" ] || [ -z "$TOKEN" ]; then
   echo -e "  ${RED}❌${NC} Admin LOGIN FAILED"
@@ -72,7 +72,7 @@ fi
 
 CITIZEN_TOKEN=$($CURL -4 -X POST "$API/citizen/login" \
   -H "Content-Type: application/json" -H "Accept: application/json" \
-  -d '{"nik":"3201234567890001","password":"password123"}' | python3 -c "import sys,json; print(json.load(sys.stdin).get('token','FAIL'))" 2>/dev/null)
+  -d '{"method":"nik","identifier":"1234567890123456","mother_name":"Ibu Budi Santoso"}' | python3 -c "import sys,json; print(json.load(sys.stdin).get('token','FAIL'))" 2>/dev/null)
 
 if [ "$CITIZEN_TOKEN" == "FAIL" ] || [ -z "$CITIZEN_TOKEN" ]; then
   echo -e "  ${RED}❌${NC} Citizen LOGIN FAILED"
@@ -155,7 +155,7 @@ done
 # --- 7. CITIZEN ENDPOINTS ---
 echo ""
 echo -e "${BLUE}[7] Citizen Endpoints${NC}"
-for ep in "citizen/services" "citizen/bills?nik=3201234567890001"; do
+for ep in "citizen/services" "citizen/bills?nik=1234567890123456"; do
   STATUS=$($CURL -4 -o /dev/null -w "%{http_code}" "$API/$ep" \
     -H "Authorization: Bearer $CITIZEN_TOKEN" -H "Accept: application/json")
   check "$ep" "200" "$STATUS"
