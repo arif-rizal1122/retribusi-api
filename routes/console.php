@@ -11,4 +11,5 @@ Artisan::command('inspire', function () {
 Schedule::command('billing:notify-due')->dailyAt('08:00');
 Schedule::command('bills:calculate-penalties')->dailyAt('01:00');
 Schedule::command('auto-deduct:remind-bills --days=7 --overdue')->dailyAt('07:00');
+Schedule::command('pbb:reconcile')->dailyAt('06:30');
 Schedule::job(new \App\Jobs\AnomalyDetectionJob)->dailyAt('02:00');
