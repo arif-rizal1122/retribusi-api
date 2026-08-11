@@ -57,6 +57,8 @@ return [
     'bhumi' => [
         'base_url' => env('BHUMI_BASE_URL', ''),
         'token'    => env('BHUMI_TOKEN', ''),
+        // Endpoint push webhook status lunas ke BPN (SPLP) — kosong sampai PKS selesai
+        'splp_endpoint' => env('BHUMI_SPLP_ENDPOINT', ''),
     ],
 
     // Notifikasi status H2H ke admin via Telegram — default off

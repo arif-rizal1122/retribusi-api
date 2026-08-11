@@ -130,6 +130,18 @@ class SnapBrivaService
                             'paid_at' => now(),
                             'ntpd' => $referenceNumber,
                         ]);
+
+                    // M21-1466 (F3.2): Bridging status lunas ke BPN (SPLP) —
+                    // push webhook setelah BPHTB lunas. Tidak memblokir alur
+                    // bila endpoint SPLP belum dikonfigurasi (PKS BPN, target Des 2026).
+                    try {
+                        $paidSubmission = BphtbSubmission::where('bill_id', $lockedBill->id)->latest('id')->first();
+                        if ($paidSubmission) {
+                            app(\App\Services\BhumiService::class)->notifySplpLunas($paidSubmission);
+                        }
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('SPLP push skipped', ['error' => $e->getMessage()]);
+                    }
                 }
             }
 

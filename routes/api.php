@@ -497,6 +497,17 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 });
 
 // ------------------------------------------------------------------------
+// H2H BPN — endpoint eksternal yang dipanggil sistem BPN (KKP).
+// Autentikasi via header X-H2H-Key (dicek di dalam controller).
+// M21-1466 (F3.2): bridging status lunas ke BPN (SPLP).
+// ------------------------------------------------------------------------
+Route::prefix('h2h/bpn')->group(function () {
+    Route::post('/check-pbb', [\App\Http\Controllers\H2HBpnController::class, 'checkPbb']);
+    Route::post('/verify-payment', [\App\Http\Controllers\H2HBpnController::class, 'verifyPayment']);
+    Route::post('/splp/update', [\App\Http\Controllers\H2HBpnController::class, 'updateSplp']);
+});
+
+// ------------------------------------------------------------------------
 // BANK H2H GATEWAY (Restricted by BankSecurityCheck middleware)
 // ------------------------------------------------------------------------
 Route::middleware('bank_h2h')->prefix('v1/bank')->group(function () {

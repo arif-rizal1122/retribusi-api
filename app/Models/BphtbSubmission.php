@@ -29,12 +29,17 @@ class BphtbSubmission extends Model
         'verified_at',
         'verified_by',
         'verified_notes',
+        'splp_number',
+        'splp_status',
+        'splp_issued_at',
+        'splp_notes',
     ];
 
     protected $casts = [
         'paid_at' => 'datetime',
         'sspd_issued_at' => 'datetime',
         'verified_at' => 'datetime',
+        'splp_issued_at' => 'datetime',
     ];
 
     public function bill()

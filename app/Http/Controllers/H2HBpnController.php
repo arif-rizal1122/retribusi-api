@@ -162,7 +162,7 @@ class H2HBpnController extends Controller
             'lunas' => $submission->isPaid(),
             'data' => [
                 'billing_code' => $submission->billing_code,
-                'skb_number' => $submission->skb_number,
+                'sspd_number' => $submission->sspd_number,
                 'ntpd' => $submission->ntpd,
                 'nop' => $submission->nop,
                 'nib' => $submission->nib,
@@ -172,6 +172,98 @@ class H2HBpnController extends Controller
                 'status' => $submission->status,
             ],
             'waktu_cek' => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * F3.2 — Endpoint SPLP update (KKP BPN -> M-PAD).
+     *
+     * BPN mengirim update status SPLP (Surat Perintah Lanjut Proses) untuk
+     * sebuah submission BPHTB yang sudah lunas. Data disimpan di kolom
+     * splp_* pada bphtb_submissions dan dicatat di h2h_connector_logs.
+     *
+     * POST /api/h2h/bpn/splp/update
+     * Body: { billing_code?: string, ntpd?: string, splp_number: string,
+     *         splp_status?: string, splp_issued_at?: datetime, notes?: string }
+     */
+    public function updateSplp(Request $request)
+    {
+        $expectedKey = config('services.bpn.h2h_key', '');
+        $providedKey = (string) $request->header('X-H2H-Key', '');
+
+        if ($expectedKey !== '' && ! hash_equals($expectedKey, $providedKey)) {
+            Log::warning('H2H BPN splp-update unauthorized', [
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized: X-H2H-Key tidak valid.',
+            ], 401);
+        }
+
+        $request->validate([
+            'billing_code' => 'required_without:ntpd|string|max:64',
+            'ntpd' => 'required_without:billing_code|string|max:64',
+            'splp_number' => 'required|string|max:64',
+            'splp_status' => 'nullable|string|max:50',
+            'splp_issued_at' => 'nullable|date',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $query = $request->filled('billing_code')
+            ? BphtbSubmission::where('billing_code', $request->billing_code)
+            : BphtbSubmission::where('ntpd', $request->ntpd);
+
+        $submission = $query->first();
+
+        if (! $submission) {
+            return response()->json([
+                'status' => 'not_found',
+                'message' => 'Tagihan BPHTB tidak ditemukan.',
+            ], 404);
+        }
+
+        $submission->update([
+            'splp_number' => $request->splp_number,
+            'splp_status' => $request->splp_status ?? 'issued',
+            'splp_issued_at' => $request->splp_issued_at
+                ? \Carbon\Carbon::parse($request->splp_issued_at)
+                : now(),
+            'splp_notes' => $request->notes,
+        ]);
+
+        \App\Models\H2hConnectorLog::record(
+            'bhumi',
+            'splp_update',
+            '/api/splp/update',
+            'Update SPLP diterima dari BPN',
+            [
+                'submission_id' => $submission->id,
+                'billing_code' => $submission->billing_code,
+                'splp_number' => $request->splp_number,
+                'splp_status' => $request->splp_status ?? 'issued',
+            ]
+        );
+
+        Log::info('H2H BPN splp-update', [
+            'ip' => $request->ip(),
+            'submission_id' => $submission->id,
+            'splp_number' => $request->splp_number,
+        ]);
+
+        return response()->json([
+            'status' => 'ok',
+            'message' => 'SPLP berhasil diupdate.',
+            'data' => [
+                'billing_code' => $submission->billing_code,
+                'ntpd' => $submission->ntpd,
+                'nop' => $submission->nop,
+                'splp_number' => $submission->splp_number,
+                'splp_status' => $submission->splp_status,
+                'splp_issued_at' => $submission->splp_issued_at?->toIso8601String(),
+                'lunas' => $submission->isPaid(),
+            ],
         ]);
     }
 }
