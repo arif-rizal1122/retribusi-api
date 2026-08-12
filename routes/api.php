@@ -291,6 +291,12 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::post('/logout', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'logout']);
         });
 
+        // H2H Monitor (read-only dashboard — Fase 1)
+        Route::prefix('admin/h2h-monitor')->group(function () {
+            Route::get('/overview', [\App\Http\Controllers\Api\V1\Admin\H2HMonitorController::class, 'overview']);
+            Route::get('/history/{connector}', [\App\Http\Controllers\Api\V1\Admin\H2HMonitorController::class, 'history']);
+        });
+
         // Pendaftaran NOP (Warga — verifikasi admin)
         Route::get('/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'index']);
         Route::get('/nop-applications/{id}', [\App\Http\Controllers\PbbNopApplicationController::class, 'show']);
