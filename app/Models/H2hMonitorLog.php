@@ -12,11 +12,13 @@ class H2hMonitorLog extends Model
         'latency_ms',
         'error_message',
         'endpoint',
+        'meta',
         'checked_at',
     ];
 
     protected $casts = [
         'latency_ms' => 'integer',
+        'meta'       => 'array',
         'checked_at' => 'datetime',
     ];
 }

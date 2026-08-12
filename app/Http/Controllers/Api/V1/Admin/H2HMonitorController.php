@@ -4,13 +4,15 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\H2hMonitorLog;
+use App\Services\H2HMonitorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class H2HMonitorController extends Controller
 {
     /**
-     * Status terakhir tiap skema H2H + uptime sederhana 24 jam (read-only).
+     * Status terakhir tiap skema H2H + uptime sederhana 24 jam + latensi
+     * transaksi nyata dari payment_requests (read-only).
      */
     public function overview(): JsonResponse
     {
@@ -51,10 +53,13 @@ class H2HMonitorController extends Controller
             ];
         }
 
+        $realTransactions = app(H2HMonitorService::class)->realTransactionLatency(24);
+
         return response()->json([
-            'success' => true,
-            'data'    => $rows,
-            'meta'    => [
+            'success'           => true,
+            'data'              => $rows,
+            'real_transactions' => $realTransactions,
+            'meta'              => [
                 'generated_at' => now()->toIso8601String(),
                 'window_hours' => 24,
             ],
