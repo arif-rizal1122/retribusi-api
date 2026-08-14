@@ -112,6 +112,16 @@ class User extends Authenticatable
     }
 
     /**
+     * M43 — Verifikator teknis proteksi kebakaran (syarat PBG).
+     * Hanya role OPD dengan opd_id = 13 (Dinas Damkar & Penyelamatan).
+     * BUKAN pemungut retribusi — RBAC additive, role lama TIDAK diubah.
+     */
+    public function canVerifyFireProtection(): bool
+    {
+        return $this->isOpd() && (int) $this->opd_id === 13;
+    }
+
+    /**
      * Check if user is Pengawas (General or specific)
      */
     public function isPengawas(): bool
