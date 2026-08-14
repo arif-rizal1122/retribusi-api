@@ -190,6 +190,12 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/anomalies', [\App\Http\Controllers\Api\DashboardController::class, 'anomalies']);
     });
     
+    // M43 — Verifikasi teknis proteksi kebakaran oleh Damkar (opd_id=13, verifikator PBG, NON-retribusi)
+    Route::prefix('damkar')->group(function () {
+        Route::get('/verifications', [\App\Http\Controllers\DamkarVerificationController::class, 'index']);
+        Route::post('/verifications/{id}/decision', [\App\Http\Controllers\DamkarVerificationController::class, 'decision']);
+    });
+    
     // Citizen Service Registration (Shared, but usually for citizens)
     Route::group(['prefix' => 'citizen/services'], function () {
         Route::get('/', [\App\Http\Controllers\CitizenServiceController::class, 'index']);
