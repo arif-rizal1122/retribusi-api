@@ -359,6 +359,13 @@ class DashboardController extends Controller
 
         // 2. Get Taxpayers (Tax Objects)
         $taxObjects = \App\Models\TaxObject::with(['taxpayer', 'retributionType', 'opd', 'classification'])
+            // Compute unpaid-bill flag in a single correlated subquery (avoids N+1)
+            ->addSelect([
+                'has_unpaid_bills' => \App\Models\Bill::selectRaw('1')
+                    ->whereColumn('bills.tax_object_id', 'tax_objects.id')
+                    ->whereNotIn('status', ['paid', 'lunas'])
+                    ->limit(1),
+            ])
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
@@ -380,11 +387,6 @@ class DashboardController extends Controller
             })
             ->get()
             ->map(function($obj) {
-                // Check if there are any unpaid bills for this tax object
-                $hasUnpaidBills = \App\Models\Bill::where('tax_object_id', $obj->id)
-                    ->whereNotIn('status', ['paid', 'lunas'])
-                    ->exists();
-
                 return [
                     'position' => [(float)$obj->latitude, (float)$obj->longitude],
                     'tax_object_id' => $obj->id,
@@ -392,7 +394,7 @@ class DashboardController extends Controller
                     'agency' => $obj->opd->name ?? 'N/A',
                     'address' => $obj->address,
                     'status' => 'taxpayer',
-                    'is_paid' => !$hasUnpaidBills, // If no pending bills, consider it paid (lunas)
+                    'is_paid' => !(bool) $obj->has_unpaid_bills, // If no pending bills, consider it paid (lunas)
                     'classification_name' => $obj->classification->name ?? 'N/A',
                     'classification_icon' => $obj->classification->icon ?? null,
                     'taxpayer_photo' => $obj->taxpayer->metadata['foto_lokasi_open_kamera'] ?? null,
