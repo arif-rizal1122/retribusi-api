@@ -220,6 +220,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         // ASET DAERAH (JU-ASET) — kategori, unit, form template, sewa
         Route::get('/asset/categories', [\App\Http\Controllers\CitizenAssetController::class, 'categories']);
         Route::get('/asset/items', [\App\Http\Controllers\CitizenAssetController::class, 'items']);
+        Route::get('/asset/items/{id}/availability', [\App\Http\Controllers\CitizenAssetController::class, 'availability']);
         Route::get('/asset/form-template/{categoryId}', [\App\Http\Controllers\CitizenAssetController::class, 'formTemplate']);
         Route::post('/asset/rentals', [\App\Http\Controllers\CitizenAssetController::class, 'storeRental']);
         Route::get('/asset/rentals', [\App\Http\Controllers\CitizenAssetController::class, 'myRentals']);

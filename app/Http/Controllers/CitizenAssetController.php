@@ -5,12 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\AssetCategory;
 use App\Models\AssetItem;
 use App\Models\AssetRental;
+use App\Services\AssetAvailabilityService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CitizenAssetController extends Controller
 {
+    protected AssetAvailabilityService $availabilityService;
+
+    public function __construct(AssetAvailabilityService $availabilityService)
+    {
+        $this->availabilityService = $availabilityService;
+    }
     /**
      * Daftar kategori aset (1 layanan JU-ASET, field pertama = dropdown kategori).
      */
@@ -85,19 +93,37 @@ class CitizenAssetController extends Controller
     }
 
     /**
-     * Ajukan sewa / pemanfaatan aset.
+     * Cek status ketersediaan kalender unit aset pada bulan tertentu.
+     */
+    public function availability(Request $request, $id)
+    {
+        $request->validate([
+            'month' => 'required|date_format:Y-m',
+        ]);
+
+        $asset = AssetItem::findOrFail($id);
+        $data = $this->availabilityService->getMonthAvailability($asset, $request->input('month'));
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
+    }
+
+    /**
+     * Ajukan sewa / pemanfaatan aset (dengan pessimistic locking & validasi buffer).
      */
     public function storeRental(Request $request)
     {
         $validated = $request->validate([
             'asset_item_id' => 'required|exists:asset_items,id',
-            'tanggal_mulai' => 'required|date',
+            'tanggal_mulai' => 'required|date|after_or_equal:today',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
-            'satuan_sewa' => 'required|string',
-            'tarif_per_satuan' => 'required|numeric|min:0',
+            'satuan_sewa' => 'nullable|string',
+            'tarif_per_satuan' => 'nullable|numeric|min:0',
             'dp' => 'nullable|numeric|min:0',
-            'metode_pembayaran' => 'required|string',
-            'lokasi_penggunaan' => 'nullable|string',
+            'metode_pembayaran' => 'nullable|string',
+            'lokasi_penggunaan' => 'required|string',
             'koordinat' => 'nullable|string',
             'jenis_pekerjaan' => 'nullable|string',
             'luas_volume' => 'nullable|string',
@@ -111,73 +137,118 @@ class CitizenAssetController extends Controller
             'dokumen' => 'nullable|array',
         ]);
 
-        $item = AssetItem::findOrFail($validated['asset_item_id']);
-        if (!$item->is_active) {
-            return response()->json(['message' => 'Aset tidak aktif.'], 422);
-        }
-        if ($item->status_operasional !== 'Operasional') {
-            return response()->json(['message' => 'Aset berstatus ' . $item->status_operasional . '. Hubungi admin untuk ketersediaan.'], 422);
-        }
+        $user = $request->user();
+        $taxpayerId = $user->taxpayer?->id ?? ($user instanceof \App\Models\Taxpayer ? $user->id : ($user->taxpayer_id ?? $user->id));
 
-        // Hitung lama sewa & total otomatis (real-time)
-        $start = \Carbon\Carbon::parse($validated['tanggal_mulai']);
-        $end = $validated['tanggal_selesai']
-            ? \Carbon\Carbon::parse($validated['tanggal_selesai'])
-            : $start;
-        $satuan = $validated['satuan_sewa'];
-        $lamaSewa = match ($satuan) {
-            'per jam' => max(1, (int) ceil($start->diffInHours($end))),
-            'per hari' => max(1, (int) ceil($start->diffInDays($end)) + 1),
-            'per bulan' => max(1, (int) ceil($start->diffInMonths($end)) + 1),
-            default => 1,
-        };
-        $tarif = (float) $validated['tarif_per_satuan'];
-        $total = $lamaSewa * $tarif;
-        $dp = (float) ($validated['dp'] ?? 0);
-        $sisa = max(0, $total - $dp);
+        $mulai = Carbon::parse($validated['tanggal_mulai'])->startOfDay();
+        $selesai = !empty($validated['tanggal_selesai'])
+            ? Carbon::parse($validated['tanggal_selesai'])->startOfDay()
+            : $mulai->copy();
 
-        // Guard 'citizens' → provider taxpayers: $request->user() adalah Taxpayer langsung
-        $taxpayer = $request->user();
+        return DB::transaction(function () use ($validated, $taxpayerId, $mulai, $selesai) {
+            $asset = AssetItem::where('id', $validated['asset_item_id'])
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $asetType = $this->jasaUsahaType();
-        $asetClassification = $this->jasaUsahaClassification();
+            if (!$asset->is_active || $asset->kondisi === 'Tidak Operasional' || $asset->status_operasional !== 'Operasional') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Alat berat sedang dalam perbaikan / tidak dapat disewa saat ini.',
+                ], 422);
+            }
 
-        $rental = AssetRental::create([
-            'rental_code' => 'AST-' . strtoupper(Str::random(6)) . '-' . now()->format('Ymd'),
-            'taxpayer_id' => $taxpayer->id,
-            'asset_item_id' => $item->id,
-            'retribution_type_id' => $asetType?->id,
-            'retribution_classification_id' => $asetClassification?->id,
-            'tanggal_mulai' => $validated['tanggal_mulai'],
-            'tanggal_selesai' => $validated['tanggal_selesai'] ?? null,
-            'lama_sewa' => $lamaSewa,
-            'satuan_sewa' => $satuan,
-            'tarif_per_satuan' => $tarif,
-            'total_biaya' => $total,
-            'dp' => $dp,
-            'sisa_pembayaran' => $sisa,
-            'metode_pembayaran' => $validated['metode_pembayaran'],
-            'status' => 'Diajukan',
-            'lokasi_penggunaan' => $validated['lokasi_penggunaan'] ?? null,
-            'koordinat' => $validated['koordinat'] ?? null,
-            'jenis_pekerjaan' => $validated['jenis_pekerjaan'] ?? null,
-            'luas_volume' => $validated['luas_volume'] ?? null,
-            'nama_proyek' => $validated['nama_proyek'] ?? null,
-            'nomor_spk' => $validated['nomor_spk'] ?? null,
-            'penyelia' => $validated['penyelia'] ?? null,
-            'hp_penyelia' => $validated['hp_penyelia'] ?? null,
-            'operator_nama' => $validated['operator_nama'] ?? null,
-            'operator_hp' => $validated['operator_hp'] ?? null,
-            'operator_sim' => $validated['operator_sim'] ?? null,
-            'dokumen' => $validated['dokumen'] ?? null,
-            'is_demo' => $item->is_demo,
-            'metadata' => ['source' => 'citizen_submission', 'item_code' => $item->code],
-        ]);
+            $bufferHari = (int) ($asset->buffer_default ?? 1);
+            $blockedStart = $mulai->copy()->subDays($bufferHari)->toDateString();
+            $blockedEnd = $selesai->copy()->addDays($bufferHari)->toDateString();
 
-        return response()->json([
-            'message' => 'Pengajuan sewa aset berhasil dibuat.',
-            'data' => $rental->load('assetItem:id,name,code'),
-        ], 201);
+            $hasConflict = AssetRental::where('asset_item_id', $asset->id)
+                ->whereIn('status', ['Diajukan', 'Diverifikasi', 'Disetujui'])
+                ->where(function ($query) use ($blockedStart, $blockedEnd) {
+                    $query->whereDate('tanggal_mulai', '<=', $blockedEnd)
+                        ->where(function ($sub) use ($blockedStart) {
+                            $sub->whereDate('tanggal_selesai', '>=', $blockedStart)
+                                ->orWhere(function ($s2) use ($blockedStart) {
+                                    $s2->whereNull('tanggal_selesai')
+                                        ->whereDate('tanggal_mulai', '>=', $blockedStart);
+                                });
+                        });
+                })
+                ->lockForUpdate()
+                ->exists();
+
+            if ($hasConflict) {
+                $durationDays = $mulai->diffInDays($selesai) + 1;
+                $nextAvailable = $this->availabilityService->findNextAvailableDate($asset->id, $mulai, $durationDays);
+
+                return response()->json([
+                    'success' => false,
+                    'error_code' => 'SCHEDULE_CONFLICT',
+                    'message' => 'Jadwal yang Anda pilih bentrok dengan penyewaan lain atau masa jeda mobilisasi alat (1 hari).',
+                    'suggested_dates' => $nextAvailable,
+                ], 422);
+            }
+
+            $days = $mulai->diffInDays($selesai) + 1;
+            $tarifPerSatuan = isset($validated['tarif_per_satuan']) && $validated['tarif_per_satuan'] !== null
+                ? (float) $validated['tarif_per_satuan']
+                : (float) $asset->tarif_default;
+            $satuanSewa = $validated['satuan_sewa'] ?? ($asset->satuan_tarif ?? 'per hari');
+            $totalBiaya = $days * $tarifPerSatuan;
+            $dp = (float) ($validated['dp'] ?? 0);
+            $sisaPembayaran = max(0, $totalBiaya - $dp);
+
+            $asetType = $this->jasaUsahaType();
+            $asetClassification = $this->jasaUsahaClassification();
+
+            $rentalCode = 'AST-' . now()->format('Ym') . '-' . strtoupper(Str::random(5));
+
+            $rental = AssetRental::create([
+                'rental_code' => $rentalCode,
+                'taxpayer_id' => $taxpayerId,
+                'asset_item_id' => $asset->id,
+                'retribution_type_id' => $asetType?->id ?? 106,
+                'retribution_classification_id' => $asetClassification?->id ?? 211,
+                'tanggal_mulai' => $mulai->toDateString(),
+                'tanggal_selesai' => !empty($validated['tanggal_selesai']) ? $selesai->toDateString() : null,
+                'lama_sewa' => $days,
+                'satuan_sewa' => $satuanSewa,
+                'buffer_hari' => $bufferHari,
+                'tarif_per_satuan' => $tarifPerSatuan,
+                'total_biaya' => $totalBiaya,
+                'dp' => $dp,
+                'sisa_pembayaran' => $sisaPembayaran,
+                'metode_pembayaran' => $validated['metode_pembayaran'] ?? 'Transfer Bank',
+                'status' => 'Diajukan',
+                'lokasi_penggunaan' => $validated['lokasi_penggunaan'],
+                'koordinat' => $validated['koordinat'] ?? null,
+                'jenis_pekerjaan' => $validated['jenis_pekerjaan'] ?? null,
+                'luas_volume' => $validated['luas_volume'] ?? null,
+                'nama_proyek' => $validated['nama_proyek'] ?? null,
+                'nomor_spk' => $validated['nomor_spk'] ?? null,
+                'penyelia' => $validated['penyelia'] ?? null,
+                'hp_penyelia' => $validated['hp_penyelia'] ?? null,
+                'operator_nama' => $validated['operator_nama'] ?? null,
+                'operator_hp' => $validated['operator_hp'] ?? null,
+                'operator_sim' => $validated['operator_sim'] ?? null,
+                'dokumen' => $validated['dokumen'] ?? null,
+                'is_demo' => $asset->is_demo ?? false,
+                'metadata' => ['source' => 'citizen_submission', 'item_code' => $asset->code],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Permohonan sewa berhasil diajukan. Petugas PUPR akan memverifikasi permohonan Anda.',
+                'data' => $rental->load('assetItem:id,name,code'),
+            ], 201);
+        });
+    }
+
+    /**
+     * Alias untuk storeRental.
+     */
+    public function store(Request $request)
+    {
+        return $this->storeRental($request);
     }
 
     /**
