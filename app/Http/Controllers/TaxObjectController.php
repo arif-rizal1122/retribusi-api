@@ -105,7 +105,22 @@ class TaxObjectController extends Controller
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'nop' => 'nullable|string|max:50',
+            'metadata' => 'nullable',
         ]);
+
+        $metadata = $request->input('metadata', []);
+        if (is_string($metadata)) {
+            $metadata = json_decode($metadata, true) ?: [];
+        }
+
+        if (is_array($metadata) && !empty($metadata['nop_pbb'])) {
+            $nop = $metadata['nop_pbb'];
+            if (TaxObject::where('metadata->nop_pbb', $nop)->exists()) {
+                throw ValidationException::withMessages([
+                    'nop' => ['NOP PBB sudah terdaftar.'],
+                ]);
+            }
+        }
 
         // Ensure the retribution type belongs to the user's OPD
         $type = \App\Models\RetributionType::where('id', $request->retribution_type_id)
@@ -131,7 +146,7 @@ class TaxObjectController extends Controller
             'nop' => $request->nop,
             'status' => 'pending',
             'is_active' => true,
-            'metadata' => [],
+            'metadata' => $metadata ?: [],
         ]);
 
         Verification::create([
@@ -159,8 +174,25 @@ class TaxObjectController extends Controller
      */
     public function show(TaxObject $taxObject)
     {
-        $taxObject->load(['taxpayer', 'retributionType', 'opd', 'classification']);
-        return response()->json($taxObject);
+        $taxObject->load(['taxpayer', 'retributionType', 'opd', 'classification', 'damkarVerification']);
+
+        $data = $taxObject->toArray();
+        // M43 — Badge H2H proteksi kebakaran (verifikasi teknis Damkar, syarat PBG, non-retribusi)
+        $dv = $taxObject->damkarVerification;
+        $data['fire_protection'] = [
+            'badge' => $dv ? $dv->status : 'not_verified',
+            'label' => $dv
+                ? ($dv->status === 'approved'
+                    ? 'Proteksi kebakaran terverifikasi (Damkar)'
+                    : ($dv->status === 'rejected'
+                        ? 'Proteksi kebakaran ditolak (Damkar)'
+                        : 'Menunggu verifikasi proteksi kebakaran (Damkar)'))
+                : 'Belum ada verifikasi proteksi kebakaran',
+            'rekomendasi_teknis' => $dv?->rekomendasi_teknis,
+            'verified_at' => $dv?->verified_at,
+        ];
+
+        return response()->json($data);
     }
 
     /**

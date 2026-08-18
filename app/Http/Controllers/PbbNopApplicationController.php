@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Models\PbbNopApplication;
+use App\Models\TaxObject;
 use App\Services\DukcapilNikService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -104,6 +105,24 @@ class PbbNopApplicationController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        if ($request->status === 'APPROVED' && $request->filled('nop')) {
+            $nop = $request->nop;
+
+            if (TaxObject::where(function ($q) use ($nop) {
+                $q->where('nop', $nop)->orWhere('metadata->nop_pbb', $nop);
+            })->exists()) {
+                return response()->json([
+                    'errors' => ['nop' => ['NOP sudah digunakan pada objek pajak lain.']],
+                ], 422);
+            }
+
+            if (PbbNopApplication::where('nop', $nop)->where('id', '!=', $id)->exists()) {
+                return response()->json([
+                    'errors' => ['nop' => ['NOP sudah digunakan pada aplikasi lain.']],
+                ], 422);
+            }
         }
 
         $application->status = $request->status;

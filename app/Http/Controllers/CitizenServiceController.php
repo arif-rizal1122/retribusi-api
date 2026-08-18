@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RetributionType;
 use App\Models\Taxpayer;
 use App\Models\TaxObject;
+use App\Models\PbbNopApplication;
 use App\Models\Bill;
 use App\Models\Verification;
 use App\Services\RequirementFileService;
@@ -76,9 +77,9 @@ class CitizenServiceController extends Controller
             ->with('zone')
             ->get();
         
-        $objectIds = $objects->pluck('id');
+        $activeObjectIds = $objects->where('status', 'active')->pluck('id');
         
-        $bills = Bill::whereIn('tax_object_id', $objectIds)
+        $bills = Bill::whereIn('tax_object_id', $activeObjectIds)
             ->with(['opd:id,name', 'taxObject'])
             ->latest()
             ->get();
@@ -138,6 +139,22 @@ class CitizenServiceController extends Controller
         $missingMetadata = $this->missingRequiredMetadata($classification->form_schema ?? [], $metadata);
         if (!empty($missingMetadata)) {
             throw ValidationException::withMessages($missingMetadata);
+        }
+
+        $isPbb = (stripos($classification->name ?? '', 'pbb') !== false) || ($classification->id == 186);
+        $nop = $metadata['nop_pbb'] ?? null;
+        if ($isPbb && !empty($nop)) {
+            if (TaxObject::where('metadata->nop_pbb', $nop)->exists()) {
+                throw ValidationException::withMessages([
+                    'metadata' => ['NOP PBB sudah terdaftar. Silakan gunakan NOP lain atau hubungi Bapenda.'],
+                ]);
+            }
+
+            if (PbbNopApplication::where('nop', $nop)->whereIn('status', ['PENDING', 'SURVEY', 'APPROVED'])->exists()) {
+                throw ValidationException::withMessages([
+                    'metadata' => ['NOP PBB sedang dalam proses pendaftaran.'],
+                ]);
+            }
         }
 
         // Handle dynamic document uploads based on requirements from this classification
@@ -332,6 +349,7 @@ class CitizenServiceController extends Controller
         
         $objectIds = TaxObject::where('taxpayer_id', $taxpayer->id)
             ->where('retribution_classification_id', $classification->id)
+            ->where('status', 'active')
             ->pluck('id');
 
         $bills = Bill::whereIn('tax_object_id', $objectIds)
