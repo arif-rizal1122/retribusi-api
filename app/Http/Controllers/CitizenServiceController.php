@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RetributionType;
 use App\Models\Taxpayer;
 use App\Models\TaxObject;
+use App\Models\TaxpayerPbbObject;
 use App\Models\PbbNopApplication;
 use App\Models\Bill;
 use App\Models\Verification;
@@ -196,7 +197,7 @@ class CitizenServiceController extends Controller
             }
         }
 
-        [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata) {
+        [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata, $isPbb) {
             // Create the tax object
             $taxObject = TaxObject::create([
                 'taxpayer_id' => $taxpayer->id,
@@ -238,6 +239,25 @@ class CitizenServiceController extends Controller
 
             if (!$taxpayer->opd_id) {
                 $taxpayer->update(['opd_id' => $service->opd_id]);
+            }
+
+            // PBB: auto-link ke TaxpayerPbbObject supaya objek langsung muncul di "Objek Saya" (pbb-tagihan)
+            // Satu sumber objek PBB warga: daftar via layanan = otomatis bisa cek & bayar.
+            if ($isPbb) {
+                $nopLink = $metadata['nop_pbb'] ?? null;
+                if (!empty($nopLink)) {
+                    TaxpayerPbbObject::firstOrCreate(
+                        ['taxpayer_id' => $taxpayer->id, 'nop' => $nopLink],
+                        [
+                            'name_on_sppt' => $metadata['nama_wp'] ?? $taxpayer->name ?? null,
+                            'address_on_sppt' => $metadata['alamat_wp'] ?? $request->address ?? null,
+                            'kelurahan' => $metadata['kelurahan'] ?? $request->sub_district ?? null,
+                            'kota' => $metadata['kota'] ?? $request->district ?? null,
+                            'is_verified' => true,
+                            'notes' => 'Otomatis dari pendaftaran layanan PBB (REG-' . strtoupper(uniqid()) . ')',
+                        ]
+                    );
+                }
             }
 
             return [$taxObject, $verification];
