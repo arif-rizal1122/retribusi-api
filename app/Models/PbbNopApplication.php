@@ -11,6 +11,8 @@ class PbbNopApplication extends Model
         'nik',
         'name',
         'address',
+        'latitude',
+        'longitude',
         'land_area',
         'building_area',
         'ktp_file_path',

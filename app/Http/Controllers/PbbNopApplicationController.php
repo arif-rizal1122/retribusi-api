@@ -21,8 +21,8 @@ class PbbNopApplicationController extends Controller
             $query->where('status', $request->status);
         }
 
-        // if user is 'warga', filter by their user_id
-        if ($request->user() && $request->user()->hasRole('warga')) {
+        // Warga (Taxpayer) hanya melihat aplikasi miliknya; admin/bapenda melihat semua
+        if ($request->user() && $request->user() instanceof \App\Models\Taxpayer) {
             $query->where('user_id', $request->user()->id);
         }
 
@@ -35,6 +35,8 @@ class PbbNopApplicationController extends Controller
             'nik' => 'required|string|max:16',
             'name' => 'required|string|max:255',
             'address' => 'required|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'land_area' => 'required|numeric|min:1',
             'building_area' => 'nullable|numeric|min:1',
             'ktp_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
@@ -75,6 +77,8 @@ class PbbNopApplicationController extends Controller
             'nik' => $request->nik,
             'name' => $request->name,
             'address' => $request->address,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
             'land_area' => $request->land_area,
             'building_area' => $request->building_area,
             'ktp_file_path' => $ktpPath,
