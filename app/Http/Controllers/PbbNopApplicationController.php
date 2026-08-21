@@ -42,6 +42,11 @@ class PbbNopApplicationController extends Controller
             'ktp_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'akte_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'imb_file' => 'nullable|required_with:building_area|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'registered_for' => 'sometimes|in:self,other',
+            'owner_name' => 'required_if:registered_for,other|string|max:255',
+            'owner_address' => 'required_if:registered_for,other|string',
+            'nop' => 'nullable|string|max:20',
+            'metadata' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -72,6 +77,8 @@ class PbbNopApplicationController extends Controller
         $aktePath = $request->file('akte_file')->store('pbb_applications/akte', 'public');
         $imbPath = $request->hasFile('imb_file') ? $request->file('imb_file')->store('pbb_applications/imb', 'public') : null;
 
+        $registeredFor = $request->input('registered_for', 'self');
+
         $application = PbbNopApplication::create([
             'user_id' => $request->user() ? $request->user()->id : null,
             'nik' => $request->nik,
@@ -85,6 +92,11 @@ class PbbNopApplicationController extends Controller
             'akte_file_path' => $aktePath,
             'imb_file_path' => $imbPath,
             'status' => 'PENDING',
+            'registered_for' => $registeredFor,
+            'owner_name' => $registeredFor === 'other' ? $request->owner_name : null,
+            'owner_address' => $registeredFor === 'other' ? $request->owner_address : null,
+            'nop' => $request->input('nop'),
+            'metadata' => $request->input('metadata'),
         ]);
 
         return response()->json(['message' => 'Application submitted successfully', 'data' => $application], 201);

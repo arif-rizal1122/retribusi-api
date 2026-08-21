@@ -22,6 +22,14 @@ class PbbNopApplication extends Model
         'survey_notes',
         'survey_photo_path',
         'nop',
+        'registered_for',
+        'owner_name',
+        'owner_address',
+        'metadata',
+    ];
+
+    protected $casts = [
+        'metadata' => 'array',
     ];
 
     public function user()
