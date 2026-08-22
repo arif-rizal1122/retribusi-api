@@ -40,7 +40,7 @@ return [
     ],
 
     'pbb_bapenda' => [
-        'base_url' => env('PBB_BAPENDA_BASE_URL', 'http://103.182.72.241:8000/pospbb/Api_service'),
+        'base_url' => env('PBB_BAPENDA_BASE_URL', 'http://103.182.72.241:8000/pospbb/Api_pos'),
         'username' => env('PBB_BAPENDA_USERNAME', ''),
         'password' => env('PBB_BAPENDA_PASSWORD', ''),
         'outlet'   => env('PBB_BAPENDA_OUTLET', 'm-PAD'),
@@ -57,6 +57,8 @@ return [
     'bhumi' => [
         'base_url' => env('BHUMI_BASE_URL', ''),
         'token'    => env('BHUMI_TOKEN', ''),
+        // Endpoint push webhook status lunas ke BPN (SPLP) — kosong sampai PKS selesai
+        'splp_endpoint' => env('BHUMI_SPLP_ENDPOINT', ''),
     ],
 
     // Notifikasi status H2H ke admin via Telegram — default off

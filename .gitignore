@@ -41,3 +41,9 @@ docs/04_infrastruktur_api/VPS_ACCESS_MPAD.md
 .env.bak.20260805_155623
 .env.bak-*
 check_va_bootstrap.php
+
+# Kredensial & backup env — HARAM di git
+.env*
+!.env.example
+database/seeders/ProductionMainCredentialsSeeder.php
+*CredentialsSeeder*

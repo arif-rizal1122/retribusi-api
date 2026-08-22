@@ -11,6 +11,8 @@ class PbbNopApplication extends Model
         'nik',
         'name',
         'address',
+        'latitude',
+        'longitude',
         'land_area',
         'building_area',
         'ktp_file_path',
@@ -20,6 +22,14 @@ class PbbNopApplication extends Model
         'survey_notes',
         'survey_photo_path',
         'nop',
+        'registered_for',
+        'owner_name',
+        'owner_address',
+        'metadata',
+    ];
+
+    protected $casts = [
+        'metadata' => 'array',
     ];
 
     public function user()

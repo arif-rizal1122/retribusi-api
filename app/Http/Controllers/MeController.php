@@ -23,6 +23,9 @@ class MeController extends Controller
             $load = array_merge($load, ['retributionTypes', 'retributionClassifications']);
         }
 
+        // Suntik atribut role (role_code/opd_role/role_group) untuk deteksi role non-warga.
+        \App\Support\RoleResolver::enrich($user);
+
         return response()->json([
             'data' => $user->load($load)
         ]);

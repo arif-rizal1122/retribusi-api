@@ -175,4 +175,77 @@ class NibPublicController extends Controller
             'website' => self::PTSP_WEB,
         ];
     }
+
+    /**
+     * M41-1 — Lookup data usaha dari NIB untuk auto-fill unit bisnis.
+     * GET /api/public/nib/lookup?nib=XXXXXXXX
+     * Sumber: nib_nop_mappings (NOP/luas) + ptsp_data_candidates (jenis/alamat usaha).
+     */
+    public function lookup(Request $request)
+    {
+        $request->validate(['nib' => 'required|string|size:16']);
+        $nib = $request->nib;
+
+        $nopData = null;
+        if (Schema::hasTable('nib_nop_mappings')) {
+            $nopData = DB::table('nib_nop_mappings')->where('nib', $nib)->first();
+        }
+
+        $candidate = null;
+        if (Schema::hasTable('ptsp_data_candidates')) {
+            $candidate = DB::table('ptsp_data_candidates')
+                ->where('nib', $nib)
+                ->orWhere('nik', $nib) // fallback: NIB diisi di kolom nik saat pendaftaran manual
+                ->first();
+        }
+
+        if (! $nopData && ! $candidate) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'nib' => $nib,
+                    'found' => false,
+                    'suggest' => 'NIB belum terdaftar di sistem. Lengkapi manual atau ajukan penyempurnaan data diri.',
+                ],
+            ]);
+        }
+
+        // Jenis usaha → mapping sektor (9 sektor kalkulator bisnis)
+        $jenisUsaha = $candidate->jenis_usaha ?? null;
+        $sectorId = $this->guessSector($jenisUsaha);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'nib' => $nib,
+                'found' => true,
+                'nama' => $candidate->nama ?? $nopData->taxpayer_name ?? null,
+                'jenis_usaha' => $jenisUsaha,
+                'alamat' => $candidate->alamat_usaha ?? null,
+                'nop' => $nopData->nop ?? null,
+                'match_status' => $nopData->match_status ?? 'pending',
+                'sector_id' => $sectorId,
+                'suggest' => 'Data ditemukan — periksa lalu simpan unit usaha.',
+            ],
+        ]);
+    }
+
+    /** Tebak sektor kalkulator dari jenis usaha (Dok 143, 9 sektor). */
+    private function guessSector(?string $jenisUsaha): ?string
+    {
+        if (! $jenisUsaha) return null;
+        $j = strtolower($jenisUsaha);
+        $map = [
+            'restoran' => 'restoran', 'makan' => 'warung', 'kafe' => 'warung', 'cafe' => 'warung',
+            'hotel' => 'hotel', 'penginapan' => 'hotel', 'melati' => 'hotel',
+            'air baku' => 'air_baku', 'air minum' => 'depot_air', 'depot' => 'depot_air',
+            'laundry' => 'laundry', 'binatu' => 'laundry',
+            'game' => 'game_center', 'bilyard' => 'bilyard', 'biliar' => 'bilyard',
+            'hiburan' => 'hiburan_malam', 'karaoke' => 'hiburan_malam', 'diskotik' => 'hiburan_malam', 'bar' => 'hiburan_malam',
+        ];
+        foreach ($map as $k => $v) {
+            if (str_contains($j, $k)) return $v;
+        }
+        return null;
+    }
 }

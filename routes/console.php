@@ -8,7 +8,10 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote')->hourly();
 
+Schedule::command('monitor:h2h')->everyFiveMinutes();
 Schedule::command('billing:notify-due')->dailyAt('08:00');
 Schedule::command('bills:calculate-penalties')->dailyAt('01:00');
 Schedule::command('auto-deduct:remind-bills --days=7 --overdue')->dailyAt('07:00');
+// Rekonsiliasi harian pembayaran PBB M-PAD vs SIMPBB
+Schedule::command('pbb:reconcile')->dailyAt('01:00')->withoutOverlapping();
 Schedule::job(new \App\Jobs\AnomalyDetectionJob)->dailyAt('02:00');

@@ -77,6 +77,7 @@ class BannerController extends Controller
             'link_url'       => 'nullable|string|max:500',
             'gradient_start' => 'nullable|string|max:20',
             'gradient_end'   => 'nullable|string|max:20',
+            'show_text'      => 'nullable|boolean',
             'sort_order'     => 'nullable|integer',
             'is_active'      => 'nullable|boolean',
             'start_at'       => 'nullable|date',
@@ -90,6 +91,7 @@ class BannerController extends Controller
             'link_url'       => $validated['link_url'] ?? null,
             'gradient_start' => $validated['gradient_start'] ?? '#2563eb',
             'gradient_end'   => $validated['gradient_end'] ?? '#4f46e5',
+            'show_text'      => $validated['show_text'] ?? true,
             'sort_order'     => $validated['sort_order'] ?? 0,
             'is_active'      => $validated['is_active'] ?? true,
             'start_at'       => $validated['start_at'] ?? null,
@@ -127,6 +129,7 @@ class BannerController extends Controller
             'link_url'       => 'nullable|string|max:500',
             'gradient_start' => 'nullable|string|max:20',
             'gradient_end'   => 'nullable|string|max:20',
+            'show_text'      => 'sometimes|boolean',
             'sort_order'     => 'sometimes|integer',
             'is_active'      => 'sometimes|boolean',
             'start_at'       => 'nullable|date',
@@ -135,7 +138,7 @@ class BannerController extends Controller
 
         $data = array_intersect_key($validated, array_flip([
             'title', 'subtitle', 'image_url', 'link_url',
-            'gradient_start', 'gradient_end', 'sort_order', 'is_active', 'start_at', 'end_at',
+            'gradient_start', 'gradient_end', 'show_text', 'sort_order', 'is_active', 'start_at', 'end_at',
         ]));
         $data['updated_at'] = now();
 

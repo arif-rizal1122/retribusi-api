@@ -24,6 +24,7 @@ use App\Http\Controllers\TaxEducationController;
 use App\Http\Controllers\BillboardAuditController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\Api\SimpadKoneksiController;
+use App\Http\Controllers\Api\RatingController;
 
 
 /*
@@ -57,6 +58,7 @@ Route::get('/public/pdf/surat-teguran/{noticeId}', [\App\Http\Controllers\Docume
 
 // Tax Simulation (public, no auth needed)
 // Public: Cek NIB & Candidate Penyempurnaan Data Diri (PTSP-13)
+Route::get('/public/nib/lookup', [\App\Http\Controllers\NibPublicController::class, 'lookup']);
 Route::get('/public/nib/check', [\App\Http\Controllers\NibPublicController::class, 'check']);
 Route::post('/public/nib/candidate', [\App\Http\Controllers\NibPublicController::class, 'storeCandidate']);
 
@@ -179,6 +181,20 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::post('/upload', [\App\Http\Controllers\UploadController::class, 'uploadImage']);
     Route::get('/me', [\App\Http\Controllers\MeController::class, 'show']);
     Route::post('/me/update', [\App\Http\Controllers\MeController::class, 'update']);
+
+    // Dashboard agregat M39 (semua role internal; scope OPD via middleware opd_scope)
+    Route::middleware('opd_scope')->prefix('dashboard')->group(function () {
+        Route::get('/pad-summary', [\App\Http\Controllers\Api\DashboardController::class, 'padSummary']);
+        Route::get('/sector-data', [\App\Http\Controllers\Api\DashboardController::class, 'sectorData']);
+        Route::get('/daily-tasks', [\App\Http\Controllers\Api\DashboardController::class, 'dailyTasks']);
+        Route::get('/anomalies', [\App\Http\Controllers\Api\DashboardController::class, 'anomalies']);
+    });
+    
+    // M43 — Verifikasi teknis proteksi kebakaran oleh Damkar (opd_id=13, verifikator PBG, NON-retribusi)
+    Route::prefix('damkar')->group(function () {
+        Route::get('/verifications', [\App\Http\Controllers\DamkarVerificationController::class, 'index']);
+        Route::post('/verifications/{id}/decision', [\App\Http\Controllers\DamkarVerificationController::class, 'decision']);
+    });
     
     // Citizen Service Registration (Shared, but usually for citizens)
     Route::group(['prefix' => 'citizen/services'], function () {
@@ -204,6 +220,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         // ASET DAERAH (JU-ASET) — kategori, unit, form template, sewa
         Route::get('/asset/categories', [\App\Http\Controllers\CitizenAssetController::class, 'categories']);
         Route::get('/asset/items', [\App\Http\Controllers\CitizenAssetController::class, 'items']);
+        Route::get('/asset/items/{id}/availability', [\App\Http\Controllers\CitizenAssetController::class, 'availability']);
         Route::get('/asset/form-template/{categoryId}', [\App\Http\Controllers\CitizenAssetController::class, 'formTemplate']);
         Route::post('/asset/rentals', [\App\Http\Controllers\CitizenAssetController::class, 'storeRental']);
         Route::get('/asset/rentals', [\App\Http\Controllers\CitizenAssetController::class, 'myRentals']);
@@ -228,6 +245,10 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
         Route::post('/complaints', [ComplaintController::class, 'store']);
         Route::get('/complaints', [ComplaintController::class, 'citizenIndex']);
+
+        // Rating layanan (PENILAIAN-1) — 9 Agu 2026
+        Route::post('/ratings', [RatingController::class, 'store']);
+        Route::get('/ratings', [RatingController::class, 'citizenIndex']);
 
         // Pendaftaran NOP Mandiri (Warga)
         Route::post('/pbb/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'store']);
@@ -275,6 +296,12 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/qr', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'qr']);
             Route::post('/send-test', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'sendTest']);
             Route::post('/logout', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'logout']);
+        });
+
+        // H2H Monitor (read-only dashboard — Fase 1)
+        Route::prefix('admin/h2h-monitor')->group(function () {
+            Route::get('/overview', [\App\Http\Controllers\Api\V1\Admin\H2HMonitorController::class, 'overview']);
+            Route::get('/history/{connector}', [\App\Http\Controllers\Api\V1\Admin\H2HMonitorController::class, 'history']);
         });
 
         // Pendaftaran NOP (Warga — verifikasi admin)
@@ -467,7 +494,30 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
         Route::get('/complaints/{complaint}', [ComplaintController::class, 'show']);
         Route::put('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus']);
+
+        // Rating layanan (admin/pengawas) — PENILAIAN-1
+        Route::get('/ratings', [RatingController::class, 'index']);
+
+        // M36 - Deteksi titik adopsi kalkulator (dashboard cakupan)
+        Route::get('/business-units', [\App\Http\Controllers\BusinessUnitController::class, 'index']);
+
+        // M37-2 - Integrasi akun OPD pengelola per sektor usaha (Dok 143)
+        // Scope OPD via middleware opd_scope (konsisten dengan pola dashboard agregat)
+        Route::prefix('opd')->middleware('opd_scope')->group(function () {
+            Route::get('/sector-data', [\App\Http\Controllers\OpdSectorDataController::class, 'index']);
+        });
     });
+});
+
+// ------------------------------------------------------------------------
+// H2H BPN — endpoint eksternal yang dipanggil sistem BPN (KKP).
+// Autentikasi via header X-H2H-Key (dicek di dalam controller).
+// M21-1466 (F3.2): bridging status lunas ke BPN (SPLP).
+// ------------------------------------------------------------------------
+Route::prefix('h2h/bpn')->group(function () {
+    Route::post('/check-pbb', [\App\Http\Controllers\H2HBpnController::class, 'checkPbb']);
+    Route::post('/verify-payment', [\App\Http\Controllers\H2HBpnController::class, 'verifyPayment']);
+    Route::post('/splp/update', [\App\Http\Controllers\H2HBpnController::class, 'updateSplp']);
 });
 
 // ------------------------------------------------------------------------

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\RetributionType;
 use App\Models\Taxpayer;
 use App\Models\TaxObject;
+use App\Models\TaxpayerPbbObject;
+use App\Models\PbbNopApplication;
 use App\Models\Bill;
 use App\Models\Verification;
 use App\Services\RequirementFileService;
@@ -76,9 +78,9 @@ class CitizenServiceController extends Controller
             ->with('zone')
             ->get();
         
-        $objectIds = $objects->pluck('id');
+        $activeObjectIds = $objects->where('status', 'active')->pluck('id');
         
-        $bills = Bill::whereIn('tax_object_id', $objectIds)
+        $bills = Bill::whereIn('tax_object_id', $activeObjectIds)
             ->with(['opd:id,name', 'taxObject'])
             ->latest()
             ->get();
@@ -140,6 +142,22 @@ class CitizenServiceController extends Controller
             throw ValidationException::withMessages($missingMetadata);
         }
 
+        $isPbb = (stripos($classification->name ?? '', 'pbb') !== false) || ($classification->id == 186);
+        $nop = $metadata['nop_pbb'] ?? null;
+        if ($isPbb && !empty($nop)) {
+            if (TaxObject::where('metadata->nop_pbb', $nop)->exists()) {
+                throw ValidationException::withMessages([
+                    'metadata' => ['NOP PBB sudah terdaftar. Silakan gunakan NOP lain atau hubungi Bapenda.'],
+                ]);
+            }
+
+            if (PbbNopApplication::where('nop', $nop)->whereIn('status', ['PENDING', 'SURVEY', 'APPROVED'])->exists()) {
+                throw ValidationException::withMessages([
+                    'metadata' => ['NOP PBB sedang dalam proses pendaftaran.'],
+                ]);
+            }
+        }
+
         // Handle dynamic document uploads based on requirements from this classification
         $requirements = $classification->requirements ?? [];
         $missingFiles = $this->missingRequiredFiles($request, $requirements);
@@ -179,7 +197,7 @@ class CitizenServiceController extends Controller
             }
         }
 
-        [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata) {
+        [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata, $isPbb) {
             // Create the tax object
             $taxObject = TaxObject::create([
                 'taxpayer_id' => $taxpayer->id,
@@ -221,6 +239,25 @@ class CitizenServiceController extends Controller
 
             if (!$taxpayer->opd_id) {
                 $taxpayer->update(['opd_id' => $service->opd_id]);
+            }
+
+            // PBB: auto-link ke TaxpayerPbbObject supaya objek langsung muncul di "Objek Saya" (pbb-tagihan)
+            // Satu sumber objek PBB warga: daftar via layanan = otomatis bisa cek & bayar.
+            if ($isPbb) {
+                $nopLink = $metadata['nop_pbb'] ?? null;
+                if (!empty($nopLink)) {
+                    TaxpayerPbbObject::firstOrCreate(
+                        ['taxpayer_id' => $taxpayer->id, 'nop' => $nopLink],
+                        [
+                            'name_on_sppt' => $metadata['nama_wp'] ?? $taxpayer->name ?? null,
+                            'address_on_sppt' => $metadata['alamat_wp'] ?? $request->address ?? null,
+                            'kelurahan' => $metadata['kelurahan'] ?? $request->sub_district ?? null,
+                            'kota' => $metadata['kota'] ?? $request->district ?? null,
+                            'is_verified' => true,
+                            'notes' => 'Otomatis dari pendaftaran layanan PBB (REG-' . strtoupper(uniqid()) . ')',
+                        ]
+                    );
+                }
             }
 
             return [$taxObject, $verification];
@@ -332,6 +369,7 @@ class CitizenServiceController extends Controller
         
         $objectIds = TaxObject::where('taxpayer_id', $taxpayer->id)
             ->where('retribution_classification_id', $classification->id)
+            ->where('status', 'active')
             ->pluck('id');
 
         $bills = Bill::whereIn('tax_object_id', $objectIds)

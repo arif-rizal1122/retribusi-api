@@ -21,6 +21,7 @@ class AssetItem extends Model
         'pic',
         'tarif_default',
         'satuan_tarif',
+        'buffer_default',
         'is_demo',
         'is_active',
         'metadata',
@@ -28,6 +29,7 @@ class AssetItem extends Model
 
     protected $casts = [
         'tarif_default' => 'decimal:2',
+        'buffer_default' => 'integer',
         'is_demo' => 'boolean',
         'is_active' => 'boolean',
         'metadata' => 'array',

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Models\PbbNopApplication;
+use App\Models\TaxObject;
 use App\Services\DukcapilNikService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -20,8 +21,8 @@ class PbbNopApplicationController extends Controller
             $query->where('status', $request->status);
         }
 
-        // if user is 'warga', filter by their user_id
-        if ($request->user() && $request->user()->hasRole('warga')) {
+        // Warga (Taxpayer) hanya melihat aplikasi miliknya; admin/bapenda melihat semua
+        if ($request->user() && $request->user() instanceof \App\Models\Taxpayer) {
             $query->where('user_id', $request->user()->id);
         }
 
@@ -34,11 +35,18 @@ class PbbNopApplicationController extends Controller
             'nik' => 'required|string|max:16',
             'name' => 'required|string|max:255',
             'address' => 'required|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'land_area' => 'required|numeric|min:1',
             'building_area' => 'nullable|numeric|min:1',
             'ktp_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'akte_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'imb_file' => 'nullable|required_with:building_area|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'registered_for' => 'sometimes|in:self,other',
+            'owner_name' => 'required_if:registered_for,other|string|max:255',
+            'owner_address' => 'required_if:registered_for,other|string',
+            'nop' => 'nullable|string|max:20',
+            'metadata' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -69,17 +77,26 @@ class PbbNopApplicationController extends Controller
         $aktePath = $request->file('akte_file')->store('pbb_applications/akte', 'public');
         $imbPath = $request->hasFile('imb_file') ? $request->file('imb_file')->store('pbb_applications/imb', 'public') : null;
 
+        $registeredFor = $request->input('registered_for', 'self');
+
         $application = PbbNopApplication::create([
             'user_id' => $request->user() ? $request->user()->id : null,
             'nik' => $request->nik,
             'name' => $request->name,
             'address' => $request->address,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
             'land_area' => $request->land_area,
             'building_area' => $request->building_area,
             'ktp_file_path' => $ktpPath,
             'akte_file_path' => $aktePath,
             'imb_file_path' => $imbPath,
             'status' => 'PENDING',
+            'registered_for' => $registeredFor,
+            'owner_name' => $registeredFor === 'other' ? $request->owner_name : null,
+            'owner_address' => $registeredFor === 'other' ? $request->owner_address : null,
+            'nop' => $request->input('nop'),
+            'metadata' => $request->input('metadata'),
         ]);
 
         return response()->json(['message' => 'Application submitted successfully', 'data' => $application], 201);
@@ -104,6 +121,24 @@ class PbbNopApplicationController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        if ($request->status === 'APPROVED' && $request->filled('nop')) {
+            $nop = $request->nop;
+
+            if (TaxObject::where(function ($q) use ($nop) {
+                $q->where('nop', $nop)->orWhere('metadata->nop_pbb', $nop);
+            })->exists()) {
+                return response()->json([
+                    'errors' => ['nop' => ['NOP sudah digunakan pada objek pajak lain.']],
+                ], 422);
+            }
+
+            if (PbbNopApplication::where('nop', $nop)->where('id', '!=', $id)->exists()) {
+                return response()->json([
+                    'errors' => ['nop' => ['NOP sudah digunakan pada aplikasi lain.']],
+                ], 422);
+            }
         }
 
         $application->status = $request->status;

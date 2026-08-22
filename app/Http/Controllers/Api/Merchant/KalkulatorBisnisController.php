@@ -95,6 +95,24 @@ class KalkulatorBisnisController extends Controller
             'escrow_settlement_status' => 'pending',
         ]);
 
+        // M36 — Deteksi otomatis titik adopsi kalkulator bisnis (9 Agu 2026)
+        // Setiap transaksi omzet dari kalkulator menandai titik/lapak ini AKTIF.
+        // first_transaction_at hanya diisi SEKALI (COALESCE agar tidak menimpa).
+        try {
+            \App\Models\BusinessUnit::updateOrCreate(
+                ['taxpayer_id' => $taxpayer->id, 'business_name' => $bill->retributionType->name ?? 'Usaha'],
+                [
+                    'unit_type' => 'lapak',
+                    'location_ref' => $taxObject->object_name ?? null,
+                    'status' => 'aktif',
+                    'first_transaction_at' => \Illuminate\Support\Facades\DB::raw('COALESCE(first_transaction_at, NOW())'),
+                ]
+            );
+        } catch (\Throwable $e) {
+            // Jangan sampai gagal mencatat omzet karena tracking titik — log saja.
+            \Illuminate\Support\Facades\Log::warning('M36 business_units upsert gagal: '.$e->getMessage());
+        }
+
         ExecuteAutoDebitAFT::dispatch($log->id);
 
         return response()->json([
