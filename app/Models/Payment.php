@@ -36,6 +36,7 @@ class Payment extends Model
     ];
 
     protected $casts = [
+        'amount' => 'float',
         'paid_at' => 'datetime',
         'metadata' => 'array',
         'raw_callback_data' => 'array',

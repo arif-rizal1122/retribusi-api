@@ -19,6 +19,11 @@ class ReportController extends Controller
         $user = $request->user();
         $opdId = !$user->isSuperAdmin() ? $user->opd_id : $request->query('opd_id');
 
+        $validated = $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date'   => 'nullable|date|after_or_equal:start_date',
+        ]);
+
         $startDate = $request->query('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->query('end_date', Carbon::now()->endOfMonth()->toDateString());
 
@@ -39,8 +44,10 @@ class ReportController extends Controller
             ->get();
 
         // Calculate percentages
-        $totalAmount = $revenueByType->sum('amount');
+        $totalAmount = (float) $revenueByType->sum('amount');
         $revenueByType = $revenueByType->map(function ($item) use ($totalAmount) {
+            $item->amount = (float) $item->amount;
+            $item->count = (int) $item->count;
             $item->percentage = $totalAmount > 0 ? round(($item->amount / $totalAmount) * 100, 1) : 0;
             // Target is a placeholder for now, can be linked to a targets table later
             $item->target = $item->amount * 1.2; 
