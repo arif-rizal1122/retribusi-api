@@ -56,6 +56,10 @@ Route::get('/public/pdf/sspd/{billId}', [\App\Http\Controllers\DocumentControlle
 Route::get('/public/pdf/sppt/{billId}', [\App\Http\Controllers\DocumentController::class, 'sppt']);
 Route::get('/public/pdf/surat-teguran/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'suratTeguran']);
 
+// Public: SSPD-BPHTB (verifikasi & unduh PDF tanpa login)
+Route::get('/public/sspd/verify/{sspdNumber}', [\App\Http\Controllers\H2HBphtbController::class, 'verifySspd']);
+Route::get('/public/sspd/pdf/{sspdNumber}', [\App\Http\Controllers\H2HBphtbController::class, 'sspdPdfByNumber']);
+
 // Tax Simulation (public, no auth needed)
 // Public: Cek NIB & Candidate Penyempurnaan Data Diri (PTSP-13)
 Route::get('/public/nib/lookup', [\App\Http\Controllers\NibPublicController::class, 'lookup']);
@@ -273,6 +277,15 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/payment-request', [PbbBapendaController::class, 'paymentRequest']);
     });
 
+    // H2H BPHTB — Wajib Pajak / Notaris / PPAT (scope_user)
+    Route::prefix('h2h/bphtb')->group(function () {
+        Route::get('/', [\App\Http\Controllers\H2HBphtbController::class, 'mySubmissions']);
+        Route::post('/{submission}/documents', [\App\Http\Controllers\H2HBphtbController::class, 'uploadDocument']);
+        Route::delete('/{submission}/documents/{document}', [\App\Http\Controllers\H2HBphtbController::class, 'deleteDocument']);
+        Route::post('/{submission}/pay', [\App\Http\Controllers\H2HBphtbController::class, 'pay']);
+        Route::get('/{submission}', [\App\Http\Controllers\H2HBphtbController::class, 'show']);
+    });
+
     // Citizen can edit/cancel their own pending service registration objects.
     Route::match(['put', 'patch', 'post'], '/tax-objects/{taxObject}', [TaxObjectController::class, 'update']);
     Route::delete('/tax-objects/{taxObject}', [TaxObjectController::class, 'destroy']);
@@ -314,6 +327,9 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/mappings', [\App\Http\Controllers\H2HBphtbController::class, 'mappings']);
             Route::post('/simulate', [\App\Http\Controllers\H2HBphtbController::class, 'simulate']);
             Route::post('/submit', [\App\Http\Controllers\H2HBphtbController::class, 'submit']);
+            Route::post('/{submission}/verify', [\App\Http\Controllers\H2HBphtbController::class, 'verify']);
+            Route::post('/{submission}/issue-sspd', [\App\Http\Controllers\H2HBphtbController::class, 'issueSspd']);
+            Route::get('/{submission}/sspd/pdf', [\App\Http\Controllers\H2HBphtbController::class, 'sspdPdf']);
         });
 
         // Notaris / PPAT Approval
