@@ -85,7 +85,7 @@ Route::post('/simulate-tax', function (Request $request) {
         'calculation_formula' => 'nullable|string',
         'variables' => 'required|array',
     ]);
-    
+
     $formula = $request->calculation_formula;
     $name = 'Simulasi';
     $isPbb = false;
@@ -279,7 +279,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
     // H2H BPHTB — Wajib Pajak / Notaris / PPAT (scope_user)
     Route::prefix('h2h/bphtb')->group(function () {
-        Route::get('/', [\App\Http\Controllers\H2HBphtbController::class, 'mySubmissions']);
+        Route::get('/', [\App\Http\Controllers\H2HBphtbController::class, 'submissions']);
+        Route::get('/mine', [\App\Http\Controllers\H2HBphtbController::class, 'mySubmissions']);
         Route::post('/{submission}/documents', [\App\Http\Controllers\H2HBphtbController::class, 'uploadDocument']);
         Route::delete('/{submission}/documents/{document}', [\App\Http\Controllers\H2HBphtbController::class, 'deleteDocument']);
         Route::post('/{submission}/pay', [\App\Http\Controllers\H2HBphtbController::class, 'pay']);
@@ -329,6 +330,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::post('/submit', [\App\Http\Controllers\H2HBphtbController::class, 'submit']);
             Route::post('/{submission}/verify', [\App\Http\Controllers\H2HBphtbController::class, 'verify']);
             Route::post('/{submission}/issue-sspd', [\App\Http\Controllers\H2HBphtbController::class, 'issueSspd']);
+            Route::post('/{submission}/sspd', [\App\Http\Controllers\H2HBphtbController::class, 'issueSspd']);
             Route::get('/{submission}/sspd/pdf', [\App\Http\Controllers\H2HBphtbController::class, 'sspdPdf']);
         });
 

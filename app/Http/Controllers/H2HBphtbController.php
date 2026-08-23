@@ -33,10 +33,8 @@ class H2HBphtbController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $isBackoffice = $user && method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
-        $allowedRoles = ['petugas', 'opd', 'kepala_bapenda', 'kabid_pengawas', 'kasubid_pengawas'];
 
-        if (! $isBackoffice && ! in_array($user?->role, $allowedRoles)) {
+        if (! $this->isBphtbBackoffice($user)) {
             return response()->json(['message' => 'Hanya petugas/admin Bapenda yang dapat mengakses daftar BPHTB.'], 403);
         }
 
@@ -57,6 +55,19 @@ class H2HBphtbController extends Controller
         }
 
         return response()->json($query->orderByDesc('id')->paginate(15));
+    }
+
+    /**
+     * GET /api/h2h/bphtb
+     * Backoffice melihat semua submission; PPAT/notaris melihat miliknya.
+     */
+    public function submissions(Request $request)
+    {
+        if ($this->isBphtbBackoffice($request->user())) {
+            return $this->index($request);
+        }
+
+        return $this->mySubmissions($request);
     }
 
     public function mappings(Request $request)
@@ -643,6 +654,15 @@ class H2HBphtbController extends Controller
             'external_id' => $pr->external_id,
             'bill_id' => $pr->bill_id,
         ];
+    }
+
+    private function isBphtbBackoffice($user): bool
+    {
+        $allowedRoles = ['petugas', 'opd', 'kepala_bapenda', 'kabid_pengawas', 'kasubid_pengawas'];
+
+        return $user
+            && method_exists($user, 'isSuperAdmin')
+            && ($user->isSuperAdmin() || in_array($user->role, $allowedRoles, true));
     }
 
     private function buildVaNumber(
