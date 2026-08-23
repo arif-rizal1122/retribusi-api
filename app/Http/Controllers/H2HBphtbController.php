@@ -99,6 +99,12 @@ class H2HBphtbController extends Controller
             'nik_wp' => 'required|string|size:16',
             'nama_wp' => 'required|string|max:255',
             'alamat_wp' => 'nullable|string',
+            'luas_tanah' => 'nullable|numeric|min:0',
+            'luas_bangunan' => 'nullable|numeric|min:0',
+            'njop_per_m2' => 'nullable|numeric|min:0',
+            'alamat_objek' => 'nullable|string',
+            'jenis_perolehan' => 'nullable|string',
+            'no_sertifikat' => 'nullable|string',
         ]);
 
         $mapping = BpnH2hMapping::where('nib', $request->nib)->first();
@@ -155,6 +161,12 @@ class H2HBphtbController extends Controller
                     'nik_wp' => $request->nik_wp,
                     'nama_wp' => $request->nama_wp,
                     'alamat_wp' => $request->alamat_wp,
+                    'luas_tanah' => $request->luas_tanah,
+                    'luas_bangunan' => $request->luas_bangunan,
+                    'njop_per_m2' => $request->njop_per_m2,
+                    'alamat_objek' => $request->alamat_objek,
+                    'jenis_perolehan' => $request->jenis_perolehan,
+                    'no_sertifikat' => $request->no_sertifikat,
                     'ppat_user_id' => $request->user()?->id,
                     'reported_npop' => $calculation['npop_reported'],
                     'znt_applied' => $calculation['znt_applied'],
@@ -240,7 +252,7 @@ class H2HBphtbController extends Controller
         }
 
         $request->validate([
-            'document_type' => 'required|in:ajb,ktp,npwp,sppt,akta,sk,other',
+            'document_type' => 'required|in:ajb,ktp,npwp,sppt,akta,sk,foto_objek,sketsa_lokasi,kwitansi,surat_ukur,bukti_bayar_pbb,other',
             'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'notes' => 'nullable|string|max:500',
         ]);
@@ -400,6 +412,101 @@ class H2HBphtbController extends Controller
             'message' => 'SSPD digital berhasil diterbitkan.',
             'data' => $submission->fresh(),
         ], 201);
+    }
+
+    /**
+     * F7 — Unduh SSPD-BPHTB dalam format PDF (Bapenda layout).
+     * GET /api/h2h/bphtb/{submission}/sspd/pdf
+     * Hanya tersedia setelah SSPD diterbitkan (sspd_number terisi).
+     */
+    public function sspdPdf(Request $request, $submission)
+    {
+        $submission = BphtbSubmission::with('bill')->findOrFail($submission);
+
+        if (! $submission->sspd_number) {
+            return response()->json(['message' => 'SSPD belum diterbitkan.'], 422);
+        }
+
+        $bill = $submission->bill;
+        $metadata = $bill ? (array) ($bill->metadata ?? []) : [];
+
+        $npoptkp = (float) ($metadata['npoptkp'] ?? 60000000);
+        $npop    = (float) ($metadata['final_npop'] ?? $submission->final_npop ?? $bill?->amount ?? 0);
+        $taxable = (float) ($metadata['taxable'] ?? max($npop - $npoptkp, 0));
+        $bphtb   = (float) ($bill?->amount ?? 0);
+
+        // Detail objek — fallback ke 0 bila tidak diisi.
+        $luasTanah     = (float) ($submission->luas_tanah ?? 0);
+        $luasBangunan  = (float) ($submission->luas_bangunan ?? 0);
+        $njopPerM2     = (float) ($submission->njop_per_m2 ?? 0);
+        $nilaiTanah    = $luasTanah * $njopPerM2;
+        $nilaiBangunan = $luasBangunan * $njopPerM2;
+        $totalNjopPbb  = $nilaiTanah + $nilaiBangunan;
+
+        // QR code dari sspd_qr_hash (SVG base64, PHP murni — tanpa imagick).
+        $qrImage = null;
+        if ($submission->sspd_qr_hash) {
+            try {
+                $verifyUrl = config('app.url') . '/api/public/sspd/verify/' . $submission->sspd_number;
+                $qrSvg = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+                    ->size(160)
+                    ->margin(1)
+                    ->generate($verifyUrl);
+                $qrImage = 'data:image/svg+xml;base64,' . base64_encode($qrSvg);
+            } catch (\Throwable $e) {
+                $qrImage = null;
+            }
+        }
+
+        $data = [
+            'submission'        => $submission,
+            'sspd_number'       => $submission->sspd_number,
+            'nama_wp'           => $submission->nama_wp,
+            'nik_wp'            => $submission->nik_wp,
+            'alamat_wp'         => $submission->alamat_wp,
+            'nop'               => $submission->nop,
+            'alamat_objek'      => $submission->alamat_objek,
+            'luas_tanah'        => $luasTanah,
+            'luas_bangunan'     => $luasBangunan,
+            'njop_per_m2'       => $njopPerM2,
+            'nilai_tanah'       => $nilaiTanah,
+            'nilai_bangunan'    => $nilaiBangunan,
+            'total_njop_pbb'    => $totalNjopPbb,
+            'jenis_perolehan'   => $submission->jenis_perolehan,
+            'no_sertifikat'     => $submission->no_sertifikat,
+            'harga_transaksi'   => $npop,
+            'npop'              => $npop,
+            'npoptkp'           => $npoptkp,
+            'npopkp'            => $taxable,
+            'bphtb'             => $bphtb,
+            'jumlah_disetor'    => $bphtb,
+            'terbilang'         => \App\Services\OfficialDocumentService::terbilang((int) round($bphtb)),
+            'qr_image'          => $qrImage,
+            'issued_at'         => $submission->sspd_issued_at ?? now(),
+            'paid_at'           => $submission->paid_at,
+        ];
+
+        $filename = 'SSPD-BPHTB-' . str_replace(['/', '\\'], '-', $submission->sspd_number) . '.pdf';
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.sspd_bphtb', $data);
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->stream($filename);
+    }
+
+    /**
+     * F7-publik — Unduh SSPD-BPHTB PDF via nomor SSPD (tanpa login).
+     * GET /api/public/sspd/pdf/{sspdNumber}
+     */
+    public function sspdPdfByNumber(Request $request, $sspdNumber)
+    {
+        $submission = BphtbSubmission::where('sspd_number', $sspdNumber)->first();
+
+        if (! $submission) {
+            return response()->json(['message' => 'SSPD tidak ditemukan.'], 404);
+        }
+
+        return $this->sspdPdf($request, $submission->id);
     }
 
     /**
