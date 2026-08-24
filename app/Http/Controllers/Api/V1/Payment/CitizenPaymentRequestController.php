@@ -192,109 +192,10 @@ class CitizenPaymentRequestController extends Controller
         $paymentRequest = $this->refreshExpiry($paymentRequest);
 
         if ($paymentRequest->status === 'pending') {
-            $this->reconcileWithBank($paymentRequest);
             $paymentRequest = $paymentRequest->fresh(['items.bill.taxpayer', 'items.bill.retributionType', 'items.bill.opd', 'items.bill.taxObject.opd']);
         }
 
         return response()->json(['data' => $this->payload($paymentRequest)]);
-    }
-
-    /**
-     * Inquiry status VA ke BRI saat refresh — status akurat tanpa nunggu callback.
-     */
-    private function reconcileWithBank(PaymentRequest $paymentRequest): void
-    {
-        if (! $paymentRequest->va_number) {
-            return;
-        }
-
-        try {
-            $service = app(\App\Services\Payment\Snap\BriStatusInquiryService::class);
-            $partnerServiceId = (string) config('snap.briva.partner_service_id', '');
-            $result = $service->inquiryStatus($paymentRequest->va_number, $partnerServiceId);
-
-            if (($result['status'] ?? '') === 'paid') {
-                $this->markPaidFromInquiry($paymentRequest, $result);
-            } elseif (($result['status'] ?? '') === 'expired') {
-                $paymentRequest->update(['status' => 'expired']);
-            }
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('BRI status inquiry skip', [
-                'payment_request_id' => $paymentRequest->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * Transisi pending → paid hasil inquiry BRI (idempotent, pola sama dgn callback SNAP).
-     */
-    private function markPaidFromInquiry(PaymentRequest $paymentRequest, array $inquiry): void
-    {
-        if ($paymentRequest->status === 'paid') {
-            return;
-        }
-
-        $referenceNumber = (string) ($inquiry['reference_no'] ?? '');
-        if ($referenceNumber === '') {
-            $referenceNumber = 'BRI-'.now()->format('YmdHis').'-'.Str::upper(Str::random(6));
-        }
-
-        DB::transaction(function () use ($paymentRequest, $referenceNumber, $inquiry) {
-            $items = $paymentRequest->items()->with('bill')->get();
-            if (! $items || $items->isEmpty()) {
-                return;
-            }
-
-            foreach ($items as $index => $item) {
-                $lockedBill = Bill::whereKey($item->bill->id)->lockForUpdate()->first();
-                if (! $lockedBill) {
-                    continue;
-                }
-
-                if ($this->isPaid($lockedBill)) {
-                    continue;
-                }
-
-                $lockedBill->update([
-                    'status' => 'lunas',
-                    'penalty_at_payment' => (float) $lockedBill->penalty_amount + (float) $lockedBill->fixed_fine_amount + (float) $lockedBill->surcharge_amount,
-                    'bank_code' => 'BRI',
-                ]);
-
-                Payment::create([
-                    'bill_id' => $lockedBill->id,
-                    'tax_object_id' => $lockedBill->tax_object_id,
-                    'taxpayer_id' => $lockedBill->taxpayer_id,
-                    'transaction_id' => 'SNAP-'.Str::uuid()->toString().'-'.$lockedBill->id,
-                    'reference_number' => $items->count() > 1 ? $referenceNumber.'-'.($index + 1) : $referenceNumber,
-                    'receipt_number' => 'NTPD-SNAP-'.now()->format('YmdHis').'-'.Str::upper(Str::random(6)),
-                    'payment_method' => 'va',
-                    'channel' => 'BRI_SNAP',
-                    'amount' => (float) $item->amount_snapshot,
-                    'status' => 'success',
-                    'billing_period' => $lockedBill->period ?? now()->format('Y-m'),
-                    'paid_at' => now(),
-                    'raw_callback_data' => json_encode($inquiry['raw'] ?? []),
-                ]);
-
-                if ($item->id) {
-                    $item->update(['status' => 'paid', 'paid_at' => now()]);
-                }
-            }
-
-            $paymentRequest->update([
-                'provider_reference' => $referenceNumber,
-                'ntpd' => $referenceNumber,
-                'status' => 'paid',
-                'paid_at' => now(),
-            ]);
-        });
-    }
-
-    private function isPaid(Bill $bill): bool
-    {
-        return in_array(strtolower((string) $bill->status), ['lunas', 'paid', 'settled'], true);
     }
 
     public function cancel(Request $request, PaymentRequest $paymentRequest): JsonResponse
