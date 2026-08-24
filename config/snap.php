@@ -12,6 +12,8 @@ return [
             'signature_secret' => env('BRI_SNAP_SIGNATURE_SECRET', ''),
             'public_key' => env('BRI_SNAP_PUBLIC_KEY', ''),
             'public_key_path' => env('BRI_SNAP_PUBLIC_KEY_PATH', ''),
+            'base_url' => env('BRI_SNAP_BASE_URL', ''),
+            'private_key_path' => env('BRI_SNAP_PRIVATE_KEY_PATH', storage_path('app/keys/mpad_bri_private.pem')),
         ],
         'BTN' => [
             'partner_id' => env('BTN_SNAP_PARTNER_ID', 'test-partner-btn'),
@@ -43,6 +45,7 @@ return [
 
     'briva' => [
         'enabled' => env('BRI_SNAP_ENABLED', false),
+        'inquiry_enabled' => env('BRI_SNAP_INQUIRY_ENABLED', false),
         'partner_service_id' => env('BRI_SNAP_PARTNER_SERVICE_ID', ''),
         'va_prefix' => env('BRI_SNAP_VA_PREFIX', ''),
         'customer_no_length' => (int) env('BRI_SNAP_CUSTOMER_NO_LENGTH', 20),
