@@ -547,7 +547,7 @@ class H2HBphtbController extends Controller
                 'nop' => $submission->nop,
                 'nib' => $submission->nib,
                 'nama_wp' => $submission->nama_wp,
-                'nik_wp' => $submission->nik_wp,
+                'nik_wp' => $this->maskNik($submission->nik_wp),
                 'npoptkp' => $submission->bill?->metadata['npoptkp'] ?? null,
                 'taxable' => $submission->bill?->metadata['taxable'] ?? null,
                 'tax' => $submission->bill?->amount,
@@ -689,5 +689,20 @@ class H2HBphtbController extends Controller
         }
 
         return $vaNumber;
+    }
+
+    private function maskNik(?string $nik): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $nik);
+
+        if ($digits === '') {
+            return null;
+        }
+
+        if (strlen($digits) <= 10) {
+            return substr($digits, 0, 4).str_repeat('*', max(strlen($digits) - 4, 0));
+        }
+
+        return substr($digits, 0, 6).str_repeat('*', max(strlen($digits) - 10, 0)).substr($digits, -4);
     }
 }
