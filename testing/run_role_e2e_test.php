@@ -77,13 +77,16 @@ try {
                     elseif ($key === 'luas_bangunan') $vars[$key] = 60;
                     elseif ($key === 'volume') $vars[$key] = 50;
                     elseif ($key === 'ukuran' || $key === 'luas_lantai') $vars[$key] = 100;
-                    elseif ($key === 'omzet' || $key === 'nilai_jual' || $key === 'nsr' || $key === 'tagihan_listrik' || $key === 'npop') $vars[$key] = 5000000;
-                    elseif ($key === 'npoptkp') $vars[$key] = 1000000;
-                    elseif ($key === 'njoptkp') $vars[$key] = 10000000;
-                    elseif ($key === 'harga_patokan' || $key === 'hda') $vars[$key] = 80000;
+                    elseif ($key === 'omzet' || $key === 'nilai_jual' || $key === 'nsr' || $key === 'tagihan_listrik' || $key === 'npop') $vars[$key] = 500000;
+                    elseif ($key === 'npoptkp' || $key === 'njoptkp') $vars[$key] = 100000;
+                    elseif ($key === 'njopr_satuan' || $key === 'nspr_satuan') $vars[$key] = 10000;
+                    elseif ($key === 'panjang' || $key === 'lebar') $vars[$key] = 2;
+                    elseif ($key === 'jumlah_sisi' || $key === 'jumlah_unit' || $key === 'durasi') $vars[$key] = 1;
+                    elseif ($key === 'harga_patokan' || $key === 'hda') $vars[$key] = 8000;
                     elseif ($key === 'indeks_lokalitas' || $key === 'indeks_terintegrasi' || $key === 'indeks_bg') $vars[$key] = 1;
-                    elseif ($key === 'shst') $vars[$key] = 5560000;
-                    else $vars[$key] = 15000;
+                    elseif ($key === 'shst') $vars[$key] = 500000;
+                    else $vars[$key] = 1000;
+
                 } else {
                     if (str_contains($key, 'kelas')) $vars[$key] = '080';
                     else $vars[$key] = 'Testing Data';

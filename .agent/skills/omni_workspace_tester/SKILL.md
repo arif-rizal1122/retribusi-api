@@ -128,6 +128,47 @@ Setelah menjalankan pengujian di atas, lakukan **Pengecekan Akhir 3 Lapis**:
 ## 📚 Panduan Eksekusi (How to Test)
 ... (konten asli tetap ada di bawah)
 
+---
+## 🛡️ Strix-Inspired Agentic Pentesting Protocol
+Wajib dijalankan untuk mendeteksi *Business Logic Flaws* dan *Lateral Movement*.
+
+### 1. Discovery & Surface Audit
+Agen harus memindai rute di `api.php`. Cari endpoint dengan parameter `{id}` yang tidak terlindungi oleh scope yang benar.
+
+### 2. IDOR Auto-Sweep
+Simulasikan akses silang menggunakan token yang berbeda:
+- Ambil ID sumber daya (misal: `taxpayer_id`) menggunakan Token A.
+- Gunakan Token B (User lain) untuk mengakses sumber daya tersebut.
+- **Ekspektasi**: Status `403 Forbidden` atau `404 Not Found`.
+
+### 3. Middleware Bypass (Method Tampering)
+Uji ketahanan rute Admin:
+- Gunakan Method `PUT`/`PATCH`/`DELETE` pada rute yang hanya mengharapkan `GET`.
+- Tambahkan header `X-HTTP-Method-Override`.
+- **Ekspektasi**: Middleware `EnsureAdmin` memblokir akses jika user tidak sah.
+
+### 4. Mass Assignment Probing
+Cari endpoint `POST` atau `PUT` yang melakukan update data (misal: `/user/profile` atau `/taxpayers/{id}`).
+- Suntikkan beban (payload) tambahan seperti `"is_admin": true`, `"role": "super_admin"`, atau `"opd_id": 1`.
+- Periksa respon dan database: Apakah field sensitif tersebut berubah?
+- **Ekspektasi**: Field sensitif harus tetap (protected by `$fillable` or `$guarded`).
+
+---
+
+## 🖥️ Local Service Orchestration (Port Mapping)
+Gunakan pemetaan ini saat melakukan pengujian *End-to-End* di lingkungan lokal pengguna (Command: `./run_all.sh`).
+
+| Service | Port | URL Dasar |
+| :--- | :--- | :--- |
+| **Backend API** | `8000` | [http://localhost:8000](http://localhost:8000) |
+| **Admin Panel** | `3001` | [http://localhost:3001](http://localhost:3001) |
+| **Mobile Portal** | `3002` | [http://localhost:3002](http://localhost:3002) |
+| **Officer PWA** | `3003` | [http://localhost:3003](http://localhost:3003) |
+| **POS API** | `8001` | [http://localhost:8001](http://localhost:8001) |
+| **POS Web** | `3004` | [http://localhost:3004](http://localhost:3004) |
+
+---
+
 1. **Pemilihan Target Environment (Penting)**: Sebelum menjalankan pengujian, **WAJIB** tentukan *Environment* yang akan dites dengan menyesuaikan Konfigurasi Base URL pada Script Testing:
    - **Local**: Eksekusi operasi sistem secara lokal di direktori `Herd` menggunakan internal application request (Laravel) atau cURL ke domain lokal `*.test`.
    - **Staging**: Arahkan endpoint request ke domain `*.sipanda.online` (Contoh: `https://api.sipanda.online`). Gunakan *credentials* dari akun Staging yang valid.

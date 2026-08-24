@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'superadmin@sipanda.online'],
             [
                 'name' => 'Dev Super Admin',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('Mpad123#'),
                 'role' => 'super_admin',
                 'status' => 'active',
             ]
@@ -212,10 +212,10 @@ class DatabaseSeeder extends Seeder
         $this->call(SurveillanceAccountSeeder::class);
         $this->call(AchievementSeeder::class);
         $this->call(AdminWilayahSeeder::class);
-        $this->call(ComplaintSeeder::class);
+        $this->call(DemoLoginSeeder::class);
 
         $this->command->info('Database seeded successfully!');
-        $this->command->info('Super Admin: superadmin@sipanda.online / Bapenda2026!');
+        $this->command->info('Super Admin: superadmin@sipanda.online / Mpad123#');
         $this->command->info('OPD Bapenda: bapenda@baubaukota.go.id / password123');
         $this->command->info('OPD Dishub: dishub@retribusi.id / password123');
         $this->command->info('OPD Disperindag: disperindag@retribusi.id / password123');

@@ -1,5 +1,5 @@
 #!/bin/bash
-API_URL="https://api.sipanda.online/api/me"
+API_URL="https://apimpad.baubaukota.go.id/api/me"
 ORIGIN="https://sipanda.online"
 
 echo "Testing CORS preflight for $API_URL from $ORIGIN..."

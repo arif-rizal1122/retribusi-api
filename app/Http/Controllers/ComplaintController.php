@@ -3,11 +3,27 @@
 namespace App\Http\Controllers;
 
 use App\Models\Complaint;
+use App\Models\Taxpayer;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class ComplaintController extends Controller
 {
+    public function citizenIndex(Request $request)
+    {
+        $user = $request->user();
+        abort_unless($user instanceof Taxpayer, 403, 'Endpoint pengaduan ini hanya untuk wajib pajak.');
+
+        $complaints = Complaint::query()
+            ->where('taxpayer_id', $user->id)
+            ->latest()
+            ->paginate($request->get('per_page', 15));
+
+        return response()->json($complaints);
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -19,6 +35,16 @@ class ComplaintController extends Controller
 
         if ($request->has("category")) {
             $query->where("category", $request->category);
+        }
+
+        if ($request->has("type")) {
+            if ($request->type === "rating") {
+                $query->whereNotNull("rating");
+            }
+
+            if ($request->type === "complaint") {
+                $query->whereNull("rating");
+            }
         }
 
         if ($request->has("search")) {
@@ -43,10 +69,12 @@ class ComplaintController extends Controller
             "rating" => "nullable|integer|min:1|max:5",
             "suggestion_text" => "nullable|string",
             "attachments" => "nullable|array",
+            "latitude" => "nullable|numeric|between:-90,90",
+            "longitude" => "nullable|numeric|between:-180,180",
         ]);
 
-        $complaint = Complaint::create([
-            "taxpayer_id" => $user->role === "citizen" ? $user->id : null,
+        $complaintData = [
+            "taxpayer_id" => $user instanceof Taxpayer ? $user->id : null,
             "name" => $user->name,
             "email" => $user->email,
             "phone" => $user->phone,
@@ -56,7 +84,28 @@ class ComplaintController extends Controller
             "suggestion_text" => $validated["suggestion_text"] ?? null,
             "attachments" => $validated["attachments"] ?? [],
             "status" => "pending",
-        ]);
+        ];
+
+        if (Schema::hasColumn("complaints", "latitude")) {
+            $complaintData["latitude"] = $validated["latitude"] ?? null;
+        }
+
+        if (Schema::hasColumn("complaints", "longitude")) {
+            $complaintData["longitude"] = $validated["longitude"] ?? null;
+        }
+
+        try {
+            $complaint = Complaint::create($complaintData);
+        } catch (\Throwable $e) {
+            Log::error("Complaint store failed", [
+                "user_id" => $user?->id,
+                "error" => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                "message" => "Pengaduan belum berhasil dikirim. Silakan coba lagi.",
+            ], 500);
+        }
 
         return response()->json(["message" => "Pengaduan berhasil dikirim", "data" => $complaint], 201);
     }

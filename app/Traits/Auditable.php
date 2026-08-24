@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 
@@ -40,8 +41,10 @@ trait Auditable
             unset($oldValues['password']);
         }
 
+        $actor = Auth::user();
+
         AuditLog::create([
-            'user_id' => Auth::id(),
+            'user_id' => $actor instanceof User ? $actor->id : null,
             'action' => $action,
             'model_type' => get_class($model),
             'model_id' => $model->id,

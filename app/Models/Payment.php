@@ -33,6 +33,10 @@ class Payment extends Model
         'metadata',
         'tendered_amount',
         'change_amount',
+        'reference_number',
+        'receipt_number',
+        'channel',
+        'raw_callback_data',
     ];
 
     protected $casts = [
@@ -42,6 +46,7 @@ class Payment extends Model
         'raw_callback_data' => 'array',
         'tendered_amount' => 'decimal:2',
         'change_amount' => 'decimal:2',
+        'raw_callback_data' => 'array',
     ];
 
     public function bankConfig(): BelongsTo

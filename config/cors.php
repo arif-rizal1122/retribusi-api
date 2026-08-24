@@ -31,18 +31,15 @@ return [
         'https://admin.sipanda.online',
         'https://petugas.sipanda.online',
         'https://sipanda.online',
-        'https://adminwiyasa.site',
-        'https://admin.sipanda.online',
-        'https://petugas.sipanda.online',
-        'https://launch.sipanda.online',
         'https://sipanda.online',
-        'https://adminmpad.baubaukota.go.id',
-        'https://petugasmpad.baubaukota.go.id',
-        'https://mpad.baubaukota.go.id',
         env('FRONTEND_URL', 'http://localhost:3000'),
     ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '#^https://.*\.mpad\.online$#',
+        '#^https://.*\.baubaukota\.go\.id$#',
+        '#^https://.*\.sipanda\.online$#',
+    ],
 
     'allowed_headers' => ['*'],
 

@@ -9,6 +9,9 @@ $app = require_once __DIR__.'/../bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
+ini_set('memory_limit', '1G');
+
+
 use App\Models\User;
 use App\Models\Taxpayer;
 use App\Models\TaxObject;
@@ -31,7 +34,7 @@ Auth::login($admin);
 
 $sampleTp = Taxpayer::first();
 $sampleTo = TaxObject::first();
-$sampleBill = Bill::first();
+$sampleBill = Bill::whereNotNull('retribution_type_id')->first() ?? Bill::first();
 if ($sampleBill) {
     if ($sampleBill->status !== 'paid' && $sampleBill->status !== 'lunas') {
         $sampleBill->status = 'paid';

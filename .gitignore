@@ -5,6 +5,7 @@ DATA\ PAJAK/
 /public/hot
 /public/storage
 /storage/*.key
+/storage/app/keys/
 /storage/pail
 /vendor
 .env
@@ -30,3 +31,29 @@ dist.tar.gz
 *.exp
 vps.txt
 vps_taxpayers.sql
+
+# Private SSH Keys and Credentials
+202600506-sipanda.key
+202600506-sipanda.key.pub
+docs/04_infrastruktur_api/VPS_ACCESS_MPAD.md
+
+*.xlsx
+
+# Local secrets, DB dumps & runtime artifacts (jangan pernah di-push)
+.env.backup*
+*.sqlite
+composer.phar
+/local-api.log
+/local-api.err
+/response.json
+.npm-cache/
+wa-gateway/.npm-cache/
+public/whoami.php
+public/whoami*.php
+public/who-am-i*
+public/reveal.txt
+*_local_fix.sql
+*_vps.sql
+database/seeders/ProductionMainCredentialsSeeder.php
+**/CREDENTIALS_GUIDE.md
+docs/10_payment_gateway_h2h/BTN/Kredensial_DEV*

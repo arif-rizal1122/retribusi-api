@@ -1,0 +1,1434 @@
+{
+    "matches": [
+        {
+            "legacy": {
+                "CPM_USER": "muhamad_yusuf",
+                "CPM_NAMA": "Muhamad Yusuf,SE",
+                "CPM_NIP": "197412232007011011",
+                "CPM_ROLE": "rmPatdaAdmin"
+            },
+            "modern": {
+                "id": 57,
+                "name": "MUHAMAD YUSUF, SE.M.Si",
+                "email": "yusufboy147@gmail.com",
+                "nik": null,
+                "role": "pengawas"
+            },
+            "match_type": "Name"
+        },
+        {
+            "legacy": {
+                "CPM_USER": "Nurlina",
+                "CPM_NAMA": "Jumawati",
+                "CPM_NIP": "0",
+                "CPM_ROLE": "rmPatdaPelayanan"
+            },
+            "modern": {
+                "id": 99,
+                "name": "Jumawati",
+                "email": "jumawati217@gmail.com",
+                "nik": null,
+                "role": "petugas"
+            },
+            "match_type": "Name"
+        },
+        {
+            "legacy": {
+                "CPM_USER": "JUMAWATI",
+                "CPM_NAMA": "Jumawati",
+                "CPM_NIP": "0",
+                "CPM_ROLE": "rmPatdaPelayanan"
+            },
+            "modern": {
+                "id": 99,
+                "name": "Jumawati",
+                "email": "jumawati217@gmail.com",
+                "nik": null,
+                "role": "petugas"
+            },
+            "match_type": "Name"
+        },
+        {
+            "legacy": {
+                "CPM_USER": "WAWAN",
+                "CPM_NAMA": "SUHARWAN M",
+                "CPM_NIP": "199608022018081002",
+                "CPM_ROLE": "rmPatdaAdmin"
+            },
+            "modern": {
+                "id": 111,
+                "name": "Suharwan Maulana Armin",
+                "email": "wawances25@gmail.com",
+                "nik": "19960802 201808 1002",
+                "role": "opd"
+            },
+            "match_type": "ID"
+        },
+        {
+            "legacy": {
+                "CPM_USER": "Suharwanmaulana",
+                "CPM_NAMA": "SUHARWAN M",
+                "CPM_NIP": "199608022018081002",
+                "CPM_ROLE": "rmPatdaAdmin"
+            },
+            "modern": {
+                "id": 111,
+                "name": "Suharwan Maulana Armin",
+                "email": "wawances25@gmail.com",
+                "nik": "19960802 201808 1002",
+                "role": "opd"
+            },
+            "match_type": "ID"
+        },
+        {
+            "legacy": {
+                "CPM_USER": "maslin",
+                "CPM_NAMA": "maslin",
+                "CPM_NIP": "0",
+                "CPM_ROLE": "rmPatdaPelayanan"
+            },
+            "modern": {
+                "id": 117,
+                "name": "Maslin",
+                "email": "maslinlaode@gmail.com",
+                "nik": null,
+                "role": "petugas"
+            },
+            "match_type": "Name"
+        },
+        {
+            "legacy": {
+                "CPM_USER": "RAHIM",
+                "CPM_NAMA": "Rahim,S.Sos",
+                "CPM_NIP": "19700902 200801 1 01",
+                "CPM_ROLE": "rmPatdaAdmin"
+            },
+            "modern": {
+                "id": 118,
+                "name": "Rahim",
+                "email": "rahimssos9@gmail.com",
+                "nik": null,
+                "role": "opd"
+            },
+            "match_type": "Name"
+        },
+        {
+            "legacy": {
+                "CPM_USER": "Yanisadiri",
+                "CPM_NAMA": "Hasriyani Sadiri, S.Kom.",
+                "CPM_NIP": "198305192010012013",
+                "CPM_ROLE": "rmPatdaAdmin"
+            },
+            "modern": {
+                "id": 110,
+                "name": "Hasriyani Sadiri, S.Kom., M.Si",
+                "email": "hyanie735@gmail.com",
+                "nik": "19830519 201001 2 013",
+                "role": "opd"
+            },
+            "match_type": "ID"
+        },
+        {
+            "legacy": {
+                "CPM_USER": "syafrilmane",
+                "CPM_NAMA": "syafril mane",
+                "CPM_NIP": "-",
+                "CPM_ROLE": "rmPatdaPelayanan"
+            },
+            "modern": {
+                "id": 116,
+                "name": "Syafril Mane",
+                "email": "syafrilmanzay78@gmail.com",
+                "nik": null,
+                "role": "petugas"
+            },
+            "match_type": "Name"
+        },
+        {
+            "legacy": {
+                "CPM_USER": "zifha.13",
+                "CPM_NAMA": "leni astina",
+                "CPM_NIP": "-",
+                "CPM_ROLE": "rmPatdaPelayanan"
+            },
+            "modern": {
+                "id": 93,
+                "name": "Leni Astina",
+                "email": "lenia@bapenda.go.id",
+                "nik": "-",
+                "role": "petugas"
+            },
+            "match_type": "Name"
+        },
+        {
+            "legacy": {
+                "CPM_USER": "asnina",
+                "CPM_NAMA": "asnina",
+                "CPM_NIP": "-",
+                "CPM_ROLE": "rmPatdaPelayanan"
+            },
+            "modern": {
+                "id": 104,
+                "name": "ASNINA",
+                "email": "nn0808503@gmail.com",
+                "nik": null,
+                "role": "petugas"
+            },
+            "match_type": "Name"
+        }
+    ],
+    "missing_in_modern": [
+        {
+            "CPM_USER": "pelayananpatda",
+            "CPM_NAMA": "User Pelayanan",
+            "CPM_NIP": "123000000001",
+            "CPM_ROLE": "rmPatdaPenetapan"
+        },
+        {
+            "CPM_USER": "penetapanpatda",
+            "CPM_NAMA": "User Penetapan",
+            "CPM_NIP": "123000000003",
+            "CPM_ROLE": "rmPatdaPenetapan"
+        },
+        {
+            "CPM_USER": "verifikasipatda",
+            "CPM_NAMA": "User Verifikasi",
+            "CPM_NIP": "123000000004",
+            "CPM_ROLE": "rmPatdaPenetapan"
+        },
+        {
+            "CPM_USER": "penagihanpatda",
+            "CPM_NAMA": "User Penagihan",
+            "CPM_NIP": "123000000005",
+            "CPM_ROLE": "rmPatdaPenetapan"
+        },
+        {
+            "CPM_USER": "monitoringpatda",
+            "CPM_NAMA": "User Monitoring",
+            "CPM_NIP": "123000000006",
+            "CPM_ROLE": "rmPatdaMonitoring"
+        },
+        {
+            "CPM_USER": "ilham",
+            "CPM_NAMA": "ilham jaya",
+            "CPM_NIP": "1897867676879898",
+            "CPM_ROLE": "rmPatdaPenagihan"
+        },
+        {
+            "CPM_USER": "gigi",
+            "CPM_NAMA": "gigi",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPenagihan"
+        },
+        {
+            "CPM_USER": "h_jusmin_anwar",
+            "CPM_NAMA": "H.Jusmin Anwar , SE",
+            "CPM_NIP": "197104011991031007",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "indahh",
+            "CPM_NAMA": "indah",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "syarif",
+            "CPM_NAMA": "syarif",
+            "CPM_NIP": "198303102007011005",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "penetapan",
+            "CPM_NAMA": "Indah",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPenetapan"
+        },
+        {
+            "CPM_USER": "bendahara",
+            "CPM_NAMA": ".",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "Neny",
+            "CPM_NAMA": "Neny Oktafiah",
+            "CPM_NIP": "198010022005022006",
+            "CPM_ROLE": "rmPatdaMonitoring"
+        },
+        {
+            "CPM_USER": "Neni",
+            "CPM_NAMA": "Neny Oktafiah",
+            "CPM_NIP": "198010022005022006",
+            "CPM_ROLE": "rmPatdaMonitoring"
+        },
+        {
+            "CPM_USER": "aan",
+            "CPM_NAMA": "aan",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "syamsir",
+            "CPM_NAMA": "SYAMSIR",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "muzi",
+            "CPM_NAMA": "LA MUZI",
+            "CPM_NIP": "19810818 201001 1 02",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "inspektorat",
+            "CPM_NAMA": "inspektorat",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "perizinan",
+            "CPM_NAMA": "Staff",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaMonitoring"
+        },
+        {
+            "CPM_USER": "Staff",
+            "CPM_NAMA": "Perizinan",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaMonitoring"
+        },
+        {
+            "CPM_USER": "megayanti",
+            "CPM_NAMA": "megayanti",
+            "CPM_NIP": "1234",
+            "CPM_ROLE": "rmPatdaMonitoring"
+        },
+        {
+            "CPM_USER": "muhihsanaris",
+            "CPM_NAMA": "muh. ihsan aris",
+            "CPM_NIP": "syamsir",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "RATNAKARMAN",
+            "CPM_NAMA": "RATNAKARMAN",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "Suwarti",
+            "CPM_NAMA": "Swarti",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "GALANG",
+            "CPM_NAMA": "GALANG",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaMonitoring"
+        },
+        {
+            "CPM_USER": "nuragustina",
+            "CPM_NAMA": "nuragustina",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "Irmawati",
+            "CPM_NAMA": "Irmawati",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "ASNIYULINARS",
+            "CPM_NAMA": "Asni Yulinar S",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "Ikajuniarsih",
+            "CPM_NAMA": "Ika Juniarsih",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "doangsyamsir",
+            "CPM_NAMA": "syamsir pelayanan",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "riska",
+            "CPM_NAMA": "riska",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "Nurnaningsih, SE",
+            "CPM_NAMA": "NURNANINGSIH, SE",
+            "CPM_NIP": "197795022003122011",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "SALMATIA",
+            "CPM_NAMA": "SALMATIA",
+            "CPM_NIP": "19810814 201001 2 02",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "PELAYANAN",
+            "CPM_NAMA": "PELAYANAN",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaMonitoring"
+        },
+        {
+            "CPM_USER": "FAUZIAH",
+            "CPM_NAMA": "FAUZIAH",
+            "CPM_NIP": "19760419 200803 2 00",
+            "CPM_ROLE": "rmPatdaMonitoring"
+        },
+        {
+            "CPM_USER": "arninadimin",
+            "CPM_NAMA": "ARNI NADIMIN, S.Sos",
+            "CPM_NIP": "19730303 199303 2 01",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "ikhsanicang",
+            "CPM_NAMA": "IKHSAN",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "doangikajuniarsih",
+            "CPM_NAMA": "ika juniarsih",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaMonitoring"
+        },
+        {
+            "CPM_USER": "nurfajriah",
+            "CPM_NAMA": "NURFAJRIAH",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "admin9pajak",
+            "CPM_NAMA": "admin dinas",
+            "CPM_NIP": "1",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "FIRMAN",
+            "CPM_NAMA": "FIRMAN",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "DINASPENDIDIKAN",
+            "CPM_NAMA": "dinaspendidikan",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "BPKAD",
+            "CPM_NAMA": "bpkad",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASPERTANIAN",
+            "CPM_NAMA": "dinaspertanian",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "SEKRETARIATDAERAH",
+            "CPM_NAMA": "sekretariatdaerah",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "BAPPEDA",
+            "CPM_NAMA": "bappeda",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASKESEHATAN",
+            "CPM_NAMA": "dinaskesehata",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "SEKRETARIATDPRD",
+            "CPM_NAMA": "sekretariatdprd",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASPEMBERDAYAANPEREMPUA",
+            "CPM_NAMA": "dinaspemberdayaanperempua",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASPERIKANAN",
+            "CPM_NAMA": "dinasperikanan",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASPERHUBUNGAN",
+            "CPM_NAMA": "dinasperhubungan",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "KECAMATANWOLIO",
+            "CPM_NAMA": "kecamatanwolio",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "BALITBANG",
+            "CPM_NAMA": "balitbang",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASKOPERASIDANUMKM",
+            "CPM_NAMA": "dinaskoperasidanumkm",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "KECAMATANSORAWOLIO",
+            "CPM_NAMA": "kecamatansorawolio",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "KECAMATANKOKALUKUNA",
+            "CPM_NAMA": "kecamatankokalukuna",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "BLUDRSUD",
+            "CPM_NAMA": "bludrsud",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASPEKERJAANUMUM",
+            "CPM_NAMA": "dinaspekerjaanumum",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASLINGKUNGANHIDUP",
+            "CPM_NAMA": "dinaslingkunganhidup",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASPERUMAHANDANPEMUKIMA",
+            "CPM_NAMA": "dinasperumahandanpemukima",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "KESBANGPOL",
+            "CPM_NAMA": "kesbangpol",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "KECAMATANBATUPOARO",
+            "CPM_NAMA": "kecamatanbatupoaro",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DPMPTSPPERIZINAN",
+            "CPM_NAMA": "dpmptspperizinan",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "KONI",
+            "CPM_NAMA": "koni",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASPEMUDADANOLAHRAGA",
+            "CPM_NAMA": "dinaspemudadanolahraga",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "KECAMATANBUNGI",
+            "CPM_NAMA": "kecamatanbungi",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "INFOKOM",
+            "CPM_NAMA": "infokom",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "KECAMATANMURHUM",
+            "CPM_NAMA": "kecamatanmurhum",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASSOSIAL",
+            "CPM_NAMA": "dinassosial",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "PEMADAMKEBAKARAN",
+            "CPM_NAMA": "pemadamkebakaran",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASPARAWISATA",
+            "CPM_NAMA": "dinasparawisata",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "BKSDMBKD",
+            "CPM_NAMA": "bksdmbkd",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "PERPUSTAKAAN",
+            "CPM_NAMA": "perpustakaan",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "KECAMATANBETOAMBARI",
+            "CPM_NAMA": "kecamatanbetoambari",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "KECAMATANLEALEA",
+            "CPM_NAMA": "KECAMATANLEALEA",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASTENAGAKERJA",
+            "CPM_NAMA": "dinastenagakerja",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "BADANPENANGGULANGANBENCAN",
+            "CPM_NAMA": "badanpenanggulanganbencan",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DINASKEPENDUDUKAN",
+            "CPM_NAMA": "dinaskependudukancapil",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DPPDKB",
+            "CPM_NAMA": "dppdkb",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "POLPP",
+            "CPM_NAMA": "polpp",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DISPERINDAG",
+            "CPM_NAMA": "disperindag",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "BAPENDA",
+            "CPM_NAMA": "bapenda",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "BNPBD",
+            "CPM_NAMA": "bnpbd",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DISINFOKOM",
+            "CPM_NAMA": "disinfokom",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "DISKOMINFO",
+            "CPM_NAMA": "diskominfo",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "TEST USER",
+            "CPM_NAMA": "TEST USER",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "RISKYAMALIA",
+            "CPM_NAMA": "RISKY AMALIA",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "OCSIMPAD",
+            "CPM_NAMA": "OC SIMPAD",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "dinasperumhandanpemukiman",
+            "CPM_NAMA": "dinasperumhandanpemukiman",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "LISANUDDIN",
+            "CPM_NAMA": "LISANUDDIN",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaMonitoring"
+        },
+        {
+            "CPM_USER": "PENDATAANPAJAKLAINNYA",
+            "CPM_NAMA": "PENDATAANPAJAKLAINNYA",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "anti",
+            "CPM_NAMA": "anti",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "aci",
+            "CPM_NAMA": "aci",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "herdiyanto",
+            "CPM_NAMA": "herdiyanto",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "tamsir",
+            "CPM_NAMA": "tamsir",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "yudi",
+            "CPM_NAMA": "yudi",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "Armin",
+            "CPM_NAMA": "Armin",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "Mardiana",
+            "CPM_NAMA": "Mardiana",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "KASUBIDPELAYANAN",
+            "CPM_NAMA": "Nurmala",
+            "CPM_NIP": "197802182007012007",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "Rustam",
+            "CPM_NAMA": "Rustam",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "SYAMSULARAFAT",
+            "CPM_NAMA": "SYAMSUL",
+            "CPM_NIP": "0",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "ISMAILHASAN",
+            "CPM_NAMA": "ISMAIL HASAN,S.Kom,M.Si",
+            "CPM_NIP": "19820905 200903 1 00",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "Efendy",
+            "CPM_NAMA": "Efendy, SKM, M.Kes",
+            "CPM_NIP": "196811301991031012",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "abdulrajab",
+            "CPM_NAMA": "abdul rajab",
+            "CPM_NIP": "-",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "maulana",
+            "CPM_NAMA": "maulana",
+            "CPM_NIP": "-",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "abdwahab",
+            "CPM_NAMA": "abd wahab",
+            "CPM_NIP": "-",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "emon.93",
+            "CPM_NAMA": "wa ode jawariah",
+            "CPM_NIP": "-",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "mukmin",
+            "CPM_NAMA": "la ode mukmin",
+            "CPM_NIP": "-",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "ahmadun",
+            "CPM_NAMA": "la ode ahmadun",
+            "CPM_NIP": "198002042008011008",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "gusman",
+            "CPM_NAMA": "gusman age",
+            "CPM_NIP": "197902212008011008",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "imadong",
+            "CPM_NAMA": "imadong",
+            "CPM_NIP": "197403212007011017",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "muliadi",
+            "CPM_NAMA": "MULIADI, S.IP",
+            "CPM_NIP": "197205102012121002",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "ihsanaris",
+            "CPM_NAMA": "muh. ihsan aris",
+            "CPM_NIP": "199806112026211001",
+            "CPM_ROLE": "rmPatdaAdmin"
+        },
+        {
+            "CPM_USER": "adnan",
+            "CPM_NAMA": "adnan",
+            "CPM_NIP": "-",
+            "CPM_ROLE": "rmPatdaPelayanan"
+        },
+        {
+            "CPM_USER": "muhdanfyan",
+            "CPM_NAMA": "Muhdan Fyan Syah",
+            "CPM_NIP": "-",
+            "CPM_ROLE": "rmPatdaAdmin"
+        }
+    ],
+    "extra_in_modern": [
+        {
+            "id": 1,
+            "name": "Admin DISHUB",
+            "email": "dishub@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 2,
+            "name": "Admin DISPERINDAG",
+            "email": "disperindag@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 3,
+            "name": "Admin DLH",
+            "email": "dlh@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 4,
+            "name": "Admin BAPENDA",
+            "email": "bapenda@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 5,
+            "name": "Admin DISKOMINFO",
+            "email": "diskominfo@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 6,
+            "name": "Admin DPMPTSP",
+            "email": "dpmptsp@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 7,
+            "name": "Admin BAPPERIDA",
+            "email": "bapperida@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 8,
+            "name": "Admin PUPR",
+            "email": "pupr@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 9,
+            "name": "Admin DINAS_PERIKANAN",
+            "email": "dinas_perikanan@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 10,
+            "name": "Admin PERKIM",
+            "email": "perkim@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 11,
+            "name": "Admin DUKCAPIL",
+            "email": "dukcapil@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 12,
+            "name": "Admin DAMKAR",
+            "email": "damkar@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 13,
+            "name": "Admin SATPOL_PP",
+            "email": "satpol_pp@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 14,
+            "name": "Admin DINAS_SOSIAL",
+            "email": "dinas_sosial@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 15,
+            "name": "Admin PARIWISATA",
+            "email": "pariwisata@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 16,
+            "name": "Admin KESBANGPOL",
+            "email": "kesbangpol@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 17,
+            "name": "Admin BPBD",
+            "email": "bpbd@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 18,
+            "name": "Admin SETDA",
+            "email": "setda@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 19,
+            "name": "Admin SETWAN",
+            "email": "setwan@baubaukota.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 20,
+            "name": "Petugas Demo",
+            "email": "petugas@demo.id",
+            "nik": "7301010101010001",
+            "role": "petugas"
+        },
+        {
+            "id": 21,
+            "name": "Super Admin",
+            "email": "admin@retribusi.id",
+            "nik": null,
+            "role": "super_admin"
+        },
+        {
+            "id": 22,
+            "name": "Admin BAPENDA",
+            "email": "admin@bapenda.go.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 23,
+            "name": "Kabid Pengawas",
+            "email": "kabid@retribusi.id",
+            "nik": "9999999999999901",
+            "role": "kabid_pengawas"
+        },
+        {
+            "id": 24,
+            "name": "Kasubid Pengawas",
+            "email": "kasubid@retribusi.id",
+            "nik": "9999999999999902",
+            "role": "kasubid_pengawas"
+        },
+        {
+            "id": 25,
+            "name": "Dev Super Admin",
+            "email": "superadmin@sipanda.online",
+            "nik": null,
+            "role": "super_admin"
+        },
+        {
+            "id": 56,
+            "name": "Petugas BAPENDA",
+            "email": "petugas@bapenda.go.id",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 58,
+            "name": "ZULKIFLI, ST",
+            "email": "lajuju.83@gmail.com",
+            "nik": "198302262010011011",
+            "role": "pengawas"
+        },
+        {
+            "id": 59,
+            "name": "WA ODE ARNI ACHLAN, S.Sos",
+            "email": "arni.syan@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 60,
+            "name": "BAUDI MUHBAR, S.Sos",
+            "email": "bmuhbar@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 61,
+            "name": "LA ODE ARIFUDDIN, S.IP",
+            "email": "laodearifuddin.dispenda@gmail.com",
+            "nik": null,
+            "role": "pengawas"
+        },
+        {
+            "id": 62,
+            "name": "HASMIN",
+            "email": "mheymey748@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 63,
+            "name": "SYAMSU RIZAL DG NGAWING",
+            "email": "rijaldaeng2@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 64,
+            "name": "ANDI SUWARNO SAPUTRA. SE.MM",
+            "email": "andisuwarno999@gmail.com",
+            "nik": null,
+            "role": "pengawas"
+        },
+        {
+            "id": 65,
+            "name": "HASAN, S.IP",
+            "email": "hasanbaubau60@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 66,
+            "name": "LA ODE MUHAMAD SACHYUN",
+            "email": "lmsachyun8@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 67,
+            "name": "LA ODE MUHAMAD RUSTAM",
+            "email": "rustamode007@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 68,
+            "name": "LENY",
+            "email": "leny25720@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 69,
+            "name": "LA MEDO",
+            "email": "medohibu@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 70,
+            "name": "FAIDAH",
+            "email": "idhadarwis123@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 71,
+            "name": "NELLY NATALIA",
+            "email": "suhadynelly@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 72,
+            "name": "NURSID PAMBO, SH",
+            "email": "nursidpambo@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 73,
+            "name": "MEGAYANTI, Amd.Komp",
+            "email": "megay378@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 74,
+            "name": "LA ODE TAMSIR",
+            "email": "laodetamsir79@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 75,
+            "name": "WA ODE INDA FARIDA A",
+            "email": "waodewaodeindahfarida@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 76,
+            "name": "NURLINA, Amd",
+            "email": "lnur49026@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 77,
+            "name": "DESY SUCI AMALIA",
+            "email": "desysuciamalia860@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 78,
+            "name": "MASLUDDIN, ST",
+            "email": "masluddinc89@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 79,
+            "name": "NUR AGUSTINA SAIZAL",
+            "email": "agustinanur960@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 80,
+            "name": "GALANG RINALDY",
+            "email": "rinalg166@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 81,
+            "name": "RAHMADANI, S.Ak",
+            "email": "rrahmadani374@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 82,
+            "name": "PUTRI ASTRI ASTUTI",
+            "email": "putriastriastutiputribadawi@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 83,
+            "name": "MUHAMMAD DELON UBAIDILLAH",
+            "email": "muhammaddelon90@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 84,
+            "name": "Ismail Hasan",
+            "email": "ismailbuw@gmail.com",
+            "nik": "1982090520090310",
+            "role": "verifikator"
+        },
+        {
+            "id": 86,
+            "name": "Admin Dishub",
+            "email": "dishub@retribusi.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 87,
+            "name": "Admin Disperindag",
+            "email": "disperindag@retribusi.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 88,
+            "name": "Admin DLH",
+            "email": "dlh@retribusi.id",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 89,
+            "name": "WP Budi",
+            "email": "budirbac@test.com",
+            "nik": null,
+            "role": "wajib_pajak"
+        },
+        {
+            "id": 90,
+            "name": "Petugas Patroli",
+            "email": "petugasrbac@test.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 91,
+            "name": "Admin Negatif",
+            "email": "admin.negatif@test.com",
+            "nik": null,
+            "role": "super_admin"
+        },
+        {
+            "id": 92,
+            "name": "Petugas Negatif",
+            "email": "petugas.negatif@test.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 94,
+            "name": "Suwarti",
+            "email": "suwartibaubau@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 95,
+            "name": "LA ODE YUSRON",
+            "email": "laodeyusron29@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 96,
+            "name": "MUHAMAD IHSAN ARIS",
+            "email": "muh.ihsanaris@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 97,
+            "name": "MUH. IKHSAN HUSNI",
+            "email": "ikhsan.lpz@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 98,
+            "name": "TRIFA KUSMAWATI",
+            "email": "antitrifa@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 100,
+            "name": "WA ODE MASRINA",
+            "email": "waodemasrina5@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 101,
+            "name": "MAHYUDI",
+            "email": "yudhi.mahyudi4@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 102,
+            "name": "AGUSTINA BALI",
+            "email": "baliagustina@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 103,
+            "name": "ZURNAINI",
+            "email": "zurnainihaeri@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 105,
+            "name": "WAODE SAMIRAH",
+            "email": "waodesxmirah578@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 106,
+            "name": "MERRY KORENGKENG",
+            "email": "merrykorengkeng76@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 107,
+            "name": "IRMAWATI MIMI",
+            "email": "irmawaticumimi@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 109,
+            "name": "muhammad adnan pratama",
+            "email": "adnanfarhaz59@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 112,
+            "name": "Zulkifli",
+            "email": "zulkifli.bapenda@baubaukota.go.id",
+            "nik": null,
+            "role": "pengawas"
+        },
+        {
+            "id": 113,
+            "name": "Syamsu Rijal",
+            "email": "syamsurijal@bapenda.id",
+            "nik": null,
+            "role": "pengawas"
+        },
+        {
+            "id": 114,
+            "name": "Syamsul Arafat",
+            "email": "syamsuarafat675@gmail.com",
+            "nik": null,
+            "role": "petugas"
+        },
+        {
+            "id": 115,
+            "name": "Muhammad Lisanuddin",
+            "email": "lisanuddin1974@gmail.com",
+            "nik": null,
+            "role": "opd"
+        },
+        {
+            "id": 119,
+            "name": "Walikota Baubau",
+            "email": "walikota@baubaukota.go.id",
+            "nik": null,
+            "role": "viewer"
+        },
+        {
+            "id": 120,
+            "name": "WAODE JAWARIAH",
+            "email": "waodejawariah@gmail.com",
+            "nik": "7472026905700001",
+            "role": "petugas"
+        },
+        {
+            "id": 121,
+            "name": "admin",
+            "email": "a@b.com",
+            "nik": null,
+            "role": "opd"
+        }
+    ]
+}

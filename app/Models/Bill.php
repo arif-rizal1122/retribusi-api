@@ -17,6 +17,7 @@ class Bill extends Model
     }
 
     protected $fillable = [
+        'user_id',
         'taxpayer_id',
         'tax_object_id',
         'spot_check_id',
@@ -39,6 +40,9 @@ class Bill extends Model
         'admin_fee',
         'postponed_at',
         'reason_postponed',
+        'bank_code',
+        'expiry_time',
+        'penalty_at_payment',
     ];
 
     protected $casts = [
@@ -52,6 +56,8 @@ class Bill extends Model
         'waived_penalty_amount' => 'decimal:2',
         'admin_fee' => 'decimal:2',
         'postponed_at' => 'datetime',
+        'expiry_time' => 'datetime',
+        'penalty_at_payment' => 'decimal:2',
     ];
 
     protected $appends = [
@@ -64,7 +70,7 @@ class Bill extends Model
         if ($value === 'pending' && $this->due_date && $this->due_date->isPast()) {
             return 'overdue';
         }
-        
+
         // Handle variations between 'paid' and 'lunas' for frontend consistency
         if ($value === 'paid') {
             return 'lunas';
@@ -88,7 +94,7 @@ class Bill extends Model
     {
         $basePenalty = (float) $this->penalty_amount + (float) $this->fixed_fine_amount + (float) $this->surcharge_amount;
         $effectivePenalty = max(0, $basePenalty - (float) $this->waived_penalty_amount);
-        
+
         return (float) $this->amount + (float) $this->admin_fee + $effectivePenalty;
     }
 
@@ -125,6 +131,11 @@ class Bill extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function paymentRequestItems(): HasMany
+    {
+        return $this->hasMany(PaymentRequestItem::class);
     }
 
     public function spotCheck(): BelongsTo

@@ -31,8 +31,17 @@ class BapendaMasterDataSeeder extends Seeder
         $retribusiLogo = 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855483/retribusi/icons/mqbtlhf4modvik6ikhvi.jpg';
         
         $types = [
-            'Wilayah I' => ['cat' => 'Pajak', 'icon' => $pajakLogo],
-            'Wilayah II' => ['cat' => 'Pajak', 'icon' => $pajakLogo],
+            'PBJT' => ['cat' => 'Pajak', 'icon' => $pajakLogo],
+            'Pajak Reklame' => ['cat' => 'Pajak', 'icon' => 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855480/retribusi/icons/airqm7ydazqqpsqezlrv.jpg'],
+            'Pajak MBLB' => ['cat' => 'Pajak', 'icon' => 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855474/retribusi/icons/pl1ag8vgja8jwzabaavc.jpg'],
+            'Pajak Sarang Burung Walet' => ['cat' => 'Pajak', 'icon' => 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855486/retribusi/icons/agqc0orhv7i9wg4a7x1t.jpg'],
+            'Air Tanah' => ['cat' => 'Pajak', 'icon' => $pajakLogo],
+            'BPHTB' => ['cat' => 'Pajak', 'icon' => 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855470/retribusi/icons/tjhkxpabcvlhjegvnzyf.jpg'],
+            'Opsen PKB' => ['cat' => 'Pajak', 'icon' => $pajakLogo],
+            'Opsen BBNKB' => ['cat' => 'Pajak', 'icon' => $pajakLogo],
+            'Retribusi PKD' => ['cat' => 'Retribusi', 'icon' => $retribusiLogo],
+            'Retribusi Jasa Umum' => ['cat' => 'Retribusi', 'icon' => $retribusiLogo],
+            'Retribusi Perizinan Tertentu' => ['cat' => 'Retribusi', 'icon' => $retribusiLogo],
         ];
 
         // --- SCHEMA DEFINITIONS (Aligned with Google Form) ---
@@ -75,51 +84,46 @@ class BapendaMasterDataSeeder extends Seeder
         ];
 
         foreach ($pbjtSubs as $name => $code) {
+            $schema = $name === 'PBJT - Tenaga Listrik'
+                ? [['key' => 'tagihan', 'label' => 'Nilai Tagihan Listrik (Rp)', 'type' => 'number', 'required' => true]]
+                : $unifiedSchema;
+
+            $payload = [
+                'opd_id' => $bapenda->id,
+                'code' => $code,
+                'form_schema' => $schema,
+                'requirements' => $unifiedRequirements,
+            ];
+
+            if ($name === 'PBJT - Tenaga Listrik') {
+                $payload['calculation_formula'] = 'tagihan * 0.1';
+            }
+
             RetributionClassification::updateOrCreate(
-                ['retribution_type_id' => $typeModels['Wilayah II']->id, 'name' => $name],
-                [
-                    'opd_id' => $bapenda->id, 
-                    'code' => $code,
-                    'form_schema' => $unifiedSchema,
-                    'requirements' => $unifiedRequirements,
-                    'icon' => $pajakLogo,
-                ]
+                ['retribution_type_id' => $typeModels['PBJT']->id, 'name' => $name],
+                $payload
             );
         }
 
         $pkdCls = RetributionClassification::updateOrCreate(
-            ['retribution_type_id' => $typeModels['Wilayah I']->id, 'name' => 'Penyediaan Tempat Kegiatan Usaha'],
+            ['retribution_type_id' => $typeModels['Retribusi PKD']->id, 'name' => 'Penyediaan Tempat Kegiatan Usaha'],
             [
                 'opd_id' => $bapenda->id, 
                 'code' => 'PTKU',
                 'form_schema' => $unifiedSchema,
                 'requirements' => $unifiedRequirements,
-                'icon' => $retribusiLogo,
             ]
         );
 
-        $wilayah1Others = [
-            'Pajak Reklame' => ['code' => 'TAX', 'icon' => 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855480/retribusi/icons/airqm7ydazqqpsqezlrv.jpg'],
-            'Pajak MBLB' => ['code' => 'TAX', 'icon' => 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855474/retribusi/icons/pl1ag8vgja8jwzabaavc.jpg'],
-            'Pajak Sarang Burung Walet' => ['code' => 'TAX', 'icon' => 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855486/retribusi/icons/agqc0orhv7i9wg4a7x1t.jpg'],
-            'Air Tanah' => ['code' => 'TAX', 'icon' => $pajakLogo],
-            'BPHTB' => ['code' => 'TAX', 'icon' => 'https://res.cloudinary.com/ddhgtgsed/image/upload/v1769855470/retribusi/icons/tjhkxpabcvlhjegvnzyf.jpg'],
-            'Opsen PKB' => ['code' => 'TAX', 'icon' => $pajakLogo],
-            'Opsen BBNKB' => ['code' => 'TAX', 'icon' => $pajakLogo],
-            'Retribusi Jasa Umum' => ['code' => 'RET', 'icon' => $retribusiLogo],
-            'Retribusi Perizinan Tertentu' => ['code' => 'RET', 'icon' => $retribusiLogo],
-            'PBB' => ['code' => 'TAX', 'icon' => $pajakLogo],
-        ];
-
-        foreach ($wilayah1Others as $typeName => $info) {
+        foreach ($typeModels as $typeName => $model) {
+            if ($typeName === 'PBJT' || $typeName === 'Retribusi PKD') continue;
             RetributionClassification::updateOrCreate(
-                ['retribution_type_id' => $typeModels['Wilayah I']->id, 'name' => $typeName],
+                ['retribution_type_id' => $model->id, 'name' => $typeName],
                 [
                     'opd_id' => $bapenda->id, 
-                    'code' => $info['code'],
+                    'code' => $model->category === 'Pajak' ? 'TAX' : 'RET',
                     'form_schema' => $unifiedSchema,
                     'requirements' => $unifiedRequirements,
-                    'icon' => $info['icon'],
                 ]
             );
         }
@@ -139,7 +143,7 @@ class BapendaMasterDataSeeder extends Seeder
             $zone = Zone::updateOrCreate(
                 ['name' => $zoneName, 'opd_id' => $bapenda->id],
                 [
-                    'retribution_type_id' => $typeModels['Wilayah I']->id,
+                    'retribution_type_id' => $typeModels['Retribusi PKD']->id,
                     'retribution_classification_id' => $pkdCls->id,
                     'code' => $info['code'],
                     'latitude' => $info['lat'],
@@ -151,7 +155,7 @@ class BapendaMasterDataSeeder extends Seeder
                 RetributionRate::updateOrCreate(
                     ['opd_id' => $bapenda->id, 'zone_id' => $zone->id, 'name' => $rateData['name']],
                     [
-                        'retribution_type_id' => $typeModels['Wilayah I']->id,
+                        'retribution_type_id' => $typeModels['Retribusi PKD']->id,
                         'retribution_classification_id' => $pkdCls->id,
                         'amount' => $rateData['amount'],
                         'unit' => $rateData['unit'],
@@ -164,13 +168,13 @@ class BapendaMasterDataSeeder extends Seeder
         // --- TAX RATES (Perwali Sync) ---
         $hiburanCls = RetributionClassification::where('code', 'PBJT-HBR')->first();
         if ($hiburanCls) {
-            RetributionRate::updateOrCreate(['retribution_classification_id' => $hiburanCls->id, 'name' => 'Tarif Hiburan Umum'], ['opd_id' => $bapenda->id, 'retribution_type_id' => $typeModels['Wilayah II']->id, 'amount' => 10, 'unit' => '%', 'is_active' => true]);
-            RetributionRate::updateOrCreate(['retribution_classification_id' => $hiburanCls->id, 'name' => 'Tarif Khusus'], ['opd_id' => $bapenda->id, 'retribution_type_id' => $typeModels['Wilayah II']->id, 'amount' => 40, 'unit' => '%', 'is_active' => true]);
+            RetributionRate::updateOrCreate(['retribution_classification_id' => $hiburanCls->id, 'name' => 'Tarif Hiburan Umum'], ['opd_id' => $bapenda->id, 'retribution_type_id' => $typeModels['PBJT']->id, 'amount' => 10, 'unit' => '%', 'is_active' => true]);
+            RetributionRate::updateOrCreate(['retribution_classification_id' => $hiburanCls->id, 'name' => 'Tarif Khusus'], ['opd_id' => $bapenda->id, 'retribution_type_id' => $typeModels['PBJT']->id, 'amount' => 40, 'unit' => '%', 'is_active' => true]);
         }
 
         $parkirCls = RetributionClassification::where('code', 'PBJT-PRK')->first();
         if ($parkirCls) {
-            RetributionRate::updateOrCreate(['retribution_classification_id' => $parkirCls->id, 'name' => 'Tarif Parkir'], ['opd_id' => $bapenda->id, 'retribution_type_id' => $typeModels['Wilayah II']->id, 'amount' => 30, 'unit' => '%', 'is_active' => true]);
+            RetributionRate::updateOrCreate(['retribution_classification_id' => $parkirCls->id, 'name' => 'Tarif Parkir'], ['opd_id' => $bapenda->id, 'retribution_type_id' => $typeModels['PBJT']->id, 'amount' => 30, 'unit' => '%', 'is_active' => true]);
         }
     }
 }

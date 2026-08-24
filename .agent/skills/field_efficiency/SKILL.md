@@ -13,11 +13,14 @@ Petugas tidak perlu memilih menu secara manual. Sistem harus mampu mendeteksi je
   - Scan QR -> Deteksi Format -> Redirect ke Halaman yang Tepat.
 - **Implementasi**: 
   - Gunakan `QRScannerService` (Petugas App).
-  - Jika QR berisi `NOP` (PBB) -> Lari ke `/pbb`.
+  - Jika QR berasal dari **SPOP/LSPOP** (PBB) -> Lari ke pendaftaran PBB.
+  - Jika QR berasal dari **SPOPD** (Usaha) -> Lari ke pendaftaran objek pajak (PBJT/Reklame).
   - Jika QR berisi `bill_number` (SKRD) -> Lari ke `/billing`.
 
-## ⏱️ 2. QR-to-Payment Efficiency (Zero-Click Flow)
-Untuk mempercepat penagihan massal, kurangi langkah navigasi manual.
+## 📝 2. Digital LKOK (Field Evidence)
+Setiap kunjungan lapangan wajib menghasilkan **LKOK (Lembar Kerja Objek Khusus)**.
+- **Workflow**: Scan Objek -> Ambil Foto -> Isi Temuan Lapangan -> Generate LKOK Digital.
+- **TTE**: LKOK yang sudah final dapat langsung di-TTE oleh petugas sebagai bukti otentik pendataan.
 - **Auto-Inquiry**: Begitu QR terbaca, sistem langsung melakukan API call `inquiry` tanpa menunggu tombol "Cari" diklik.
 - **Auto-Payment Modal**: Jika inquiry berhasil dan data unik ditemukan, buka modal pembayaran secara otomatis.
 - **Result**: Target efisiensi adalah menyelesaikan 1 transaksi dalam kurun waktu kurang dari 15 detik.

@@ -33,8 +33,8 @@ class FormulaParserService
         });
 
         foreach ($variables as $key => $value) {
-            if (is_numeric($value)) {
-                $numericValue = (float)$value;
+            $numericValue = $this->normalizeNumericVariable($value);
+            if ($numericValue !== null) {
                 $formattedValue = number_format($numericValue, 10, '.', '');
                 $formattedValue = rtrim(rtrim($formattedValue, '0'), '.');
                 $formula = str_ireplace($key, $formattedValue, $formula);
@@ -89,6 +89,39 @@ class FormulaParserService
         }
     }
 
+    private function normalizeNumericVariable($value): ?float
+    {
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $normalizedValue = trim($value);
+        if ($normalizedValue === '') {
+            return null;
+        }
+
+        $isPercentage = str_contains($normalizedValue, '%');
+        $normalizedValue = str_replace([' ', '%'], '', $normalizedValue);
+
+        if (str_contains($normalizedValue, ',')) {
+            $normalizedValue = str_replace('.', '', $normalizedValue);
+            $normalizedValue = str_replace(',', '.', $normalizedValue);
+        } elseif (substr_count($normalizedValue, '.') > 1 || preg_match('/^-?\d{1,3}(\.\d{3})+$/', $normalizedValue)) {
+            $normalizedValue = str_replace('.', '', $normalizedValue);
+        }
+
+        if (!is_numeric($normalizedValue)) {
+            return null;
+        }
+
+        $numericValue = (float) $normalizedValue;
+        return $isPercentage ? $numericValue / 100 : $numericValue;
+    }
+
     /**
      * Calculate penalty based on Perwali No. 58/2024.
      * 
@@ -101,7 +134,7 @@ class FormulaParserService
      *   - 'angsuran' / 'penundaan' / 'salah_hitung': 0.6%
      * @return float
      */
-    public function calculatePenalty(float $amount, int $monthsLate, string $type = 'stpd'): float
+    public function calculatePenalty(float $amount, $monthsLate, string $type = 'stpd'): float
     {
         $monthsLate = (int) $monthsLate;
         $monthsLate = min($monthsLate, 24);
@@ -166,18 +199,19 @@ class FormulaParserService
     }
 
     /**
-     * Calculate BPHTB with hardcoded NPOPTKP deduction.
+     * Calculate BPHTB with hardcoded NPOPTKP deduction and ZNT comparison.
      * Formula: (NPOP - NPOPTKP) * 5%
      *
      * Locked Constants (UU HKPD / Perda):
      *   - NPOPTKP Umum: Rp 80.000.000
      *   - NPOPTKP Waris/Hibah Wasiat: Rp 300.000.000
      *
-     * @param float $npop Nilai Perolehan Objek Pajak
+     * @param float $npop Nilai Perolehan Objek Pajak (Nilai Transaksi Riil)
      * @param string $acquisitionType 'umum' | 'waris' | 'hibah_wasiat'
-     * @return array{npoptkp: float, taxable: float, tax: float, tariff: float}
+     * @param float|null $zntValue Nilai ZNT BPN sebagai batas bawah kewajaran
+     * @return array
      */
-    public function calculateBPHTB(float $npop, string $acquisitionType = 'umum'): array
+    public function calculateBPHTB(float $npop, string $acquisitionType = 'umum', ?float $zntValue = null): array
     {
         $tariff = 0.05; // 5%
 
@@ -186,14 +220,27 @@ class FormulaParserService
             default                          => 80000000.0,  // Rp 80 Juta
         };
 
-        $taxable = max(0, $npop - $npoptkp);
+        $statusFlag = 'VALID';
+        $finalNpop = $npop;
+
+        // M-PAD Logic: If reported transaction is below ZNT, flag it and use ZNT as base
+        if ($zntValue !== null && $npop < $zntValue) {
+            $finalNpop = $zntValue;
+            $statusFlag = 'UNDER_ZNT_FLAG';
+        }
+
+        $taxable = max(0, $finalNpop - $npoptkp);
         $tax = $taxable * $tariff;
 
         return [
-            'npoptkp' => $npoptkp,
-            'taxable' => round($taxable, 2),
-            'tax'     => round($tax, 2),
-            'tariff'  => $tariff,
+            'npop_reported' => $npop,
+            'znt_applied'   => $zntValue,
+            'final_npop'    => $finalNpop,
+            'status_flag'   => $statusFlag,
+            'npoptkp'       => $npoptkp,
+            'taxable'       => round($taxable, 2),
+            'tax'           => round($tax, 2),
+            'tariff'        => $tariff,
         ];
     }
 

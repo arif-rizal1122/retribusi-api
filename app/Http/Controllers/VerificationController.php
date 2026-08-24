@@ -3,20 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\Verification;
-use App\Models\TaxObject;
-use App\Models\Bill;
+use App\Models\PetugasTask;
 use App\Services\CloudinaryService;
+use App\Services\RegistrationVerificationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class VerificationController extends Controller
 {
     protected $cloudinary;
+    protected $registrationVerificationService;
 
-    public function __construct(CloudinaryService $cloudinary)
+    public function __construct(
+        CloudinaryService $cloudinary,
+        RegistrationVerificationService $registrationVerificationService
+    )
     {
         $this->cloudinary = $cloudinary;
+        $this->registrationVerificationService = $registrationVerificationService;
     }
 
     /**
@@ -81,7 +85,7 @@ class VerificationController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = Verification::with(['opd', 'submitter', 'verifier', 'taxObject.classification']);
+        $query = Verification::with(['opd', 'submitter', 'verifier', 'taxObject.classification', 'taxObject.taxpayer']);
 
         if (!$user->isSuperAdmin() && $user->opd_id) {
             $query->where('opd_id', $user->opd_id);
@@ -109,6 +113,7 @@ class VerificationController extends Controller
         }
 
         $verifications = $query->latest('submitted_at')->paginate($request->get('per_page', 15));
+        $this->attachVerificationTimeline($verifications->getCollection());
 
         return response()->json($verifications);
     }
@@ -131,61 +136,17 @@ class VerificationController extends Controller
                 'notes' => 'required_if:status,approved,rejected|nullable|string',
             ]);
 
-            $verification->update([
-                'status' => $request->status,
-                'notes' => $request->notes,
-                'verifier_id' => $user->id,
-                'verified_at' => in_array($request->status, ['approved', 'rejected']) ? Carbon::now() : null,
-            ]);
-
-            // If this is an object registration and it's approved, activate the object
-            if ($request->status === 'approved' && $verification->tax_object_id) {
-                $taxObject = TaxObject::with('retributionType')->find($verification->tax_object_id);
-                if ($taxObject) {
-                    $taxObject->update([
-                        'status' => 'active',
-                        'approved_at' => Carbon::now(),
-                    ]);
-
-                    // Calculate amount based on metadata if available
-                    $amount = $taxObject->retributionType->base_amount ?? 0;
-                    $metadata = $taxObject->metadata ?? [];
-                    
-                    // Simple logic for Hotel/Restaurant (e.g., room count or scale)
-                    // This is a "perfection" refinement: checking for common keys
-                    if (isset($metadata['jumlah_kamar']) && $amount > 0) {
-                        $amount = $amount * (int)$metadata['jumlah_kamar'];
-                    } elseif (isset($metadata['luas_m2']) && $amount > 0) {
-                        $amount = $amount * (float)$metadata['luas_m2'];
-                    }
-
-                    // Create initial bill automatically
-                    Bill::create([
-                        'user_id' => $user->id,
-                        'taxpayer_id' => $taxObject->taxpayer_id,
-                        'tax_object_id' => $taxObject->id,
-                        'opd_id' => $taxObject->opd_id,
-                        'retribution_type_id' => $taxObject->retribution_type_id,
-                        'retribution_classification_id' => $taxObject->retribution_classification_id,
-                        'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
-                        'amount' => $amount,
-                        'status' => 'pending',
-                        'period' => Carbon::now()->isoFormat('MMMM YYYY'),
-                        'due_date' => Carbon::now()->addDays(30),
-                    ]);
-                }
-            }
-
-            if ($request->status === 'rejected' && $verification->tax_object_id) {
-                $taxObject = TaxObject::find($verification->tax_object_id);
-                if ($taxObject) {
-                    $taxObject->update(['status' => 'rejected']);
-                }
-            }
+            $updatedVerification = $this->registrationVerificationService->updateStatus(
+                $verification,
+                $request->status,
+                $request->notes,
+                $user
+            );
+            $this->attachVerificationTimeline(collect([$updatedVerification]));
 
             return response()->json([
                 'message' => "Dokumen berhasil di-{$request->status}",
-                'data' => $verification->load(['opd', 'submitter', 'verifier', 'taxObject'])
+                'data' => $updatedVerification
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
@@ -215,8 +176,85 @@ class VerificationController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        $verification->load(['opd', 'submitter', 'verifier', 'taxObject.classification', 'taxObject.taxpayer', 'taxpayer']);
+        $this->attachVerificationTimeline(collect([$verification]));
+
         return response()->json([
-            'data' => $verification->load(['opd', 'submitter', 'verifier', 'taxObject', 'taxpayer'])
+            'data' => $verification
         ]);
+    }
+
+    private function attachVerificationTimeline($verifications): void
+    {
+        $objectIds = $verifications
+            ->pluck('tax_object_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($objectIds->isEmpty()) {
+            return;
+        }
+
+        $timelineByObject = Verification::whereIn('tax_object_id', $objectIds)
+            ->with('verifier:id,name')
+            ->orderBy('submitted_at')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('tax_object_id');
+
+        $surveyTasksByObject = PetugasTask::whereIn('tax_object_id', $objectIds)
+            ->where('task_type', 'field_survey')
+            ->with(['user:id,name', 'creator:id,name'])
+            ->orderBy('created_at')
+            ->get()
+            ->groupBy('tax_object_id');
+
+        $verifications->each(function (Verification $verification) use ($timelineByObject, $surveyTasksByObject) {
+            if (!$verification->taxObject) {
+                return;
+            }
+
+            $timeline = ($timelineByObject->get($verification->tax_object_id) ?? collect())
+                ->map(fn (Verification $item) => $this->formatVerificationTimelineItem($item))
+                ->values();
+
+            $verification->taxObject->setAttribute('verification_timeline', $timeline);
+
+            $surveyTasks = ($surveyTasksByObject->get($verification->tax_object_id) ?? collect())
+                ->map(fn (PetugasTask $task) => $this->formatFieldSurveyTask($task))
+                ->values();
+
+            $verification->taxObject->setAttribute('field_survey_tasks', $surveyTasks);
+            $verification->taxObject->setAttribute('latest_field_survey_task', $surveyTasks->last());
+        });
+    }
+
+    private function formatVerificationTimelineItem(Verification $verification): array
+    {
+        return [
+            'id' => $verification->id,
+            'document_number' => $verification->document_number,
+            'type' => $verification->type,
+            'status' => $verification->status,
+            'notes' => $verification->notes,
+            'submitted_at' => $verification->submitted_at,
+            'verified_at' => $verification->verified_at,
+            'verifier_name' => $verification->verifier?->name,
+        ];
+    }
+
+    private function formatFieldSurveyTask(PetugasTask $task): array
+    {
+        return [
+            'id' => $task->id,
+            'status' => $task->status,
+            'due_date' => $task->due_date,
+            'notes' => $task->notes,
+            'completed_at' => $task->completed_at,
+            'officer_name' => $task->user?->name,
+            'created_by_name' => $task->creator?->name,
+            'completion_photo_path' => $task->completion_photo_path,
+        ];
     }
 }

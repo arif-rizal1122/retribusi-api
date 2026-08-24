@@ -6,7 +6,10 @@ use App\Models\Taxpayer;
 use App\Models\TaxObject;
 use App\Models\RetributionType;
 use App\Models\RetributionClassification;
+use App\Models\Verification;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class TaxpayerController extends Controller
 {
@@ -16,7 +19,7 @@ class TaxpayerController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = Taxpayer::with(['opd', 'retributionTypes', 'retributionClassifications', 'creator']);
+        $query = Taxpayer::with(['opd', 'retributionTypes', 'retributionClassifications', 'creator', 'taxObjects']);
 
         // Admin OPD and Petugas only see their own OPD's taxpayers
         if ($user && in_array($user->role, ['opd', 'petugas'])) {
@@ -24,24 +27,25 @@ class TaxpayerController extends Controller
 
             // If petugas, further filter by assigned retribution types and created_by
             if ($user->role === 'petugas') {
-                $query->where('created_by', $user->id); // Hanya tampilkan yang didata oleh petugas ini
                 $assignments = $user->assignments;
                 if ($assignments->isNotEmpty()) {
-                    $query->whereHas('retributionTypes', function($q) use ($assignments) {
-                        $q->where(function($query) use ($assignments) {
-                            foreach ($assignments as $assignment) {
-                                $query->orWhere(function($sq) use ($assignment) {
-                                    $sq->where('retribution_types.id', $assignment->retribution_type_id);
-                                    if ($assignment->retribution_classification_id) {
-                                        $sq->where('taxpayer_retribution_type.retribution_classification_id', $assignment->retribution_classification_id);
-                                    }
+                    $query->where(function($masterQ) use ($user, $assignments) {
+                        $masterQ->where('created_by', $user->id)
+                                ->orWhereHas('retributionTypes', function($q) use ($assignments) {
+                                    $q->where(function($query) use ($assignments) {
+                                        foreach ($assignments as $assignment) {
+                                            $query->orWhere(function($sq) use ($assignment) {
+                                                $sq->where('retribution_types.id', $assignment->retribution_type_id);
+                                                if ($assignment->retribution_classification_id) {
+                                                    $sq->where('taxpayer_retribution_type.retribution_classification_id', $assignment->retribution_classification_id);
+                                                }
+                                            });
+                                        }
+                                    });
                                 });
-                            }
-                        });
                     });
                 } else {
-                    // No assignments = no taxpayers
-                    $query->whereRaw('1 = 0');
+                    $query->where('created_by', $user->id);
                 }
             }
         }
@@ -69,7 +73,10 @@ class TaxpayerController extends Controller
      */
     public function store(Request $request)
     {
-        \Log::info('Taxpayer store request', $request->all());
+        \Log::info('Taxpayer store request', [
+            'user_id' => $request->user()?->id,
+            'has_retribution_types' => $request->has('retribution_type_ids'),
+        ]);
         $user = $request->user();
         $cloudinary = app(\App\Services\CloudinaryService::class);
 
@@ -80,7 +87,7 @@ class TaxpayerController extends Controller
             'district' => 'nullable|string|max:255',
             'sub_district' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
-            'npwpd' => 'nullable|string|max:50',
+            'npwpd' => 'nullable|string|max:255',
             'object_name' => 'nullable|string|max:255',
             'object_address' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
@@ -127,15 +134,24 @@ class TaxpayerController extends Controller
             $metadata[$key] = $cloudinary->upload($file, $folder);
         }
 
+        $typeIds = $validTypesIds;
+        $classificationIds = (array)$request->input('retribution_classification_ids', []);
+        $selectedClassifications = $this->validateObjectRegistrationPayload($request, $typeIds, $classificationIds, $metadata);
+
         // Check if taxpayer with this NIK already exists
         $taxpayer = null;
         if ($request->nik) {
             $taxpayer = Taxpayer::where('nik', $request->nik)->first();
         }
 
+        // Resolve NPWPD automatically if not provided
+        $npwpd = $request->npwpd ?: Taxpayer::resolveNpwpd($request->nik);
+
         if ($taxpayer) {
             // Update existing taxpayer basic info if provided
-            $updateData = $request->only(['name', 'address', 'district', 'sub_district', 'phone', 'npwpd']);
+            $updateData = $request->only(['name', 'address', 'district', 'sub_district', 'phone']);
+            $updateData['npwpd'] = $npwpd; // Use resolved NPWPD
+            
             if ($request->filled('password')) {
                 $updateData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
             }
@@ -148,7 +164,6 @@ class TaxpayerController extends Controller
                 $taxpayer->save();
             }
         } else {
-            // Create new taxpayer
             $taxpayer = Taxpayer::create([
                 'opd_id' => $opdId,
                 'nik' => $request->nik,
@@ -157,7 +172,7 @@ class TaxpayerController extends Controller
                 'district' => $request->district,
                 'sub_district' => $request->sub_district,
                 'phone' => $request->phone,
-                'npwpd' => $request->npwpd,
+                'npwpd' => $npwpd, // Use resolved NPWPD
                 'object_name' => $request->object_name,
                 'object_address' => $request->object_address,
                 'latitude' => $request->latitude,
@@ -170,34 +185,45 @@ class TaxpayerController extends Controller
         }
 
         // Attach retribution types and classifications
-        $typeIds = $validTypesIds;
-        $classificationIds = (array)$request->input('retribution_classification_ids', []);
-        
         foreach ($typeIds as $typeId) {
             // Get classification IDs that belong to this type
-            $typeClassifications = \App\Models\RetributionClassification::where('retribution_type_id', $typeId)
+            $typeClassifications = $selectedClassifications
+                ->where('retribution_type_id', $typeId)
+                ->pluck('id')
+                ->toArray();
+
+            if (empty($typeClassifications)) {
+                $typeClassifications = \App\Models\RetributionClassification::where('retribution_type_id', $typeId)
                 ->whereIn('id', $classificationIds)
                 ->pluck('id')
                 ->toArray();
+            }
 
             if (empty($typeClassifications)) {
                 $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => null]]);
                 
                 // Also create/update TaxObject with metadata
-                $this->syncTaxObject($taxpayer, $typeId, null, $metadata);
+                $this->syncTaxObject($taxpayer, $typeId, null, $metadata, $user);
             } else {
                 foreach ($typeClassifications as $cId) {
                     $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => $cId]]);
                     
                     // Also create/update TaxObject with metadata
-                    $this->syncTaxObject($taxpayer, $typeId, $cId, $metadata);
+                    $this->syncTaxObject($taxpayer, $typeId, $cId, $metadata, $user);
                 }
             }
         }
 
         return response()->json([
             'message' => 'Wajib pajak berhasil ditambahkan',
-            'data' => $taxpayer->load(['opd', 'retributionTypes', 'retributionClassifications', 'creator'])
+            'data' => $taxpayer->load([
+                'opd',
+                'retributionTypes',
+                'retributionClassifications',
+                'creator',
+                'taxObjects.retributionType',
+                'taxObjects.classification',
+            ])
         ], 201);
     }
 
@@ -219,7 +245,7 @@ class TaxpayerController extends Controller
                 $q->where('nik', $taxpayer->nik);
             })
             ->where('taxpayer_id', '!=', $taxpayer->id)
-            ->with(['retributionType', 'classification'])
+            ->with(['taxpayer', 'retributionType', 'classification'])
             ->get();
         }
 
@@ -229,7 +255,14 @@ class TaxpayerController extends Controller
             ->get();
 
         return response()->json([
-            'data' => $taxpayer->load(['opd', 'retributionTypes', 'retributionClassifications', 'creator']),
+            'data' => $taxpayer->load([
+                'opd',
+                'retributionTypes',
+                'retributionClassifications',
+                'creator',
+                'taxObjects.retributionType',
+                'taxObjects.classification',
+            ]),
             'related_assets' => $relatedAssets,
             'payment_history' => $paymentHistory
         ]);
@@ -240,7 +273,11 @@ class TaxpayerController extends Controller
      */
     public function update(Request $request, Taxpayer $taxpayer)
     {
-        \Log::info('Taxpayer update request for ID: ' . $taxpayer->id, $request->all());
+        \Log::info('Taxpayer update request', [
+            'taxpayer_id' => $taxpayer->id,
+            'user_id' => $request->user()?->id,
+            'has_retribution_types' => $request->has('retribution_type_ids'),
+        ]);
         $user = $request->user();
         $cloudinary = app(\App\Services\CloudinaryService::class);
 
@@ -257,7 +294,7 @@ class TaxpayerController extends Controller
                 'district' => 'nullable|string|max:255',
                 'sub_district' => 'nullable|string|max:255',
                 'phone' => 'nullable|string|max:20',
-                'npwpd' => 'nullable|string|max:50',
+                'npwpd' => 'nullable|string|max:255',
                 'object_name' => 'nullable|string|max:255',
                 'object_address' => 'nullable|string|max:255',
                 'latitude' => 'nullable|numeric',
@@ -274,7 +311,8 @@ class TaxpayerController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Taxpayer update validation failed', [
                 'errors' => $e->errors(),
-                'input' => $request->all()
+                'taxpayer_id' => $taxpayer->id,
+                'user_id' => $request->user()?->id,
             ]);
             return response()->json([
                 'message' => 'Validasi gagal',
@@ -283,9 +321,16 @@ class TaxpayerController extends Controller
         }
 
         $data = $request->only([
-            'nik', 'name', 'address', 'district', 'sub_district', 'phone', 'npwpd', 
+            'nik', 'name', 'address', 'district', 'sub_district', 'phone', 
             'object_name', 'object_address', 'latitude', 'longitude', 'is_active'
         ]);
+
+        // Resolve NPWPD if not provided and not currently set, or if explicitly requested to update
+        if ($request->has('npwpd')) {
+            $data['npwpd'] = $request->npwpd;
+        } elseif (!$taxpayer->npwpd) {
+            $data['npwpd'] = Taxpayer::resolveNpwpd($request->nik ?: $taxpayer->nik);
+        }
 
         if ($request->filled('password')) {
             $data['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
@@ -305,15 +350,61 @@ class TaxpayerController extends Controller
             $metadata['formulir_data_dukung'] = $cloudinary->upload($request->file('formulir_data_dukung'), 'taxpayers/docs');
         }
 
+        $selectedClassifications = collect();
+        if ($request->has('retribution_type_ids')) {
+            $typeIds = (array)$request->retribution_type_ids;
+            $classificationIds = (array)$request->input('retribution_classification_ids', []);
+            $opdId = $taxpayer->opd_id;
+
+            if (!$opdId && !empty($typeIds)) {
+                $firstType = RetributionType::find($typeIds[0]);
+                if ($firstType) {
+                    $opdId = $firstType->opd_id;
+                    $data['opd_id'] = $opdId;
+                }
+            }
+
+            $validTypes = RetributionType::where('opd_id', $opdId)
+                ->whereIn('id', $typeIds)
+                ->count();
+
+            if ($validTypes !== count($typeIds)) {
+                return response()->json([
+                    'message' => 'Jenis retribusi harus milik OPD yang sama'
+                ], 422);
+            }
+
+            $selectedClassifications = $this->validateObjectRegistrationPayload($request, $typeIds, $classificationIds, $metadata, $taxpayer, false);
+        }
+
         $data['metadata'] = $metadata;
+
+        // Auto-resolve NPWPD if not set or NIK changed
+        $nikChanged = isset($data['nik']) && $data['nik'] !== $taxpayer->nik;
+        $npwpdEmpty = empty($data['npwpd'] ?? $taxpayer->npwpd);
+        if ($nikChanged || $npwpdEmpty) {
+            $data['npwpd'] = Taxpayer::resolveNpwpd(
+                $data['nik'] ?? $taxpayer->nik,
+                $data['npwpd'] ?? $taxpayer->npwpd
+            );
+        }
 
         try {
             $taxpayer->update($data);
 
             // Update retribution types if provided
             if ($request->has('retribution_type_ids')) {
-                $opdId = $taxpayer->opd_id;
                 $typeIds = (array)$request->retribution_type_ids;
+                $opdId = $taxpayer->opd_id;
+
+                // If taxpayer has no OPD (orphaned legacy data), derive it from the first retribution type
+                if (!$opdId && !empty($typeIds)) {
+                    $firstType = RetributionType::find($typeIds[0]);
+                    if ($firstType) {
+                        $opdId = $firstType->opd_id;
+                        $taxpayer->update(['opd_id' => $opdId]);
+                    }
+                }
                 
                 // Validate that retribution types belong to the same OPD
                 $validTypes = RetributionType::where('opd_id', $opdId)
@@ -338,11 +429,11 @@ class TaxpayerController extends Controller
 
                     if (empty($typeClassifications)) {
                         $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => null]]);
-                        $this->syncTaxObject($taxpayer, $typeId, null, $metadata);
+                        $this->syncTaxObject($taxpayer, $typeId, null, $metadata, $user);
                     } else {
                         foreach ($typeClassifications as $cId) {
                             $taxpayer->retributionTypes()->syncWithoutDetaching([$typeId => ['retribution_classification_id' => $cId]]);
-                            $this->syncTaxObject($taxpayer, $typeId, $cId, $metadata);
+                            $this->syncTaxObject($taxpayer, $typeId, $cId, $metadata, $user);
                         }
                     }
                 }
@@ -350,7 +441,14 @@ class TaxpayerController extends Controller
 
             return response()->json([
                 'message' => 'Wajib pajak berhasil diupdate',
-                'data' => $taxpayer->fresh()->load(['opd', 'retributionTypes', 'retributionClassifications', 'creator'])
+                'data' => $taxpayer->fresh()->load([
+                    'opd',
+                    'retributionTypes',
+                    'retributionClassifications',
+                    'creator',
+                    'taxObjects.retributionType',
+                    'taxObjects.classification',
+                ])
             ]);
         } catch (\Throwable $e) {
             \Log::error('Taxpayer Update Failed: ' . $e->getMessage(), [
@@ -388,79 +486,230 @@ class TaxpayerController extends Controller
     /**
      * Helper to sync taxpayer object info to tax_objects table
      */
-    private function syncTaxObject(Taxpayer $taxpayer, $typeId, $classificationId = null, $metadata = [])
+    private function syncTaxObject(Taxpayer $taxpayer, $typeId, $classificationId = null, $metadata = [], $submitter = null)
     {
-        if (!$taxpayer->object_name) return;
+        // Priority: 1. Specific name in metadata for this classification, 2. Global object_name
+        $specificName = null;
+        if ($classificationId && isset($metadata["_object_name_{$classificationId}"])) {
+            $specificName = $metadata["_object_name_{$classificationId}"];
+        }
+        
+        $name = $specificName ?: $taxpayer->object_name;
 
-        // Generate NOP
-        $nop = $taxpayer->npwpd 
-            ? $taxpayer->npwpd . '-' . $typeId . ($classificationId ? '-' . $classificationId : '')
-            : ('NOP-' . str_pad($taxpayer->id, 4, '0', STR_PAD_LEFT) . '-' . str_pad($typeId, 3, '0', STR_PAD_LEFT) . ($classificationId ? '-' . $classificationId : ''));
+        if (!$name) return;
+
+        // [OPTIMIZATION] Generate NOP using pre-fetched components to avoid repeated string manipulation
+        $nopPrefix = $taxpayer->npwpd ?: 'NOP-' . str_pad($taxpayer->id, 4, '0', STR_PAD_LEFT);
+        $nop = $nopPrefix . '-' . $typeId . ($classificationId ? '-' . $classificationId : '');
 
         $data = [
             'opd_id' => $taxpayer->opd_id,
-            'name' => $taxpayer->object_name,
+            'name' => $name,
             'address' => $taxpayer->object_address ?: $taxpayer->address,
+            'district' => $taxpayer->district,
+            'sub_district' => $taxpayer->sub_district,
             'latitude' => $taxpayer->latitude,
             'longitude' => $taxpayer->longitude,
-            'status' => 'active',
             'nop' => $nop,
             'metadata' => $metadata,
         ];
 
         try {
-            // First, try to find by taxpayer+type+classification combo
-            $existing = TaxObject::where('taxpayer_id', $taxpayer->id)
-                ->where('retribution_type_id', $typeId)
-                ->where(function ($q) use ($classificationId) {
-                    if ($classificationId) {
-                        $q->where('retribution_classification_id', $classificationId);
-                    } else {
-                        $q->whereNull('retribution_classification_id');
-                    }
-                })
-                ->first();
-
-            if ($existing) {
-                // Update existing — but don't change NOP if it would cause duplicate
-                $dataWithoutNop = $data;
-                unset($dataWithoutNop['nop']);
-                $existing->update($dataWithoutNop);
-                return $existing;
-            }
-
-            // Also check if NOP already exists (from a previous different combo)
-            $existingByNop = TaxObject::where('nop', $nop)->first();
-            if ($existingByNop) {
-                // NOP exists — update that record instead of creating a new one
-                $existingByNop->update(array_merge($data, [
-                    'taxpayer_id' => $taxpayer->id,
-                    'retribution_type_id' => $typeId,
-                    'retribution_classification_id' => $classificationId,
-                ]));
-                return $existingByNop;
-            }
-
-            // Create new
-            return TaxObject::create(array_merge($data, [
+            $taxObject = TaxObject::withoutGlobalScopes()->firstOrNew([
                 'taxpayer_id' => $taxpayer->id,
                 'retribution_type_id' => $typeId,
                 'retribution_classification_id' => $classificationId,
-            ]));
-        } catch (\Throwable $e) {
-            \Log::warning('syncTaxObject duplicate handled: ' . $e->getMessage(), [
-                'taxpayer_id' => $taxpayer->id,
-                'type_id' => $typeId,
-                'classification_id' => $classificationId,
-                'nop' => $nop,
             ]);
 
-            // Fallback: try to update by NOP
-            $fallback = TaxObject::where('nop', $nop)->first();
+            $isNew = !$taxObject->exists;
+            $shouldReopenVerification = $isNew || $taxObject->status === 'rejected';
+
+            $taxObject->fill($data);
+
+            if ($shouldReopenVerification) {
+                $taxObject->status = 'pending';
+                $taxObject->approved_at = null;
+                $taxObject->approved_by = null;
+            }
+
+            $taxObject->save();
+
+            $this->ensurePendingObjectVerification($taxObject, $taxpayer, $metadata, $submitter);
+
+            return $taxObject;
+        } catch (\Throwable $e) {
+            // Fallback for NOP conflicts if they aren't covered by updateOrCreate (e.g. NOP changed but taxpayer combo same)
+            \Log::warning('syncTaxObject conflict handled: ' . $e->getMessage());
+            
+            $fallback = TaxObject::withoutGlobalScopes()->where('nop', $nop)->first();
             if ($fallback) {
                 $fallback->update($data);
+                $this->ensurePendingObjectVerification($fallback, $taxpayer, $metadata, $submitter);
                 return $fallback;
             }
+            throw $e;
         }
+    }
+
+    private function validateObjectRegistrationPayload(
+        Request $request,
+        array $typeIds,
+        array $classificationIds,
+        array $metadata,
+        ?Taxpayer $existingTaxpayer = null,
+        bool $requireLocation = true
+    )
+    {
+        $allClassificationsForTypes = RetributionClassification::whereIn('retribution_type_id', $typeIds)->get();
+        $selectedClassifications = $allClassificationsForTypes->whereIn('id', $classificationIds)->values();
+        $basicErrors = [];
+        $fieldValue = fn (string $key) => $request->filled($key) ? $request->input($key) : ($existingTaxpayer?->{$key} ?? null);
+
+        $invalidClassificationIds = array_values(array_diff(
+            $classificationIds,
+            $selectedClassifications->pluck('id')->map(fn ($id) => (int) $id)->all()
+        ));
+
+        if (!empty($invalidClassificationIds)) {
+            throw ValidationException::withMessages([
+                'retribution_classification_ids' => 'Klasifikasi harus sesuai dengan jenis retribusi yang dipilih.',
+            ]);
+        }
+
+        $missingTypeNames = [];
+        foreach ($typeIds as $typeId) {
+            $typeClassifications = $allClassificationsForTypes->where('retribution_type_id', $typeId);
+            if ($typeClassifications->isNotEmpty() && $selectedClassifications->where('retribution_type_id', $typeId)->isEmpty()) {
+                $typeName = RetributionType::whereKey($typeId)->value('name') ?: "ID {$typeId}";
+                $missingTypeNames[] = $typeName;
+            }
+        }
+
+        if (!empty($missingTypeNames)) {
+            throw ValidationException::withMessages([
+                'retribution_classification_ids' => 'Klasifikasi wajib dipilih untuk: ' . implode(', ', $missingTypeNames),
+            ]);
+        }
+
+        if (empty($typeIds)) {
+            $basicErrors['retribution_type_ids'] = 'Jenis retribusi wajib dipilih.';
+        }
+
+        if (!$fieldValue('object_name') && $selectedClassifications->isEmpty()) {
+            $basicErrors['object_name'] = 'Nama objek/unit wajib diisi.';
+        }
+
+        foreach ($selectedClassifications as $classification) {
+            $specificObjectName = $metadata["_object_name_{$classification->id}"] ?? null;
+            if (!$fieldValue('object_name') && (!$specificObjectName || trim((string) $specificObjectName) === '')) {
+                $basicErrors["metadata._object_name_{$classification->id}"] = "Nama objek/unit untuk {$classification->name} wajib diisi.";
+            }
+        }
+
+        if (!$fieldValue('object_address') && !$fieldValue('address')) {
+            $basicErrors['object_address'] = 'Alamat objek wajib diisi.';
+        }
+
+        if ($requireLocation && !$fieldValue('district')) {
+            $basicErrors['district'] = 'Kecamatan objek wajib diisi.';
+        }
+
+        if ($requireLocation && !$fieldValue('sub_district')) {
+            $basicErrors['sub_district'] = 'Kelurahan objek wajib diisi.';
+        }
+
+        if (!empty($basicErrors)) {
+            throw ValidationException::withMessages($basicErrors);
+        }
+
+        $this->validateRequiredMetadataAndFiles($request, $selectedClassifications, $metadata);
+
+        return $selectedClassifications;
+    }
+
+    private function validateRequiredMetadataAndFiles(Request $request, $classifications, array $metadata): void
+    {
+        $errors = [];
+
+        foreach ($classifications as $classification) {
+            foreach (($classification->form_schema ?? []) as $field) {
+                if (!($field['required'] ?? false)) {
+                    continue;
+                }
+
+                $key = $field['key'] ?? null;
+                if (!$key) {
+                    continue;
+                }
+
+                $value = $metadata[$key] ?? null;
+                if ($value === null || (is_string($value) && trim($value) === '')) {
+                    $label = $field['label'] ?? $key;
+                    $errors["metadata.{$key}"] = "{$label} wajib diisi.";
+                }
+            }
+
+            foreach (($classification->requirements ?? []) as $requirement) {
+                if (!($requirement['required'] ?? false)) {
+                    continue;
+                }
+
+                $key = $requirement['key'] ?? null;
+                if (!$key) {
+                    continue;
+                }
+
+                $existingValue = $metadata[$key] ?? null;
+                if (!$request->hasFile($key) && !$existingValue) {
+                    $label = $requirement['label'] ?? $requirement['name'] ?? $key;
+                    $errors[$key] = "{$label} wajib diunggah.";
+                }
+            }
+        }
+
+        if (!empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    private function ensurePendingObjectVerification(TaxObject $taxObject, Taxpayer $taxpayer, array $metadata, $submitter = null): void
+    {
+        if ($taxObject->status !== 'pending') {
+            return;
+        }
+
+        $hasOpenVerification = Verification::where('tax_object_id', $taxObject->id)
+            ->whereIn('status', ['pending', 'in_review'])
+            ->exists();
+
+        if ($hasOpenVerification) {
+            return;
+        }
+
+        Verification::create([
+            'opd_id' => $taxObject->opd_id,
+            'user_id' => $submitter?->id,
+            'taxpayer_id' => $taxpayer->id,
+            'tax_object_id' => $taxObject->id,
+            'document_number' => 'REG-' . now()->format('YmdHis') . '-' . strtoupper(\Illuminate\Support\Str::random(6)),
+            'taxpayer_name' => $taxpayer->name,
+            'type' => 'Pendaftaran Objek',
+            'amount' => 0,
+            'status' => 'pending',
+            'proof_file_url' => $this->firstUploadedFileUrl($metadata),
+            'submitted_at' => Carbon::now(),
+            'notes' => 'Pengajuan objek dari menu Wajib Pajak menunggu verifikasi.',
+        ]);
+    }
+
+    private function firstUploadedFileUrl(array $metadata): ?string
+    {
+        foreach ($metadata as $value) {
+            if (is_string($value) && (str_starts_with($value, 'http') || str_contains($value, 'cloudinary'))) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 }

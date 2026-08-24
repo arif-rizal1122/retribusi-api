@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TaxpayerPbbObject;
 use App\Models\TransactionPbb;
 use App\Services\PbbBapendaService;
+use App\Support\SqlDate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +28,7 @@ class PbbBapendaController extends Controller
     public function inquiry(Request $request)
     {
         $request->validate([
-            'nop'   => 'required|string|size:18',
+            'nop' => 'required|string|size:18',
             'tahun' => 'required|string|size:4',
         ]);
 
@@ -37,38 +38,39 @@ class PbbBapendaController extends Controller
             if (($result['status'] ?? 0) === 200) {
                 // Skema 2026 mengembalikan data di dalam key 'data'
                 $data = $result['data'] ?? [];
-                
+
                 return response()->json([
-                    'status'  => 'success',
+                    'status' => 'success',
                     'message' => 'Data tagihan ditemukan',
-                    'data'    => [
-                        'nop'                 => $request->nop,
-                        'tahun'               => $data['tahun'] ?? $result['tahun'] ?? $request->tahun,
-                        'nama_wp'             => $data['nama_wp'] ?? '-',
-                        'alamat_wp'           => $data['alamat_wp'] ?? '-',
-                        'kelurahan'           => $data['kelurahan'] ?? '-',
-                        'kota'                => $data['kota'] ?? '-',
-                        'pbb_pokok'           => (float) ($data['pbb_pokok'] ?? 0),
-                        'denda'               => (float) ($data['denda'] ?? 0),
+                    'data' => [
+                        'nop' => $request->nop,
+                        'tahun' => $data['tahun'] ?? $result['tahun'] ?? $request->tahun,
+                        'nama_wp' => $data['nama_wp'] ?? '-',
+                        'alamat_wp' => $data['alamat_wp'] ?? '-',
+                        'kelurahan' => $data['kelurahan'] ?? '-',
+                        'kota' => $data['kota'] ?? '-',
+                        'pbb_pokok' => (float) ($data['pbb_pokok'] ?? 0),
+                        'denda' => (float) ($data['denda'] ?? 0),
                         'total_harus_dibayar' => (float) ($data['total_harus_dibayar'] ?? 0),
-                        'status_bayar'        => $data['status_bayar'] ?? '-',
+                        'status_bayar' => $data['status_bayar'] ?? '-',
                     ],
                 ]);
             }
 
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => $result['msg'] ?? 'Data tidak ditemukan',
             ], 404);
 
         } catch (\Exception $e) {
             Log::error('PBB Inquiry Service Error', [
                 'nop' => $request->nop,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return response()->json([
-                'status'  => 'error',
-                'message' => 'Layanan Bapenda sedang tidak tersedia. (Error: ' . $e->getMessage() . ')',
+                'status' => 'error',
+                'message' => 'Layanan Bapenda sedang tidak tersedia. (Error: '.$e->getMessage().')',
             ], 503);
         }
     }
@@ -82,13 +84,13 @@ class PbbBapendaController extends Controller
     public function linkNop(Request $request)
     {
         $request->validate([
-            'nop'   => 'required|string|size:18',
+            'nop' => 'required|string|size:18',
             'tahun' => 'nullable|string|size:4',
             'description' => 'nullable|string|max:100',
         ]);
 
         $taxpayer = Auth::guard('sanctum')->user();
-        if (!$taxpayer || !($taxpayer instanceof \App\Models\Taxpayer)) {
+        if (! $taxpayer || ! ($taxpayer instanceof \App\Models\Taxpayer)) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
 
@@ -99,7 +101,7 @@ class PbbBapendaController extends Controller
 
         if ($exists) {
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => 'NOP ini sudah terdaftar di akun Anda.',
             ], 422);
         }
@@ -111,31 +113,32 @@ class PbbBapendaController extends Controller
 
             if (($result['status'] ?? 0) !== 200) {
                 return response()->json([
-                    'status'  => 'error',
+                    'status' => 'error',
                     'message' => 'NOP tidak ditemukan di database Bapenda.',
                 ], 404);
             }
 
             $pbbObject = TaxpayerPbbObject::create([
-                'taxpayer_id'     => $taxpayer->id,
-                'nop'             => $request->nop,
-                'name_on_sppt'    => $result['nama_wp'] ?? null,
+                'taxpayer_id' => $taxpayer->id,
+                'nop' => $request->nop,
+                'name_on_sppt' => $result['nama_wp'] ?? null,
                 'address_on_sppt' => $result['alamat_wp'] ?? null,
-                'kelurahan'       => $result['kelurahan'] ?? null,
-                'kota'            => $result['kota'] ?? null,
-                'is_verified'     => true,
+                'kelurahan' => $result['kelurahan'] ?? null,
+                'kota' => $result['kota'] ?? null,
+                'is_verified' => true,
             ]);
 
             return response()->json([
-                'status'  => 'success',
+                'status' => 'success',
                 'message' => 'NOP berhasil ditautkan ke akun Anda.',
-                'data'    => $pbbObject,
+                'data' => $pbbObject,
             ]);
 
         } catch (\Exception $e) {
             Log::error('PBB Link NOP Error', ['error' => $e->getMessage()]);
+
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => 'Gagal memvalidasi NOP. Silakan coba lagi.',
             ], 500);
         }
@@ -147,7 +150,7 @@ class PbbBapendaController extends Controller
     public function unlinkNop(Request $request, $id)
     {
         $taxpayer = Auth::guard('sanctum')->user();
-        if (!$taxpayer || !($taxpayer instanceof \App\Models\Taxpayer)) {
+        if (! $taxpayer || ! ($taxpayer instanceof \App\Models\Taxpayer)) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
 
@@ -155,14 +158,14 @@ class PbbBapendaController extends Controller
             ->where('taxpayer_id', $taxpayer->id)
             ->first();
 
-        if (!$pbbObject) {
+        if (! $pbbObject) {
             return response()->json(['status' => 'error', 'message' => 'Data tidak ditemukan'], 404);
         }
 
         $pbbObject->delete();
 
         return response()->json([
-            'status'  => 'success',
+            'status' => 'success',
             'message' => 'NOP berhasil dihapus dari akun Anda.',
         ]);
     }
@@ -176,7 +179,7 @@ class PbbBapendaController extends Controller
     public function myObjects(Request $request)
     {
         $taxpayer = Auth::guard('sanctum')->user();
-        if (!$taxpayer || !($taxpayer instanceof \App\Models\Taxpayer)) {
+        if (! $taxpayer || ! ($taxpayer instanceof \App\Models\Taxpayer)) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
 
@@ -190,33 +193,33 @@ class PbbBapendaController extends Controller
                 $inquiry = $this->bapendaService->inquiry($obj->nop, $tahun);
                 if (($inquiry['status'] ?? 0) === 200) {
                     $tagihan = [
-                        'pbb_pokok'           => (float) ($inquiry['pbb_pokok'] ?? 0),
-                        'denda'               => (float) ($inquiry['denda'] ?? 0),
+                        'pbb_pokok' => (float) ($inquiry['pbb_pokok'] ?? 0),
+                        'denda' => (float) ($inquiry['denda'] ?? 0),
                         'total_harus_dibayar' => (float) ($inquiry['total_harus_dibayar'] ?? 0),
-                        'status_bayar'        => $inquiry['status_bayar'] ?? '-',
+                        'status_bayar' => $inquiry['status_bayar'] ?? '-',
                     ];
                 }
             } catch (\Exception $e) {
                 Log::warning('PBB Inquiry for my-objects failed', [
-                    'nop' => $obj->nop, 'error' => $e->getMessage()
+                    'nop' => $obj->nop, 'error' => $e->getMessage(),
                 ]);
             }
 
             $results[] = [
-                'id'              => $obj->id,
-                'nop'             => $obj->nop,
-                'name_on_sppt'    => $obj->name_on_sppt,
+                'id' => $obj->id,
+                'nop' => $obj->nop,
+                'name_on_sppt' => $obj->name_on_sppt,
                 'address_on_sppt' => $obj->address_on_sppt,
-                'kelurahan'       => $obj->kelurahan,
-                'kota'            => $obj->kota,
-                'tahun'           => $tahun,
-                'tagihan'         => $tagihan,
+                'kelurahan' => $obj->kelurahan,
+                'kota' => $obj->kota,
+                'tahun' => $tahun,
+                'tagihan' => $tagihan,
             ];
         }
 
         return response()->json([
             'status' => 'success',
-            'data'   => $results,
+            'data' => $results,
         ]);
     }
 
@@ -229,7 +232,7 @@ class PbbBapendaController extends Controller
     public function pay(Request $request)
     {
         $request->validate([
-            'nop'   => 'required|string|size:18',
+            'nop' => 'required|string|size:18',
             'tahun' => 'required|string|size:4',
         ]);
 
@@ -250,7 +253,7 @@ class PbbBapendaController extends Controller
 
             if (($inquiry['status'] ?? 0) !== 200) {
                 return response()->json([
-                    'status'  => 'error',
+                    'status' => 'error',
                     'message' => $inquiry['msg'] ?? 'Data tagihan tidak ditemukan.',
                 ], 404);
             }
@@ -259,7 +262,7 @@ class PbbBapendaController extends Controller
             $statusBayar = strtoupper($inquiry['status_bayar'] ?? '');
             if (str_contains($statusBayar, 'LUNAS') || str_contains($statusBayar, 'SDH BAYAR')) {
                 return response()->json([
-                    'status'  => 'error',
+                    'status' => 'error',
                     'message' => 'Tagihan ini sudah lunas.',
                 ], 422);
             }
@@ -267,8 +270,8 @@ class PbbBapendaController extends Controller
             // Proses pembayaran ke Bapenda
             $totalTagihan = (float) ($inquiry['data']['total_harus_dibayar'] ?? 0);
             $payResult = $this->bapendaService->payment(
-                $request->nop, 
-                $request->tahun, 
+                $request->nop,
+                $request->tahun,
                 $totalTagihan,
                 'Pembayaran PBB via Mobile'
             );
@@ -277,46 +280,48 @@ class PbbBapendaController extends Controller
 
             // Simpan transaksi
             $transaction = TransactionPbb::create([
-                'user_id'        => $userId,
-                'taxpayer_id'    => $taxpayerId,
-                'nop'            => $request->nop,
-                'tahun'          => $request->tahun,
-                'amount'         => (float) ($inquiry['pbb_pokok'] ?? 0),
-                'denda'          => (float) ($inquiry['denda'] ?? 0),
-                'total_bayar'    => (float) ($inquiry['total_harus_dibayar'] ?? 0),
-                'ntpd'           => $payResult['ntpd'] ?? null,
+                'user_id' => $userId,
+                'taxpayer_id' => $taxpayerId,
+                'nop' => $request->nop,
+                'tahun' => $request->tahun,
+                'amount' => (float) ($inquiry['pbb_pokok'] ?? 0),
+                'denda' => (float) ($inquiry['denda'] ?? 0),
+                'total_bayar' => (float) ($inquiry['total_harus_dibayar'] ?? 0),
+                'ntpd' => $payResult['ntpd'] ?? null,
                 'payment_status' => $paymentStatus,
-                'wp_name'        => $inquiry['nama_wp'] ?? null,
-                'wp_address'     => $inquiry['alamat_wp'] ?? null,
-                'kelurahan'      => $inquiry['kelurahan'] ?? null,
-                'kota'           => $inquiry['kota'] ?? null,
-                'api_response'   => $payResult,
+                'wp_name' => $inquiry['nama_wp'] ?? null,
+                'wp_address' => $inquiry['alamat_wp'] ?? null,
+                'kelurahan' => $inquiry['kelurahan'] ?? null,
+                'kota' => $inquiry['kota'] ?? null,
+                'api_response' => $payResult,
             ]);
 
             if ($paymentStatus === 'success') {
                 return response()->json([
-                    'status'  => 'success',
+                    'status' => 'success',
                     'message' => 'Pembayaran PBB berhasil.',
-                    'data'    => [
+                    'data' => [
                         'transaction_id' => $transaction->id,
-                        'ntpd'           => $transaction->ntpd,
-                        'nop'            => $transaction->nop,
-                        'tahun'          => $transaction->tahun,
-                        'total_bayar'    => $transaction->total_bayar,
-                        'wp_name'        => $transaction->wp_name,
+                        'ntpd' => $transaction->ntpd,
+                        'nop' => $transaction->nop,
+                        'tahun' => $transaction->tahun,
+                        'total_bayar' => $transaction->total_bayar,
+                        'wp_name' => $transaction->wp_name,
+                        'paid_at' => $transaction->created_at,
                     ],
                 ]);
             }
 
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => $payResult['msg'] ?? 'Pembayaran gagal.',
             ], 400);
 
         } catch (\Exception $e) {
             Log::error('PBB Payment Error', ['error' => $e->getMessage()]);
+
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => 'Gagal memproses pembayaran. Silakan coba lagi.',
             ], 500);
         }
@@ -331,8 +336,8 @@ class PbbBapendaController extends Controller
     public function reversal(Request $request)
     {
         $request->validate([
-            'nop'        => 'required|string|size:18',
-            'tahun'      => 'required|string|size:4',
+            'nop' => 'required|string|size:18',
+            'tahun' => 'required|string|size:4',
             'keterangan' => 'required|string|max:255',
         ]);
 
@@ -353,28 +358,29 @@ class PbbBapendaController extends Controller
 
                 if ($transaction) {
                     $transaction->update([
-                        'payment_status'  => 'reversed',
+                        'payment_status' => 'reversed',
                         'reversal_reason' => $request->keterangan,
-                        'api_response'    => $result,
+                        'api_response' => $result,
                     ]);
                 }
 
                 return response()->json([
-                    'status'  => 'success',
+                    'status' => 'success',
                     'message' => 'Pembayaran berhasil dibatalkan.',
-                    'data'    => $result,
+                    'data' => $result,
                 ]);
             }
 
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => $result['msg'] ?? 'Gagal membatalkan pembayaran.',
             ], 400);
 
         } catch (\Exception $e) {
             Log::error('PBB Reversal Error', ['error' => $e->getMessage()]);
+
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => 'Gagal memproses pembatalan. Silakan coba lagi.',
             ], 500);
         }
@@ -390,7 +396,7 @@ class PbbBapendaController extends Controller
         $query = TransactionPbb::query()->latest();
 
         if ($request->has('nop')) {
-            $query->where('nop', 'like', '%' . $request->nop . '%');
+            $query->where('nop', 'like', '%'.$request->nop.'%');
         }
         if ($request->has('tahun')) {
             $query->where('tahun', $request->tahun);
@@ -404,7 +410,7 @@ class PbbBapendaController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => $transactions,
+            'data' => $transactions,
         ]);
     }
 
@@ -414,7 +420,7 @@ class PbbBapendaController extends Controller
     public function myTransactions(Request $request)
     {
         $taxpayer = Auth::guard('sanctum')->user();
-        if (!$taxpayer || !($taxpayer instanceof \App\Models\Taxpayer)) {
+        if (! $taxpayer || ! ($taxpayer instanceof \App\Models\Taxpayer)) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
 
@@ -424,8 +430,25 @@ class PbbBapendaController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => $transactions,
+            'data' => $transactions,
         ]);
+    }
+
+    /**
+     * Download an owner-scoped PBB payment receipt.
+     */
+    public function downloadReceipt(Request $request, TransactionPbb $transaction)
+    {
+        $taxpayer = Auth::guard('sanctum')->user();
+        abort_unless($taxpayer instanceof \App\Models\Taxpayer, 403);
+        abort_unless($transaction->taxpayer_id === $taxpayer->id, 404);
+        abort_unless(in_array($transaction->payment_status, ['success', 'reversed'], true), 422, 'Bukti belum tersedia untuk transaksi ini.');
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.pbb-receipt', [
+            'transaction' => $transaction,
+        ]);
+
+        return $pdf->download("Bukti-PBB-{$transaction->nop}-{$transaction->tahun}.pdf");
     }
 
     /**
@@ -439,22 +462,23 @@ class PbbBapendaController extends Controller
         $successTransactions = TransactionPbb::where('tahun', $year)->success()->count();
         $totalRevenue = TransactionPbb::where('tahun', $year)->success()->sum('total_bayar');
         $reversedCount = TransactionPbb::where('tahun', $year)->where('payment_status', 'reversed')->count();
+        $monthSql = SqlDate::month('created_at');
 
         $monthlyRevenue = TransactionPbb::where('tahun', $year)
             ->success()
-            ->selectRaw('MONTH(created_at) as bulan, SUM(total_bayar) as total')
-            ->groupByRaw('MONTH(created_at)')
-            ->orderByRaw('MONTH(created_at)')
+            ->selectRaw("$monthSql as bulan, SUM(total_bayar) as total")
+            ->groupByRaw($monthSql)
+            ->orderByRaw($monthSql)
             ->get();
 
         return response()->json([
             'status' => 'success',
-            'data'   => [
-                'total_transactions'   => $totalTransactions,
+            'data' => [
+                'total_transactions' => $totalTransactions,
                 'success_transactions' => $successTransactions,
-                'total_revenue'        => (float) $totalRevenue,
-                'reversed_count'       => $reversedCount,
-                'monthly_revenue'      => $monthlyRevenue,
+                'total_revenue' => (float) $totalRevenue,
+                'reversed_count' => $reversedCount,
+                'monthly_revenue' => $monthlyRevenue,
             ],
         ]);
     }
@@ -473,10 +497,10 @@ class PbbBapendaController extends Controller
                 $inquiry = $this->bapendaService->inquiry($obj->nop, date('Y'));
                 if (($inquiry['status'] ?? 0) === 200) {
                     $obj->update([
-                        'name_on_sppt'    => $inquiry['nama_wp'] ?? $obj->name_on_sppt,
+                        'name_on_sppt' => $inquiry['nama_wp'] ?? $obj->name_on_sppt,
                         'address_on_sppt' => $inquiry['alamat_wp'] ?? $obj->address_on_sppt,
-                        'kelurahan'       => $inquiry['kelurahan'] ?? $obj->kelurahan,
-                        'kota'            => $inquiry['kota'] ?? $obj->kota,
+                        'kelurahan' => $inquiry['kelurahan'] ?? $obj->kelurahan,
+                        'kota' => $inquiry['kota'] ?? $obj->kota,
                     ]);
                     $count++;
                 }
@@ -498,7 +522,7 @@ class PbbBapendaController extends Controller
     public function downloadSPPT(Request $request)
     {
         $request->validate([
-            'nop'   => 'required|string|size:18',
+            'nop' => 'required|string|size:18',
             'tahun' => 'required|string|size:4',
         ]);
 
@@ -511,17 +535,17 @@ class PbbBapendaController extends Controller
 
             // Create a "Virtual Bill" for compatibility with OfficialDocumentService
             // and populate it with data from Bapenda service
-            $bill = new \App\Models\Bill();
-            $bill->bill_number = 'V-SPPT-' . $request->nop;
+            $bill = new \App\Models\Bill;
+            $bill->bill_number = 'V-SPPT-'.$request->nop;
             $bill->period = $request->tahun;
             $bill->amount = (float) ($inquiry['pbb_pokok'] ?? 0);
-            
+
             // Temporary Taxpayer and TaxObject
-            $taxpayer = new \App\Models\Taxpayer();
+            $taxpayer = new \App\Models\Taxpayer;
             $taxpayer->name = $inquiry['nama_wp'] ?? '-';
             $taxpayer->address = $inquiry['alamat_wp'] ?? '-';
-            
-            $taxObject = new \App\Models\TaxObject();
+
+            $taxObject = new \App\Models\TaxObject;
             $taxObject->nop = $request->nop;
             $taxObject->metadata = [
                 'luas_bumi' => (float) ($inquiry['luas_bumi'] ?? 0),
@@ -534,16 +558,18 @@ class PbbBapendaController extends Controller
             // Re-bind to Virtual Bill
             $bill->setRelation('taxpayer', $taxpayer);
             $bill->setRelation('taxObject', $taxObject);
-            
+
             $docService = app(\App\Services\OfficialDocumentService::class);
             $data = $docService->generateSPPT($bill);
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.sppt', $data);
+
             return $pdf->download("SPPT-{$request->nop}-{$request->tahun}.pdf");
 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Download SPPT Error', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Gagal mengunduh SPPT: ' . $e->getMessage()], 500);
+
+            return response()->json(['message' => 'Gagal mengunduh SPPT: '.$e->getMessage()], 500);
         }
     }
 }

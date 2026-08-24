@@ -21,6 +21,19 @@ class PublicVerificationController extends Controller
             return view('verification.invalid', ['number' => $number]);
         }
 
+        // --- Advanced Billing V2: Real-time Penalty Sync on Verification ---
+        if ($bill->status !== 'lunas' && $bill->taxObject) {
+            $service = app(\App\Services\BillingService::class);
+            $periods = $service->getPendingPeriods($bill->taxObject);
+            $matchingPeriod = $periods->firstWhere('period', $bill->period);
+            
+            if ($matchingPeriod) {
+                $bill->penalty_amount = $matchingPeriod['penalty_amount'];
+                // Persist sync result so other platforms (Admin Dashboard) see updated data
+                $bill->save(); 
+            }
+        }
+
         return view('verification.bill', [
             'bill' => $bill,
             'title' => 'Verifikasi Tagihan (SKRD)',

@@ -27,6 +27,8 @@ class TaxObject extends Model
         'zone_id',
         'name',
         'address',
+        'district',
+        'sub_district',
         'latitude',
         'longitude',
         'nomor_formulir',
@@ -42,6 +44,7 @@ class TaxObject extends Model
         'installation_date',
         'last_photo_url',
         'is_verified_physically',
+        'is_active',
     ];
 
     protected $casts = [
@@ -52,6 +55,7 @@ class TaxObject extends Model
         'audit_status' => 'string',
         'installation_date' => 'date',
         'is_verified_physically' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     /**

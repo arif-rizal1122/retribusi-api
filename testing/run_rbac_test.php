@@ -12,55 +12,47 @@ $kernel->bootstrap();
 use App\Models\User;
 use App\Models\TaxObject;
 
-// Handle environment argument
-$env = $argv[1] ?? 'local';
-if ($env === 'dev') {
-    $baseUrl = "https://api-dev.sipanda.online";
-} elseif ($env === 'prod') {
-    $baseUrl = "https://api.sipanda.online";
-} else {
-    $baseUrl = "http://localhost:8000";
-}
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+$baseUrl = "/api"; // Routing relative path
+
 
 $md = "# 🛡️ Laporan Hasil Uji Coba Keamanan Akses (RBAC)\n\n";
 $md .= "**Waktu Eksekusi**: " . date('Y-m-d H:i:s') . "\n";
 $md .= "Pengujian ini menembak API lokal menggunakan Token Sanctum murni untuk membuktikan Sistem Isolasi Peran (Tenant Isolation & Authorization) berjalan sempurna.\n\n";
 
 // Function untuk cURL Request
-function sendApiRequest($method, $url, $baseUrl, $token = null, $data = []) {
-    $ch = curl_init($baseUrl . $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+// Function untuk internal handler Request
+function sendApiRequest($method, $uri, $user = null, $data = []) {
+    Auth::guard('sanctum')->forgetUser();
     
-    $headers = [
-        'Accept: application/json',
-        'Content-Type: application/json',
-    ];
-    if($token) $headers[] = "Authorization: Bearer " . $token;
+    $request = Request::create($uri, $method, $data);
+    $request->headers->set('Accept', 'application/json');
+    if ($user) {
+        $request->setUserResolver(fn() => $user);
+        Auth::guard('sanctum')->setUser($user);
+    }
     
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    if(!empty($data)) curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    $response = app()->handle($request);
+
+    $httpCode = $response->getStatusCode();
     
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    
-    return ['code' => $httpCode, 'body' => json_decode($response, true)];
+    return ['code' => $httpCode, 'body' => json_decode($response->getContent(), true)];
 }
 
+
 try {
-    // Siapkan Aktor dan Token
+    // Siapkan Aktor
     $wp1 = User::firstOrCreate(['email' => 'budirbac@test.com'], ['name' => 'WP Budi', 'password' => bcrypt('password')]);
     if($wp1->role !== 'wajib_pajak') { $wp1->role = 'wajib_pajak'; $wp1->save(); }
-    $tokenWP1 = $wp1->createToken('test')->plainTextToken;
 
     $petugas = User::firstOrCreate(['email' => 'petugasrbac@test.com'], ['name' => 'Petugas Patroli', 'password' => bcrypt('password')]);
     if($petugas->role !== 'petugas') { $petugas->role = 'petugas'; $petugas->save(); }
-    $tokenPetugas = $petugas->createToken('test')->plainTextToken;
 
     // SKENARIO 1: WP MENGAKSES DASHBOARD ADMIN (HARUS 403)
     $md .= "### 1. Wajib Pajak Mengakses Endpoint Admin\n";
-    $res1 = sendApiRequest('GET', '/api/dashboard/stats', $baseUrl, $tokenWP1);
+    $res1 = sendApiRequest('GET', '/api/dashboard/stats', $wp1);
     if($res1['code'] === 403 || $res1['code'] === 401) {
         $md .= "- ✅ **SUKSES DIBLOKIR**: Server mengembalikan status HTTP `{$res1['code']}`. Wajib pajak tidak bisa masuk dapur admin.\n\n";
     } else {
@@ -69,7 +61,7 @@ try {
 
     // SKENARIO 2: TAMU (UNAUTHENTICATED) MENGAKSES PROFILE (HARUS 401)
     $md .= "### 2. Tamu (Tanpa Token) Mengakses Endpoint Terkunci\n";
-    $res2 = sendApiRequest('GET', '/api/user', $baseUrl);
+    $res2 = sendApiRequest('GET', '/api/user'); // Check actual endpoint
     if($res2['code'] === 401) {
         $md .= "- ✅ **SUKSES DIBLOKIR**: Pengunjung dilarang masuk. `401 Unauthenticated`.\n\n";
     } else {
@@ -80,7 +72,7 @@ try {
     $md .= "### 3. Petugas Lapangan Melakukan Aksi Destruktif (DELETE Tagihan/Objek)\n";
     $dummyObj = \App\Models\TaxObject::first();
     if($dummyObj) {
-        $res3 = sendApiRequest('DELETE', '/api/tax-objects/' . $dummyObj->id, $baseUrl, $tokenPetugas);
+        $res3 = sendApiRequest('DELETE', '/api/tax-objects/' . $dummyObj->id, $petugas);
         if(in_array($res3['code'], [403, 401, 405])) {
             $md .= "- ✅ **SUKSES DIBLOKIR**: Petugas dilarang menghapus. Server menolak keras dengan blokade Otorisasi (HTTP `{$res3['code']}`).\n\n";
         } else {

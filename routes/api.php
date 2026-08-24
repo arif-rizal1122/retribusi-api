@@ -17,6 +17,7 @@ use App\Http\Controllers\RetributionRateController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaxObjectController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\MutationController;
 use App\Http\Controllers\PbbClassificationController;
 use App\Http\Controllers\PbbBapendaController;
 use App\Http\Controllers\TaxEducationController;
@@ -28,6 +29,9 @@ use App\Http\Controllers\OfficerPaymentController;
 use App\Http\Controllers\MerchantAftController;
 use App\Http\Controllers\AdminAftController;
 use App\Http\Controllers\PaymentWebhookController;
+use App\Http\Controllers\PublicRegistrationController;
+use App\Http\Controllers\Api\SimpadKoneksiController;
+use App\Http\Controllers\PbbNopApplicationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,8 +43,11 @@ use App\Http\Controllers\PaymentWebhookController;
 Route::group(['middleware' => 'throttle:10,1'], function () {
     Route::post('/opd/register', [OpdController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/citizen/login', [AuthController::class, 'citizenLogin']);
+    Route::post('/citizen/login', [AuthController::class, 'citizenLogin']); // Keep for backward compatibility
+    Route::post('/citizen/request-otp', [AuthController::class, 'requestCitizenOtp']);
+    Route::post('/citizen/verify-otp', [AuthController::class, 'verifyCitizenOtp']);
     Route::post('/citizen/register', [AuthController::class, 'registerCitizen']);
+    Route::post('/notaris/register', [AuthController::class, 'registerNotaris']);
 });
 
 // Other public routes
@@ -59,6 +66,15 @@ Route::get('/public/pdf/skpd/{billId}', [\App\Http\Controllers\DocumentControlle
 Route::get('/public/pdf/sspd/{billId}', [\App\Http\Controllers\DocumentController::class, 'sspd']);
 Route::get('/public/pdf/sppt/{billId}', [\App\Http\Controllers\DocumentController::class, 'sppt']);
 Route::get('/public/pdf/surat-teguran/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'suratTeguran']);
+
+// Public self-registration portal
+Route::prefix('public')->group(function () {
+    Route::get('/retribution-types', [PublicRegistrationController::class, 'getTypes']);
+    Route::get('/retribution-classifications', [PublicRegistrationController::class, 'getClassifications']);
+    Route::get('/opds', [PublicRegistrationController::class, 'getOpds']);
+    Route::get('/taxpayers/check-nik/{nik}', [PublicRegistrationController::class, 'checkNik']);
+    Route::post('/register-taxpayer', [PublicRegistrationController::class, 'register']);
+});
 
 // Tax Simulation (public, no auth needed)
 Route::post('/simulate-tax', function (Request $request) {
@@ -98,9 +114,11 @@ Route::post('/simulate-tax', function (Request $request) {
         }
     }
 
-    if ($isPbb && !$request->calculation_formula) {
+    $vars = $request->variables;
+    $hasDirectPbbFormulaVariables = $isPbb && $formula && array_key_exists('njop', $vars);
+
+    if ($isPbb && !$request->calculation_formula && !$hasDirectPbbFormulaVariables) {
         $pbbService = app(\App\Services\PbbCalculationService::class);
-        $vars = $request->variables;
         $resultData = $pbbService->calculate(
             (float) ($vars['luas_bumi'] ?? $vars['luas_tanah'] ?? 0),
             (string) ($vars['kelas_bumi'] ?? ''),
@@ -239,10 +257,31 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
     // Citizen Specific Actions
     Route::group(['prefix' => 'citizen'], function () {
+        Route::get('/bills', [BillController::class, 'citizenBills']);
+        Route::get('/tax-objects', [\App\Http\Controllers\CitizenServiceController::class, 'taxObjects']);
+
+        // Pembayaran
+        Route::get('/payments/history', [PaymentController::class, 'history']);
+        Route::post('/payment-requests', [\App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController::class, 'store']);
+        Route::get('/payment-requests/{paymentRequest}', [\App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController::class, 'show']);
+        Route::post('/payment-requests/{paymentRequest}/refresh', [\App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController::class, 'refresh']);
+        Route::post('/payment-requests/{paymentRequest}/cancel', [\App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController::class, 'cancel']);
+
+        // Merchant AFT (Kalkulator Bisnis)
+        Route::prefix('merchant')->group(function () {
+            Route::post('/submit-omzet', [\App\Http\Controllers\Api\Merchant\KalkulatorBisnisController::class, 'submitOmzet']);
+            Route::get('/aft-history', [\App\Http\Controllers\Api\Merchant\KalkulatorBisnisController::class, 'getAftHistory']);
+        });
+
+        Route::post('/payments', [PaymentController::class, 'store']);
         Route::post('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'store']);
         Route::get('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
         Route::post('/complaints', [ComplaintController::class, 'store']);
-        Route::get('/complaints', [ComplaintController::class, 'index']);
+        Route::get('/complaints', [ComplaintController::class, 'citizenIndex']);
+
+        // Pendaftaran NOP Mandiri (Warga)
+        Route::post('/pbb/nop-applications', [PbbNopApplicationController::class, 'store']);
+        Route::get('/pbb/nop-applications', [PbbNopApplicationController::class, 'index']);
     });
 
     // Citizen Payment Requests (QR / VA / QRIS / Petugas)
@@ -280,14 +319,27 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::delete('/unlink-nop/{id}', [PbbBapendaController::class, 'unlinkNop']);
         Route::get('/my-objects', [PbbBapendaController::class, 'myObjects']);
         Route::get('/my-transactions', [PbbBapendaController::class, 'myTransactions']);
+        Route::get('/transactions/{transaction}/receipt', [PbbBapendaController::class, 'downloadReceipt']);
         Route::post('/pay', [PbbBapendaController::class, 'pay']);
         Route::get('/download-sppt', [PbbBapendaController::class, 'downloadSPPT']);
     });
+
+    // Citizen can edit/cancel their own pending service registration objects.
+    Route::match(['put', 'patch', 'post'], '/tax-objects/{taxObject}', [TaxObjectController::class, 'update']);
+    Route::delete('/tax-objects/{taxObject}', [TaxObjectController::class, 'destroy']);
 
     // ------------------------------------------------------------------------
     // Admin & Petugas ONLY (Restricted by EnsureAdmin middleware)
     // ------------------------------------------------------------------------
     Route::middleware('admin')->group(function () {
+        // Simpad Koneksi (Legacy Migration)
+        Route::prefix('simpad-koneksi')->group(function () {
+             Route::get('/taxpayers/{npwpd}', [SimpadKoneksiController::class, 'getTaxpayer']);
+             Route::get('/objects/{type}', [SimpadKoneksiController::class, 'getObjects']);
+             Route::get('/officers', [SimpadKoneksiController::class, 'getOfficers']);
+             Route::post('/sync-object', [SimpadKoneksiController::class, 'syncObject']);
+        });
+
         Route::apiResource('petugas-tasks', \App\Http\Controllers\PetugasTaskController::class);
         Route::apiResource('spot-checks', \App\Http\Controllers\SpotCheckController::class);
         Route::patch('spot-checks/{id}/status', [\App\Http\Controllers\SpotCheckController::class, 'updateStatus']);
@@ -295,11 +347,19 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         
         Route::get('/analytics/realization', [AnalyticsController::class, 'getRealization']);
         Route::get('/analytics/heatmap', [AnalyticsController::class, 'getHeatmapData']);
+        Route::get('/analytics/object-performance', [AnalyticsController::class, 'getObjectPerformance']);
+        Route::get('/analytics/classification-performance', [AnalyticsController::class, 'getClassificationPerformance']);
+        Route::get('/analytics/lra-report', [AnalyticsController::class, 'getLraReport']);
         Route::apiResource('retribution-types', RetributionTypeController::class);
         Route::get('/taxpayers/search/{nik}', [\App\Http\Controllers\TaxpayerSearchController::class, 'searchByNik']);
         Route::apiResource('taxpayers', TaxpayerController::class);
         Route::apiResource('tax-objects', TaxObjectController::class);
         Route::apiResource('bills', BillController::class)->only(['index', 'store']);
+        Route::post('/bills/checkout', [BillController::class, 'checkout']);
+
+        // Mutasi Objek Pajak (Balik Nama / Transfer Aset)
+        Route::get('/mutations', [MutationController::class, 'index']);
+        Route::post('/mutations', [MutationController::class, 'store']);
         Route::get('/tax-objects/{taxObject}/pending-periods', [PaymentController::class, 'getPendingPeriods']);
         Route::get('/payments', [PaymentController::class, 'index']);
         Route::post('/payments', [PaymentController::class, 'store']);
@@ -317,6 +377,14 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/stats', [DashboardController::class, 'getStats']);
             Route::get('/revenue-trend', [DashboardController::class, 'getRevenueTrend']);
             Route::get('/map-potentials', [DashboardController::class, 'getMapPotentials']);
+        });
+
+        // WA Gateway Management (Baileys)
+        Route::prefix('admin/wa-gateway')->group(function () {
+            Route::get('/status', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'status']);
+            Route::get('/qr', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'qr']);
+            Route::post('/send-test', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'sendTest']);
+            Route::post('/logout', [\App\Http\Controllers\Api\V1\Admin\WaGatewayController::class, 'logout']);
         });
 
         Route::prefix('pengawas')->group(function () {
@@ -363,6 +431,31 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/transactions', [PbbBapendaController::class, 'transactions']);
             Route::get('/stats', [PbbBapendaController::class, 'stats']);
             Route::post('/sync-all', [PbbBapendaController::class, 'syncAllObjects']);
+
+            // Pendaftaran NOP
+            Route::get('/nop-applications', [PbbNopApplicationController::class, 'index']);
+            Route::get('/nop-applications/{id}', [PbbNopApplicationController::class, 'show']);
+            Route::post('/nop-applications/{id}/status', [PbbNopApplicationController::class, 'updateStatus']);
+        });
+
+        // Bank H2H Monitoring Logs
+        Route::prefix('bank-h2h')->group(function () {
+            Route::get('/logs', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'logs']);
+            Route::post('/reconcile', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'reconcile']);
+        });
+
+        // H2H BPN / BPHTB
+        Route::prefix('h2h/bphtb')->group(function () {
+            Route::get('/mappings', [\App\Http\Controllers\H2HBphtbController::class, 'mappings']);
+            Route::post('/simulate', [\App\Http\Controllers\H2HBphtbController::class, 'simulate']);
+            Route::post('/submit', [\App\Http\Controllers\H2HBphtbController::class, 'submit']);
+        });
+
+        // Notaris / PPAT Approval
+        Route::prefix('notaris-approvals')->group(function () {
+            Route::get('/', [\App\Http\Controllers\NotarisApprovalController::class, 'index']);
+            Route::post('/{id}/approve', [\App\Http\Controllers\NotarisApprovalController::class, 'approve']);
+            Route::post('/{id}/reject', [\App\Http\Controllers\NotarisApprovalController::class, 'reject']);
         });
 
         // Modul AFT (Admin) - persetujuan registrasi & monitoring pemotongan
@@ -410,3 +503,57 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::put('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus']);
     });
 });
+
+// ------------------------------------------------------------------------
+// BANK H2H GATEWAY (Restricted by BankSecurityCheck middleware)
+// ------------------------------------------------------------------------
+Route::middleware('bank_h2h')->prefix('v1/bank')->group(function () {
+    Route::post('/inquiry', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'inquiry']);
+    Route::post('/payment', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'payment']);
+});
+
+// ------------------------------------------------------------------------
+// BANK H2H GATEWAY SNAP BI (BRI)
+// ------------------------------------------------------------------------
+Route::group(['prefix' => 'snap', 'namespace' => '\App\Http\Controllers\Api\V1\Payment'], function () {
+    // Auth (B2B Access Token)
+    Route::post('/v1.1/access-token/b2b', 'SnapBIController@getAccessToken');
+    
+    // QRIS
+    Route::post('/v1.1/qr/qr-mpm-notify', 'SnapBIController@qrisNotify');
+    
+    // BRIVA
+    Route::post('/v1.0/access-token/b2b', 'SnapBIController@getAccessToken');
+    Route::post('/v1.0/transfer-va/inquiry', 'SnapBIController@brivaInquiry');
+    Route::post('/v1.0/transfer-va/payment', 'SnapBIController@brivaPayment');
+
+    // BTN Virtual Account
+    Route::post('/v1/transfer-va/inquiry', 'BtnSnapController@inquiry');
+    Route::post('/v1/transfer-va/payment', 'BtnSnapController@payment');
+});
+
+// ------------------------------------------------------------------------
+// AUTO DEDUCT & CORRECTION
+// ------------------------------------------------------------------------
+Route::middleware('auth:sanctum')->prefix('auto-deduct')->group(function () {
+    Route::post('/record', [\App\Http\Controllers\AutoDeductController::class, 'recordTransaction']);
+    Route::post('/process', [\App\Http\Controllers\AutoDeductController::class, 'processPayment']);
+    Route::get('/status', [\App\Http\Controllers\AutoDeductController::class, 'getStatus']);
+    Route::get('/notifications', [\App\Http\Controllers\AutoDeductController::class, 'getNotifications']);
+    Route::post('/reminders', [\App\Http\Controllers\AutoDeductController::class, 'sendReminders']);
+});
+
+Route::middleware('auth:sanctum')->prefix('corrections')->group(function () {
+    Route::post('/{transaction}/void', [\App\Http\Controllers\CorrectionController::class, 'void']);
+    Route::post('/{transaction}/adjust-price', [\App\Http\Controllers\CorrectionController::class, 'adjustPrice']);
+    Route::post('/{transaction}/refund', [\App\Http\Controllers\CorrectionController::class, 'refund']);
+    Route::get('/{transaction}/history', [\App\Http\Controllers\CorrectionController::class, 'history']);
+});
+
+Route::post('/auto-deduct/webhook', [\App\Http\Controllers\AutoDeductWebhookController::class, 'handle'])
+    ->middleware('auto_deduct_access:webhook');
+
+// ------------------------------------------------------------------------
+// DEPLOY HOOK (Staging only - protected by X-Deploy-Secret header)
+// ------------------------------------------------------------------------
+Route::post('/admin/deploy-hook', [\App\Http\Controllers\Admin\DeployHookController::class, 'handle']);

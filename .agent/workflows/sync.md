@@ -10,7 +10,7 @@ Workflow untuk sinkronisasi semua repository (API, Admin, Petugas, Mobile) ke VP
 ```
 IP: 157.10.252.74
 User: sipanda
-Pass: MpadSecure2026!
+Pass: Bapenda123#$
 ```
 
 ## Quick Commands
@@ -48,13 +48,13 @@ cd /Users/pondokit/Herd/retribusi-mobile && git add . && git commit -m "update" 
 ### 3. Deploy API ke VPS (Production - Main)
 // turbo
 ```bash
-sshpass -p 'MpadSecure2026!' ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74 "cd /home/sipanda/retribusi-api && git pull origin main && php artisan migrate --force && php artisan config:cache && php artisan cache:clear"
+sshpass -p 'Bapenda123#$' ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74 "cd /home/sipanda/retribusi-api && git pull origin main && php artisan migrate --force && php artisan config:cache && php artisan cache:clear"
 ```
 
 ### 4. Deploy API ke VPS (Development - Dev)
 // turbo
 ```bash
-sshpass -p 'MpadSecure2026!' ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74 "cd /home/sipanda/retribusi-api-dev && git pull origin dev && php artisan migrate --force && php artisan config:cache && php artisan cache:clear"
+sshpass -p 'Bapenda123#$' ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74 "cd /home/sipanda/retribusi-api-dev && git pull origin dev && php artisan migrate --force && php artisan config:cache && php artisan cache:clear"
 ```
 
 ### 5. Run Local Dev Servers
@@ -76,25 +76,25 @@ cd /Users/pondokit/Herd/retribusi-mobile && npm run dev -- --port=5175
 ### 6. Database Operations on VPS
 ```bash
 # Run migrations
-sshpass -p 'MpadSecure2026!' ssh sipanda@157.10.252.74 "cd /home/sipanda/retribusi-api && php artisan migrate --force"
+sshpass -p 'Bapenda123#$' ssh sipanda@157.10.252.74 "cd /home/sipanda/retribusi-api && php artisan migrate --force"
 
 # Run seeders
-sshpass -p 'MpadSecure2026!' ssh sipanda@157.10.252.74 "cd /home/sipanda/retribusi-api && php artisan db:seed"
+sshpass -p 'Bapenda123#$' ssh sipanda@157.10.252.74 "cd /home/sipanda/retribusi-api && php artisan db:seed"
 
 # Clear all cache
-sshpass -p 'MpadSecure2026!' ssh sipanda@157.10.252.74 "cd /home/sipanda/retribusi-api && php artisan config:clear && php artisan cache:clear && php artisan route:clear"
+sshpass -p 'Bapenda123#$' ssh sipanda@157.10.252.74 "cd /home/sipanda/retribusi-api && php artisan config:clear && php artisan cache:clear && php artisan route:clear"
 ```
 
 ### 7. Check VPS Logs
 ```bash
-sshpass -p 'MpadSecure2026!' ssh sipanda@157.10.252.74 "cd /home/sipanda/retribusi-api && tail -50 storage/logs/laravel.log"
+sshpass -p 'Bapenda123#$' ssh sipanda@157.10.252.74 "cd /home/sipanda/retribusi-api && tail -50 storage/logs/laravel.log"
 ```
 
 ### 8. Sync Local Database from VPS
 // turbo
 ```bash
 # Export dari VPS
-sshpass -p 'MpadSecure2026!' ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74 "mysqldump -u sipanda -pMpadSecure2026! retribusi --single-transaction --quick" > /tmp/vps_retribusi_backup.sql
+sshpass -p 'Bapenda123#$' ssh -o StrictHostKeyChecking=no sipanda@157.10.252.74 "mysqldump -u sipanda -pBapenda123#$ retribusi --single-transaction --quick" > /tmp/vps_retribusi_backup.sql
 
 # Import ke Local (menimpa data local!)
 mysql -u root retribusi < /tmp/vps_retribusi_backup.sql
@@ -107,7 +107,7 @@ mysqldump -u root retribusi --single-transaction --quick > /tmp/local_retribusi_
 
 # Upload & Import ke VPS
 scp /tmp/local_retribusi_backup.sql sipanda@157.10.252.74:/tmp/
-sshpass -p 'MpadSecure2026!' ssh sipanda@157.10.252.74 "mysql -u sipanda -pMpadSecure2026! retribusi < /tmp/local_retribusi_backup.sql"
+sshpass -p 'Bapenda123#$' ssh sipanda@157.10.252.74 "mysql -u sipanda -pBapenda123#$ retribusi < /tmp/local_retribusi_backup.sql"
 ```
 
 ### 10. Pull Latest Code to Local
