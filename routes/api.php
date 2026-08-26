@@ -76,6 +76,7 @@ Route::prefix('public')->group(function () {
     Route::get('/opds', [\App\Http\Controllers\PublicRegistrationController::class, 'getOpds']);
     Route::get('/taxpayers/check-nik/{nik}', [\App\Http\Controllers\PublicRegistrationController::class, 'checkNik']);
     Route::post('/register-taxpayer', [\App\Http\Controllers\PublicRegistrationController::class, 'register']);
+    Route::get('/mblb-vehicles', [\App\Http\Controllers\Api\MblbVehicleController::class, 'index']);
 });
 
 Route::post('/simulate-tax', function (Request $request) {
