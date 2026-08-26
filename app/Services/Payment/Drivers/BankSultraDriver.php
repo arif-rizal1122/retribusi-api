@@ -258,13 +258,14 @@ class BankSultraDriver implements PaymentGatewayInterface
 
         $taxObject = $bill->taxObject;
         $taxpayer = $bill->taxpayer;
-        $customerNo = $taxObject->nop ?? $taxObject->nopd ?? $bill->bill_number;
+        // customerNo WAJIB numerik ≤20 digit (konfirmasi bank 26 Agu: contoh "   80101000000002" = SPID 8 + customerNo 9 digit)
+        $customerNo = str_pad((string) $bill->id, 9, '0', STR_PAD_LEFT);
         $total = (float) ($bill->amount + (float) $bill->penalty_amount);
         $totalStr = number_format($total, 2, '.', '');
         $vaName = mb_substr($taxpayer->name ?? 'Wajib Pajak M-PAD', 0, 30);
 
-        $partnerServiceId = str_pad($partnerId, 10, ' ', STR_PAD_LEFT);
-        $virtualAccountNo = $partnerServiceId . $billNumber;
+        $partnerServiceId = str_pad($partnerId, 8, ' ', STR_PAD_LEFT);
+        $virtualAccountNo = $partnerServiceId . $customerNo;
 
         $body = [
             'additionalInfo' => [
@@ -276,7 +277,7 @@ class BankSultraDriver implements PaymentGatewayInterface
                 'billCode' => '01',
                 'billDescription' => ['indonesia' => 'Pembayaran PBB'],
                 'billName' => $customerNo,
-                'billNo' => $bill->bill_number,
+                'billNo' => $customerNo,
             ]],
             'customerNo' => $customerNo,
             'expiredDate' => Carbon::now()->addDay()->format('Y-m-d\TH:i:sP'),
