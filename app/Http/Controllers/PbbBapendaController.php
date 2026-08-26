@@ -393,16 +393,33 @@ class PbbBapendaController extends Controller
      */
     public function transactions(Request $request)
     {
-        $query = TransactionPbb::query()->latest();
+        $query = TransactionPbb::query();
 
-        if ($request->has('nop')) {
+        if ($request->filled('nop')) {
             $query->where('nop', 'like', '%'.$request->nop.'%');
         }
-        if ($request->has('tahun')) {
+        if ($request->filled('tahun')) {
             $query->where('tahun', $request->tahun);
         }
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('payment_status', $request->status);
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nop', 'like', '%'.$search.'%')
+                    ->orWhere('wp_name', 'like', '%'.$search.'%')
+                    ->orWhere('ntpd', 'like', '%'.$search.'%');
+            });
+        }
+
+        $allowedSorts = ['created_at', 'total_bayar', 'nop', 'tahun', 'payment_status'];
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortDir = $request->get('sort_dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        if (in_array($sortBy, $allowedSorts, true)) {
+            $query->orderBy($sortBy, $sortDir);
+        } else {
+            $query->orderBy('created_at', 'desc');
         }
 
         $perPage = $request->per_page ?? 20;
@@ -457,14 +474,23 @@ class PbbBapendaController extends Controller
     public function stats(Request $request)
     {
         $year = $request->tahun ?? date('Y');
+        $today = now()->toDateString();
 
-        $totalTransactions = TransactionPbb::where('tahun', $year)->count();
-        $successTransactions = TransactionPbb::where('tahun', $year)->success()->count();
-        $totalRevenue = TransactionPbb::where('tahun', $year)->success()->sum('total_bayar');
-        $reversedCount = TransactionPbb::where('tahun', $year)->where('payment_status', 'reversed')->count();
+        $baseQuery = TransactionPbb::where('tahun', $year);
+
+        $totalTransactions = (clone $baseQuery)->count();
+        $totalSuccess = (clone $baseQuery)->success()->count();
+        $totalFailed = (clone $baseQuery)->where('payment_status', 'failed')->count();
+        $totalPending = (clone $baseQuery)->where('payment_status', 'pending')->count();
+        $totalReversed = (clone $baseQuery)->where('payment_status', 'reversed')->count();
+        $totalRevenue = (clone $baseQuery)->success()->sum('total_bayar');
+
+        $todayQuery = TransactionPbb::where('tahun', $year)->whereDate('created_at', $today);
+        $todayTransactions = (clone $todayQuery)->count();
+        $todayRevenue = (clone $todayQuery)->success()->sum('total_bayar');
+
         $monthSql = SqlDate::month('created_at');
-
-        $monthlyRevenue = TransactionPbb::where('tahun', $year)
+        $monthlyRevenue = (clone $baseQuery)
             ->success()
             ->selectRaw("$monthSql as bulan, SUM(total_bayar) as total")
             ->groupByRaw($monthSql)
@@ -475,9 +501,13 @@ class PbbBapendaController extends Controller
             'status' => 'success',
             'data' => [
                 'total_transactions' => $totalTransactions,
-                'success_transactions' => $successTransactions,
+                'total_success' => $totalSuccess,
+                'total_failed' => $totalFailed,
+                'total_pending' => $totalPending,
+                'total_reversed' => $totalReversed,
                 'total_revenue' => (float) $totalRevenue,
-                'reversed_count' => $reversedCount,
+                'today_transactions' => $todayTransactions,
+                'today_revenue' => (float) $todayRevenue,
                 'monthly_revenue' => $monthlyRevenue,
             ],
         ]);
