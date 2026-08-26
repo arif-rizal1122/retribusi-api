@@ -316,7 +316,7 @@ class BankSultraDriver implements PaymentGatewayInterface
                 'x-partner-id' => $partnerId,
                 'x-signature' => base64_encode($signature),
                 'x-timestamp' => $timestamp,
-            ])->timeout(20)->post($baseUrl . $endpoint, $body);
+            ])->timeout(20)->withoutVerifying()->post($baseUrl . $endpoint, $body);
         } catch (\Exception $e) {
             Log::error('BankSultra createVA: koneksi gagal', ['error' => $e->getMessage()]);
             return ['status' => 'error', 'message' => 'Koneksi ke Bank Sultra gagal: ' . $e->getMessage(), 'code' => 503];
