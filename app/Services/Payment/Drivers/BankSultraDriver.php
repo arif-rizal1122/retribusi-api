@@ -9,7 +9,9 @@ use App\Models\TaxObject;
 use App\Services\BillingService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class BankSultraDriver implements PaymentGatewayInterface
 {
@@ -224,24 +226,152 @@ class BankSultraDriver implements PaymentGatewayInterface
     }
 
     /**
-     * Get account details (VA number) for a bill
+     * Create Virtual Account di Bank Sultra (SNAP VA)
+     * Spek Bank Sultra (konfirmasi 26 Agu 2026):
+     * - TANPA X-CLIENT-KEY (beda dgn BRI envelope)
+     * - Signature: SHA256withRSA (private key M-PAD) atas
+     *   stringToSign = METHOD:EndpointUrl:lowercase(hex(sha256(minify(body)))):timestamp
+     * - Endpoint: {base_url}/api/v1.0/transfer-va/create-va (port 15009)
      */
-    public function getAccountDetail(string $billNumber): array
+    public function createVA(string $billNumber): array
     {
         $bill = Bill::where('bill_number', $billNumber)->first();
         if (!$bill) {
             return ['status' => 'error', 'message' => 'Tagihan tidak ditemukan', 'code' => 404];
         }
+        if ($bill->status === 'lunas') {
+            return ['status' => 'error', 'message' => 'Tagihan sudah lunas', 'code' => 422];
+        }
 
-        // Logic: Format VA Sultra (Example: 99 + Bill Number)
-        return [
-            'status' => 'success',
-            'data' => [
-                'bank_name' => 'Bank Sultra',
-                'va_number' => '99' . $bill->bill_number,
-                'bill_info' => $this->inquiry($billNumber)['data'] ?? []
-            ]
+        $partnerId = config('snap.partners.BANK_SULTRA.partner_id', '');
+        $channelId = config('snap.partners.BANK_SULTRA.channel_id', '');
+        $baseUrl = rtrim((string) config('snap.bank_sultra_aft.base_url', ''), '/');
+        $privateKeyPath = (string) config('snap.security.mpad_private_key_path', '');
+
+        if (empty($partnerId) || empty($channelId) || empty($baseUrl) || empty($privateKeyPath) || !file_exists($privateKeyPath)) {
+            Log::error('BankSultra createVA: konfigurasi tidak lengkap', [
+                'partnerId' => $partnerId, 'channelId' => $channelId,
+                'baseUrl' => $baseUrl, 'keyExists' => file_exists($privateKeyPath),
+            ]);
+            return ['status' => 'error', 'message' => 'Konfigurasi Bank Sultra belum lengkap', 'code' => 500];
+        }
+
+        $taxObject = $bill->taxObject;
+        $taxpayer = $bill->taxpayer;
+        $customerNo = $taxObject->nop ?? $taxObject->nopd ?? $bill->bill_number;
+        $total = (float) ($bill->amount + (float) $bill->penalty_amount);
+        $totalStr = number_format($total, 2, '.', '');
+        $vaName = mb_substr($taxpayer->name ?? 'Wajib Pajak M-PAD', 0, 30);
+
+        $partnerServiceId = str_pad($partnerId, 10, ' ', STR_PAD_LEFT);
+        $virtualAccountNo = $partnerServiceId . $billNumber;
+
+        $body = [
+            'additionalInfo' => [
+                'channel' => $channelId,
+                'kodePajak' => '7472',
+            ],
+            'billDetails' => [[
+                'billAmount' => ['currency' => 'IDR', 'value' => $totalStr],
+                'billCode' => '01',
+                'billDescription' => ['indonesia' => 'Pembayaran PBB'],
+                'billName' => $customerNo,
+                'billNo' => $bill->bill_number,
+            ]],
+            'customerNo' => $customerNo,
+            'expiredDate' => Carbon::now()->addDay()->format('Y-m-d\TH:i:sP'),
+            'feeAmount' => ['currency' => 'IDR', 'value' => '0.00'],
+            'partnerServiceId' => $partnerServiceId,
+            'totalAmount' => ['currency' => 'IDR', 'value' => $totalStr],
+            'trxId' => (string) Str::uuid(),
+            'virtualAccountName' => $vaName,
+            'virtualAccountNo' => $virtualAccountNo,
+            'virtualAccountPhone' => '-',
+            'virtualAccountTrxType' => '1',
         ];
+
+        $timestamp = Carbon::now()->timezone('Asia/Makassar')->format('Y-m-d\TH:i:sP');
+        $endpoint = '/api/v1.0/transfer-va/create-va';
+        $canonicalBody = json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        // stringToSign formula Bank Sultra
+        $stringToSign = 'POST:' . $endpoint . ':' . strtolower(hash('sha256', $canonicalBody)) . ':' . $timestamp;
+
+        $privateKey = file_get_contents($privateKeyPath);
+        $pkey = openssl_pkey_get_private($privateKey);
+        if (!$pkey) {
+            Log::error('BankSultra createVA: gagal baca private key');
+            return ['status' => 'error', 'message' => 'Private key invalid', 'code' => 500];
+        }
+        openssl_sign($stringToSign, $signature, $pkey, OPENSSL_ALGO_SHA256);
+
+        $externalId = date('Ymd') . str_pad((string) $bill->id, 12, '0', STR_PAD_LEFT);
+
+        try {
+            $response = Http::withHeaders([
+                'accept' => 'application/json',
+                'channel-id' => $channelId,
+                'content-type' => 'application/json',
+                'x-external-id' => $externalId,
+                'x-partner-id' => $partnerId,
+                'x-signature' => base64_encode($signature),
+                'x-timestamp' => $timestamp,
+            ])->timeout(20)->post($baseUrl . $endpoint, $body);
+        } catch (\Exception $e) {
+            Log::error('BankSultra createVA: koneksi gagal', ['error' => $e->getMessage()]);
+            return ['status' => 'error', 'message' => 'Koneksi ke Bank Sultra gagal: ' . $e->getMessage(), 'code' => 503];
+        }
+
+        Log::info('BankSultra createVA response', [
+            'http' => $response->status(),
+            'body' => $response->json(),
+        ]);
+
+        $result = $response->json() ?? [];
+
+        if ($response->successful() && ($result['responseCode'] ?? '') === '2007300') {
+            return [
+                'status' => 'success',
+                'code' => 200,
+                'data' => [
+                    'trxId' => $result['trxId'] ?? $body['trxId'],
+                    'virtualAccountNo' => $result['virtualAccountNo'] ?? $virtualAccountNo,
+                    'virtualAccountName' => $result['virtualAccountName'] ?? $vaName,
+                    'totalAmount' => $result['totalAmount'] ?? $body['totalAmount'],
+                    'expiredDate' => $result['expiredDate'] ?? $body['expiredDate'],
+                    'raw' => $result,
+                ],
+            ];
+        }
+
+        return [
+            'status' => 'error',
+            'code' => $response->status(),
+            'message' => 'Create VA ditolak Bank Sultra',
+            'data' => $result,
+        ];
+    }
+
+    /**
+     * Get account details (VA number) for a bill
+     */
+    public function getAccountDetail(string $billNumber): array
+    {
+        // Buat VA di Bank Sultra (SNAP VA)
+        $result = $this->createVA($billNumber);
+        if (($result['status'] ?? '') === 'success') {
+            return [
+                'status' => 'success',
+                'data' => [
+                    'bank_name' => 'Bank Sultra',
+                    'va_number' => $result['data']['virtualAccountNo'] ?? '',
+                    'expired_date' => $result['data']['expiredDate'] ?? null,
+                    'bill_info' => $this->inquiry($billNumber)['data'] ?? [],
+                ],
+            ];
+        }
+
+        return $result;
     }
 
     /**
