@@ -529,6 +529,14 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 });
 
 // ------------------------------------------------------------------------
+
+// ------------------------------------------------------------------------
+// BANK SULTRA — callback VA (dipanggil Bank Sultra saat pembayaran masuk)
+// ------------------------------------------------------------------------
+Route::prefix('h2h/bank-sultra')->group(function () {
+    Route::post('/callback', [\App\Http\Controllers\Api\H2h\BpdWebhookController::class, 'incomingTransfer']);
+});
+
 // H2H BPN — endpoint eksternal yang dipanggil sistem BPN (KKP).
 // Autentikasi via header X-H2H-Key (dicek di dalam controller).
 // M21-1466 (F3.2): bridging status lunas ke BPN (SPLP).
