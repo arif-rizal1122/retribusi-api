@@ -60,7 +60,7 @@ class BpdWebhookController extends Controller
                 'paymentDate' => $paymentDate,
             ]);
             return response()->json([
-                'responseCode' => '2002700',
+                'responseCode' => '2003300',
                 'responseMessage' => 'Successful',
                 'partnerReferenceNo' => $partnerReferenceNo,
             ], 200);
