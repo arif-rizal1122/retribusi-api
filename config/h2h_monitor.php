@@ -48,6 +48,7 @@ return [
             'fallback_key' => 'snap.bank_sultra.base_url',
             'literal_url'  => null,
             'endpoint'     => '',
+            'verify_ssl'   => false, // cert self-signed (port 15009) — tanpa verifikasi SSL
         ],
         'bni' => [
             'label'        => 'BNI',

@@ -70,7 +70,7 @@ class MonitorH2HCommand extends Command
                 continue;
             }
 
-            [$status, $latencyMs, $error] = $this->ping($endpoint, $timeout, $okMs, $slowMs);
+            [$status, $latencyMs, $error] = $this->ping($endpoint, $timeout, $okMs, $slowMs, $conf['verify_ssl'] ?? true);
             $log = $this->record($connector, $status, $latencyMs, $error, $endpoint);
             $summary[$status]++;
 
@@ -159,12 +159,16 @@ class MonitorH2HCommand extends Command
      *
      * @return array{0: string, 1: ?int, 2: ?string} [status, latency_ms, error]
      */
-    protected function ping(string $endpoint, int $timeout, int $okMs, int $slowMs): array
+    protected function ping(string $endpoint, int $timeout, int $okMs, int $slowMs, bool $verifySsl = true): array
     {
         $start = hrtime(true);
 
         try {
-            $response = Http::timeout($timeout)->get($endpoint);
+            $request = Http::timeout($timeout);
+            if (! $verifySsl) {
+                $request = $request->withoutVerifying(); // endpoint bank self-signed (Bank Sultra port 15009)
+            }
+            $response = $request->get($endpoint);
             $latencyMs = (int) round((hrtime(true) - $start) / 1_000_000);
 
             if ($response->serverError()) {
