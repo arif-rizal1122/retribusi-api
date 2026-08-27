@@ -3,6 +3,7 @@
 namespace App\Services\Payment\Snap;
 
 use Illuminate\Http\Request;
+use App\Services\Payment\Snap\Exceptions\SnapValidationException;
 
 class SnapSecurityService
 {
