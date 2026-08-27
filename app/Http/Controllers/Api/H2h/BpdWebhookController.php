@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use phpseclib3\Crypt\PublicKeyLoader;
+use phpseclib3\Crypt\RSA;
 
 class BpdWebhookController extends Controller
 {
@@ -23,14 +25,46 @@ class BpdWebhookController extends Controller
     {
         $payload = $request->all();
 
-        // Selalu catat payload MENTAH + header (untuk verifikasi signature & analisa format callback)
+        // Selalu catat payload MENTAH + header + RAW BODY (untuk verifikasi signature & analisa format callback)
+        $rawBody = $request->getContent();
         Log::info('Webhook Incoming Transfer BPD Received', [
             'payload' => $payload,
+            'raw_body' => $rawBody,
             'headers' => collect($request->headers->all())
                 ->map(fn ($v) => is_array($v) ? ($v[0] ?? null) : $v)
                 ->filter()
                 ->toArray(),
         ]);
+
+        // ===== Verifikasi X-SIGNATURE callback (Bank Sultra SNAP, TERBUKTI 27 Agu) =====
+        // Bank ENCRYPT stringToSign dengan PUBLIC key M-PAD (RSA 2048) → kita DECRYPT dgn PRIVATE key M-PAD (OAEP-SHA256).
+        // stringToSign = POST:/api/v1.0/transfer-va/payment:{doublehex(sha256(rawBody))}:{x-timestamp}
+        $signatureValid = null; // null = tidak bisa diverifikasi
+        $xSignature = $request->header('x-signature');
+        $xTimestamp = $request->header('x-timestamp');
+
+        if ($xSignature && $xTimestamp) {
+            try {
+                $privPath = (string) config('snap.security.mpad_private_key_path', '');
+                if ($privPath && file_exists($privPath)) {
+                    $rsa = PublicKeyLoader::load(file_get_contents($privPath))
+                        ->withHash('sha256')
+                        ->withMGFHash('sha256')
+                        ->withPadding(RSA::ENCRYPTION_OAEP);
+                    $plain = $rsa->decrypt(base64_decode($xSignature));
+                    $doubleHex = bin2hex(strtolower(hash('sha256', $rawBody)));
+                    $expected = 'POST:/api/v1.0/transfer-va/payment:' . $doubleHex . ':' . $xTimestamp;
+                    $signatureValid = hash_equals($expected, $plain);
+                    Log::info('BankSultra callback signature check', [
+                        'valid' => $signatureValid,
+                        'xTimestamp' => $xTimestamp,
+                        'rawBodyLen' => strlen($rawBody),
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('BankSultra callback signature check GAGAL decrypt', ['error' => $e->getMessage()]);
+            }
+        }
 
         // Format callback Bank Sultra (SNAP VA payment notification):
         //   virtualAccountNo, paidAmount.value, trxId/referenceNo, paymentDate, partnerServiceId
@@ -131,6 +165,7 @@ class BpdWebhookController extends Controller
                 'paymentDate' => $paymentDate,
                 'mapped' => $bill ? true : false,
                 'aftEnabled' => $aftEnabled,
+                'signatureValid' => $signatureValid,
             ]);
             return response()->json([
                 'responseCode' => '2003300',
