@@ -5,8 +5,13 @@ namespace App\Http\Controllers\Api\H2h;
 use App\Http\Controllers\Controller;
 use App\Jobs\ExecuteAutoDebitAFT;
 use App\Models\AutoDeductLog;
+use App\Models\Bill;
+use App\Models\Payment;
+use App\Models\TaxObject;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class BpdWebhookController extends Controller
 {
@@ -47,17 +52,85 @@ class BpdWebhookController extends Controller
             ], 400);
         }
 
-        // Fase uji callback VA Bank Sultra (27 Agu): cukup catat & ACK.
-        // Mapping NOP/taxpayer & alur AFT untuk VA Sultra belum diverifikasi —
-        // JANGAN trigger AutoDebit otomatis sebelum alur final disepakati dengan bank.
+        // Fase uji callback VA Bank Sultra (27 Agu): catat + mapping NOP.
+        // Mapping NOP → tax object → bill pending. Pembayaran hanya dicatat
+        // saat config('snap.bank_sultra_aft.enabled') = true (alur final disepakati).
+        // AFT tetap TIDAK di-trigger otomatis dari sini (guard enabled).
         $isSultraVa = isset($payload['virtualAccountNo']) || isset($payload['paidAmount']) || isset($payload['partnerServiceId']);
 
         if ($isSultraVa) {
+            $customerNo = $payload['customerNo'] ?? null;
+            $taxObject = null;
+            $bill = null;
+            $taxpayerId = null;
+
+            if ($customerNo) {
+                // NOP 18 digit → taxpayer_nops.nop → taxpayer_id → bill pending
+                $nopRow = DB::table('taxpayer_nops')->where('nop', $customerNo)->first()
+                    ?? DB::table('taxpayer_nops')->where('nop', ltrim((string) $customerNo, '0'))->first();
+                if ($nopRow) {
+                    $taxpayerId = $nopRow->taxpayer_id;
+                    $bill = Bill::where('taxpayer_id', $taxpayerId)
+                        ->where('status', 'pending')
+                        ->orderByDesc('id')
+                        ->first();
+                    if ($bill) {
+                        $taxObject = $bill->taxObject;
+                    }
+                }
+            }
+
+            Log::info('BankSultra VA callback mapping', [
+                'customerNo' => $customerNo,
+                'taxpayerId' => $taxpayerId,
+                'taxObjectId' => $taxObject?->id,
+                'billId' => $bill?->id,
+                'billNumber' => $bill?->bill_number,
+                'amount' => $transactionAmount,
+                'matched' => $bill ? true : false,
+            ]);
+
+            $aftEnabled = (bool) config('snap.bank_sultra_aft.enabled', false);
+
+            if ($aftEnabled && $bill) {
+                DB::transaction(function () use ($bill, $transactionAmount, $partnerReferenceNo, $payload) {
+                    $bill->update([
+                        'status' => 'lunas',
+                        'penalty_at_payment' => $bill->penalty_amount,
+                        'bank_code' => 'SULTRA',
+                    ]);
+
+                    Payment::create([
+                        'bill_id' => $bill->id,
+                        'tax_object_id' => $bill->tax_object_id,
+                        'taxpayer_id' => $bill->taxpayer_id,
+                        'transaction_id' => $partnerReferenceNo ?: 'VA-' . time(),
+                        'reference_number' => $partnerReferenceNo ?: 'VA-' . Str::random(12),
+                        'receipt_number' => 'NTPD-' . date('Ymd') . '-' . strtoupper(Str::random(10)),
+                        'payment_method' => 'va',
+                        'channel' => $payload['additionalInfo']['channel'] ?? 'ATM',
+                        'amount' => $transactionAmount,
+                        'status' => 'success',
+                        'billing_period' => $bill->period ?? Carbon::now()->format('Y-m'),
+                        'paid_at' => $payload['paymentDate'] ?? Carbon::now(),
+                        'raw_callback_data' => $payload,
+                    ]);
+                });
+
+                Log::info('BankSultra VA callback DIPROSES (payment dicatat)', [
+                    'billNumber' => $bill->bill_number,
+                    'amount' => $transactionAmount,
+                    'referenceNo' => $partnerReferenceNo,
+                ]);
+            }
+
             Log::info('BankSultra VA callback diterima (fase uji)', [
                 'virtualAccountNo' => $accountNo,
                 'amount' => $transactionAmount,
                 'trxId' => $partnerReferenceNo,
                 'paymentDate' => $paymentDate,
+                'mapped' => $bill ? true : false,
+                'aftEnabled' => $aftEnabled,
             ]);
             return response()->json([
                 'responseCode' => '2003300',
