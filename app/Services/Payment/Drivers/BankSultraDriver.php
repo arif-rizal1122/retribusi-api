@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use phpseclib3\Crypt\PublicKeyLoader;
+use phpseclib3\Crypt\RSA;
 
 class BankSultraDriver implements PaymentGatewayInterface
 {
@@ -227,11 +229,13 @@ class BankSultraDriver implements PaymentGatewayInterface
 
     /**
      * Create Virtual Account di Bank Sultra (SNAP VA)
-     * Spek Bank Sultra (konfirmasi 26 Agu 2026):
-     * - TANPA X-CLIENT-KEY (beda dgn BRI envelope)
-     * - Signature: SHA256withRSA (private key M-PAD) atas
-     *   stringToSign = METHOD:EndpointUrl:lowercase(hex(sha256(minify(body)))):timestamp
+     * Spek Bank Sultra (TERVERIFIKASI 26-27 Agu 2026):
+     * - TANPA X-CLIENT-KEY
+     * - Signature: OAEP-SHA256 encrypt dengan PUBLIC key BANK atas
+     *   stringToSign = METHOD:EndpointUrl:DOUBLEHEX(sha256(minify(body))):timestamp
+     *   (hash di-hex DUA KALI — 128 char; bukan single hex!)
      * - Endpoint: {base_url}/api/v1.0/transfer-va/create-va (port 15009)
+     * - customerNo = NOP 18 digit | billNo = 9 digit | virtualAccountNo = SPID(8)+last8
      */
     public function createVA(string $billNumber): array
     {
@@ -247,25 +251,29 @@ class BankSultraDriver implements PaymentGatewayInterface
         $channelId = config('snap.partners.BANK_SULTRA.channel_id', '');
         $baseUrl = rtrim((string) config('snap.bank_sultra_aft.base_url', ''), '/');
         $privateKeyPath = (string) config('snap.security.mpad_private_key_path', '');
+        $publicBankKeyPath = (string) config('snap.bank_sultra_aft.bank_public_key_path', storage_path('app/keys/bank_sultra_public_key.pem'));
 
-        if (empty($partnerId) || empty($channelId) || empty($baseUrl) || empty($privateKeyPath) || !file_exists($privateKeyPath)) {
+        if (empty($partnerId) || empty($channelId) || empty($baseUrl) || empty($privateKeyPath) || !file_exists($privateKeyPath) || !file_exists($publicBankKeyPath)) {
             Log::error('BankSultra createVA: konfigurasi tidak lengkap', [
                 'partnerId' => $partnerId, 'channelId' => $channelId,
                 'baseUrl' => $baseUrl, 'keyExists' => file_exists($privateKeyPath),
+                'bankPublicKeyExists' => file_exists($publicBankKeyPath),
             ]);
             return ['status' => 'error', 'message' => 'Konfigurasi Bank Sultra belum lengkap', 'code' => 500];
         }
 
         $taxObject = $bill->taxObject;
         $taxpayer = $bill->taxpayer;
-        // customerNo WAJIB numerik ≤20 digit (konfirmasi bank 26 Agu: contoh "   80101000000002" = SPID 8 + customerNo 9 digit)
-        $customerNo = str_pad((string) $bill->id, 9, '0', STR_PAD_LEFT);
+        // customerNo = NOP 18 digit (konfirmasi bank 26 Agu: "diset 18 digit aja" dari bank = customerNo, bukan billNo!)
+        $rawNop = preg_replace('/\D/', '', (string) ($taxObject->nop ?? $bill->id));
+        $customerNo = str_pad($rawNop, 18, '0', STR_PAD_LEFT);
         $total = (float) ($bill->amount + (float) $bill->penalty_amount);
         $totalStr = number_format($total, 2, '.', '');
         $vaName = mb_substr($taxpayer->name ?? 'Wajib Pajak M-PAD', 0, 30);
 
         $partnerServiceId = str_pad($partnerId, 8, ' ', STR_PAD_LEFT);
-        $virtualAccountNo = $partnerServiceId . $customerNo;
+        // virtualAccountNo = partnerServiceId(8) + suffix 8 digit (BUKAN + customerNo penuh)
+        $virtualAccountNo = $partnerServiceId . substr($customerNo, -8);
 
         $body = [
             'additionalInfo' => [
@@ -277,7 +285,7 @@ class BankSultraDriver implements PaymentGatewayInterface
                 'billCode' => '01',
                 'billDescription' => ['indonesia' => 'Pembayaran PBB'],
                 'billName' => $customerNo,
-                'billNo' => $customerNo,
+                'billNo' => substr($customerNo, -9),
             ]],
             'customerNo' => $customerNo,
             'expiredDate' => Carbon::now()->addDay()->format('Y-m-d\TH:i:sP'),
@@ -291,20 +299,31 @@ class BankSultraDriver implements PaymentGatewayInterface
             'virtualAccountTrxType' => '1',
         ];
 
-        $timestamp = Carbon::now()->timezone('Asia/Makassar')->format('Y-m-d\TH:i:sP');
+        $timestamp = Carbon::now()->timezone('Asia/Makassar')->format('Y-m-d\\TH:i:sP');
         $endpoint = '/api/v1.0/transfer-va/create-va';
         $canonicalBody = json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
-        // stringToSign formula Bank Sultra
-        $stringToSign = 'POST:' . $endpoint . ':' . strtolower(hash('sha256', $canonicalBody)) . ':' . $timestamp;
+        // stringToSign formula Bank Sultra (TERVERIFIKASI 26 Agu 20:42):
+        //   hash1 = sha256(minify(body)) hex (64 char)
+        //   hash2 = hex(hash1) lagi — DOUBLE HEX (128 char) — INI KUNCI!
+        $hash1 = strtolower(hash('sha256', $canonicalBody));
+        $hash2 = bin2hex($hash1); // hex di-hex lagi
+        $stringToSign = 'POST:' . $endpoint . ':' . $hash2 . ':' . $timestamp;
 
-        $privateKey = file_get_contents($privateKeyPath);
-        $pkey = openssl_pkey_get_private($privateKey);
-        if (!$pkey) {
-            Log::error('BankSultra createVA: gagal baca private key');
-            return ['status' => 'error', 'message' => 'Private key invalid', 'code' => 500];
+        // X-SIGNATURE = OAEP-SHA256 encrypt stringToSign dgn PUBLIC key BANK (4096).
+        // BUKAN openssl_sign (PKCS1 private M-PAD) — itu selalu "oaep decoding error".
+        // PHP openssl_public_encrypt OAEP default SHA-1 TIDAK cukup → pakai phpseclib3.
+        $bankPublicKey = file_get_contents($publicBankKeyPath);
+        try {
+            $rsa = PublicKeyLoader::load($bankPublicKey)
+                ->withHash('sha256')
+                ->withMGFHash('sha256')
+                ->withPadding(RSA::ENCRYPTION_OAEP);
+            $signature = $rsa->encrypt($stringToSign);
+        } catch (\Throwable $e) {
+            Log::error('BankSultra createVA: gagal OAEP encrypt public key bank', ['error' => $e->getMessage()]);
+            return ['status' => 'error', 'message' => 'Gagal buat signature: ' . $e->getMessage(), 'code' => 500];
         }
-        openssl_sign($stringToSign, $signature, $pkey, OPENSSL_ALGO_SHA256);
 
         $externalId = date('Ymd') . str_pad((string) $bill->id, 12, '0', STR_PAD_LEFT);
 
@@ -330,7 +349,7 @@ class BankSultraDriver implements PaymentGatewayInterface
 
         $result = $response->json() ?? [];
 
-        if ($response->successful() && ($result['responseCode'] ?? '') === '2007300') {
+        if ($response->successful() && ($result['responseCode'] ?? '') === '2002700') {
             return [
                 'status' => 'success',
                 'code' => 200,
