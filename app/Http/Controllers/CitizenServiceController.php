@@ -136,6 +136,23 @@ class CitizenServiceController extends Controller
             $metadata = json_decode($metadata, true) ?: [];
         }
 
+        // Upload field bertipe 'upload'/'file' dari form_schema (foto_lokasi, foto_usaha, KTP, dll)
+        // Fix 28 Agu 2026: sebelumnya field ini dirender textbox & tidak pernah diproses sebagai file.
+        foreach ($classification->form_schema ?? [] as $schemaField) {
+            $fkey = $schemaField['key'] ?? null;
+            $ftype = $schemaField['type'] ?? null;
+            if (!$fkey || !in_array($ftype, ['upload', 'file'], true)) continue;
+            if ($request->hasFile($fkey)) {
+                $request->validate([
+                    $fkey => 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+                ]);
+                $metadata[$fkey] = $cloudinary->upload(
+                    $request->file($fkey),
+                    'citizen/documents/' . $service->id
+                );
+            }
+        }
+
         $metadata = $this->applySchemaDefaults($classification->form_schema ?? [], $metadata);
         $missingMetadata = $this->missingRequiredMetadata($classification->form_schema ?? [], $metadata);
         if (!empty($missingMetadata)) {
