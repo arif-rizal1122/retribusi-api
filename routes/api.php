@@ -41,6 +41,7 @@ Route::group(['middleware' => 'throttle:10,1'], function () {
     Route::post('/citizen/request-otp', [AuthController::class, 'requestCitizenOtp']);
     Route::post('/citizen/verify-otp', [AuthController::class, 'verifyCitizenOtp']);
     Route::post('/citizen/register', [AuthController::class, 'registerCitizen']);
+    Route::post('/nik-lookup', \App\Http\Controllers\NikLookupController::class)->middleware('throttle:30,1');
 });
 
 // Other public routes
