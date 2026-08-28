@@ -46,6 +46,7 @@ class MeController extends Controller
             'name' => 'sometimes|string|max:255',
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:20',
+            'email' => 'sometimes|email|max:255',
             'avatar' => 'nullable|image|max:2048',
             'surat_penugasan' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'district' => 'nullable|string',
@@ -66,7 +67,18 @@ class MeController extends Controller
         
         // Email update (with unique check)
         if ($request->has('email')) {
-            $user->email = $request->email;
+            $email = strtolower(trim($request->email));
+            $emailExists = \App\Models\Taxpayer::where('email', $email)
+                    ->where('id', '!=', $user->id)->exists()
+                || \App\Models\User::where('email', $email)
+                    ->where('id', '!=', $user->id)->exists();
+            if ($emailExists) {
+                return response()->json([
+                    'message' => 'Email sudah digunakan',
+                    'errors' => ['email' => ['Email sudah terdaftar. Gunakan email lain.']],
+                ], 422);
+            }
+            $user->email = $email;
         }
         
         // Metadata fields
