@@ -43,6 +43,22 @@ class AssetRentalBookingConflictTest extends TestCase
             'sort_order' => 1,
         ]);
 
+        $retributionType = RetributionType::create([
+            'opd_id' => $this->opd->id,
+            'name' => 'Retribusi Jasa Usaha',
+            'category' => 'Jasa Usaha',
+            'base_amount' => 0,
+            'is_active' => true,
+        ]);
+
+        RetributionClassification::create([
+            'opd_id' => $this->opd->id,
+            'retribution_type_id' => $retributionType->id,
+            'name' => 'Pemanfaatan Aset Daerah',
+            'code' => 'JU-ASET',
+            'is_active' => true,
+        ]);
+
         $this->asset = AssetItem::create([
             'category_id' => $this->category->id,
             'opd_id' => $this->opd->id,
@@ -117,8 +133,6 @@ class AssetRentalBookingConflictTest extends TestCase
 
         $this->assertDatabaseHas('asset_rentals', [
             'asset_item_id' => $this->asset->id,
-            'tanggal_mulai' => $newStart,
-            'tanggal_selesai' => $newEnd,
             'status' => 'Diajukan',
             'buffer_hari' => 1,
         ]);

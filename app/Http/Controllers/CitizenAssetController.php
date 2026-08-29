@@ -257,7 +257,7 @@ class CitizenAssetController extends Controller
     public function myRentals(Request $request)
     {
         $taxpayer = $request->user();
-        $rentals = AssetRental::with('assetItem:id,name,code')
+        $rentals = AssetRental::with(['assetItem:id,name,code', 'surveyor:id,name'])
             ->where('taxpayer_id', $taxpayer->id)
             ->orderByDesc('created_at')
             ->get();
@@ -271,7 +271,7 @@ class CitizenAssetController extends Controller
     public function showRental(Request $request, $id)
     {
         $taxpayer = $request->user();
-        $rental = AssetRental::with('assetItem:id,name,code,category_id')
+        $rental = AssetRental::with(['assetItem:id,name,code,category_id', 'surveyor:id,name', 'verifiedBy:id,name', 'approvedBy:id,name'])
             ->where('id', $id)
             ->where('taxpayer_id', $taxpayer->id)
             ->firstOrFail();

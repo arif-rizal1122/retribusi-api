@@ -370,6 +370,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         // ASET DAERAH (JU-ASET) — Admin: dashboard, kelola kategori & unit, verifikasi sewa
         Route::get('/asset/dashboard', [\App\Http\Controllers\AdminAssetController::class, 'dashboard']);
         Route::get('/asset/rentals', [\App\Http\Controllers\AdminAssetController::class, 'rentals']);
+        Route::post('/asset/rentals/{id}/survey', [\App\Http\Controllers\AdminAssetController::class, 'submitSurvey']);
+        Route::post('/asset/rentals/{id}/contract', [\App\Http\Controllers\AdminAssetController::class, 'generateContract']);
         Route::post('/asset/rentals/{id}/verify', [\App\Http\Controllers\AdminAssetController::class, 'verify']);
         Route::post('/asset/rentals/{id}/approve', [\App\Http\Controllers\AdminAssetController::class, 'approve']);
         Route::post('/asset/rentals/{id}/reject', [\App\Http\Controllers\AdminAssetController::class, 'reject']);

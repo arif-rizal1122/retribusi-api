@@ -72,6 +72,7 @@ class AdminAssetController extends Controller
             'taxpayer:id,name,nik,npwpd,phone',
             'assetItem:id,name,code,category_id',
             'assetItem.category:id,name',
+            'surveyor:id,name',
             'verifiedBy:id,name',
             'approvedBy:id,name',
         ]);
@@ -88,6 +89,7 @@ class AdminAssetController extends Controller
             $s = $request->input('search');
             $query->where(function ($q) use ($s) {
                 $q->where('rental_code', 'like', "%{$s}%")
+                    ->orWhere('nomor_kontrak', 'like', "%{$s}%")
                     ->orWhereHas('taxpayer', fn ($t) => $t->where('name', 'like', "%{$s}%")->orWhere('nik', 'like', "%{$s}%"))
                     ->orWhereHas('assetItem', fn ($i) => $i->where('name', 'like', "%{$s}%")->orWhere('code', 'like', "%{$s}%"));
             });
@@ -96,6 +98,70 @@ class AdminAssetController extends Controller
         $rentals = $query->orderByDesc('created_at')->paginate($request->input('per_page', 20));
 
         return response()->json($rentals);
+    }
+
+    /**
+     * Submit hasil survey lapangan (4 butir checklist kelayakan).
+     */
+    public function submitSurvey(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'survey_akses_jalan' => 'required|boolean',
+            'survey_dekat_jalan_raya' => 'required|boolean',
+            'survey_keamanan' => 'required|boolean',
+            'survey_lahan_luas' => 'required|boolean',
+            'survey_kesimpulan' => 'nullable|string',
+            'survey_foto_path' => 'nullable|string',
+        ]);
+
+        $rental = AssetRental::findOrFail($id);
+        $this->authorizeAssetScope($rental);
+
+        $rental->update([
+            'survey_akses_jalan' => $validated['survey_akses_jalan'],
+            'survey_dekat_jalan_raya' => $validated['survey_dekat_jalan_raya'],
+            'survey_keamanan' => $validated['survey_keamanan'],
+            'survey_lahan_luas' => $validated['survey_lahan_luas'],
+            'survey_kesimpulan' => $validated['survey_kesimpulan'] ?? null,
+            'survey_foto_path' => $validated['survey_foto_path'] ?? null,
+            'surveyor_user_id' => auth()->id(),
+            'survey_submitted_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Laporan hasil survey kelayakan lapangan berhasil disimpan.',
+            'data' => $rental->load(['surveyor:id,name', 'assetItem:id,name,code']),
+        ]);
+    }
+
+    /**
+     * Terbitkan kontrak sewa dan tentukan termin pembayaran (Tahap 1 & Tahap 2).
+     */
+    public function generateContract(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'nomor_kontrak' => 'required|string|max:100',
+            'tahap_1_amount' => 'required|numeric|min:0',
+            'tahap_2_amount' => 'nullable|numeric|min:0',
+        ]);
+
+        $rental = AssetRental::findOrFail($id);
+        $this->authorizeAssetScope($rental);
+
+        $rental->update([
+            'nomor_kontrak' => $validated['nomor_kontrak'],
+            'tahap_1_amount' => $validated['tahap_1_amount'],
+            'tahap_2_amount' => $validated['tahap_2_amount'] ?? 0,
+            'tahap_1_status' => 'Pending',
+            'tahap_2_status' => 'Pending',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kontrak sewa dan termin pembayaran berhasil diterbitkan.',
+            'data' => $rental,
+        ]);
     }
 
     /**
@@ -160,7 +226,7 @@ class AdminAssetController extends Controller
     }
 
     /**
-     * Catat pengembalian aset (Disetujui → Selesai + kondisi + denda).
+     * Catat pengembalian aset (Disetujui → Selesai + kondisi + denda + actual hours).
      */
     public function complete(Request $request, $id)
     {
@@ -169,6 +235,7 @@ class AdminAssetController extends Controller
             'kondisi_pengembalian' => 'required|in:Baik,Rusak Ringan,Rusak Berat,Hilang',
             'catatan' => 'nullable|string',
             'denda' => 'nullable|numeric|min:0',
+            'actual_hours' => 'nullable|numeric|min:0',
         ]);
 
         $rental = AssetRental::findOrFail($id);
@@ -183,6 +250,7 @@ class AdminAssetController extends Controller
             'kondisi_pengembalian' => $validated['kondisi_pengembalian'],
             'catatan_pengembalian' => $validated['catatan'] ?? null,
             'denda' => $validated['denda'] ?? 0,
+            'actual_hours' => $validated['actual_hours'] ?? null,
         ]);
 
         return response()->json(['message' => 'Pengembalian aset dicatat.', 'data' => $rental]);

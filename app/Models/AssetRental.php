@@ -9,6 +9,7 @@ class AssetRental extends Model
 {
     protected $fillable = [
         'rental_code',
+        'nomor_kontrak',
         'taxpayer_id',
         'asset_item_id',
         'retribution_type_id',
@@ -22,6 +23,13 @@ class AssetRental extends Model
         'total_biaya',
         'dp',
         'sisa_pembayaran',
+        'tahap_1_amount',
+        'tahap_1_status',
+        'tahap_1_paid_at',
+        'tahap_2_amount',
+        'tahap_2_status',
+        'tahap_2_paid_at',
+        'actual_hours',
         'metode_pembayaran',
         'status',
         'lokasi_penggunaan',
@@ -37,6 +45,14 @@ class AssetRental extends Model
         'operator_sim',
         'operator_sertifikat_url',
         'dokumen',
+        'survey_akses_jalan',
+        'survey_dekat_jalan_raya',
+        'survey_keamanan',
+        'survey_lahan_luas',
+        'survey_kesimpulan',
+        'survey_foto_path',
+        'surveyor_user_id',
+        'survey_submitted_at',
         'tanggal_verifikasi',
         'tanggal_approval',
         'catatan_verifikator',
@@ -60,7 +76,17 @@ class AssetRental extends Model
         'total_biaya' => 'decimal:2',
         'dp' => 'decimal:2',
         'sisa_pembayaran' => 'decimal:2',
+        'tahap_1_amount' => 'decimal:2',
+        'tahap_1_paid_at' => 'datetime',
+        'tahap_2_amount' => 'decimal:2',
+        'tahap_2_paid_at' => 'datetime',
+        'actual_hours' => 'decimal:2',
         'denda' => 'decimal:2',
+        'survey_akses_jalan' => 'boolean',
+        'survey_dekat_jalan_raya' => 'boolean',
+        'survey_keamanan' => 'boolean',
+        'survey_lahan_luas' => 'boolean',
+        'survey_submitted_at' => 'datetime',
         'tanggal_verifikasi' => 'datetime',
         'tanggal_approval' => 'datetime',
         'tanggal_pengembalian' => 'date',
@@ -82,6 +108,11 @@ class AssetRental extends Model
     public function retributionType(): BelongsTo
     {
         return $this->belongsTo(RetributionType::class, 'retribution_type_id');
+    }
+
+    public function surveyor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'surveyor_user_id');
     }
 
     public function verifiedBy(): BelongsTo
