@@ -173,6 +173,33 @@ class CitizenServiceController extends Controller
                     'metadata' => ['NOP PBB sedang dalam proses pendaftaran.'],
                 ]);
             }
+
+            // Zero-Trust Server Verification (Task 1951): Inquiry langsung dari server
+            try {
+                $inquiry = app(\App\Services\PbbBapendaService::class)->inquiryWithFallback($nop, date('Y'));
+                if (($inquiry['status'] ?? 0) === 200) {
+                    if (!empty($inquiry['nama_wp'])) {
+                        $metadata['nama_wp'] = $inquiry['nama_wp'];
+                    }
+                    if (!empty($inquiry['alamat_wp'])) {
+                        $metadata['alamat_wp'] = $inquiry['alamat_wp'];
+                    }
+                    if (!empty($inquiry['kelurahan'])) {
+                        $metadata['kelurahan'] = $inquiry['kelurahan'];
+                    }
+                    if (!empty($inquiry['kota'])) {
+                        $metadata['kota'] = $inquiry['kota'];
+                    }
+                    $metadata['pbb_pokok'] = (float) ($inquiry['pbb_pokok'] ?? $metadata['pbb_pokok'] ?? 0);
+                    $metadata['njop_total'] = (float) ($inquiry['njop_total'] ?? $metadata['njop_total'] ?? 0);
+                    $metadata['luas_bumi'] = (float) ($inquiry['luas_bumi'] ?? $metadata['luas_bumi'] ?? 0);
+                    $metadata['luas_bangunan'] = (float) ($inquiry['luas_bangunan'] ?? $metadata['luas_bangunan'] ?? 0);
+                    $metadata['data_source'] = $inquiry['source'] ?? 'simpbb';
+                    $metadata['h2h_verified_at'] = now()->toISOString();
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Zero-trust PBB inquiry lookup skipped/failed: ' . $e->getMessage());
+            }
         }
 
         // Handle dynamic document uploads based on requirements from this classification

@@ -71,14 +71,16 @@ return new class extends Migration
         ];
 
         foreach ($rows as [$sectorId, $opdId, $isPrimary, $note]) {
-            DB::table('sector_opd_mappings')->insert([
-                'sector_id'   => $sectorId,
-                'opd_id'      => $opdId,
-                'is_primary'  => $isPrimary,
-                'source_note' => $note,
-                'created_at'  => now(),
-                'updated_at'  => now(),
-            ]);
+            if (!Schema::hasTable('opds') || DB::table('opds')->where('id', $opdId)->exists()) {
+                DB::table('sector_opd_mappings')->insert([
+                    'sector_id'   => $sectorId,
+                    'opd_id'      => $opdId,
+                    'is_primary'  => $isPrimary,
+                    'source_note' => $note,
+                    'created_at'  => now(),
+                    'updated_at'  => now(),
+                ]);
+            }
         }
     }
 

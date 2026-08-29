@@ -57,7 +57,7 @@ class PbbBapendaTest extends TestCase
     }
 
     /**
-     * Test inquiry when NOP is not found.
+     * Test inquiry when NOP is not found in Bapenda and no local SPPT fallback.
      */
     public function test_pbb_inquiry_not_found()
     {
@@ -77,15 +77,15 @@ class PbbBapendaTest extends TestCase
             'tahun' => '2026'
         ]);
 
-        $response->assertStatus(404)
+        $response->assertStatus(503)
             ->assertJson([
                 'status' => 'error',
-                'message' => 'Data tidak ditemukan'
+                'message' => 'Layanan Bapenda tidak tersedia dan tidak ada data SPPT lokal.'
             ]);
     }
 
     /**
-     * Test inquiry when Bapenda login fails (triggers 500).
+     * Test inquiry when Bapenda login fails and no local SPPT fallback.
      */
     public function test_pbb_inquiry_login_failure()
     {
@@ -101,11 +101,10 @@ class PbbBapendaTest extends TestCase
             'tahun' => '2026'
         ]);
 
-        // Based on controller logic, this should return 503 (Service Unavailable)
         $response->assertStatus(503)
             ->assertJsonFragment([
                 'status' => 'error',
-                'message' => 'Layanan Bapenda sedang tidak tersedia. (Error: Gagal login ke server Bapenda: No data found)'
+                'message' => 'Layanan Bapenda tidak tersedia dan tidak ada data SPPT lokal.'
             ]);
     }
 

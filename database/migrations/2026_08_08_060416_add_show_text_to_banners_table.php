@@ -11,9 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('banners', function (Blueprint $table) {
-            $table->boolean('show_text')->default(true)->after('gradient_end');
-        });
+        if (Schema::hasTable('banners')) {
+            Schema::table('banners', function (Blueprint $table) {
+                if (!Schema::hasColumn('banners', 'show_text')) {
+                    $table->boolean('show_text')->default(true)->after('gradient_end');
+                }
+            });
+        }
     }
 
     /**
@@ -21,8 +25,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('banners', function (Blueprint $table) {
-            $table->dropColumn('show_text');
-        });
+        if (Schema::hasTable('banners')) {
+            Schema::table('banners', function (Blueprint $table) {
+                if (Schema::hasColumn('banners', 'show_text')) {
+                    $table->dropColumn('show_text');
+                }
+            });
+        }
     }
 };
