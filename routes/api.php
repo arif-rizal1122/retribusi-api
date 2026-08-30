@@ -201,6 +201,16 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/verifications', [\App\Http\Controllers\DamkarVerificationController::class, 'index']);
         Route::post('/verifications/{id}/decision', [\App\Http\Controllers\DamkarVerificationController::class, 'decision']);
     });
+
+    // Modul Parkir Dishub — Kasir Cepat Jukir (Quick Tap R2/R4)
+    Route::prefix('parking')->group(function () {
+        Route::get('/locations', [\App\Http\Controllers\ParkingController::class, 'locations']);
+        Route::post('/sessions', [\App\Http\Controllers\ParkingController::class, 'recordSession']);
+        Route::get('/shift-summary', [\App\Http\Controllers\ParkingController::class, 'shiftSummary']);
+        Route::post('/shift/open', [\App\Http\Controllers\ParkingController::class, 'openShift']);
+        Route::post('/shift/close', [\App\Http\Controllers\ParkingController::class, 'closeShift']);
+        Route::get('/dashboard', [\App\Http\Controllers\ParkingController::class, 'dashboard']);
+    });
     
     // Citizen Service Registration (Shared, but usually for citizens)
     Route::group(['prefix' => 'citizen/services'], function () {
