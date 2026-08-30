@@ -36,10 +36,13 @@ class CitizenPaymentRequestTest extends TestCase
             'snap.briva.enabled' => true,
             'snap.partners.BRI.partner_id' => 'BRI-PARTNER-LOCAL',
             'snap.partners.BRI.client_key' => 'BRI-CLIENT-LOCAL',
-            'snap.partners.BRI.signature_algorithm' => 'hmac_sha512',
-            'snap.partners.BRI.signature_secret' => 'bri-test-signature-secret',
+            'snap.partners.BRI.signature_algorithm' => 'rsa_sha256',
+            'snap.partners.BRI.signature_secret' => '',
+            'snap.partners.BRI.public_key' => $this->publicKey(),
+            'snap.briva.partner_service_id' => '',
             'snap.briva.va_prefix' => '777',
             'snap.briva.va_length' => 18,
+            'snap.briva.customer_no_length' => 15,
             'snap.briva.payment_request_expiry_minutes' => 1440,
         ]);
 

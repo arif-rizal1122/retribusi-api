@@ -4,13 +4,13 @@ namespace Tests\Feature;
 
 use App\Models\BphtbSubmission;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class BphtbRouteContractTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     public function test_bphtb_root_list_is_backoffice_wide_but_mine_is_owner_scoped(): void
     {

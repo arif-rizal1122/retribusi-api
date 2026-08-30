@@ -115,6 +115,7 @@ class PublicRegistrationApiTest extends TestCase
             'nik' => '7472010101010002',
             'name' => 'WP Existing',
             'phone' => '081200000002',
+            'metadata' => ['mother_name' => 'Fulanah'],
         ]);
         $taxObject = TaxObject::factory()->create([
             'opd_id' => $opd->id,
@@ -124,7 +125,7 @@ class PublicRegistrationApiTest extends TestCase
             'name' => 'Objek Existing',
         ]);
 
-        $this->getJson('/api/public/taxpayers/check-nik/7472010101010002')
+        $this->getJson('/api/public/taxpayers/check-nik/7472010101010002?mother_name=Fulanah')
             ->assertOk()
             ->assertJsonPath('found', true)
             ->assertJsonPath('data.name', 'WP Existing')

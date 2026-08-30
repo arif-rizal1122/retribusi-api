@@ -186,10 +186,13 @@ class CitizenBillingReadTest extends TestCase
             'snap.briva.enabled' => true,
             'snap.partners.BRI.partner_id' => 'BRI-PARTNER-LOCAL',
             'snap.partners.BRI.client_key' => 'BRI-CLIENT-LOCAL',
-            'snap.partners.BRI.signature_algorithm' => 'hmac_sha512',
-            'snap.partners.BRI.signature_secret' => 'bri-test-signature-secret',
+            'snap.partners.BRI.signature_algorithm' => 'rsa_sha256',
+            'snap.partners.BRI.signature_secret' => '',
+            'snap.partners.BRI.public_key' => $this->publicKey(),
+            'snap.briva.partner_service_id' => '',
             'snap.briva.va_prefix' => '777',
             'snap.briva.va_length' => 18,
+            'snap.briva.customer_no_length' => 15,
         ]);
 
         $this->getJson('/api/citizen/bills?per_page=100')
@@ -301,5 +304,20 @@ class CitizenBillingReadTest extends TestCase
         ]);
 
         return $paymentRequest;
+    }
+
+    private function publicKey(): string
+    {
+        return <<<'PEM'
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwYlN41PX9hRBKFRzmtsl
+V+E2ON+xxbGUrA0wOwFgmrQNFBuQFqQ2Oe5w15Zu0E5mnNl8EHby3cLU1Kue0JiO
+K970LMuSyc57x1I+FWOxuBNoi1YxdPjZBdznxk/DzdIPqIVBFHIHJho+ZNCPG+Ch
+spWMD5lo4T+sHhnXxzgLKkBeQcVI2fmCUCp6iTaIwgNWl6L7mG9qo60z/1ae6b+1
+GdW6EnuwEgRaXPZDW/zwxV0xAU8XoIB/1DNu4qE5QJrB4u5NVTNvAHjtmo8R7cwp
+v4B8OlqYl0c3Ki6pGLMZUqZ/7ZLz3aV+3jsihMVACFiPqtBGUCk2Ie4PuuRxw8/7
+5QIDAQAB
+-----END PUBLIC KEY-----
+PEM;
     }
 }
