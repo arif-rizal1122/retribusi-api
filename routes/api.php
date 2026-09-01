@@ -191,6 +191,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     // Dashboard agregat M39 (semua role internal; scope OPD via middleware opd_scope)
     Route::middleware('opd_scope')->prefix('dashboard')->group(function () {
         Route::get('/pad-summary', [\App\Http\Controllers\Api\DashboardController::class, 'padSummary']);
+        Route::get('/opd-services', [\App\Http\Controllers\Api\DashboardController::class, 'opdServices']);
         Route::get('/sector-data', [\App\Http\Controllers\Api\DashboardController::class, 'sectorData']);
         Route::get('/daily-tasks', [\App\Http\Controllers\Api\DashboardController::class, 'dailyTasks']);
         Route::get('/anomalies', [\App\Http\Controllers\Api\DashboardController::class, 'anomalies']);

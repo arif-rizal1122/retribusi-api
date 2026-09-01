@@ -328,6 +328,96 @@ class DashboardController extends Controller
     }
 
     /**
+     * Tupoksi & PIC OPD — daftar layanan pendapatan yang diampu OPD login,
+     * jumlah objek (dari WP) per layanan, dan PIC petugas yang ditugaskan.
+     * GET /api/dashboard/opd-services
+     */
+    public function opdServices(Request $request)
+    {
+        $scopeOpdId = $request->attributes->get('scope_opd_id');
+        $isGlobal = (bool) $request->attributes->get('is_global_scope', true);
+        $user = $request->user();
+
+        $opdId = $scopeOpdId ?: $user?->opd_id;
+        $opd = $opdId ? Opd::find($opdId) : null;
+
+        // Semua layanan pendapatan (classification) — scope ke OPD jika ada
+        $query = \App\Models\RetributionClassification::query()
+            ->with(['retributionType'])
+            ->whereIn('retribution_type_id', function ($q) {
+                $q->select('id')->from('retribution_types')->where('is_active', 1);
+            })
+            ->orderBy('retribution_type_id')->orderBy('name');
+
+        if ($opdId) {
+            $query->where('opd_id', $opdId);
+        }
+
+        $services = $query->get()->map(function ($svc) {
+            $objQuery = \App\Models\TaxObject::where('retribution_classification_id', $svc->id);
+            $total = (clone $objQuery)->count();
+            $pending = (clone $objQuery)->whereIn('status', ['pending', 'proses'])->count();
+            $active = (clone $objQuery)->whereIn('status', ['active', 'approved'])->count();
+
+            // OPD pengampu layanan ini (info dikaitkan ke OPD terkait)
+            $svcOpd = $svc->opd_id ? Opd::find($svc->opd_id) : null;
+            $opdInfo = $svcOpd ? [
+                'id' => $svcOpd->id,
+                'name' => $svcOpd->name,
+                'code' => $svcOpd->code,
+            ] : null;
+
+            // PIC petugas yang ditugaskan ke layanan ini (via user_retribution_assignments)
+            // Filter: petugas OPD yang sama dengan layanan (opd_id cocok) — PIC OPD, bukan semua petugas Bapenda.
+            $pics = \App\Models\UserRetributionAssignment::query()
+                ->where(function ($q) use ($svc) {
+                    $q->where('retribution_classification_id', $svc->id)
+                      ->orWhere(function ($q2) use ($svc) {
+                          $q2->whereNull('retribution_classification_id')
+                             ->where('retribution_type_id', $svc->retribution_type_id);
+                      });
+                })
+                ->whereHas('user', function ($q) use ($svc) {
+                    $q->where('role', 'petugas');
+                    if ($svc->opd_id) {
+                        $q->where('opd_id', $svc->opd_id);
+                    }
+                })
+                ->with('user')
+                ->get()
+                ->map(fn ($a) => [
+                    'id' => $a->user?->id,
+                    'name' => $a->user?->name,
+                    'role' => $a->user?->role,
+                ])
+                ->filter(fn ($p) => $p['id'] !== null)
+                ->unique('id')
+                ->values();
+
+            return [
+                'id' => $svc->id,
+                'name' => $svc->name,
+                'retribution_type' => $svc->retributionType?->name,
+                'retribution_type_id' => $svc->retribution_type_id,
+                'opd' => $opdInfo,
+                'total_objects' => $total,
+                'pending_objects' => $pending,
+                'active_objects' => $active,
+                'pic' => $pics,
+            ];
+        });
+
+        return response()->json([
+            'opd' => $opd ? ['id' => $opd->id, 'name' => $opd->name, 'code' => $opd->code] : null,
+            'is_global' => $isGlobal,
+            'total_services' => $services->count(),
+            'total_objects' => $services->sum('total_objects'),
+            'pending_objects' => $services->sum('pending_objects'),
+            'services' => $services->values(),
+        ]);
+    }
+
+    /**
      * Tren realisasi N bulan terakhir (diisi 0 untuk bulan tanpa pembayaran).
      */
     private function monthlyTrend(?int $scopeOpdId, int $months = 6): array
