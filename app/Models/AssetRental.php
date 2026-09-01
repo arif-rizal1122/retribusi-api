@@ -33,7 +33,7 @@ class AssetRental extends Model
         'metode_pembayaran',
         'status',
         'lokasi_penggunaan',
-        'koordinat',
+        'polygon_geom',
         'jenis_pekerjaan',
         'luas_volume',
         'nama_proyek',
@@ -123,5 +123,18 @@ class AssetRental extends Model
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by_user_id');
+    }
+
+    /**
+     * Get GeoJSON representation of polygon_geom.
+     */
+    public function getPolygonGeojsonAttribute()
+    {
+        if (!$this->polygon_geom) {
+            return null;
+        }
+
+        $result = \Illuminate\Support\Facades\DB::selectOne("SELECT ST_AsGeoJSON(polygon_geom) as geojson FROM asset_module_tables WHERE id = ?", [$this->id]);
+        return $result ? json_decode($result->geojson, true) : null;
     }
 }
