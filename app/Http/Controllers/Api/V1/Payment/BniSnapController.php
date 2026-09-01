@@ -114,7 +114,30 @@ class BniSnapController extends Controller
             $paidAmount = data_get($request->input('paidAmount'), 'value', 0);
 
             // Forward ke PaymentManager untuk update status billing
-            $this->paymentManager->driver('bni')->notify($request->all());
+            $result = $this->paymentManager->driver('bni')->notify($request->all());
+
+            if (($result['status'] ?? '') !== 'success') {
+                $errCode = ($result['code'] ?? 500) == 404 ? '4042514' : ((int)($result['code'] ?? 500) === 400 ? '4002513' : '4012501');
+                Log::warning('BNI Payment failed: ' . ($result['message'] ?? 'unknown'), [
+                    'customerNo' => $customerNo,
+                    'va' => $virtualAccountNo,
+                ]);
+                return response()->json([
+                    'responseCode' => $errCode,
+                    'responseMessage' => $result['message'] ?? 'Payment failed',
+                    'virtualAccountData' => [
+                        'paymentFlagStatus' => '01',
+                        'paymentFlagReason' => [
+                            'english' => 'Failed',
+                            'indonesia' => 'Gagal'
+                        ],
+                        'partnerServiceId' => $partnerServiceId,
+                        'customerNo' => $customerNo,
+                        'virtualAccountNo' => $virtualAccountNo,
+                        'paymentRequestId' => $paymentRequestId,
+                    ]
+                ], (int)($result['code'] ?? 500) === 404 ? 404 : ((int)($result['code'] ?? 500) === 400 ? 400 : 401));
+            }
 
             Log::info('BNI Payment notification received', [
                 'customerNo' => $customerNo,
