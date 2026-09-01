@@ -368,20 +368,22 @@ class DashboardController extends Controller
             ] : null;
 
             // PIC petugas yang ditugaskan ke layanan ini (via user_retribution_assignments)
-            // Filter: petugas OPD yang sama dengan layanan (opd_id cocok) — PIC OPD, bukan semua petugas Bapenda.
+            // - Assignment SPESIFIK ke classification ini → tampil apa adanya (cross-OPD boleh, mis. Dishub ke 172)
+            // - Assignment TYPE-level (classification null) → hanya petugas OPD yang sama dengan layanan
             $pics = \App\Models\UserRetributionAssignment::query()
                 ->where(function ($q) use ($svc) {
                     $q->where('retribution_classification_id', $svc->id)
-                      ->orWhere(function ($q2) use ($svc) {
-                          $q2->whereNull('retribution_classification_id')
-                             ->where('retribution_type_id', $svc->retribution_type_id);
-                      });
+                      ->whereHas('user', fn ($u) => $u->where('role', 'petugas'));
                 })
-                ->whereHas('user', function ($q) use ($svc) {
-                    $q->where('role', 'petugas');
-                    if ($svc->opd_id) {
-                        $q->where('opd_id', $svc->opd_id);
-                    }
+                ->orWhere(function ($q) use ($svc) {
+                    $q->whereNull('retribution_classification_id')
+                      ->where('retribution_type_id', $svc->retribution_type_id)
+                      ->whereHas('user', function ($u) use ($svc) {
+                          $u->where('role', 'petugas');
+                          if ($svc->opd_id) {
+                              $u->where('opd_id', $svc->opd_id);
+                          }
+                      });
                 })
                 ->with('user')
                 ->get()
