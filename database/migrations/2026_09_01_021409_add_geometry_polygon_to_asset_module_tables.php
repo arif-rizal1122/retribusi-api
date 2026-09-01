@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('asset_module_tables', function (Blueprint $table) {
+        Schema::table('asset_rentals', function (Blueprint $table) {
             // Drop old string column if exists and add polygon geometry
-            if (Schema::hasColumn('asset_module_tables', 'koordinat')) {
+            if (Schema::hasColumn('asset_rentals', 'koordinat')) {
                 $table->dropColumn('koordinat');
             }
             $table->geometry('polygon_geom', 'polygon', 4326)->nullable()->comment('Polygon batas bidang objek/aset (EPSG:4326)');
@@ -25,7 +25,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('asset_module_tables', function (Blueprint $table) {
+        Schema::table('asset_rentals', function (Blueprint $table) {
             $table->dropColumn('polygon_geom');
             $table->string('koordinat')->nullable();
         });

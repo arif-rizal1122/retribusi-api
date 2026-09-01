@@ -134,7 +134,7 @@ class AssetRental extends Model
             return null;
         }
 
-        $result = \Illuminate\Support\Facades\DB::selectOne("SELECT ST_AsGeoJSON(polygon_geom) as geojson FROM asset_module_tables WHERE id = ?", [$this->id]);
+        $result = \Illuminate\Support\Facades\DB::selectOne("SELECT ST_AsGeoJSON(polygon_geom) as geojson FROM asset_rentals WHERE id = ?", [$this->id]);
         return $result ? json_decode($result->geojson, true) : null;
     }
 }
