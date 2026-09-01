@@ -587,6 +587,10 @@ Route::group(['prefix' => 'snap', 'namespace' => '\App\Http\Controllers\Api\V1\P
     // BTN Virtual Account
     Route::post('/v1/transfer-va/inquiry', 'BtnSnapController@inquiry');
     Route::post('/v1/transfer-va/payment', 'BtnSnapController@payment');
+
+    // BNI VA Billing (callback v1.1 - instruksi BNI 30 Agu 2026)
+    Route::post('/v1.1/transfer-va/inquiry', 'BniSnapController@inquiry');
+    Route::post('/v1.1/transfer-va/payment', 'BniSnapController@payment');
 });
 
 // ------------------------------------------------------------------------
