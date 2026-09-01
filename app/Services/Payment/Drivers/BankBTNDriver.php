@@ -66,7 +66,7 @@ class BankBTNDriver implements PaymentGatewayInterface
         $body = [
             'partnerServiceId' => str_pad($this->partnerServiceId, 8, ' ', STR_PAD_LEFT),
             'customerNo' => $billNumber,
-            'virtualAccountNo' => str_pad($this->partnerServiceId, 8, ' ', STR_PAD_LEFT) . $billNumber,
+            'virtualAccountNo' => trim($this->partnerServiceId) . $billNumber,
             'virtualAccountName' => 'Wajib Pajak M-PAD',
             'trxId' => uniqid('BTN'),
             'totalAmount' => [
