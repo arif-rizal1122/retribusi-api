@@ -71,4 +71,12 @@ class PaymentManager extends Manager
     {
         return app(\App\Services\Payment\Drivers\BankBTNDriver::class);
     }
+
+    /**
+     * Create the Bank BNI driver.
+     */
+    public function createBniDriver(): \App\Services\Payment\Drivers\BankBNIDriver
+    {
+        return app(\App\Services\Payment\Drivers\BankBNIDriver::class);
+    }
 }
