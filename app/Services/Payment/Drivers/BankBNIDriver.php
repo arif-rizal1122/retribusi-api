@@ -101,7 +101,7 @@ class BankBNIDriver implements PaymentGatewayInterface
                 return ['status' => 'error', 'code' => 400, 'message' => 'Invalid Amount'];
             }
 
-            $result = DB::transaction(function () use ($bill, $paidAmount, $trxId, $referenceNo, $trxDateTime, $paymentRequestId) {
+            $result = DB::transaction(function () use ($bill, $paidAmount, $trxId, $referenceNo, $trxDateTime, $paymentRequestId, $payload) {
                 $lockedBill = Bill::whereKey($bill->id)->lockForUpdate()->first();
 
                 if (! in_array($lockedBill->status, ['pending', 'unpaid', 'waiting_payment'])) {
