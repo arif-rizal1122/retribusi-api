@@ -28,6 +28,7 @@ return [
         'https://petugas.sipanda.online',
         'https://sipanda.online',
         'https://sipanda.online',
+        'https://apidevportal.aspi-indonesia.or.id',
         env('FRONTEND_URL', 'http://localhost:3000'),
     ],
 
