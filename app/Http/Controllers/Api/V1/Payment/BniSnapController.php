@@ -159,12 +159,7 @@ class BniSnapController extends Controller
 
         try {
             $bill = \DB::table('bills')
-                ->where(function ($q) use ($customerNo, $virtualAccountNo) {
-                    $q->where('bill_number', $customerNo);
-                    if ($virtualAccountNo) {
-                        $q->orWhere('va_number', $virtualAccountNo);
-                    }
-                })
+                ->where('bill_number', $customerNo)
                 ->whereIn('status', ['pending', 'unpaid', 'waiting_payment'])
                 ->orderByDesc('id')
                 ->first();
