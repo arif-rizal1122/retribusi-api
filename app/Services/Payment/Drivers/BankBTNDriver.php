@@ -74,6 +74,13 @@ class BankBTNDriver implements PaymentGatewayInterface
                 'currency' => "IDR"
             ],
             'virtualAccountTrxType' => "F", // Full
+            'expiredDate' => now()->timezone('Asia/Jakarta')->addDay()->format('Y-m-d\TH:i:sP'),
+            'additionalInfo' => [
+                'payment' => '01',
+                'description' => 'Pembayaran Pajak/Retribusi M-PAD Bapenda Baubau',
+                'currentAccountNo' => trim($this->partnerServiceId),
+                'paymentCode' => '01',
+            ],
         ];
 
         $signature = $this->signatureService->generateHmacSignature('POST', $endpoint, $token, $body, $timestamp);
