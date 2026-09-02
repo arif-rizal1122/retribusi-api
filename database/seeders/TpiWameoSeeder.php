@@ -8,8 +8,13 @@ use Illuminate\Database\Seeder;
 class TpiWameoSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Seed klasifikasi JU-PEL (Tempat Pelelangan Ikan / TPI) dengan tarif resmi
+     * Perda Kota Baubau No 1 Tahun 2024 Lampiran II bagian b.
+     * Sumber: Dokumen (167) — ringkasan fasilitas & tarif TPI.
+     * Diperbaiki 2 Sep 2026: angka tarif disesuaikan dengan Perda (sebelumnya keliru).
      */
+    public function run()
+    {
         $classification = \App\Models\RetributionClassification::find(204);
         if (!$classification) {
             $this->command->warn('Classification ID 204 not found!');
@@ -18,31 +23,45 @@ class TpiWameoSeeder extends Seeder
 
         $opd_id = $classification->retributionType->opd_id ?? 1;
 
-        // 1. Update Name
-        $classification->name = 'TPI Wameo';
+        // 1. Update Name — konsisten dengan keputusan M-PAD: pelelangan khusus IKAN (TPI)
+        $classification->name = 'Tempat Pelelangan Ikan (TPI)';
 
-        // 2. Prepare Rates from Perda
+        // 2. Tarif resmi Perda 1/2024 Lampiran II b — 17 fasilitas utama + 15 tarif tambahan
         $ratesData = [
-            ['name' => 'jasa_cold_room', 'amount' => 2000, 'unit' => 'per m2 per Jam', 'label' => 'Jasa Cold Room'],
-            ['name' => 'jasa_abf', 'amount' => 1000, 'unit' => 'per Kg per 8 Jam', 'label' => 'Jasa ABF (Air Blast Freezer)'],
-            ['name' => 'penjualan_es', 'amount' => 750, 'unit' => 'per Kg', 'label' => 'Penjualan Es'],
-            ['name' => 'plugging_container', 'amount' => 50000, 'unit' => 'per RC per 8 Jam', 'label' => 'Plugging Container'],
-            ['name' => 'penghancur_es', 'amount' => 50, 'unit' => 'per Kg', 'label' => 'Penghancur Es (Ice Cruiser)'],
-            ['name' => 'jasa_meja_sortir', 'amount' => 1000, 'unit' => 'per Meja per Jam', 'label' => 'Jasa Meja Sortir'],
-            ['name' => 'jasa_keranjang', 'amount' => 500, 'unit' => 'per Keranjang per Hari', 'label' => 'Jasa Keranjang'],
-            ['name' => 'jasa_timbangan', 'amount' => 500, 'unit' => 'per Timbangan per Hari', 'label' => 'Jasa Timbangan'],
-            ['name' => 'jasa_gerobak', 'amount' => 2500, 'unit' => 'per Gerobak per Hari', 'label' => 'Jasa Gerobak'],
-            ['name' => 'jasa_cuci_ikan', 'amount' => 5000, 'unit' => 'per m2 per Jam', 'label' => 'Jasa Cuci Ikan'],
-            ['name' => 'area_pemasaran', 'amount' => 1000, 'unit' => 'per m2 per Jam', 'label' => 'Area Pemasaran / Lelang'],
-            ['name' => 'pas_harian_orang', 'amount' => 1000, 'unit' => 'per Orang', 'label' => 'Pas Masuk (Orang)'],
-            ['name' => 'pas_harian_sepeda', 'amount' => 1000, 'unit' => 'per Kendaraan', 'label' => 'Pas Masuk (Sepeda)'],
-            ['name' => 'pas_harian_r2', 'amount' => 2000, 'unit' => 'per Kendaraan', 'label' => 'Pas Masuk (Roda 2 / Gerobak)'],
-            ['name' => 'pas_harian_r3_r4', 'amount' => 3000, 'unit' => 'per Kendaraan', 'label' => 'Pas Masuk (Roda 3 / Roda 4)'],
-            ['name' => 'pas_harian_r6', 'amount' => 4000, 'unit' => 'per Kendaraan', 'label' => 'Pas Masuk (Roda 6)'],
-            ['name' => 'pas_harian_tronton', 'amount' => 5000, 'unit' => 'per Kendaraan', 'label' => 'Pas Masuk (Tronton / Alat Berat)'],
-            ['name' => 'gudang_tertutup', 'amount' => 3000, 'unit' => 'per m2 per Bulan', 'label' => 'Penyimpanan (Gudang Tertutup)'],
-            ['name' => 'gudang_terbuka', 'amount' => 1500, 'unit' => 'per m2 per Bulan', 'label' => 'Penyimpanan (Halaman Terbuka)'],
-            ['name' => 'air_tpi', 'amount' => 25000, 'unit' => 'per Liter', 'label' => 'Air TPI / Air Sumur Bor'],
+            // Fasilitas utama
+            ['name' => 'tempat_pemasaran_ikan', 'amount' => 500, 'unit' => 'per m2', 'label' => 'Tempat Pemasaran Ikan'],
+            ['name' => 'jasa_cold_room', 'amount' => 1500, 'unit' => 'per Kg', 'label' => 'Jasa Cold Room'],
+            ['name' => 'jasa_abf', 'amount' => 1000, 'unit' => 'per Kg', 'label' => 'Jasa ABF (Air Blast Freezer)'],
+            ['name' => 'penjualan_es', 'amount' => 500, 'unit' => 'per Kg', 'label' => 'Penjualan Es'],
+            ['name' => 'plugging_container_20', 'amount' => 300000, 'unit' => 'per RC per 8 Jam', 'label' => 'Plugging Container 20\' Reefer'],
+            ['name' => 'plugging_container_40', 'amount' => 450000, 'unit' => 'per RC per 8 Jam', 'label' => 'Plugging Container 40\' Reefer'],
+            ['name' => 'penghancur_es', 'amount' => 250, 'unit' => 'per Kg', 'label' => 'Penghancur Es (Ice Cruiser)'],
+            ['name' => 'jasa_meja_sortir', 'amount' => 5000, 'unit' => 'per Meja per Jam', 'label' => 'Meja Sortir Ikan'],
+            ['name' => 'peti_ikan_1000', 'amount' => 50000, 'unit' => 'per Unit per Hari', 'label' => 'Peti Ikan (Cold Box) 1000 Liter'],
+            ['name' => 'peti_ikan_300', 'amount' => 20000, 'unit' => 'per Unit per Hari', 'label' => 'Peti Ikan (Cold Box) 300 Liter'],
+            ['name' => 'peti_ikan_200', 'amount' => 13500, 'unit' => 'per Unit per Hari', 'label' => 'Peti Ikan (Cold Box) 200 Liter'],
+            ['name' => 'jasa_keranjang', 'amount' => 4500, 'unit' => 'per Unit per Hari', 'label' => 'Keranjang Plastik (Trays)'],
+            ['name' => 'timbangan_pegas', 'amount' => 7000, 'unit' => 'per Unit per Jam', 'label' => 'Timbangan Ikan Pegas'],
+            ['name' => 'timbangan_digital', 'amount' => 10000, 'unit' => 'per Unit per Jam', 'label' => 'Timbangan Ikan Digital'],
+            ['name' => 'jasa_forklift', 'amount' => 135000, 'unit' => 'per Unit per Jam', 'label' => 'Forklift'],
+            ['name' => 'listrik_reefer_20', 'amount' => 200000, 'unit' => 'per Jam', 'label' => 'Listrik Mobile Reefer 20\''],
+            ['name' => 'listrik_reefer_40', 'amount' => 360000, 'unit' => 'per Jam', 'label' => 'Listrik Mobile Reefer 40\''],
+            // Tarif tambahan kawasan TPI
+            ['name' => 'pas_harian_orang', 'amount' => 1000, 'unit' => 'per Orang per sekali masuk', 'label' => 'Pas Harian Masuk Kawasan (Orang)'],
+            ['name' => 'pas_harian_r2_r3', 'amount' => 2000, 'unit' => 'per Unit per sekali masuk', 'label' => 'Pas Harian Kendaraan Roda 2/3'],
+            ['name' => 'pas_harian_r4', 'amount' => 6000, 'unit' => 'per Unit per sekali masuk', 'label' => 'Pas Harian Kendaraan Roda 4'],
+            ['name' => 'pas_harian_truck', 'amount' => 10000, 'unit' => 'per Unit per sekali masuk', 'label' => 'Pas Harian Truck'],
+            ['name' => 'pas_harian_tronton', 'amount' => 15000, 'unit' => 'per Unit per sekali masuk', 'label' => 'Pas Harian Tronton'],
+            ['name' => 'pas_langganan_r2_r3', 'amount' => 30000, 'unit' => 'per Unit per Bulan', 'label' => 'Pas Berlangganan Roda 2/3'],
+            ['name' => 'pas_langganan_r4', 'amount' => 90000, 'unit' => 'per Unit per Bulan', 'label' => 'Pas Berlangganan Roda 4'],
+            ['name' => 'penyimpanan_halaman', 'amount' => 1000, 'unit' => 'per m2 per Hari', 'label' => 'Jasa Penyimpanan Halaman (tanpa atap)'],
+            ['name' => 'penyimpanan_beratap', 'amount' => 1500, 'unit' => 'per m2 per Hari', 'label' => 'Jasa Penyimpanan Bangunan Beratap (tanpa dinding)'],
+            ['name' => 'gudang_administrasi', 'amount' => 10000, 'unit' => 'per m2 per Bulan', 'label' => 'Gudang Administrasi/Kantor'],
+            ['name' => 'gudang_kios_maritim', 'amount' => 8000, 'unit' => 'per m2 per Bulan', 'label' => 'Gudang Kios Maritim'],
+            ['name' => 'gudang_penyimpanan', 'amount' => 7000, 'unit' => 'per m2 per Bulan', 'label' => 'Gudang Penyimpanan/Pengolahan/Pemasaran'],
+            ['name' => 'gudang_pengepakan', 'amount' => 7000, 'unit' => 'per m2 per Bulan', 'label' => 'Gudang Tempat Pengepakan Ikan'],
+            ['name' => 'air_pipa_dermaga', 'amount' => 20, 'unit' => 'per Liter', 'label' => 'Pengadaan Air TPI (pipa dermaga)'],
+            ['name' => 'air_transportasi', 'amount' => 100, 'unit' => 'per Liter', 'label' => 'Pengadaan Air TPI (alat transportasi lain)'],
         ];
 
         \App\Models\RetributionRate::where('retribution_classification_id', 204)->delete();
@@ -58,7 +77,7 @@ class TpiWameoSeeder extends Seeder
                 'unit' => $rateItem['unit'],
                 'is_active' => true,
             ]);
-            
+
             $options[] = [
                 'value' => $rateItem['name'],
                 'label' => $rateItem['label'] . ' (' . $rateItem['unit'] . ')',
@@ -101,6 +120,6 @@ class TpiWameoSeeder extends Seeder
         $classification->calculation_formula = 'kuantitas * rate_amount * (durasi > 0 ? durasi : 1)';
         $classification->save();
 
-        $this->command->info('Successfully updated TPI Wameo!');
+        $this->command->info('Successfully updated TPI (Tempat Pelelangan Ikan) with Perda 1/2024 rates!');
     }
 }
