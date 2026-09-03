@@ -75,22 +75,35 @@ class BankBRIDriver implements PaymentGatewayInterface
         if (!$bill) {
             return ['status' => 'error', 'message' => 'Tagihan tidak ditemukan', 'code' => 404];
         }
-        if ($bill->status === 'lunas') {
-            return ['status' => 'error', 'message' => 'Tagihan sudah lunas', 'code' => 422];
-        }
 
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($bill, $amountPaid, $ntb, $payload) {
-            $taxObject = $bill->taxObject;
-            $currentPenalty = $bill->penalty_amount;
+        $masker = app(\App\Services\Payment\Snap\SensitivePaymentLogMasker::class);
+
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($bill, $amountPaid, $ntb, $payload, $masker) {
+            // Kunci baris bill utk mencegah race condition (dua callback bersamaan)
+            $lockedBill = \App\Models\Bill::whereKey($bill->id)->lockForUpdate()->first();
+
+            // Idempotency: reference_number sudah ada => callback duplikat
+            $existing = $ntb ? \App\Models\Payment::where('reference_number', $ntb)->first() : null;
+            if ($existing) {
+                return ['status' => 'success', 'message' => 'Transaksi duplikat (Idempotent Success)', 'code' => 200];
+            }
+
+            // Re-check status setelah lock
+            if ($lockedBill->status === 'lunas') {
+                return ['status' => 'error', 'message' => 'Tagihan sudah lunas', 'code' => 422];
+            }
+
+            $taxObject = $lockedBill->taxObject;
+            $currentPenalty = $lockedBill->penalty_amount;
             if ($taxObject) {
                 $pendingPeriods = $this->billingService->getPendingPeriods($taxObject);
-                $periodData = $pendingPeriods->firstWhere('period', $bill->period);
+                $periodData = $pendingPeriods->firstWhere('period', $lockedBill->period);
                 if ($periodData) {
                     $currentPenalty = $periodData['penalty_amount'];
                 }
             }
 
-            $bill->update([
+            $lockedBill->update([
                 'status' => 'lunas',
                 'penalty_at_payment' => $currentPenalty,
                 'bank_code' => 'BRI'
@@ -98,19 +111,19 @@ class BankBRIDriver implements PaymentGatewayInterface
 
             $ntpd = 'NTPD-' . date('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(10));
             $payment = \App\Models\Payment::create([
-                'bill_id' => $bill->id,
-                'tax_object_id' => $bill->tax_object_id,
-                'taxpayer_id' => $bill->taxpayer_id,
+                'bill_id' => $lockedBill->id,
+                'tax_object_id' => $lockedBill->tax_object_id,
+                'taxpayer_id' => $lockedBill->taxpayer_id,
                 'transaction_id' => 'H2H-BRI-' . time(),
                 'reference_number' => $ntb ?? 'BRI-' . time(),
                 'receipt_number' => $ntpd,
                 'payment_method' => 'va',
                 'channel' => $payload['channel'] ?? 'BRI_SNAP',
-                'amount' => $bill->amount + $currentPenalty, // Just set fully paid
+                'amount' => $lockedBill->amount + $currentPenalty, // Just set fully paid
                 'status' => 'success',
-                'billing_period' => $bill->period ?? \Carbon\Carbon::now()->format('Y-m'),
+                'billing_period' => $lockedBill->period ?? \Carbon\Carbon::now()->format('Y-m'),
                 'paid_at' => \Carbon\Carbon::now(),
-                'raw_callback_data' => $payload
+                'raw_callback_data' => $masker->mask($payload)
             ]);
             
             // Automated TTE Signing Hook
@@ -118,10 +131,10 @@ class BankBRIDriver implements PaymentGatewayInterface
                 $signer = \App\Models\User::whereIn('role', ['super_admin', 'admin', 'kabid_pengawas'])->first();
                 if ($signer) {
                     $docService = app(\App\Services\OfficialDocumentService::class);
-                    $docService->signDocument('bill', $bill->id, $signer, 'Signed automatically via Bank H2H Callback');
+                    $docService->signDocument('bill', $lockedBill->id, $signer, 'Signed automatically via Bank H2H Callback');
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('H2H TTE Hook Failed:', ['bill' => $bill->bill_number, 'error' => $e->getMessage()]);
+                \Illuminate\Support\Facades\Log::error('H2H TTE Hook Failed:', ['bill' => $lockedBill->bill_number, 'error' => $e->getMessage()]);
             }
 
             return [
@@ -129,7 +142,7 @@ class BankBRIDriver implements PaymentGatewayInterface
                 'code' => 200,
                 'data' => [
                     'ntpd' => $ntpd,
-                    'bill_number' => $bill->bill_number,
+                    'bill_number' => $lockedBill->bill_number,
                     'status' => 'LUNAS'
                 ]
             ];

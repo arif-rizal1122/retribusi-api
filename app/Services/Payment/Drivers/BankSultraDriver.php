@@ -93,43 +93,50 @@ class BankSultraDriver implements PaymentGatewayInterface
             return ['status' => 'error', 'message' => 'Invalid payload', 'code' => 400];
         }
 
-        // 1. Idempotency check: Check if NTB already exists in payments
-        $exists = Payment::where('reference_number', $ntb)->exists();
-        if ($exists) {
-            return [
-                'status' => 'success', 
-                'message' => 'Transaksi duplikat (Idempotent Success)', 
-                'code' => 200,
-                'data' => [
-                    'ntpd' => Payment::where('reference_number', $ntb)->first()->receipt_number ?? 'N/A',
-                    'status' => 'LUNAS'
-                ]
-            ];
-        }
-
         $bill = Bill::where('bill_number', $billNumber)->first();
         if (!$bill) {
             return ['status' => 'error', 'message' => 'Tagihan tidak ditemukan', 'code' => 404];
         }
 
-        // 2. Bill status check
-        if ($bill->status === 'lunas') {
-            return ['status' => 'error', 'message' => 'Tagihan sudah lunas', 'code' => 422];
-        }
+        $masker = app(\App\Services\Payment\Snap\SensitivePaymentLogMasker::class);
 
-        return DB::transaction(function () use ($bill, $amountPaid, $ntb, $payload) {
+        // Idempotency + status check DILAKUKAN DI DALAM transaksi dgn lockForUpdate,
+        // agar dua callback bersamaan tidak double-process bill yang sama.
+        return DB::transaction(function () use ($bill, $amountPaid, $ntb, $payload, $masker) {
+            // Kunci baris bill utk mencegah race condition (dua callback bersamaan)
+            $lockedBill = Bill::whereKey($bill->id)->lockForUpdate()->first();
+
+            // Idempotency check: reference_number sudah ada => callback duplikat
+            $existing = Payment::where('reference_number', $ntb)->first();
+            if ($existing) {
+                return [
+                    'status' => 'success',
+                    'message' => 'Transaksi duplikat (Idempotent Success)',
+                    'code' => 200,
+                    'data' => [
+                        'ntpd' => $existing->receipt_number ?? 'N/A',
+                        'status' => 'LUNAS'
+                    ]
+                ];
+            }
+
+            // Status check bill (re-check setelah lock — kalau sudah lunas, jangan double update)
+            if ($lockedBill->status === 'lunas') {
+                return ['status' => 'error', 'message' => 'Tagihan sudah lunas', 'code' => 422];
+            }
+
             // Final JIT Sync
-            $taxObject = $bill->taxObject;
-            $currentPenalty = $bill->penalty_amount;
+            $taxObject = $lockedBill->taxObject;
+            $currentPenalty = $lockedBill->penalty_amount;
             if ($taxObject) {
                 $pendingPeriods = $this->billingService->getPendingPeriods($taxObject);
-                $periodData = $pendingPeriods->firstWhere('period', $bill->period);
+                $periodData = $pendingPeriods->firstWhere('period', $lockedBill->period);
                 if ($periodData) {
                     $currentPenalty = $periodData['penalty_amount'];
                 }
             }
 
-            $expectedTotal = (float) ($bill->amount + $currentPenalty);
+            $expectedTotal = (float) ($lockedBill->amount + $currentPenalty);
             
             // Validation: amount must match (No partial payment for H2H yet)
             if (abs($amountPaid - $expectedTotal) > 0.01) {
@@ -141,7 +148,7 @@ class BankSultraDriver implements PaymentGatewayInterface
             }
 
             // Update Bill
-            $bill->update([
+            $lockedBill->update([
                 'status' => 'lunas',
                 'penalty_at_payment' => $currentPenalty,
                 'bank_code' => 'SULTRA'
@@ -150,9 +157,9 @@ class BankSultraDriver implements PaymentGatewayInterface
             // Create Payment Record
             $ntpd = 'NTPD-' . date('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(10));
             $payment = Payment::create([
-                'bill_id' => $bill->id,
-                'tax_object_id' => $bill->tax_object_id,
-                'taxpayer_id' => $bill->taxpayer_id,
+                'bill_id' => $lockedBill->id,
+                'tax_object_id' => $lockedBill->tax_object_id,
+                'taxpayer_id' => $lockedBill->taxpayer_id,
                 'transaction_id' => 'H2H-' . time(),
                 'reference_number' => $ntb,
                 'receipt_number' => $ntpd,
@@ -160,9 +167,9 @@ class BankSultraDriver implements PaymentGatewayInterface
                 'channel' => $payload['channel'] ?? 'Teller',
                 'amount' => $amountPaid,
                 'status' => 'success',
-                'billing_period' => $bill->period ?? Carbon::now()->format('Y-m'),
+                'billing_period' => $lockedBill->period ?? Carbon::now()->format('Y-m'),
                 'paid_at' => Carbon::now(),
-                'raw_callback_data' => $payload
+                'raw_callback_data' => $masker->mask($payload)
             ]);
 
             // [HOOK] TTE Automated Signing for Receipt (SSPD/SSRD)

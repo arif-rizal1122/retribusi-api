@@ -85,23 +85,35 @@ class QRISDriver implements PaymentGatewayInterface
             return ['status' => 'error', 'message' => 'Tagihan tidak ditemukan', 'code' => 404];
         }
 
-        return DB::transaction(function () use ($bill, $amountPaid, $rrn, $payload) {
-            if ($bill->status === 'lunas') {
+        $masker = app(\App\Services\Payment\Snap\SensitivePaymentLogMasker::class);
+
+        return DB::transaction(function () use ($bill, $amountPaid, $rrn, $payload, $masker) {
+            // Kunci baris bill utk mencegah race condition (dua callback bersamaan)
+            $lockedBill = Bill::whereKey($bill->id)->lockForUpdate()->first();
+
+            // Idempotency: reference_number (RRN) sudah ada => callback duplikat
+            $existing = Payment::where('reference_number', $rrn)->first();
+            if ($existing) {
+                return ['status' => 'success', 'message' => 'Transaksi duplikat (Idempotent Success)', 'code' => 200];
+            }
+
+            // Re-check status setelah lock
+            if ($lockedBill->status === 'lunas') {
                 return ['status' => 'success', 'message' => 'Tagihan sudah lunas (Idempotent)', 'code' => 200];
             }
 
             // Final Snapshot Penalty
-            $taxObject = $bill->taxObject;
-            $currentPenalty = $bill->penalty_amount;
+            $taxObject = $lockedBill->taxObject;
+            $currentPenalty = $lockedBill->penalty_amount;
             if ($taxObject) {
                 $pendingPeriods = $this->billingService->getPendingPeriods($taxObject);
-                $periodData = $pendingPeriods->firstWhere('period', $bill->period);
+                $periodData = $pendingPeriods->firstWhere('period', $lockedBill->period);
                 if ($periodData) {
                     $currentPenalty = $periodData['penalty_amount'];
                 }
             }
 
-            $bill->update([
+            $lockedBill->update([
                 'status' => 'lunas',
                 'penalty_at_payment' => $currentPenalty,
                 'bank_code' => 'QRIS'
@@ -109,9 +121,9 @@ class QRISDriver implements PaymentGatewayInterface
 
             $ntpd = 'NTPD-QRIS-' . date('Ymd') . '-' . strtoupper(Str::random(8));
             Payment::create([
-                'bill_id' => $bill->id,
-                'tax_object_id' => $bill->tax_object_id,
-                'taxpayer_id' => $bill->taxpayer_id,
+                'bill_id' => $lockedBill->id,
+                'tax_object_id' => $lockedBill->tax_object_id,
+                'taxpayer_id' => $lockedBill->taxpayer_id,
                 'transaction_id' => $rrn,
                 'reference_number' => $rrn,
                 'receipt_number' => $ntpd,
@@ -119,9 +131,9 @@ class QRISDriver implements PaymentGatewayInterface
                 'channel' => 'Mobile Banking / E-Wallet',
                 'amount' => $amountPaid,
                 'status' => 'success',
-                'billing_period' => $bill->period ?? Carbon::now()->format('Y-m'),
+                'billing_period' => $lockedBill->period ?? Carbon::now()->format('Y-m'),
                 'paid_at' => Carbon::now(),
-                'raw_callback_data' => $payload
+                'raw_callback_data' => $masker->mask($payload)
             ]);
 
             // [HOOK] TTE Automated Signing

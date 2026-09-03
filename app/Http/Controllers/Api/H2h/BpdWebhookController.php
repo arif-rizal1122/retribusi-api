@@ -127,17 +127,35 @@ class BpdWebhookController extends Controller
             $aftEnabled = (bool) config('snap.bank_sultra_aft.enabled', false);
 
             if ($aftEnabled && $bill) {
-                DB::transaction(function () use ($bill, $transactionAmount, $partnerReferenceNo, $payload) {
-                    $bill->update([
+                $processed = (bool) DB::transaction(function () use ($bill, $transactionAmount, $partnerReferenceNo, $payload) {
+                    // Kunci baris bill utk mencegah race condition (dua callback bersamaan)
+                    $lockedBill = Bill::whereKey($bill->id)->lockForUpdate()->first();
+
+                    // Idempotency: referenceNo sudah tercatat => callback duplikat (skipped)
+                    if ($partnerReferenceNo) {
+                        $existing = Payment::where('reference_number', $partnerReferenceNo)->first();
+                        if ($existing) {
+                            return false;
+                        }
+                    }
+
+                    // Re-check status setelah lock (jangan double-settle)
+                    if ($lockedBill->status === 'lunas') {
+                        return false;
+                    }
+
+                    $masker = app(\App\Services\Payment\Snap\SensitivePaymentLogMasker::class);
+
+                    $lockedBill->update([
                         'status' => 'lunas',
-                        'penalty_at_payment' => $bill->penalty_amount,
+                        'penalty_at_payment' => $lockedBill->penalty_amount,
                         'bank_code' => 'SULTRA',
                     ]);
 
                     Payment::create([
-                        'bill_id' => $bill->id,
-                        'tax_object_id' => $bill->tax_object_id,
-                        'taxpayer_id' => $bill->taxpayer_id,
+                        'bill_id' => $lockedBill->id,
+                        'tax_object_id' => $lockedBill->tax_object_id,
+                        'taxpayer_id' => $lockedBill->taxpayer_id,
                         'transaction_id' => $partnerReferenceNo ?: 'VA-' . time(),
                         'reference_number' => $partnerReferenceNo ?: 'VA-' . Str::random(12),
                         'receipt_number' => 'NTPD-' . date('Ymd') . '-' . strtoupper(Str::random(10)),
@@ -145,17 +163,26 @@ class BpdWebhookController extends Controller
                         'channel' => $payload['additionalInfo']['channel'] ?? 'ATM',
                         'amount' => $transactionAmount,
                         'status' => 'success',
-                        'billing_period' => $bill->period ?? Carbon::now()->format('Y-m'),
+                        'billing_period' => $lockedBill->period ?? Carbon::now()->format('Y-m'),
                         'paid_at' => $payload['paymentDate'] ?? Carbon::now(),
-                        'raw_callback_data' => $payload,
+                        'raw_callback_data' => $masker->mask($payload),
                     ]);
+
+                    return true;
                 });
 
-                Log::info('BankSultra VA callback DIPROSES (payment dicatat)', [
-                    'billNumber' => $bill->bill_number,
-                    'amount' => $transactionAmount,
-                    'referenceNo' => $partnerReferenceNo,
-                ]);
+                if ($processed) {
+                    Log::info('BankSultra VA callback DIPROSES (payment dicatat)', [
+                        'billNumber' => $bill->bill_number,
+                        'amount' => $transactionAmount,
+                        'referenceNo' => $partnerReferenceNo,
+                    ]);
+                } else {
+                    Log::info('BankSultra VA callback duplikat/sudah lunas (skipped, idempotent)', [
+                        'billNumber' => $bill->bill_number,
+                        'referenceNo' => $partnerReferenceNo,
+                    ]);
+                }
             }
 
             Log::info('BankSultra VA callback diterima (fase uji)', [

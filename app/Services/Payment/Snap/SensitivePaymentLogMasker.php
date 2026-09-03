@@ -11,12 +11,19 @@ class SensitivePaymentLogMasker
         'client_key',
         'client_secret',
         'password',
+        'passapp',
+        'pass',
+        'idapp',
+        'credential',
         'private_key',
         'public_key',
         'secret',
         'signature',
         'token',
         'api_key',
+        'account_no',
+        'accountnumber',
+        'account',
     ];
 
     public function mask(array $payload): array
