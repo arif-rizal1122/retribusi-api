@@ -244,7 +244,7 @@ class BankSultraDriver implements PaymentGatewayInterface
      * - Endpoint: {base_url}/api/v1.0/transfer-va/create-va (port 15009)
      * - customerNo = NOP 18 digit | billNo = 9 digit | virtualAccountNo = SPID(8)+last8
      */
-    public function createVA(string $billNumber): array
+    public function createVA(string $billNumber, ?Carbon $expiredAt = null): array
     {
         $bill = Bill::where('bill_number', $billNumber)->first();
         if (!$bill) {
@@ -295,7 +295,7 @@ class BankSultraDriver implements PaymentGatewayInterface
                 'billNo' => substr($customerNo, -9),
             ]],
             'customerNo' => $customerNo,
-            'expiredDate' => Carbon::now()->addDay()->format('Y-m-d\TH:i:sP'),
+'expiredDate' => ($expiredAt ?? Carbon::now()->addDay())->format('Y-m-d\TH:i:sP'),
             'feeAmount' => ['currency' => 'IDR', 'value' => '0.00'],
             'partnerServiceId' => $partnerServiceId,
             'totalAmount' => ['currency' => 'IDR', 'value' => $totalStr],
