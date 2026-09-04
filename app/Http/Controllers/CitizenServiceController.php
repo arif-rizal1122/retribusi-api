@@ -28,7 +28,8 @@ class CitizenServiceController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
         
-        $classifications = \App\Models\RetributionClassification::whereHas('retributionType', function($q) {
+        $classifications = \App\Models\RetributionClassification::where('is_active', true)
+            ->whereHas('retributionType', function($q) {
                 $q->where('is_active', true);
             })
             ->with(['retributionType.opd'])
@@ -70,7 +71,12 @@ class CitizenServiceController extends Controller
         
         $classification = \App\Models\RetributionClassification::with(['retributionType.opd'])
             ->findOrFail($id);
-        
+
+        // Layanan dinonaktifkan sementara (contoh: 201 Kesehatan menunggu alur BLUD)
+        if (!$classification->is_active) {
+            return response()->json(['message' => 'Layanan ini untuk sementara tidak tersedia.'], 404);
+        }
+
         $service = $classification->retributionType;
         
         $objects = TaxObject::where('taxpayer_id', $taxpayer->id)
@@ -116,6 +122,12 @@ class CitizenServiceController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
         $classification = \App\Models\RetributionClassification::with('retributionType')->findOrFail($id);
+
+        // Layanan dinonaktifkan sementara — tolak pendaftaran objek baru
+        if (!$classification->is_active) {
+            return response()->json(['message' => 'Layanan ini untuk sementara tidak tersedia.'], 404);
+        }
+
         $service = $classification->retributionType;
 
         // GATE NIB (PTSP-13): layanan usaha wajib NIB

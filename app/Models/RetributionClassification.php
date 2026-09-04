@@ -33,6 +33,7 @@ class RetributionClassification extends Model
 
     protected $casts = [
         'is_self_assessment' => 'boolean',
+        'is_active' => 'boolean',
         'form_schema' => 'array',
         'requirements' => 'array',
         'bank_accounts' => 'array',
