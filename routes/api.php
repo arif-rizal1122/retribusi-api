@@ -203,7 +203,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/verifications/{id}/decision', [\App\Http\Controllers\DamkarVerificationController::class, 'decision']);
     });
 
-    // Modul Parkir Dishub — Kasir Cepat Jukir (Quick Tap R2/R4)
+    // Modul Parkir Dishub — Kasir Cepat Jukir & Quadruple-Lock System
     Route::prefix('parking')->group(function () {
         Route::get('/locations', [\App\Http\Controllers\ParkingController::class, 'locations']);
         Route::post('/sessions', [\App\Http\Controllers\ParkingController::class, 'recordSession']);
@@ -211,6 +211,16 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/shift/open', [\App\Http\Controllers\ParkingController::class, 'openShift']);
         Route::post('/shift/close', [\App\Http\Controllers\ParkingController::class, 'closeShift']);
         Route::get('/dashboard', [\App\Http\Controllers\ParkingController::class, 'dashboard']);
+
+        // Quadruple-Lock System Endpoints
+        Route::get('/jukir/profile', [\App\Http\Controllers\ParkingController::class, 'jukirProfile']);
+        Route::post('/jukir/topup', [\App\Http\Controllers\ParkingController::class, 'topupDeposit']);
+        Route::post('/sessions/prepaid-cash', [\App\Http\Controllers\ParkingController::class, 'recordPrepaidCash']);
+        Route::get('/inspector/spot-check', [\App\Http\Controllers\ParkingController::class, 'spotCheck']);
+        Route::post('/inspector/sanction', [\App\Http\Controllers\ParkingController::class, 'submitSanction']);
+        Route::get('/admin/gis-heatmap', [\App\Http\Controllers\ParkingController::class, 'gisHeatmap']);
+        Route::get('/admin/anomalies', [\App\Http\Controllers\ParkingController::class, 'anomalies']);
+        Route::post('/citizen/claim-receipt', [\App\Http\Controllers\ParkingController::class, 'claimReceipt']);
     });
     
     // Citizen Service Registration (Shared, but usually for citizens)
