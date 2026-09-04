@@ -347,6 +347,19 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/{submission}/sspd/pdf', [\App\Http\Controllers\H2HBphtbController::class, 'sspdPdf']);
         });
 
+        // Integrasi NIB-BPN & NOP PBB-P2 (Aplikasi Peta Pajak — Standar Output KPK & ATR/BPN)
+        Route::prefix('peta-pajak')->group(function () {
+            Route::get('/stats', [\App\Http\Controllers\PetaPajakController::class, 'stats']);
+            Route::get('/parcels', [\App\Http\Controllers\PetaPajakController::class, 'parcels']);
+            Route::get('/mappings', [\App\Http\Controllers\PetaPajakController::class, 'mappings']);
+            Route::post('/match', [\App\Http\Controllers\PetaPajakController::class, 'match']);
+            Route::post('/auto-match', [\App\Http\Controllers\PetaPajakController::class, 'autoMatch']);
+            Route::get('/export-kpk', [\App\Http\Controllers\PetaPajakController::class, 'exportKpk']);
+            Route::post('/import-dhkp', [\App\Http\Controllers\PetaPajakController::class, 'importDhkp']);
+            Route::get('/dhkp-template', [\App\Http\Controllers\PetaPajakController::class, 'dhkpTemplate']);
+            Route::get('/tax-gap', [\App\Http\Controllers\PetaPajakController::class, 'taxGap']);
+        });
+
         // Notaris / PPAT Approval
         Route::prefix('notaris-approvals')->group(function () {
             Route::get('/', [\App\Http\Controllers\NotarisApprovalController::class, 'index']);
