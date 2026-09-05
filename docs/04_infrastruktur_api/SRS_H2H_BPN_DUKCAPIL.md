@@ -143,16 +143,39 @@ Notifikasi pelunasan ke BPN dijalankan di antrean latar belakang:
 
 ---
 
+### 3.3. Endpoint Pengesahan Yuridis e-SSPD (`POST /api/h2h/bphtb/{submission}/issue-sspd`)
+Endpoint untuk mengesahkan bukti bayar resmi e-SSPD ber-QR Code TTE oleh Pejabat Bapenda (Kabid Pengawas / Verifikator) atau dipicu otomatis jika toggle `services.bphtb.auto_issue_sspd` bernilai `true`.
+
+- **Otorisasi:** Role `petugas`, `kepala_bapenda`, `kabid_pengawas`, `kasubid_pengawas`, atau `super_admin`.
+- **Prasyarat:** `BphtbSubmission` berstatus lunas (`isPaid() == true`).
+- **Response Success (201 Created):**
+```json
+{
+  "message": "SSPD digital berhasil diterbitkan.",
+  "data": {
+    "id": 142,
+    "status": "sspd_issued",
+    "sspd_number": "SSPD-BPHTB-2026-004821",
+    "sspd_issued_at": "2026-09-06T10:15:00Z",
+    "sspd_qr_hash": "a4f8c...61e8",
+    "ntpd": "NTPD-BSLTRA-991823"
+  }
+}
+```
+
+---
+
 ## 4. Kebutuhan Antarmuka Pengguna (UI Requirements)
 
 ### 4.1. Mobile Warga (`retribusi-mobile`)
-- Pada layar pendaftaran objek pajak PBB (`PbbNopApplication.tsx`):
+- Pada layar pendaftaran objek pajak PBB (`PbbNopApplication.tsx`) dan e-BPHTB (`BphtbFormContainer.tsx`):
   1. Komponen `MapPicker` mendukung mode `polygon`.
   2. Saat pengguna selesai menggambar bidang tanah poligon (minimal 3 titik koordinat tertutup), sistem memicu debounced call ke `reverse-lookup`.
   3. Field NIB, Luas Tanah, dan Zona ZNT otomatis terkunci (*read-only*) dan menampilkan *tag* hijau:
      `[✓ NIB Teridentifikasi BPN: 21.01.01.02.00123]`.
   4. Jika bidang belum teridentifikasi di BPN, input luas tanah menjadi aktif (*editable*) dan muncul pemberitahuan ramah:
      `"Bidang tanah belum terpetakan di sistem BPN. Luas tanah akan diverifikasi melalui pengukuran lapangan oleh petugas Bapenda."`
+  5. Setelah pelunasan, NTPD bank langsung tampil. Dokumen e-SSPD ber-QR Code dapat diunduh begitu disahkan oleh Bapenda.
 
 ### 4.2. Admin Web Bapenda (`retribusi-admin`)
 - Pada menu verifikasi pendaftaran PBB dan e-BPHTB:
@@ -160,6 +183,8 @@ Notifikasi pelunasan ke BPN dijalankan di antrean latar belakang:
     - **Kolom Kiri (Klaim Warga / PPAT):** Luas tanah yang dilaporkan, nilai transaksi perolehan (NPOP).
     - **Kolom Kanan (Data Resmi ATR/BPN BHUMI):** Luas tanah kadaster BPN, Nilai ZNT, Peta poligon resmi BPN.
     - **Indikator Kewajaran:** Menghitung selisih persentase deviasi luas dan nilai transaksi.
+  - Tombol Pengesahan 1-Klik:
+    - **"Sahkan & Terbitkan e-SSPD"**: Muncul untuk submission yang telah lunas (`paid`) dan belum berstatus `sspd_issued`, membubuhkan TTE digital secara instan.
 
 ---
 

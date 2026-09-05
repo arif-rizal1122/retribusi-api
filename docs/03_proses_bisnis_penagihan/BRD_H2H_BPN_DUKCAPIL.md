@@ -39,7 +39,7 @@ Pemerintah Kota Baubau melalui Badan Pendapatan Daerah (Bapenda) mengoperasikan 
 ## 3. Cakupan Kebutuhan Fungsional Bisnis
 
 ### 3.1. Alur Pendaftaran Objek PBB Baru (PBB-P2 Registration)
-- **FR-BRD-01 (Auto-Pull NIB):** Saat pemohon menggambar atau memilih poligon bidang tanah pada peta di aplikasi mobile warga (`retribusi-mobile`) atau portal web, backend M-PAD mengirimkan permintaan *spatial reverse query* ke API BHUMI BPN.
+- **FR-BRD-01 (Auto-Pull NIB Berbasis Spasial GIS):** Warga/pemohon tidak lagi diwajibkan menginput 18 digit NOP dan NIB secara manual. Cukup menandai/menggambar bidang tanah di peta spasial (`MapPicker.tsx`), backend M-PAD secara otomatis mengeksekusi *spatial reverse lookup* ke API BHUMI BPN untuk menarik NIB, Zona ZNT, dan NIR.
 - **FR-BRD-02 (Data Auto-Populate):** Data NIB, Kode Zona ZNT, Nilai Indikasi Rata-rata (NIR), dan estimasi luas tanah legal otomatis terisi di formulir dengan tanda *badge* hijau "Terverifikasi ATR/BPN".
 - **FR-BRD-03 (Graceful Fallback Non-Sertipikat):** Apabila bidang tanah pemohon belum bersertipikat / belum terpetakan di ATR/BPN (misalnya tanah adat/sporadik/girik), sistem tidak memblokir permohonan. Formulir dialihkan ke mode "Pendaftaran Mandiri / Non-Sertipikat" dengan status NIB `NULL` dan diteruskan ke verifikasi faktual petugas lapangan (`retribusi-petugas`).
 
@@ -52,12 +52,14 @@ Pemerintah Kota Baubau melalui Badan Pendapatan Daerah (Bapenda) mengoperasikan 
   - Flag Audit: Memberikan label `UNDER_ZNT_FLAG` pada berkas BPHTB untuk diverifikasi oleh Pejabat Fungsional Bapenda.
 - **FR-BRD-06 (Discretionary Override):** Petugas Verifikator Bapenda dengan wewenang khusus dapat menyetujui nilai transaksi riil jika disertai dokumen pendukung yang sah (misalnya putusan lelang pengadilan atau hibah waris sedarah).
 
-### 3.3. Alur Notifikasi Pelunasan Pajak (Outbound SPLP BPN)
-- **FR-BRD-07 (Webhook Pelunasan Otomatis):** Setiap kali pembayaran tagihan PBB atau invoice BPHTB sukses dibukukan (melalui Bank Sultra, BRI, QRIS, atau kanal perbankan lain), M-PAD wajib mengirimkan *payload* konfirmasi lunas ke endpoint BPN SPLP.
-- **FR-BRD-08 (Non-Blocking Payment Resilience):** Kegagalan jaringan atau timeout dari server BPN saat pengiriman webhook pelunasan tidak boleh membatalkan (*rollback*) transaksi pembayaran kas daerah di bank. Transaksi kas tetap sah, dan pengiriman notifikasi ke BPN dikelola melalui mekanisme antrean asinkron (*retry queue*).
+### 3.3. Alur Pelunasan Kas & Penerbitan E-SSPD (Dual-Mode)
+- **FR-BRD-07 (Instant NTPD & Financial Settlement):** Begitu pembayaran kas daerah berhasil dibukukan melalui bank persepsi (Bank Sultra, BRI, QRIS), Nomor Transaksi Pendapatan Daerah (NTPD) dan audit pelunasan langsung dicatat seketika tanpa jeda.
+- **FR-BRD-08 (Pengesahan Yuridis e-SSPD Ber-QR Code TTE):** Penerbitan dokumen bukti bayar yuridis e-SSPD dilengkapi QR Code TTE dan nomor registrasi resmi Bapenda (`SSPD-BPHTB-YYYY-XXXXXX`). Untuk menjaga kepatuhan dan audit trail fisik warkah PPAT, pengesahan e-SSPD disediakan melalui tombol satu klik (`issueSspd`) oleh Pejabat Bapenda (Kabid Pengawas / Verifikator) sebelum berkas ditarik oleh sistem BPN. Sistem juga mendukung toggle mode otonom (`auto_issue_sspd`) bila Pemkot menerapkan *straight-through processing*.
+- **FR-BRD-09 (Webhook Pelunasan Otomatis ke BPN SPLP):** Setiap kali pembayaran tagihan PBB atau invoice BPHTB sukses dan disahkan, M-PAD mengirimkan *payload* konfirmasi lunas ke endpoint BPN SPLP melalui antrean latar belakang (*asynchronous queue*).
+- **FR-BRD-10 (Non-Blocking Payment Resilience):** Kegagalan jaringan atau timeout dari server BPN saat pengiriman webhook pelunasan tidak boleh membatalkan (*rollback*) transaksi pembayaran kas daerah di bank. Transaksi kas tetap sah, dan pengiriman notifikasi ke BPN dikelola melalui mekanisme antrean asinkron (*retry queue* 5x).
 
 ### 3.4. Alur Validasi Identitas Kependudukan (Dukcapil)
-- **FR-BRD-09 (Validasi NIK Pemohon):** Saat warga mendaftar akun atau mengajukan mutasi objek pajak, NIK divalidasi ke layanan H2H Ditjen Dukcapil untuk memastikan nama, tempat tanggal lahir, dan status kependudukan sesuai dengan KTP elektronik.
+- **FR-BRD-11 (Validasi NIK Pemohon):** Saat warga mendaftar akun atau mengajukan mutasi objek pajak, NIK divalidasi ke layanan H2H Ditjen Dukcapil untuk memastikan nama, tempat tanggal lahir, dan status kependudukan sesuai dengan KTP elektronik.
 
 ---
 

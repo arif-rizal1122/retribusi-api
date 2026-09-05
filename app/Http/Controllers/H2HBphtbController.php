@@ -83,12 +83,12 @@ class H2HBphtbController extends Controller
     public function simulate(Request $request)
     {
         $request->validate([
-            'nib' => 'required|string',
+            'nib' => 'nullable|string',
             'npop' => 'required|numeric|min:0',
             'acquisition_type' => 'nullable|string'
         ]);
 
-        $mapping = BpnH2hMapping::where('nib', $request->nib)->first();
+        $mapping = $request->nib ? BpnH2hMapping::where('nib', $request->nib)->first() : null;
         $zntValue = $mapping ? $mapping->znt_value : null;
 
         $type = $request->acquisition_type ?: 'umum';
@@ -104,7 +104,7 @@ class H2HBphtbController extends Controller
     public function submit(Request $request)
     {
         $request->validate([
-            'nib' => 'required|string',
+            'nib' => 'nullable|string',
             'npop' => 'required|numeric|min:0',
             'acquisition_type' => 'nullable|string',
             'nik_wp' => 'required|string|size:16',
@@ -423,6 +423,9 @@ class H2HBphtbController extends Controller
             'sspd_number' => $sspdNumber,
             'by' => $user?->id,
         ]);
+
+        // Dispatch notifikasi ke BPN (SPLP) via background queue
+        \App\Jobs\NotifyBpnSplpPaymentJob::dispatch($submission->id);
 
         return response()->json([
             'message' => 'SSPD digital berhasil diterbitkan.',

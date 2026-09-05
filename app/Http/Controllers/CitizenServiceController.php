@@ -28,7 +28,7 @@ class CitizenServiceController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
         
-        $classifications = \App\Models\RetributionClassification::where('is_active', true)
+        $classifications = \App\Models\RetributionClassification::active()
             ->whereHas('retributionType', function($q) {
                 $q->where('is_active', true);
             })
@@ -73,7 +73,7 @@ class CitizenServiceController extends Controller
             ->findOrFail($id);
 
         // Layanan dinonaktifkan sementara (contoh: 201 Kesehatan menunggu alur BLUD)
-        if (!$classification->is_active) {
+        if (array_key_exists('is_active', $classification->getAttributes()) && !$classification->is_active) {
             return response()->json(['message' => 'Layanan ini untuk sementara tidak tersedia.'], 404);
         }
 
@@ -124,7 +124,7 @@ class CitizenServiceController extends Controller
         $classification = \App\Models\RetributionClassification::with('retributionType')->findOrFail($id);
 
         // Layanan dinonaktifkan sementara — tolak pendaftaran objek baru
-        if (!$classification->is_active) {
+        if (array_key_exists('is_active', $classification->getAttributes()) && !$classification->is_active) {
             return response()->json(['message' => 'Layanan ini untuk sementara tidak tersedia.'], 404);
         }
 

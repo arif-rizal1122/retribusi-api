@@ -1,4 +1,1152 @@
 # MEGA DOCUMENTATION
+## File: docs/sipanda-docs/artifacts/doc_expansion_plan.md
+---
+# Expanding API Documentation
+
+This plan outlines the expansion of API documentation for the Sipanda project, covering existing features and new implementations.
+
+## Proposed Changes
+
+### [Backend] retribusi-api
+
+#### [NEW] [README.md](file:///Users/pondokit/Herd/retribusi-api/docs/README.md)
+- Create a main entry point for documentation, categorizing different API modules.
+
+#### [NEW] [public_apis.md](file:///Users/pondokit/Herd/retribusi-api/docs/public_apis.md)
+- Document public endpoints: Login (Citizen/User), Tax Simulation (`/simulate-tax`), PBB Lookup (`/pbb/lookup-class`), etc.
+
+#### [NEW] [protected_apis.md](file:///Users/pondokit/Herd/retribusi-api/docs/protected_apis.md)
+- Document core application APIs: Taxpayers, Tax Objects, Bills, Payments.
+
+#### [NEW] [surveillance_tte.md](file:///Users/pondokit/Herd/retribusi-api/docs/surveillance_tte.md)
+- Document advanced modules: Surveillance (Audit Logs, Enforcement), E-Registry & TTE.
+
+#### [MODIFY] [spopd-form-structure.md](file:///Users/pondokit/Herd/retribusi-api/docs/spopd-form-structure.md)
+- Ensure SPPT Online (PBB) data structures are included in the documentation.
+
+## Verification Plan
+
+### Manual Verification
+- Review generated markdown files to ensure accuracy against `routes/api.php` and controller logic.
+- Verify internal links between documentation files.
+
+
+---
+
+## File: docs/sipanda-docs/artifacts/rebranding_plan.md
+---
+# Rebranding Sipanda to MITRA
+
+Rebranding all system components from "Sipanda" to "MITRA (Mitra PAD - Manajemen Integrasi Tax, Retribusi, dan Aset Daerah)".
+
+## Proposed Changes
+
+### [Backend] retribusi-api
+
+#### [MODIFY] [README.md](file:///Users/pondokit/Herd/retribusi-api/docs/README.md)
+#### [MODIFY] [core_apis.md](file:///Users/pondokit/Herd/retribusi-api/docs/core_apis.md)
+#### [MODIFY] [public_apis.md](file:///Users/pondokit/Herd/retribusi-api/docs/public_apis.md)
+#### [MODIFY] [surveillance_tte.md](file:///Users/pondokit/Herd/retribusi-api/docs/surveillance_tte.md)
+- Replace all "Sipanda" with "MITRA".
+
+#### [MODIFY] [blade templates](file:///Users/pondokit/Herd/retribusi-api/resources/views/)
+- Update `pdf/sspd.blade.php`, `verification/bill.blade.php`, etc.
+
+### [Frontend] retribusi-admin, retribusi-mobile, retribusi-petugas
+
+#### [MODIFY] [index.html](file:///Users/pondokit/Herd/retribusi-admin/index.html)
+- Update `<title>` to "Mitra PAD".
+
+#### [MODIFY] [Login/Landing Pages](file:///Users/pondokit/Herd/retribusi-admin/src/pages/)
+- Update UI text and branding.
+
+## Verification Plan
+
+### Manual Verification
+- Check UI titles in all apps.
+- Verify PDF exports for correct branding.
+- Review documentation for consistency.
+
+
+---
+
+## File: docs/sipanda-docs/artifacts/task.md
+---
+- [ ] **User Acceptance Testing (UAT) / QA Checklist**
+    - [ ] **Card: SPPT Online (PBB)**
+        - **Skenario**: Buka detail tagihan PBB -> Klik tombol/link Cetak SPPT -> Pastikan PDF terunduh dengan format yang benar.
+        - **Data**: Pastikan tagihan bertipe PBB-P2.
+    - [x] **Implementation: Expand API Docs**
+        - [x] Create `docs/README.md` (Main Index)
+        - [x] Document Public APIs (`simulate-tax`, `login`, `pbb`)
+        - [x] Document Protected APIs (`taxpayers`, `bills`, `payments`)
+        - [x] Document Surveillance & TTE APIs
+        - [x] Update SPOPD/PBB structure docs
+    - [ ] **Card: Perbaikan Foto Profil (Admin & Mobile)**
+        - **Skenario (Admin)**: Ke halaman Profil -> Klik ikon kamera -> Pilih foto -> Simpan -> Pastikan foto terupdate di header.
+        - **Skenario (Mobile)**: Buka Profil -> Ganti foto profil -> Simpan -> Pastikan tidak ada error 422 ("Unprocessable Content").
+    - [ ] **Card: Cetak Bluetooth (Petugas)**
+        - **Skenario**: Buka riwayat pembayaran -> Hubungkan printer bluetooth -> Klik Cetak -> Pastikan struk keluar.
+    - [ ] **Card: Sinkronisasi Pajak Wilayah II**
+        - **Skenario**: Verifikasi di dashboard atau form tagihan apakah PBJT-CAT dan PBJT-EVT sudah muncul untuk Wilayah II.
+    - [ ] **Card: Sinkronisasi Kontributor (README)**
+        - **Skenario**: Cek section "Contributors" di GitHub untuk semua repository.
+
+
+---
+
+## File: docs/sipanda-docs/artifacts/walkthrough.md
+---
+# Walkthrough: Profile Picture Update Fix
+
+I have resolved the 422 "Unprocessable Content" error when updating profile pictures and implemented the missing avatar upload functionality in the Admin application.
+
+## User Acceptance Testing (UAT) Skenario
+
+Berikut adalah panduan bagi pengguna atau QA untuk melakukan pengujian:
+
+| Fitur / Card | Skenario Pengujian | Hasil yang Diharapkan |
+| :--- | :--- | :--- |
+| **SPPT Online** | Masuk ke menu Billing, cari tagihan PBB, lalu klik "Cetak SPPT". | PDF berhasil diunduh dan menampilkan rincian NJOP. |
+| **Profile Fix (Admin)** | Buka halaman Profil di Sidebar. Ubah foto profil menggunakan ikon kamera baru. | Foto profil berubah di halaman profil dan di header aplikasi. |
+| **Profile Fix (Mobile)** | Buka aplikasi Mobile, masuk ke Profil, dan coba ubah foto profil. | Tidak ada error 422, dan foto berhasil tersimpan di server. |
+| **Cetak Thermal** | Gunakan aplikasi Petugas, pilih transaksi yang sudah lunas, dan klik Cetak via Bluetooth. | Printer thermal berhasil terhubung dan mencetak struk. |
+
+## Verification Results
+
+### Backend Verification
+Ran tinker command to verify model configuration:
+```bash
+User metadata fillable: Yes
+User metadata cast: array
+```
+
+### Manual Verification
+- [x] **Mobile App**: Profile update request now sends correct multipart data (boundary string included).
+- [x] **Admin App**: Profile page now displays the user's avatar and allows changing it with immediate preview.
+- [x] **Database**: Avatars are successfully stored in the `users` table's `metadata` column.
+
+render_diffs(file:///Users/pondokit/Herd/retribusi-api/database/migrations/2026_02_19_060000_add_metadata_to_users_table.php)
+render_diffs(file:///Users/pondokit/Herd/retribusi-api/app/Models/User.php)
+render_diffs(file:///Users/pondokit/Herd/retribusi-api/app/Http/Controllers/MeController.php)
+render_diffs(file:///Users/pondokit/Herd/retribusi-mobile/src/pages/UserProfile.tsx)
+render_diffs(file:///Users/pondokit/Herd/retribusi-admin/src/pages/Profile.tsx)
+
+
+---
+
+## File: docs/sipanda-docs/artifacts/implementation_plan.md
+---
+# Plan: Implement Partial Features & SPPT Online
+
+This plan covers the implementation of features previously identified as "Partially Implemented" and the new request for an SPPT Online (PBB) generator.
+
+## Proposed Changes
+
+### [retribusi-api]
+#### [NEW] [sppt.blade.php](file:///Users/pondokit/Herd/retribusi-api/resources/views/pdf/sppt.blade.php) [NEW]
+- Create a professional SPPT (Surat Pemberitahuan Pajak Terutang) template for PBB-P2.
+- Layout: Header BAPENDA, NOP, Taxpayer & Object details, NJOP breakdown (Bumi & Bangunan), and calculation summary (Tariff, NJOPTKP, PBB Terhutang).
+
+#### [MODIFY] [OfficialDocumentService.php](file:///Users/pondokit/Herd/retribusi-api/app/Services/OfficialDocumentService.php)
+- Add `generateSPPT(Bill $bill)` method.
+- Logic to extract PBB metadata (luas_tanah, kelas_bumi, luas_bangunan, kelas_bangunan) from `Bill` or `TaxObject` metadata.
+- Lookup NJOP values from `PbbNjopClassification` for the breakdown.
+
+#### [MODIFY] [BillController.php](file:///Users/pondokit/Herd/retribusi-api/app/Http/Controllers/BillController.php)
+- Add `exportSPPT(Bill $bill)` method.
+- Use `OfficialDocumentService` to get data and render the SPPT view.
+
+#### [MODIFY] [api.php](file:///Users/pondokit/Herd/retribusi-api/routes/api.php)
+- Add route `GET /bills/{bill}/sppt` in protected group.
+
+#### [DONE] [TaxHierarchySyncSeeder.php](file:///Users/pondokit/Herd/retribusi-api/database/seeders/TaxHierarchySyncSeeder.php)
+- Add sync logic for `PBJT - Jasa Catering` (PBJT-CAT) and `PBJT - Jasa Event/Lainnya` (PBJT-EVT) under Wilayah II.
+
+### Proposed Changes
+
+### [Backend] retribusi-api
+
+#### [NEW] [2026_02_19_060000_add_metadata_to_users_table.php](file:///Users/pondokit/Herd/retribusi-api/database/migrations/2026_02_19_060000_add_metadata_to_users_table.php)
+- Add `metadata` JSON column to `users` table to support avatar storage.
+
+#### [MODIFY] [User.php](file:///Users/pondokit/Herd/retribusi-api/app/Models/User.php)
+- Add `metadata` to `$fillable` and cast it as `array`.
+
+#### [MODIFY] [MeController.php](file:///Users/pondokit/Herd/retribusi-api/app/Http/Controllers/MeController.php)
+- Update `update` method to conditionally load relationships based on user model type (`Taxpayer` vs `User`).
+
+---
+
+### [Frontend] retribusi-mobile
+
+#### [MODIFY] [UserProfile.tsx](file:///Users/pondokit/Herd/retribusi-mobile/src/pages/UserProfile.tsx)
+- Remove manual `Content-Type: multipart/form-data` from `api.post` call to allow browser to correctly set the boundary.
+
+---
+
+### [Frontend] retribusi-admin
+
+#### [MODIFY] [Profile.tsx](file:///Users/pondokit/Herd/retribusi-admin/src/pages/Profile.tsx)
+- Add avatar upload UI and logic to align with the Mobile application.
+
+## Verification Plan
+
+### Automated Tests
+- Access `GET /api/bills/{id}/sppt` for a PBB bill and verify PDF generation or data structure.
+- Run `php artisan migrate` to ensure column is added.
+- Test `POST /api/me/update` with and without avatar.
+
+### Manual Verification
+- Check the Petugas/Admin application for a new "Download SPPT" button (if frontend changes are requested later, currently focusing on backend/service).
+- Test profile picture update in `retribusi-mobile`.
+- Test profile picture update in `retribusi-admin`.
+
+### [retribusi-petugas]
+#### [DONE] [ThermalPrintService.ts](file:///Users/pondokit/Herd/retribusi-petugas/src/services/ThermalPrintService.ts)
+- Implement **Web Bluetooth API** logic for connecting and sending data to 58mm thermal printers.
+
+
+---
+
+## File: docs/sipanda-docs/system_documentation.md
+---
+# Retribusi SIPANDA: System Deep Dive & Architecture
+
+SIPANDA is an integrated ecosystem for managing local retributions and taxes, consisting of four specialized repositories that work together in a unified data environment.
+
+## 1. System Architecture
+
+The ecosystem follows a modern decoupled architecture:
+
+```mermaid
+graph TD
+    subgraph "Clients (Frontends)"
+        Mobile["retribusi-mobile (Wajib Pajak)"]
+        Admin["retribusi-admin (Dashboard)"]
+        Petugas["retribusi-petugas (Field App)"]
+    end
+
+    subgraph "Backend Engine"
+        API["retribusi-api (Laravel REST)"]
+        DB[(MySQL Database)]
+    end
+
+    Mobile <--> API
+    Admin <--> API
+    Petugas <--> API
+    API <--> DB
+```
+
+### Core Technologies
+- **Backend**: Laravel 11, PHP 8.2+, MySQL.
+- **Frontend**: React (Vite), Tailwind CSS, Lucide Icons.
+- **Authentication**: Laravel Sanctum (Token-based SPA/Mobile Auth).
+- **Communication**: RESTful JSON API via Axios.
+
+---
+
+## 2. Database Schema (Schema Database)
+
+The heart of the system is the `retribusi-api` database. Below is the simplified relationship map:
+
+### Primary Entities
+| Table | Description | Key Relationships |
+|-------|-------------|-------------------|
+| `opds` | Organization units (e.g., BAPENDA, DISHUB). | One-to-Many with Users, Taxpayers, and Types. |
+| `users` | Staff/Admins (Super Admin, OPD Admin, Petugas). | BelongsTo `opds`. |
+| `taxpayers` | Wajib Pajak (Citizens). Authenticates via NIK. | BelongsTo `opds` (optional), HasMany `tax_objects`. |
+| `retribution_types` | Tax categories (PBJT, Reklame, Parkir, etc.). | BelongsTo `opds`, HasMany `tax_objects`. |
+| `tax_objects` | Specific physical/business entities being taxed. | BelongsTo `taxpayers`, `retribution_types`, `zones`. |
+| `bills` | The actual invoices/tagihan. | BelongsTo `tax_objects`, `taxpayers`, `opds`. |
+| `payments` | Transaction records. | BelongsTo `bills`. |
+| `verifications` | Audit trail for new tax object registrations. | BelongsTo `taxpayers` and `tax_objects`. |
+
+### Database Relationship Diagram (ERD)
+```mermaid
+erDiagram
+    OPD ||--o{ USER : "has"
+    OPD ||--o{ TAXPAYER : "registers"
+    OPD ||--o{ RETRIBUTION_TYPE : "manages"
+    
+    USER ||--o{ BILL : "creates"
+    
+    TAXPAYER ||--o{ TAX_OBJECT : "owns"
+    TAXPAYER ||--o{ BILL : "pays"
+    
+    RETRIBUTION_TYPE ||--o{ TAX_OBJECT : "defines"
+    RETRIBUTION_TYPE ||--o{ BILL : "categorizes"
+    
+    TAX_OBJECT ||--o{ BILL : "is_billed_for"
+    TAX_OBJECT ||--o{ VERIFICATION : "needs"
+    
+    BILL ||--o{ PAYMENT : "collects"
+
+    OPD {
+        string name
+        string code
+        string logo_url
+    }
+    TAXPAYER {
+        string nik
+        string name
+        string npwpd
+        string password
+    }
+    TAX_OBJECT {
+        string nop
+        string name
+        string address
+        decimal latitude
+        decimal longitude
+    }
+    BILL {
+        string bill_number
+        decimal amount
+        string status
+        string period
+    }
+    PAYMENT {
+        string transaction_id
+        decimal amount
+        datetime paid_at
+    }
+```
+
+---
+
+## 3. Use Case & Actor Roles
+
+### 1. Super Admin (Global Controller)
+- **Role**: Total system oversight.
+- **Workflow**: 
+    - Verify and approve new OPD registration requests.
+    - Create and manage OPD Admin accounts.
+    - Analyze high-level revenue trends across all departments.
+
+### 2. OPD Admin (Departmental Master)
+- **Role**: Manages specific department logic (e.g., Bapenda Admin).
+- **Workflow**:
+    - Configure `retribution_types` (pricing, form schemas for registration).
+    - Manage and audit `taxpayers` and `tax_objects`.
+    - Verification of field data submitted by Citizens or Petugas.
+    - Generate bulk billing (`bills`) for periodic retributions.
+
+### 3. Petugas / Petugas (Field & Transaction)
+- **Role**: Field data collection and manual payment processing.
+- **Workflow**:
+    - Input data for new tax objects in the field.
+    - Process on-the-spot payments and generate receipts.
+    - View assignments and collection targets.
+
+### 4. Wajib Pajak (Citizen / User)
+- **Role**: The end-user paying the retribution.
+- **Workflow**:
+    - Self-registration of business/tax objects via Mobile App.
+    - Checking active bills (`Tagihan`) in real-time.
+    - Viewing personal payment history.
+    - Submitting complaints or feedback (`Pengaduan`).
+
+---
+
+## 4. Operational Flowcharts
+
+### A. Tax Object Registration Flow
+```mermaid
+sequenceDiagram
+    participant WP as Wajib Pajak
+    participant PA as retribusi-api
+    participant AD as OPD Admin
+    WP->>PA: Submit New Tax Object (Data + Photos)
+    PA->>PA: Create entry in tax_objects (Status: Pending)
+    PA->>AD: Notify for Verification
+    AD->>PA: Approve/Reject Verification
+    PA-->>WP: Status Update (Active/Approved)
+```
+
+### B. Billing & Payment Flow
+```mermaid
+flowchart LR
+    A[Start Period] --> B{Manual/Auto?}
+    B -- Manual --> C[OPD Admin generates Bill]
+    B -- Auto --> D[System generates Bill]
+    C & D --> E[Bill active in Mobile App]
+    E --> F[Wajib Pajak chooses Bill]
+    F --> G[Payment Process]
+    G --> H{Success?}
+    H -- Yes --> I[Payment Recorded]
+    I --> J[Bill Status: Paid]
+    H -- No --> G
+```
+
+---
+
+## 5. Repository Mechanism Detail
+
+1. **retribusi-api (The Engine)**:
+    - Uses Laravel Sanctum for secure API tokens.
+    - Logic for complex rate calculations based on `zones` and `classifications`.
+    - Cloudinary integration for permanent image storage (OPD logos, verification photos).
+
+2. **retribusi-admin (The Brain)**:
+    - High-density data tables for managing thousands of records.
+    - Dynamic form builders based on API-returned schemas.
+    - Advanced charting (Recharts) for revenue analytics.
+
+3. **retribusi-mobile (The Portal)**:
+    - Mobile-first responsive design (PWA-ready).
+    - Simplified UI for non-technical users to pay bills.
+    - Location tracking (via browser geolocation) for tax object registration.
+
+4. **retribusi-petugas (The Field Tool)**:
+    - Specialized for mobile field work.
+    - Simplified forms for quick data entry.
+    - QR scanning ready (for bill identification).
+
+
+---
+
+## File: docs/sipanda-docs/spopd-form-structure.md
+---
+# Struktur Data Formulir SPOPD
+## Surat Pendaftaran Objek Pajak Daerah - Pemerintah Kota Bau-Bau
+
+Dokumen ini berisi struktur data lengkap dari formulir SPOPD untuk berbagai jenis Pajak Barang dan Jasa Tertentu (PBJT).
+
+---
+
+## Struktur Umum (Shared Fields)
+
+Semua formulir SPOPD memiliki field-field berikut:
+
+### Header
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `nomor_formulir` | string | Nomor urut formulir |
+| `jenis_transaksi` | enum | `perekaman_data`, `pemutakhiran_data`, `penghapusan_data` |
+
+### Data Subjek Pajak
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `npwpd` | string(20) | Nomor Pokok Wajib Pajak Daerah (format: XX-XX-XXXX-XXXXXXX) |
+| `npwpd_lama` | string(20) | NPWPD Lama (jika ada perubahan) |
+| `nama_usaha` | string(100) | Nama usaha/badan usaha |
+| `alamat_usaha` | text | Alamat lengkap usaha |
+| `nama_pemilik_pengelola` | string(100) | Nama pemilik/pengelola |
+| `nik_pemilik_pengelola` | string(16) | NIK pemilik/pengelola |
+| `alamat_pemilik_pengelola` | text | Alamat pemilik/pengelola |
+| `nomor_telepon` | string(15) | Nomor telepon |
+| `alamat_email` | string(100) | Alamat email |
+
+### Pernyataan Subjek Pajak
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `nama_subjek_pajak` | string(100) | Nama yang menandatangani |
+| `tanggal_pernyataan` | date | Tanggal pernyataan |
+| `tanda_tangan` | blob | Tanda tangan digital |
+
+### Identitas Pendata/Pejabat
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `petugas_pendata_tanggal` | date | Tanggal pendataan |
+| `petugas_pendata_tanda_tangan` | blob | Tanda tangan petugas |
+| `petugas_pendata_nama_jelas` | string(100) | Nama jelas petugas |
+| `petugas_pendata_nip` | string(20) | NIP petugas |
+| `pejabat_berwenang_tanggal` | date | Tanggal approval |
+| `pejabat_berwenang_tanda_tangan` | blob | Tanda tangan pejabat |
+| `pejabat_berwenang_nama_jelas` | string(100) | Nama jelas pejabat |
+| `pejabat_berwenang_nip` | string(20) | NIP pejabat |
+
+---
+
+## 1. PBJT ATAS TENAGA LISTRIK (Halaman 11)
+
+### Data Objek Pajak - Tenaga Listrik
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `golongan_usaha` | enum | `non_industri_pertambangan`, `industri`, `pertambangan`, `sosial` |
+| `mesin_pembangkit_nama_tipe` | string(100) | Nama/tipe mesin pembangkit listrik |
+| `mesin_pembangkit_kapasitas_daya` | integer | Kapasitas daya dalam VA |
+| `penggunaan` | enum | `sumber_listrik_utama`, `sumber_listrik_cadangan`, `sumber_listrik_darurat` |
+
+---
+
+## 2. PBJT ATAS JASA KESENIAN DAN HIBURAN (Halaman 7)
+
+### Data Objek Pajak - Kesenian dan Hiburan
+
+#### Jenis Kesenian dan Hiburan
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jenis_hiburan` | array[enum] | Multiple selection dari options berikut |
+
+**Options Jenis Hiburan:**
+- `bioskop_tradisional_film` - Bibenian Tradisional, Film (Bioskop/Keliling)
+- `diskotik_klub_malam` - Diskotik/Klub Malam
+- `sirkus_pameran_seni` - Sirkus/Pameran Seni
+- `fitness_kebugaran_sanggar_senam` - Fitness Centre/Kebugaran, Sanggar Senam
+- `karaoke` - Karaoke
+- `permainan_bilyard` - Permainan Bilyard
+- `pertunjukan_musik_tari_pameran_busana` - Pertunjukan Musik/Tari, Pameran Busana, Kontes Kecantikan
+- `permainan_ketangkasan` - Permainan Ketangkasan
+- `pertandingan_olahraga` - Pertandingan Olahraga
+
+#### Waktu Pertunjukan
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `waktu_pertunjukan` | enum | `berjadwal_tetap_reguler`, `insidental` |
+
+#### Penyelenggaraan Hiburan Insidental
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `judul_pertunjukan` | string(200) | Judul pertunjukan |
+| `jumlah_kursi_penonton` | integer | Jumlah kursi penonton |
+| `jumlah_hari_pertunjukan` | integer | Jumlah hari pertunjukan |
+
+#### Jenis/Kelas Tiket dan Tarif (Array)
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `tiket_kelas[].no` | integer | Nomor urut |
+| `tiket_kelas[].jenis_kelas` | string(50) | Jenis/kelas tiket (VIP, Regular, dll) |
+| `tiket_kelas[].jumlah` | integer | Jumlah tiket |
+| `tiket_kelas[].tarif_rp` | decimal(15,2) | Tarif dalam Rupiah |
+
+#### Hiburan Kesenian Tradisional/Film/Pertunjukan Musik (Tarif Berjadwal Tetap)
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jumlah_kursi` | integer | Jumlah kursi |
+| `jumlah_pertunjukan` | integer | Jumlah pertunjukan per hari |
+| `hari_pertunjukan` | enum | `hari` (per hari) |
+
+#### Hiburan Permainan Bilyard/Permainan Ketangkasan/Video Games
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jumlah_meja_mesin` | integer | Jumlah meja/mesin |
+| `jam_buka` | time | Jam buka |
+| `s_d` | time | Sampai dengan |
+| `tarif_rp_per` | decimal(15,2) | Tarif per satuan waktu |
+
+#### Hiburan Diskotik/Klub Malam
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `kapasitas_orang` | integer | Kapasitas dalam jumlah orang |
+| `tarif_rp` | decimal(15,2) | Tarif masuk |
+
+#### Hiburan Pusat Kebugaran/Sanggar Senam
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `kapasitas_orang` | integer | Kapasitas dalam jumlah orang |
+
+#### Tarif Membership (Array)
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `membership[].no` | integer | Nomor urut |
+| `membership[].jenis_kelas` | string(50) | Jenis/kelas membership |
+| `membership[].tarif_rp` | decimal(15,2) | Tarif dalam Rupiah |
+
+---
+
+## 3. PBJT ATAS PAJAK AIR TANAH (Halaman 14)
+
+### Data Objek Pajak - Air Tanah
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `tujuan_pemanfaatan` | enum | `non_niaga`, `niaga`, `industri_dengan_bahan_baku_air`, `pelayanan_publik_oleh_pdam` |
+| `lokasi_sumber_air` | text | Lokasi sumber air |
+| `mesin_pompa_nama_tipe` | string(100) | Nama/tipe mesin pompa |
+| `mesin_pompa_kapasitas` | decimal(10,2) | Kapasitas dalam M³/Jam |
+| `meteran_air` | enum | `ada`, `tidak_ada` |
+
+---
+
+## 4. PBJT ATAS JASA PARKIR (Halaman 12)
+
+### Data Objek Pajak - Parkir
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `lokasi` | text | Lokasi area parkir |
+| `pengelola` | enum | `dikelola_sendiri_pemilik_lahan_gedung`, `dikelola_jasa_parkir_pihak_ketiga` |
+
+#### Kapasitas Parkir
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `luas_lahan` | decimal(10,2) | Luas lahan dalam m² |
+| `parkir_roda_dua_kapasitas` | integer | Kapasitas kendaraan roda dua |
+| `parkir_roda_empat_kapasitas` | integer | Kapasitas kendaraan roda empat |
+
+#### Waktu Operasional
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `hari_operasional` | array[enum] | `senin`, `selasa`, `rabu`, `kamis`, `jumat`, `sabtu`, `minggu` |
+| `jam_buka` | time | Jam buka |
+| `jam_tutup` | time | Jam tutup (s/d) |
+| `pengecualian_libur` | text | Pengecualian/libur jika ada |
+
+#### Tarif (Rupiah)
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `tarif_sepeda` | decimal(15,2) | Tarif sepeda |
+| `tarif_sepeda_motor` | decimal(15,2) | Tarif sepeda motor |
+| `tarif_mobil_penumpang_pickup` | decimal(15,2) | Tarif mobil penumpang/pickup sejenisnya |
+| `tarif_truk_gandengan_bus_besar` | decimal(15,2) | Tarif truk gandengan/bus besar sejenisnya |
+| `tarif_truk_bus_sedang_kecil` | decimal(15,2) | Tarif truk/bus sedang/kecil sejenisnya |
+| `tarif_tambahan` | decimal(15,2) | Tarif tambahan (jika ada) |
+
+#### Karcis Parkir
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jenis_karcis` | enum | `keluaran_sistem_informasi_berbasis_komputer`, `karcis_dengan_perforasi`, `karcis_biasa`, `tidak_ada` |
+
+---
+
+## 5. PBJT ATAS JASA PERHOTELAN (Halaman 3D)
+
+### Data Objek Pajak - Perhotelan
+
+#### Jenis Hotel
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jenis_hotel` | enum | `bintang_lima`, `bintang_empat`, `bintang_tiga`, `bintang_dua`, `bintang_satu`, `non_bintang`, `rumah_kost` |
+
+#### Jaringan Hotel
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jaringan_hotel` | enum | `tidak_ada`, `nasional`, `internasional` |
+| `nama_jaringan` | string(100) | Nama jaringan hotel (jika ada) |
+
+#### Tipe dan Jumlah Kamar (Array)
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `kamar[].no` | integer | Nomor urut |
+| `kamar[].tipe_kamar` | string(50) | Tipe kamar (Standard, Deluxe, Suite, dll) |
+| `kamar[].jumlah_operasional` | integer | Jumlah kamar operasional |
+| `kamar[].jumlah_non_operasional` | integer | Jumlah kamar non-operasional |
+| `kamar[].tarif_rata_rata` | decimal(15,2) | Tarif rata-rata per kamar dalam Rupiah |
+
+#### Fasilitas Hotel
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `fasilitas_hotel` | array[enum] | Multiple selection |
+
+**Options Fasilitas:**
+- `restoran_kafetaria_bar` - Restoran/Kafetaria/Bar
+- `spa_pusat_kebugaran` - Spa/Pusat Kebugaran
+- `diskotik_karaoke_klub_malam` - Diskotik/Karaoke/Klub Malam
+- `ruang_rapat_pertemuan_ballroom` - Ruang Rapat/Pertemuan/Ballroom
+
+#### Sistem Akuntansi
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `sistem_akuntansi` | enum | `pembukuan`, `pencatatan_sederhana`, `tidak_ada` |
+
+#### Bon Penjualan (Bill)
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jenis_bon_penjualan` | enum | `keluaran_sistem_informasi_berbasis_komputer`, `keluaran_mesin_cash_register`, `bon_penjualan_dengan_perforasi`, `bon_penjualan_biasa`, `tidak_ada` |
+
+---
+
+## Keterangan Pengisian
+1. Isilah formulir dengan benar, jelas dan lengkap dengan menggunakan huruf balok/kapital
+2. Kolom dengan warna abu-abu diisi oleh petugas
+3. Beri tanda silang (X) pada kotak yang sesuai
+
+---
+
+## Catatan Implementasi
+
+### Jenis Pajak (tax_type)
+```
+tenaga_listrik      = PBJT Atas Tenaga Listrik
+kesenian_hiburan    = PBJT Atas Jasa Kesenian dan Hiburan
+air_tanah           = Pajak Air Tanah
+parkir              = PBJT Atas Jasa Parkir
+perhotelan          = PBJT Atas Jasa Perhotelan
+```
+
+### Status Transaksi
+```
+perekaman_data     = Pendaftaran baru
+pemutakhiran_data  = Update data existing
+penghapusan_data   = Hapus/non-aktifkan objek pajak
+```
+
+
+---
+
+## File: docs/sipanda-docs/core_apis.md
+---
+# Core APIs (MITRA)
+
+Modul ini menangani pengelolaan entitas bisnis inti: Wajib Pajak, Objek Pajak, Penagihan (Billing), dan Pembayaran. Kebanyakan endpoint ini memerlukan **Bearer Token**.
+
+## 1. Wajib Pajak (Taxpayers)
+
+### List Wajib Pajak
+- **URL**: `/taxpayers`
+- **Method**: `GET`
+- **Filter**: `?search=name_or_nik`
+
+### Cari Wajib Pajak (NIK)
+Digunakan untuk pencarian cepat saat pendaftaran objek baru.
+- **URL**: `/taxpayers/search/{nik}`
+- **Method**: `GET`
+
+---
+
+## 2. Objek Pajak (Tax Objects)
+
+### List Objek Pajak
+- **URL**: `/tax-objects`
+- **Method**: `GET`
+
+---
+
+## 3. Billing & Penagihan
+
+### Buat Tagihan (Entry Data)
+- **URL**: `/bills`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "tax_object_id": 1,
+    "amount": 500000,
+    "period_month": 3,
+    "period_year": 2026,
+    "notes": "Tagihan Maret"
+  }
+  ```
+
+### Export Dokumen (PDF)
+- **SKRD**: `/bills/{id}/skrd`
+- **SSPD**: `/bills/{id}/sspd`
+- **SPPT (PBB)**: `/bills/{id}/sppt`
+- **Method**: `GET`
+
+---
+
+## 4. Pembayaran (Payments)
+
+### Konfirmasi Pembayaran
+- **URL**: `/payments`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "bill_id": 101,
+    "payment_method": "cash",
+    "amount_paid": 500000
+  }
+  ```
+
+### Cek Tunggakan (Mobile)
+- **URL**: `/citizen/services/pending-periods`
+- **Method**: `GET`
+
+
+---
+
+## File: docs/sipanda-docs/surveillance_tte.md
+---
+# Surveillance & TTE (Advanced - MITRA)
+
+Modul ini digunakan oleh Pengawas dan Admin untuk memantau kepatuhan, audit trail, serta proses legalisasi dokumen secara digital (TTE).
+
+## 1. Surveillance (Pengawasan)
+
+### Audit Logs
+Melihat riwayat aktifitas user di sistem.
+- **URL**: `/pengawas/audit-logs`
+- **Method**: `GET`
+
+### Deteksi Anomali
+Melihat Wajib Pajak atau tagihan yang diidentifikasi tidak wajar.
+- **URL**: `/pengawas/anomalies`
+- **Method**: `GET`
+
+### Monitoring Penegakan (Enforcement)
+- **List Notifikasi**: `/pengawas/enforcements` (Method: `GET`)
+- **Approve Notifikasi**: `/pengawas/enforcements/{id}/approve` (Method: `POST`)
+
+---
+
+## 2. Tax Amnesty (Penghapusan Denda)
+
+Digunakan untuk mengajukan atau menyetujui penghapusan denda administratif.
+- **Ajukan Amnesty**: `/amnesty` (Method: `POST`)
+- **Setujui/Tolak**: `/amnesty/{id}/approve` atau `/amnesty/{id}/reject` (Method: `POST`)
+
+---
+
+## 3. E-Registry & TTE
+
+### Registrasi E-Doc
+Melihat dokumen yang terdaftar di registry.
+- **URL**: `/tte/documents`
+- **Method**: `GET`
+
+### Tanda Tangan Digital (Sign)
+Melakukan proses TTE pada tagihan (Bill).
+- **URL**: `/tte/sign`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "bill_id": 1,
+    "passphrase": "your_secure_passphrase"
+  }
+  ```
+
+### Verifikasi TTE (Public Access)
+Memeriksa keabsahan tanda tangan digital pada dokumen.
+- **URL**: `/tte/verify/{document_number}`
+- **Method**: `GET`
+
+
+---
+
+## File: docs/sipanda-docs/README.md
+---
+# Mitra PAD
+
+Selamat datang di dokumentasi API MITRA (Mitra PAD - Manajemen Integrasi Tax, Retribusi, dan Aset Daerah). Dokumentasi ini mencakup seluruh endpoint yang tersedia untuk integrasi dengan aplikasi Admin, Petugas, dan Mobile.
+
+## Daftar Dokumentasi
+
+1.  **[Public APIs](public_apis.md)**
+    *   Endpoint yang dapat diakses tanpa autentikasi atau untuk kebutuhan awal (Login, Simulasi Pajak, PBB Lookup).
+2.  **[Core APIs](core_apis.md)**
+    *   Fungsi inti aplikasi: Pengelolaan Wajib Pajak, Objek Pajak, Pembuatan Tagihan (Billing), dan Pembayaran.
+3.  **[Surveillance & TTE](surveillance_tte.md)**
+    *   Modul lanjutan untuk Pengawasan (Audit Log, Anomali, Penindakan) serta E-Registry dan Tanda Tangan Elektronik (TTE).
+4.  **[Skema Penalty & Denda](penalty_scheme.md)**
+    *   Penjelasan tarif bunga keterlambatan, denda lapor, dan prosedur amnesty.
+5.  **[Informasi Tambahan](spopd-form-structure.md)**
+    *   Struktur data formulir SPOPD dan pemetaan field database.
+5.  **[Project Artifacts](artifacts/task.md)**
+    *   Berisi [Task List](artifacts/task.md), [Implementation Plan](artifacts/implementation_plan.md), dan [Walkthrough](artifacts/walkthrough.md) pengerjaan fitur.
+
+## Standar API
+
+- **Base URL**: `https://api.sipanda.online/api`
+- **Format Respons**: JSON
+- **Autentikasi**: Laravel Sanctum (Bearer Token)
+- **Status Codes**: 
+    - `200 OK`: Berhasil
+    - `201 Created`: Berhasil membuat data
+    - `401 Unauthorized`: Token tidak valid atau sesi berakhir
+    - `403 Forbidden`: Tidak memiliki izin akses
+    - `422 Unprocessable Content`: Validasi input gagal
+    - `500 Server Error`: Kesalahan pada server
+
+
+---
+
+## File: docs/sipanda-docs/penalty_scheme.md
+---
+# Skema Penalty & Denda (MITRA)
+
+Dokumen ini menjelaskan mekanisme perhitungan sanksi administrasi (bunga), denda keterlambatan lapor, serta prosedur penghapusan denda (amnesty) berdasarkan **Perwali No. 58/2024**.
+
+## 1. Sanksi Administrasi (Bunga Keterlambatan)
+
+Sanksi bunga dihitung dari total pokok pajak yang belum dibayar. Perhitungannya dimulai 1 hari setelah melewati **Jatuh Tempo (Due Date)**.
+
+### Tarif Bunga per Bulan
+Tarif bunga dibedakan berdasarkan jenis penetapan atau kondisi keterlambatan:
+
+| Jenis Sanksi | Tarif / Bulan | Keterangan |
+| :--- | :--- | :--- |
+| **STPD** | 1.0% | Keterlambatan Pembayaran/Setoran (Standar) |
+| **SKPDKB** | 1.8% | Hasil Pemeriksaan Umum |
+| **Jabatan** | 2.2% | Pemeriksaan karena tidak lapor/tidak pembukuan |
+| **Lainnya** | 0.6% | Angsuran, Penundaan, atau Salah Hitung |
+
+### Aturan Perhitungan Waktu
+- **Bagian Bulan dihitung Penuh**: Keterlambatan 1 hari tetap dihitung sebagai 1 bulan penuh.
+- **Maksimal Durasi**: Sanksi bunga maksimal dikenakan untuk **24 bulan**.
+- **Rumus**: `Sanksi = Pokok x Tarif x Jumlah Bulan (Max 24)`
+
+---
+
+## 2. Denda Keterlambatan Lapor (Fixed Fine)
+
+Khusus untuk jenis pajak **Self Assessment** (Wilayah II), wajib pajak wajib melaporkan omzetnya (SPTPD) setiap bulan.
+- **Denda**: Rp 100.000,- (flat) jika tidak melapor tepat waktu.
+
+---
+
+## 3. Ketentuan Khusus PBB-P2
+
+PBB-P2 memiliki kebijakan khusus terkait masa tenggang:
+- **Jatuh Tempo Standar**: Biasanya 10 November pada tahun berjalan.
+- **Grace Period Baru**: Wajib Pajak baru (Pendaftaran Baru) diberikan masa tenggang **6 bulan** sejak pendaftaran sebelum mulai dikenakan bunga jika belum bayar.
+
+---
+
+## 4. Amnesty & Waiver (Penghapusan Denda)
+
+Sistem MITRA mendukung pengajuan penghapusan atau pengurangan denda melalui modul **Amnesty**.
+
+### Prosedur
+1. **Pengajuan**: Petugas lapangan atau Admin mengajukan permohonan atas permintaan Wajib Pajak dengan menyertakan alasan.
+2. **Jenis Pengurangan**:
+   - **Persentase**: Contoh: Pengurangan 50% atau 100% (penghapusan total).
+   - **Nominal Tetap**: Contoh: Pengurangan sebesar Rp 50.000.
+3. **Persetujuan**: Harus disetujui oleh **Kabid** atau **Super Admin** melalui dashboard sebelum tagihan (Bill) diperbarui.
+
+---
+
+## 5. Otomasi Sistem
+Sistem menjalankan command `bills:calculate-penalties` secara berkala (Cron Job) untuk memperbarui nilai sanksi pada seluruh tagihan yang berstatus `pending` dan telah melewati jatuh tempo.
+
+
+---
+
+## File: docs/sipanda-docs/retribusi_system_diagrams.md
+---
+# Retribusi SIPANDA: System Diagrams & Logic
+
+This document provides a visual deep dive into the operation of the SIPANDA ecosystem.
+
+## 1. Professional Multi-Repo Architecture
+The system is divided into four distinct repositories, coordinated by the **SIPANDA CORE API**.
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#10b981','primaryTextColor':'#fff','primaryBorderColor':'#059669','lineColor':'#6366f1','secondaryColor':'#3b82f6','tertiaryColor':'#8b5cf6','background':'#1e293b','mainBkg':'#334155','secondBkg':'#475569','tertiaryBkg':'#64748b','textColor':'#f1f5f9','fontSize':'16px','fontFamily':'Inter, system-ui, sans-serif'}}}%%
+graph TB
+    %% Core API Layer - The Heart of the System
+    subgraph CORE["🏛️ CORE ENGINE (retribusi-api)"]
+        direction TB
+        API["⚡ Laravel REST API<br/>───────────<br/>Authentication • CRUD<br/>Business Logic"]
+        DB[("💾 MySQL Database<br/>───────────<br/>users • tax_objects<br/>bills • payments")]
+        Storage["☁️ Cloudinary Storage<br/>───────────<br/>KTP • NPWP • Photos<br/>Documents • QR Codes"]
+        
+        API -.->|"ORM (Eloquent)"| DB
+        API -.->|"File Upload"| Storage
+    end
+
+    %% Admin Dashboard
+    subgraph ADMIN["👔 ADMIN HUB (retribusi-admin)"]
+        direction TB
+        Dashboard["📊 Web Dashboard<br/>───────────<br/>Next.js • TypeScript"]
+        Analytics["📈 Revenue Analytics<br/>───────────<br/>Charts • Reports"]
+        Verification["✅ Verification Center<br/>───────────<br/>Approve/Reject WP"]
+        
+        Dashboard --> Analytics
+        Dashboard --> Verification
+    end
+
+    %% Field Officers
+    subgraph PETUGAS["🚶 FIELD OFFICERS (retribusi-petugas)"]
+        direction TB
+        FieldApp["📱 Field Application<br/>───────────<br/>React • PWA"]
+        QRScanner["📷 QR/Barcode Scanner<br/>───────────<br/>Quick Verification"]
+        PaymentCollector["💰 Payment Collection<br/>───────────<br/>Cash • Transfer"]
+        
+        FieldApp --> QRScanner
+        FieldApp --> PaymentCollector
+    end
+
+    %% Citizen Portal
+    subgraph MOBILE["👥 CITIZEN PORTAL (retribusi-mobile)"]
+        direction TB
+        CitizenPWA["📲 Mobile PWA<br/>───────────<br/>React Native Web"]
+        BillViewer["🧾 Bill Viewer<br/>───────────<br/>Tagihan • History"]
+        ServiceHub["🏢 Service Hub<br/>───────────<br/>Registration • Layanan"]
+        
+        CitizenPWA --> BillViewer
+        CitizenPWA --> ServiceHub
+    end
+
+    %% Connections
+    API <==>|"REST API<br/>JSON"| Dashboard
+    API <==>|"REST API<br/>JSON"| FieldApp
+    API <==>|"REST API<br/>JSON"| CitizenPWA
+    
+    %% Styling
+    classDef coreStyle fill:#10b981,stroke:#059669,stroke-width:3px,color:#fff
+    classDef adminStyle fill:#3b82f6,stroke:#2563eb,stroke-width:3px,color:#fff
+    classDef petugasStyle fill:#8b5cf6,stroke:#7c3aed,stroke-width:3px,color:#fff
+    classDef mobileStyle fill:#f59e0b,stroke:#d97706,stroke-width:3px,color:#fff
+    classDef dbStyle fill:#ef4444,stroke:#dc2626,stroke-width:3px,color:#fff
+    
+    class API,Storage coreStyle
+    class DB dbStyle
+    class Dashboard,Analytics,Verification adminStyle
+    class FieldApp,QRScanner,PaymentCollector petugasStyle
+    class CitizenPWA,BillViewer,ServiceHub mobileStyle
+```
+
+---
+
+## 2. Dynamic Registration & Verification Mechanism
+One of SIPANDA's most complex features is the **Dynamic Form Registration**. The API provides a `form_schema` which the frontends render dynamically.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant WP as Citizen / Petugas
+    participant API as Core API
+    participant ADM as OPD Admin
+
+    WP->>API: Request Layanan Detail (ID)
+    API-->>WP: Return form_schema + requirements
+    WP->>WP: Render Dynamic Form
+    WP->>API: Submit Data + Photos
+    API->>API: Create Pending Tax Object & File URL
+    API->>ADM: Alert: New Verification Required
+    ADM->>API: Review Data (Approve/Reject)
+    API-->>WP: Change Status -> Active
+```
+
+---
+
+## 3. Billing & Payment Ecosystem
+The system generates bills based on `rates` and `zones`.
+
+```mermaid
+flowchart TD
+    Start([Period Start]) --> Master{Check Targets}
+    Master -->|Individual| Single[Single Bill Generation]
+    Master -->|Bulk| Group[Bulk OPD Generation]
+    
+    Single & Group --> Calc[Calculate Amount via Zone/Rate Class]
+    Calc --> DB_Bill[(Store in Bills Table)]
+    
+    DB_Bill --> Notif[Push to Mobile App]
+    Notif --> Wait{Wajib Pajak Action}
+    
+    Wait -->|View| Detail[View Invoice]
+    Wait -->|Pay| PayProc[Payment Gateway / Manual]
+    
+    PayProc -->|Success| Receipt[Generate E-Receipt]
+    Receipt --> Update[Update Table: bills.status = 'paid']
+    Update --> Done([Transaction Complete])
+```
+
+---
+
+## 4. User Persistence & Authentication (Sanctum)
+Mechanism for managing session across apps.
+
+```mermaid
+graph LR
+    User([User Entry]) --> Login{Login via NIK/Email}
+    Login --> Verify[API: Hash Check]
+    Verify --> Token[Issue personal_access_token]
+    Token --> AppStorage[Stored in localStorage]
+    AppStorage --> Guard[Middleware Check on Every Request]
+```
+
+---
+
+## 5. Visual Summary
+![SIPANDA Enterprise Architecture](architecture_diagram.png)
+
+
+---
+
+## File: docs/sipanda-docs/public_apis.md
+---
+# Public APIs & Authentication
+
+Endpoint ini digunakan untuk proses login, registrasi awal, dan simulasi perhitungan pajak tanpa memerlukan token autentikasi penuh (kecuali ditentukan lain).
+
+## 1. Authentication
+
+### Login (Admin/Petugas)
+Digunakan untuk login ke aplikasi Admin dan Petugas.
+- **URL**: `/login`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "email": "admin@example.com",
+    "password": "password"
+  }
+  ```
+- **Response**: `200 OK` (dengan Bearer Token)
+
+### Citizen Login
+Digunakan khusus untuk aplikasi Mobile (Wajib Pajak).
+- **URL**: `/citizen/login`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "nik": "7471xxxxxxxxxxxx",
+    "password": "password"
+  }
+  ```
+
+---
+
+## 2. Tax Simulation & Formulas
+
+### Simulasi Perhitungan Pajak
+Menghitung estimasi pajak berdasarkan rumus dinamis.
+- **URL**: `/simulate-tax`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "classification_id": 1,
+    "variables": {
+      "nilai_transaksi": 1000000,
+      "jumlah_hari": 30
+    }
+  }
+  ```
+
+### Ambil Daftar Rumus
+Mengambil daftar klasifikasi yang memiliki schema input untuk kalkulator.
+- **URL**: `/tax-formulas`
+- **Method**: `GET`
+
+---
+
+## 3. PBB-P2 Lookup & Calculation
+
+### Lookup Kelas NJOP
+Mencari kelas NJOP berdasarkan nilai (Bumi/Bangunan).
+- **URL**: `/pbb/lookup-class`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "type": "bumi",
+    "value": 250000
+  }
+  ```
+
+### Kalkulasi PBB
+Menghitung PBB-P2 berdasarkan luas dan kelas.
+- **URL**: `/pbb/calculate`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "luas_bumi": 100,
+    "kelas_bumi": "075",
+    "luas_bangunan": 50,
+    "kelas_bangunan": "030"
+  }
+  ```
+
+---
+
+## 4. Public Verification
+
+### Verifikasi SKRD/SSPD
+Memeriksa keabsahan dokumen via QR Code/Nomor.
+- **URL**: `/verify/bill/{number}` atau `/verify/payment/{number}`
+- **Method**: `GET`
+
+
+---
+
 ## File: docs/04_infrastruktur_api/INFRASTRUCTURE_NOTES.md
 ---
 # 🌐 Catatan Infrastruktur & Maintenance (VPS)
@@ -53,6 +1201,116 @@ sudo chmod -R 775 storage bootstrap/cache
 
 ---
 
+## File: docs/04_infrastruktur_api/LEANTIME_CREDENTIALS.md
+---
+# 📋 Kredensial & Akses Leantime Project Management (M-PAD)
+
+Dokumen ini mencatat informasi kredensial, konfigurasi database, dan akses server untuk sistem manajemen proyek **Leantime** (`leantime.sarjanakomputer.id`) yang terintegrasi dengan ekosistem M-PAD (Kota Baubau).
+
+---
+
+## 1. Akses Web Leantime
+
+* **URL Production**: [https://leantime.sarjanakomputer.id](https://leantime.sarjanakomputer.id) (atau [http://leantime.sarjanakomputer.id](http://leantime.sarjanakomputer.id))
+* **URL Local (Docker)**: `http://localhost:8080`
+* **Akun Administrator**:
+  * **Email / Username**: `admin@sarjanakomputer.id`
+  * **Password**: `Admin123!`
+
+---
+
+## 2. Akses Database (MySQL / MariaDB `skom`)
+
+Database Leantime berjalan di dalam container Docker di VPS Aiman / Pondok:
+
+| Parameter | Lingkungan VPS Production | Lingkungan Lokal Docker |
+| :--- | :--- | :--- |
+| **Container Name** | `pisantri-db` | `leantime-mysql-local` |
+| **Host / IP** | `127.0.0.1` / `172.17.0.1` | `127.0.0.1` |
+| **Port** | `3307` | `3307` (mapped ke `3306`) |
+| **Database Name** | `skom` | `skom` |
+| **Username** | `leantime` | `leantime` / `root` |
+| **Password** | `L3ant1m3Skom!` *(atau `L34nt1m3_2026`)* | `root123` / `L34nt1m3_2026` |
+
+### Perintah Query Langsung ke Database VPS:
+```bash
+ssh -i /Users/pondokit/Herd/aiman/pi.pem pondokinformatika@103.150.196.183 "docker exec pisantri-db mysql -uleantime -p'L3ant1m3Skom!' skom -e 'SELECT id, projectId, headline, status FROM zp_tickets WHERE projectId=1;'"
+```
+
+---
+
+## 3. Akses Server VPS (Host Leantime & Aiman)
+
+* **Provider**: Biznet NEO Cloud (Primary VPS: Pondok)
+* **IP Server**: `103.150.196.183`
+* **Username**: `pondokinformatika`
+* **SSH Key Path**: `/Users/pondokit/Herd/aiman/pi.pem` (atau `~/.ssh/id_ed25519`)
+* **Password Console**: `Piblajar2020`
+* **Direktori Leantime di VPS**: `/home/pondokinformatika/leantime.skom`
+* **Direktori Leantime Lokal**: `/Users/pondokit/Herd/leantime.skom`
+
+---
+
+## 4. Mapping Project ID M-PAD di Leantime (`zp_projects`)
+
+| Project ID | Nama Proyek | Cakupan Modul |
+| :---: | :--- | :--- |
+| **1** | `M-PAD (Manajemen Integrasi Tax, Retribusi, dan Aset Daerah)` | Master Board, Kebijakan, API, Bank H2H, Regulasi |
+| **2** | `M-PAD Launch Page` | Landing Page & Portal Informasi Publik |
+| **3** | `M-PAD Mobile App` | Aplikasi Warga / Wajib Pajak (`retribusi-mobile`) |
+| **4** | `M-PAD Admin Web` | Dashboard Admin & OPD (`retribusi-admin`) |
+| **5** | `M-PAD Petugas App` | Aplikasi Petugas Lapangan (`retribusi-petugas`) |
+
+---
+
+## 5. Definisi Kode Status Tiket Leantime (`zp_tickets.status`)
+
+| Nilai Status | Label Sistem | Arti / Status |
+| :---: | :--- | :--- |
+| **`3`** | `status.new` | Tiket Baru / To Do |
+| **`4`** | `status.in_progress` | Sedang Dikerjakan |
+| **`1`** | `status.blocked` | Tertahan / Menunggu PKS atau Pihak Luar |
+| **`2`** | `status.waiting_for_approval` | Menunggu Persetujuan / Review |
+| **`0`** | `status.done` | Selesai / Terverifikasi |
+| **`-1`** | `status.archived` | Diarsipkan |
+
+
+---
+
+## File: docs/04_infrastruktur_api/VPS_ACCESS_MPAD.md
+---
+# 🔒 VPS Access Credentials (Private)
+
+Dokumen ini berisi informasi akses ke VPS MPAD. File ini **diabaikan oleh Git** (`.gitignore`) untuk keamanan.
+
+## 1. SSH Connection
+- **IP**: `157.10.252.74`
+- **User**: `sipanda`
+- **Key File**: `./202600506-sipanda.key` (Sudah diatur chmod 600)
+- **Shortcut Command**:
+  ```bash
+  ssh -i ./202600506-sipanda.key -o StrictHostKeyChecking=no sipanda@157.10.252.74
+  ```
+
+## 2. Database Connection (Remote via SSH Tunnel)
+- **Local Port**: `3307`
+- **Remote Host**: `127.0.0.1:3306`
+- **Command**:
+  ```bash
+  ssh -L 3307:127.0.0.1:3306 -i ./202600506-sipanda.key sipanda@157.10.252.74
+  ```
+
+## 3. Deployment Directory
+- **API**: `/home/sipanda/retribusi-api`
+- **Admin**: `/home/sipanda/retribusi-admin`
+- **Petugas**: `/home/sipanda/retribusi-petugas`
+
+---
+*Catatan: Jangan menghapus file private key di root folder ini jika ingin tetap menggunakan shortcut di atas.*
+
+
+---
+
 ## File: docs/04_infrastruktur_api/CREDENTIALS_GUIDE.md
 ---
 # 🔑 Panduan Manajemen Kredensial
@@ -60,12 +1318,20 @@ sudo chmod -R 775 storage bootstrap/cache
 Dokumen ini menjelaskan **lokasi penyimpanan** kredensial tanpa mencantumkan nilai rahasianya (secrets) demi keamanan, serta daftar akun dan tautan akses untuk sistem Retribusi.
 
 ## 1. Kredensial VPS (Server)
+
+### VPS MPAD (Production)
 - **Hostname:** `157.10.252.74`
-- **Username:** `mpad`
+- **Username:** `mpad` / `sipanda`
 - **Penyimpanan:** 
   - **GitHub Secrets:** `VPS_HOST`, `VPS_USERNAME`, `VPS_PASSWORD`.
   - **Environment Lokasi:** Disimpan dalam password manager pribadi.
 - **Akses Database:** Dikelola via file `.env` di VPS.
+
+### VPS Ihsan (Staging/Dev - Coolify)
+- **Hostname:** `47.236.240.61`
+- **Username:** `root`
+- **Password:** `@zitus123`
+- **Role:** Orkestrator CI/CD via Coolify untuk semua modul *staging* dan *dev*.
 
 ## 2. Kredensial API & Layanan Ketiga
 - **Cloudinary (Media):** 
@@ -73,52 +1339,52 @@ Dokumen ini menjelaskan **lokasi penyimpanan** kredensial tanpa mencantumkan nil
   - API Key & Secret tersedia di dashboard Cloudinary.
 - **Sentry (Error Logs):** 
   - DSN String diatur di `.env` (Laravel) dan `vite.config.ts` (Mobile).
-- **GitHub Token:** Dikelola via SSH Key (`~/.ssh/`) di komputer pengembang dan Action Token di GitHub.
+- **GitHub Token:** Dikelola via SSH Key (~/.ssh/) di komputer pengembang dan Action Token di GitHub.
 
 ## 3. Akun Sistem (Aplikasi)
 
 ### Super Admin (Akses Penuh)
-- **Email**: `admin@retribusi.id` / `superadmin@baubaukota.go.id`
-- **Password**: `Bapenda123#$` / `Bapenda123#$` (untuk Dev)
-- **Role**: `super_admin`
+- **Email**: admin@retribusi.id / superadmin@baubaukota.go.id
+- **Password**: [REDACTED] / [REDACTED] (untuk Dev)
+- **Role**: super_admin
 
 ### Admin OPD (Dinas Terkait)
-- **Email**: `bapenda@baubaukota.go.id`, `dishub@retribusi.id`, `disperindag@retribusi.id`, `dlh@retribusi.id`
-- **Password**: `Bapenda123#$`
-- **Role**: `opd`
+- **Email**: bapenda@baubaukota.go.id, dishub@retribusi.id, disperindag@retribusi.id, dlh@retribusi.id
+- **Password**: [REDACTED]
+- **Role**: opd
 
 ### Pengawas (Approval & Penindakan)
-- **Email**: `kabid@retribusi.id` / `pengawas@baubaukota.go.id`
-- **Password**: `Bapenda123#$`
-- **Role**: `pengawas`
+- **Email**: kabid@retribusi.id / pengawas@baubaukota.go.id
+- **Password**: [REDACTED]
+- **Role**: pengawas
 - **Wewenang**: Full Approval SPP, SKRD, SSPD, dan Penerbitan SKPDKB.
 
 ### Petugas (Mobile Quick Scan / Patroli)
-- **Email**: `petugas@bapenda.go.id` / `petugasrbac@test.com`
-- **Password**: `Bapenda123#$`
-- **Role**: `petugas`
+- **Email**: petugas@bapenda.go.id / petugasrbac@test.com
+- **Password**: [REDACTED]
+- **Role**: petugas
 
 ---
 ## 4. Link Production
 
-- **Admin Web** (Super Admin, OPD, Pengawas): [https://adminmpad.baubaukota.go.id](https://adminmpad.baubaukota.go.id)
-- **Petugas Web** (Dashboard Petugas): [https://petugasmpad.baubaukota.go.id](https://petugasmpad.baubaukota.go.id)
-- **Mobile Web** (Wajib Retribusi & Quick Access): [https://mpad.baubaukota.go.id](https://mpad.baubaukota.go.id)
+- **Admin Web**: [https://adminmpad.baubaukota.go.id](https://adminmpad.baubaukota.go.id)
+- **Petugas Web**: [https://petugasmpad.baubaukota.go.id](https://petugasmpad.baubaukota.go.id)
+- **Mobile Web**: [https://mpad.baubaukota.go.id](https://mpad.baubaukota.go.id)
 - **API Server**: [https://api.sipanda.online](https://api.sipanda.online)
 
 ---
-## 5. File `.env` (Source of Truth)
-Setiap lingkungan memiliki file `.env` yang **tidak masuk Git**:
-- **Production:** `/home/mpad/retribusi-api/.env`
-- **Development:** `/home/mpad/retribusi-api-dev/.env`
+## 5. File .env (Source of Truth)
+Setiap lingkungan memiliki file .env yang **tidak masuk Git**:
+- **Production:** /home/mpad/retribusi-api/.env
+- **Development:** /home/mpad/retribusi-api-dev/.env
 - **Local:** Terletak di root masing-masing folder repo.
 
 ## 6. Cara Rotasi Kredensial
 Jika terjadi kebocoran keamanan:
-1. Update password user `mpad` di VPS.
+1. Update password user mpad di VPS.
 2. Update **Actions Secrets** di Settings GitHub Repositori.
-3. Update variabel terkait di file `.env` server.
-4. Jalankan `php artisan config:cache` (Production) untuk memuat nilai baru.
+3. Update variabel terkait di file .env server.
+4. Jalankan php artisan config:cache (Production) untuk memuat nilai baru.
 
 ---
 > [!CAUTION]
@@ -139,7 +1405,7 @@ Jika terjadi kebocoran keamanan:
 
 ## 0. INFRASTRUKTUR & DOMAIN
 Seluruh endpoint di bawah ini diakses melalui domain produksi yang sudah dipartisi:
-- **API**: [api.sipanda.online](https://api.sipanda.online)
+- **API**: [apimpad.baubaukota.go.id](https://apimpad.baubaukota.go.id)
 - **Admin**: [adminmpad.baubaukota.go.id](https://adminmpad.baubaukota.go.id)
 - **Petugas**: [petugasmpad.baubaukota.go.id](https://petugasmpad.baubaukota.go.id)
 
@@ -239,6 +1505,9 @@ Lihat [INFRASTRUCTURE_MAP.md](file:///Users/pondokit/Herd/retribusi-api/INFRASTR
 
 | Method | URI | Controller | Keterangan |
 |--------|-----|------------|------------|
+| `POST` | `/api/v1/bank/inquiry` | `BankH2HController::inquiry` | Inquiry Bank H2H |
+| `POST` | `/api/v1/bank/payment` | `BankH2HController::payment` | Payment Bank H2H |
+| `POST` | `/api/v1/bank/reversal` | `BankH2HController::reversal` | Reversal Bank H2H |
 | `GET` | `/api/analytics/realization` | `AnalyticsController::getRealization` | Data realisasi |
 | `GET` | `/api/analytics/heatmap` | `AnalyticsController::getHeatmapData` | Heatmap potensi |
 | `GET/POST/PUT/DELETE` | `/api/retribution-types` | `RetributionTypeController` | CRUD Jenis Retribusi |
@@ -324,21 +1593,31 @@ Lihat [INFRASTRUCTURE_MAP.md](file:///Users/pondokit/Herd/retribusi-api/INFRASTR
 | 7 | `/dashboard` | `Dashboard` | `Dashboard.tsx` | super_admin, opd, verifikator, petugas, viewer, pengawas, kabid/kasubid, walikota |
 | 8 | `/surveillance` | `Dashboard` | `Dashboard.tsx` | super_admin, pengawas, kabid/kasubid |
 | 9 | `/pengawas/dashboard` | `PengawasDashboard` | `PengawasDashboard.tsx` | super_admin, pengawas, kabid/kasubid |
-| 10 | `/spot-checks` | `SpotCheckList` | `SpotCheckList.tsx` | super_admin, pengawas, kabid/kasubid |
-| 11 | `/spot-checks/create` | `SpotCheckForm` | `SpotCheckForm.tsx` | super_admin, pengawas, kabid/kasubid |
-| 17 | `/billing` | `Billing` | `Billing.tsx` | super_admin, opd, petugas |
-| 18 | `/verification` | `Verification` | `Verification.tsx` | super_admin, opd, verifikator |
-| 19 | `/reporting` | `Reporting` | `Reporting.tsx` | super_admin, opd, viewer |
-| 20 | `/master-data` | `MasterData` | `MasterData.tsx` | super_admin, opd, verifikator, petugas, viewer, kabid/kasubid |
-| 21 | `/system` | `SystemAdmin` | `SystemAdmin.tsx` | super_admin |
-| 22 | `/opds` | `OpdManagement` | `OpdManagement.tsx` | super_admin |
-| 23 | `/profile` | `Profile` | `Profile.tsx` | All auth roles |
-| 24 | `/user-guide` | `UserGuide` | `UserGuide.tsx` | All (no auth) |
-| 25 | `/pbb-bapenda` | `PbbManagement` | `PbbManagement.tsx` | super_admin, opd |
-| 26 | `/presentation` | `Presentation` | `Presentation.tsx` | Public |
-| 27 | `/download` | `DownloadApp` | `DownloadApp.tsx` | Public |
-| 29 | `/verify/:number` | `ERegistry` | `ERegistry.tsx` | Public |
-| 30 | `/verify` | `ERegistry` | `ERegistry.tsx` | Public |
+| 10 | `/pengawas/maps` | `PengawasMaps` | `PengawasMaps.tsx` | super_admin, pengawas |
+| 11 | `/pengawas/audit-logs` | `AuditLogs` | `AuditLogs.tsx` | super_admin, pengawas |
+| 12 | `/pengawas/complaints` | `ComplaintManagement` | `ComplaintManagement.tsx` | super_admin, pengawas |
+| 13 | `/pengawas/enforcements` | `Enforcement` | `Enforcement.tsx` | super_admin, pengawas |
+| 14 | `/pengawas/amnesty` | `Amnesty` | `Amnesty.tsx` | super_admin, pengawas |
+| 15 | `/pengawas/field-force` | `FieldForce` | `FieldForce.tsx` | super_admin, pengawas |
+| 16 | `/performance/objects` | `ObjectAchievement` | `ObjectAchievement.tsx` | super_admin, pengawas |
+| 17 | `/performance/classifications` | `ClassificationAchievement` | `ClassificationAchievement.tsx` | super_admin, pengawas |
+| 18 | `/spot-checks` | `SpotCheckList` | `SpotCheckList.tsx` | super_admin, pengawas, kabid/kasubid |
+| 19 | `/spot-checks/create` | `SpotCheckForm` | `SpotCheckForm.tsx` | super_admin, pengawas, kabid/kasubid |
+| 20 | `/billing` | `Billing` | `Billing.tsx` | super_admin, opd, petugas |
+| 21 | `/verification` | `Verification` | `Verification.tsx` | super_admin, opd, verifikator |
+| 22 | `/reporting` | `Reporting` | `Reporting.tsx` | super_admin, opd, viewer |
+| 23 | `/master-data` | `MasterData` | `MasterData.tsx` | super_admin, opd, verifikator, petugas, viewer, kabid/kasubid |
+| 24 | `/system` | `SystemAdmin` | `SystemAdmin.tsx` | super_admin |
+| 25 | `/system/h2h-logs` | `H2HLogs` | `H2HLogs.tsx` | super_admin |
+| 26 | `/opds` | `OpdManagement` | `OpdManagement.tsx` | super_admin |
+| 27 | `/profile` | `Profile` | `Profile.tsx` | All auth roles |
+| 28 | `/user-guide` | `UserGuide` | `UserGuide.tsx` | All (no auth) |
+| 29 | `/about` | `About` | `About.tsx` | Public |
+| 30 | `/pbb-bapenda` | `PbbManagement` | `PbbManagement.tsx` | super_admin, opd |
+| 31 | `/presentation` | `Presentation` | `Presentation.tsx` | Public |
+| 32 | `/download` | `DownloadApp` | `DownloadApp.tsx` | Public |
+| 33 | `/verify/:number` | `ERegistry` | `ERegistry.tsx` | Public |
+| 34 | `/verify` | `ERegistry` | `ERegistry.tsx` | Public |
 
 ### Components
 
@@ -371,16 +1650,19 @@ Lihat [INFRASTRUCTURE_MAP.md](file:///Users/pondokit/Herd/retribusi-api/INFRASTR
 | 10 | `/taxpayers` | `TaxpayerManagement` | `TaxpayerManagement.tsx` | super_admin, opd, petugas |
 | 11 | `/taxpayers/:id` | `TaxpayerDetail` | `TaxpayerDetail.tsx` | super_admin, opd, petugas |
 | 12 | `/billing` | `Billing` | `Billing.tsx` | super_admin, opd, petugas |
-| 13 | `/verification` | `PaymentVerification` | `PaymentVerification.tsx` | super_admin, opd, petugas |
-| 14 | `/reporting` | `Reporting` | `Reporting.tsx` | super_admin, opd, viewer, petugas |
-| 15 | `/master-data` | `MasterData` | `MasterData.tsx` | super_admin, opd, verifikator, petugas, viewer |
-| 16 | `/calculator` | `TaxCalculator` | `TaxCalculator.tsx` | super_admin, opd, petugas |
-| 17 | `/pbb-bapenda` | `PbbBapenda` | `PbbBapenda.tsx` | super_admin, opd, petugas |
-| 18 | `/profile` | `Profile` | `Profile.tsx` | All auth roles |
-| 19 | `/user-guide` | `UserGuide` | `UserGuide.tsx` | Public |
-| 20 | `/download` | `DownloadApp` | `DownloadApp.tsx` | Public |
-| 21 | `/unduh` | `DownloadApp` | `DownloadApp.tsx` | Public |
-| 22 | `/presentation` | `Presentation` | `Presentation.tsx` | Public |
+| 13 | `/tasks` | `DaftarTugas` | `DaftarTugas.tsx` | super_admin, opd, petugas |
+| 14 | `/verification` | `PaymentVerification` | `PaymentVerification.tsx` | super_admin, opd, petugas |
+| 15 | `/reporting` | `Reporting` | `Reporting.tsx` | super_admin, opd, viewer, petugas |
+| 16 | `/master-data` | `MasterData` | `MasterData.tsx` | super_admin, opd, verifikator, petugas, viewer |
+| 17 | `/skpd/create` | `CreateSKPD` | `CreateSKPD.tsx` | super_admin, opd, petugas |
+| 18 | `/calculator` | `TaxCalculator` | `TaxCalculator.tsx` | super_admin, opd, petugas |
+| 19 | `/pbb-bapenda` | `PbbBapenda` | `PbbBapenda.tsx` | super_admin, opd, petugas |
+| 20 | `/profile` | `Profile` | `Profile.tsx` | All auth roles |
+| 21 | `/about` | `About` | `About.tsx` | Public |
+| 22 | `/user-guide` | `UserGuide` | `UserGuide.tsx` | Public |
+| 23 | `/download` | `DownloadApp` | `DownloadApp.tsx` | Public |
+| 24 | `/unduh` | `DownloadApp` | `DownloadApp.tsx` | Public |
+| 25 | `/presentation` | `Presentation` | `Presentation.tsx` | Public |
 
 ### Components
 
@@ -812,6 +2094,340 @@ Alur deployment frontend yang benar:
 
 ---
 Semua file ini (dan kredensial di `vps.txt`) sepenuhnya aman berada di komputer lokal Anda, namun telah diblokir dari version control. Gunakan `./<nama_file.exp>` untuk mengeksekusinya.
+
+
+---
+
+## File: docs/artifacts/doc_expansion_plan.md
+---
+# Expanding API Documentation
+
+This plan outlines the expansion of API documentation for the Sipanda project, covering existing features and new implementations.
+
+## Proposed Changes
+
+### [Backend] retribusi-api
+
+#### [NEW] [README.md](file:///Users/pondokit/Herd/retribusi-api/docs/README.md)
+- Create a main entry point for documentation, categorizing different API modules.
+
+#### [NEW] [public_apis.md](file:///Users/pondokit/Herd/retribusi-api/docs/public_apis.md)
+- Document public endpoints: Login (Citizen/User), Tax Simulation (`/simulate-tax`), PBB Lookup (`/pbb/lookup-class`), etc.
+
+#### [NEW] [protected_apis.md](file:///Users/pondokit/Herd/retribusi-api/docs/protected_apis.md)
+- Document core application APIs: Taxpayers, Tax Objects, Bills, Payments.
+
+#### [NEW] [surveillance_tte.md](file:///Users/pondokit/Herd/retribusi-api/docs/surveillance_tte.md)
+- Document advanced modules: Surveillance (Audit Logs, Enforcement), E-Registry & TTE.
+
+#### [MODIFY] [spopd-form-structure.md](file:///Users/pondokit/Herd/retribusi-api/docs/spopd-form-structure.md)
+- Ensure SPPT Online (PBB) data structures are included in the documentation.
+
+## Verification Plan
+
+### Manual Verification
+- Review generated markdown files to ensure accuracy against `routes/api.php` and controller logic.
+- Verify internal links between documentation files.
+
+
+---
+
+## File: docs/artifacts/rebranding_plan.md
+---
+# Rebranding Sipanda to MITRA
+
+Rebranding all system components from "Sipanda" to "MITRA (Mitra PAD - Manajemen Integrasi Tax, Retribusi, dan Aset Daerah)".
+
+## Proposed Changes
+
+### [Backend] retribusi-api
+
+#### [MODIFY] [README.md](file:///Users/pondokit/Herd/retribusi-api/docs/README.md)
+#### [MODIFY] [core_apis.md](file:///Users/pondokit/Herd/retribusi-api/docs/core_apis.md)
+#### [MODIFY] [public_apis.md](file:///Users/pondokit/Herd/retribusi-api/docs/public_apis.md)
+#### [MODIFY] [surveillance_tte.md](file:///Users/pondokit/Herd/retribusi-api/docs/surveillance_tte.md)
+- Replace all "Sipanda" with "MITRA".
+
+#### [MODIFY] [blade templates](file:///Users/pondokit/Herd/retribusi-api/resources/views/)
+- Update `pdf/sspd.blade.php`, `verification/bill.blade.php`, etc.
+
+### [Frontend] retribusi-admin, retribusi-mobile, retribusi-petugas
+
+#### [MODIFY] [index.html](file:///Users/pondokit/Herd/retribusi-admin/index.html)
+- Update `<title>` to "Mitra PAD".
+
+#### [MODIFY] [Login/Landing Pages](file:///Users/pondokit/Herd/retribusi-admin/src/pages/)
+- Update UI text and branding.
+
+## Verification Plan
+
+### Manual Verification
+- Check UI titles in all apps.
+- Verify PDF exports for correct branding.
+- Review documentation for consistency.
+
+
+---
+
+## File: docs/artifacts/task.md
+---
+- [ ] **User Acceptance Testing (UAT) / QA Checklist**
+    - [ ] **Card: SPPT Online (PBB)**
+        - **Skenario**: Buka detail tagihan PBB -> Klik tombol/link Cetak SPPT -> Pastikan PDF terunduh dengan format yang benar.
+        - **Data**: Pastikan tagihan bertipe PBB-P2.
+    - [x] **Card: Synchronization & Git**
+        - [x] Push all changes to `dev` branch
+        - [x] Sync documentation artifacts to `docs/artifacts`
+        - [x] Update documentation at `/docs` endpoint
+    - [x] **Implementation: Expand API Docs**
+        - [x] Create `docs/README.md` (Main Index)
+        - [x] Document Public APIs (`simulate-tax`, `login`, `pbb`)
+        - [x] Document Protected APIs (`taxpayers`, `bills`, `payments`)
+        - [x] Document Surveillance & TTE APIs
+        - [x] Update SPOPD/PBB structure docs
+    - [ ] **Card: Perbaikan Foto Profil (Admin & Mobile)**
+        - **Skenario (Admin)**: Ke halaman Profil -> Klik ikon kamera -> Pilih foto -> Simpan -> Pastikan foto terupdate di header.
+        - **Skenario (Mobile)**: Buka Profil -> Ganti foto profil -> Simpan -> Pastikan tidak ada error 422 ("Unprocessable Content").
+    - [ ] **Card: Cetak Bluetooth (Petugas)**
+        - **Skenario**: Buka riwayat pembayaran -> Hubungkan printer bluetooth -> Klik Cetak -> Pastikan struk keluar.
+    - [ ] **Card: Sinkronisasi Pajak Wilayah II**
+        - **Skenario**: Verifikasi di dashboard atau form tagihan apakah PBJT-CAT dan PBJT-EVT sudah muncul untuk Wilayah II.
+    - [ ] **Card: Sinkronisasi Kontributor (README)**
+        - **Skenario**: Cek section "Contributors" di GitHub untuk semua repository.
+
+
+---
+
+## File: docs/artifacts/walkthrough.md
+---
+# Walkthrough: Profile Picture Update Fix
+
+I have resolved the 422 "Unprocessable Content" error when updating profile pictures and implemented the missing avatar upload functionality in the Admin application.
+
+## User Acceptance Testing (UAT) Skenario
+
+Berikut adalah panduan bagi pengguna atau QA untuk melakukan pengujian:
+
+| Fitur / Card | Skenario Pengujian | Hasil yang Diharapkan |
+| :--- | :--- | :--- |
+| **SPPT Online** | Masuk ke menu Billing, cari tagihan PBB, lalu klik "Cetak SPPT". | PDF berhasil diunduh dan menampilkan rincian NJOP. |
+| **Profile Fix (Admin)** | Buka halaman Profil di Sidebar. Ubah foto profil menggunakan ikon kamera baru. | Foto profil berubah di halaman profil dan di header aplikasi. |
+| **Profile Fix (Mobile)** | Buka aplikasi Mobile, masuk ke Profil, dan coba ubah foto profil. | Tidak ada error 422, dan foto berhasil tersimpan di server. |
+| **Cetak Thermal** | Gunakan aplikasi Petugas, pilih transaksi yang sudah lunas, dan klik Cetak via Bluetooth. | Printer thermal berhasil terhubung dan mencetak struk. |
+
+## Verification Results
+
+### Backend Verification
+Ran tinker command to verify model configuration:
+```bash
+User metadata fillable: Yes
+User metadata cast: array
+```
+
+### Manual Verification
+- [x] **Mobile App**: Profile update request now sends correct multipart data (boundary string included).
+- [x] **Admin App**: Profile page now displays the user's avatar and allows changing it with immediate preview.
+- [x] **Database**: Avatars are successfully stored in the `users` table's `metadata` column.
+
+render_diffs(file:///Users/pondokit/Herd/retribusi-api/database/migrations/2026_02_19_060000_add_metadata_to_users_table.php)
+render_diffs(file:///Users/pondokit/Herd/retribusi-api/app/Models/User.php)
+render_diffs(file:///Users/pondokit/Herd/retribusi-api/app/Http/Controllers/MeController.php)
+render_diffs(file:///Users/pondokit/Herd/retribusi-mobile/src/pages/UserProfile.tsx)
+render_diffs(file:///Users/pondokit/Herd/retribusi-admin/src/pages/Profile.tsx)
+
+
+---
+
+## File: docs/artifacts/testing_checklist.md
+---
+# Checklist Pengujian Sistem MITRA
+
+Gunakan checklist ini untuk memverifikasi seluruh perubahan fitur dan rebranding yang telah diimplementasikan.
+
+> **Standar Skema Pengujian:**
+> Seluruh poin pengujian di bawah ini (serta di seluruh dokumentasi folder `testing/`) wajib mematuhi standar validitas *No Screenshot* dengan mengeksekusi 5 lapisan: **Unit Testing, Feature Testing, API Testing, CRUD Testing, dan UI Testing**. Rujuk panduan metodologi lengkap pada berkas: [`testing/00-Panduan-Standar-Pengujian.md`](file:///Users/pondokit/Herd/retribusi-api/testing/00-Panduan-Standar-Pengujian.md).
+
+## 1. Rebranding MITRA (Visual & Identity)
+- [ ] **Admin App**: Pastikan title bar browser bertuliskan "MITRA Admin" dan logo di halaman Login adalah "MITRA".
+- [ ] **Mobile App**: Pastikan onboarding slide pertama menyebutkan "MITRA" dan tagline baru.
+- [ ] **Petugas App**: Pastikan logo di header dan halaman landing sudah berganti menjadi "MITRA Petugas".
+- [ ] **PDF Dokumen**: Generate satu SSPD dan pastikan footer mencantumkan "MITRA (Mitra PAD...)".
+- [ ] **Link Integrity**: Pastikan fitur login tetap berjalan (api.sipanda.online tidak berubah).
+
+## 2. Pengujian Sistem Upload File (Lintas Platform)
+- [ ] **Admin App (Web)**: 
+    - [ ] Buka Pengaturan Profil -> Pilih Foto -> Simpan. Pastikan validasi ekstensi jpeg, png, heic ukuran <= 5MB tertangani dengan baik.
+    - [ ] Verifikasi foto avatar di Navbar Header terupdate seketika (tanpa perlu _refresh_ manual).
+- [ ] **Mobile App (Wajib Pajak)**:
+    - [ ] Arahkan ke menu **Akun** -> Klik ikon Kamera -> Upload Foto.
+    - [ ] Pastikan tidak ada _error Unprocessable Content_ 422 dan foto tampil elegan di kartu profil.
+- [ ] **Petugas App (On-Site Billing)**:
+    - [ ] Pada modal **Konfirmasi Pembayaran**, unggah file *Bukti Pembayaran (Opsional)* dari galeri / tangkapan kamera _smartphone_.
+    - [ ] Verifikasi indikator _loading_ "MENGUNGGAH BUKTI..." dan pratinjau _thumbnail_ tampil. Pastikan URL Cloudinary terlampir sukses di _payload_ API pembayaran.
+
+## 3. Skenario Pengujian Tupoksi Role (Multi-Frontend)
+
+### A. Admin OPD & Super Admin (Frontend: `retribusi-admin`)
+- [ ] **Super Admin**: Pastikan seluruh menu Sidebar terbuka sempurna (Manajemen OPD, User, Layanan Retribusi, dll). Coba fungsionalitas _Approve_ relaksasi/Amnesty Pajak.
+- [ ] **Admin OPD (Dinas Terkait)**: 
+    - [ ] Pastikan login profil OPD hanya memuat Objek Pajak, WP, dan Laporan Rekapitulasi di bawah wewenang dinasnya (*data isolation*).
+    - [ ] Verifikasi grafik Dashboard (revenue, potensial) teraplikasikan berdasarkan filter `opd_id`.
+- [ ] **Penetapan Pajak (Official Assessment)**: Admin menerbitkan tagihan SKPD secara masal maupun spesifik entitas, dan memonitor status tunggakannya.
+
+### B. Petugas Lapangan Ops (Frontend: `retribusi-petugas`)
+- [ ] **Akses Terbatas Teritori**: Buka Dashboard & Peta Lapangan. Verifikasi sebaran Marker WP yang muncul mutlak berada pada wilayah zonasi teguran Petugas (`officerZoneIds`) serta spesifik ke klasifikasi tipe pajaknya.
+- [ ] **On-Site Billing Simulator**:
+    - [ ] Datangi WP Belum Bayar via Peta -> "Buat SKPD Baru".
+    - [ ] Isi Form Kalkulator di `/calculator` -> tekan "Buat & Bayar SKPD".
+    - [ ] Konfirmasi Pembayaran Tunai, unggah lampiran bukti opsional, dan terima notifikasi sukes.
+- [ ] **Mobilitas Kasir**: Buka Menu Billing Indeks, coba unduh tanda terima dan validasi aksi cetak resi SSPD / SKRD via *Print Button*.
+
+### C. Wajib Pajak (Frontend: `retribusi-mobile` / Citizen Portal)
+- [ ] **Self-Assessment (Pajak Restoran)**: Wajib Pajak melaporkan omzet harian/bulanan secara mandiri (SPTPD).
+- [ ] **Pembayaran Digital**:
+    - [ ] Masuk ke menu Tagihan -> Munculkan ID Billing.
+    - [ ] Pilih metode bayar VA / QRIS -> Simulasikan setoran lunas di eksekusi backend.
+    - [ ] Periksa notifikasi "Tagihan Lunas" dengan status _badge_ hijau.
+- [ ] **Penalty Otomasi (Denda Lapor/Bayar)**:
+    - [ ] Sengaja melampaui masa `due_date` pelaporan SPTPD (*Self Assessment*).
+    - [ ] Jalankan _command_ `php artisan bills:calculate-penalties`. Pastikan Sanksi Administratif (SKPDKB / denda flat 100k) diterapkan dalam total perhitungan.
+
+## 4. Dokumentasi Viewer (`/docs`)
+- [ ] **Aksesibilitas & Integritas**: Buka `http://localhost:8000/docs`, telusuri struktur hirarki *Public, Core, Penalty*.
+- [ ] **Navigasi Bantuan**: Cek tautan repositori menuju Artifacts Markdown untuk merangkum hasil kerja harian _Developer_ kepada atasan QA.
+
+## 5. Sinkronisasi Kesatuan Sistem
+- [ ] Cek status *commit* Tree Backend & Frontend di Git untuk serah terima tahap Alpha Testing.
+
+
+---
+
+## File: docs/artifacts/implementation_plan.md
+---
+# Plan: Implement Partial Features & SPPT Online
+
+This plan covers the implementation of features previously identified as "Partially Implemented" and the new request for an SPPT Online (PBB) generator.
+
+## Proposed Changes
+
+### [retribusi-api]
+#### [NEW] [sppt.blade.php](file:///Users/pondokit/Herd/retribusi-api/resources/views/pdf/sppt.blade.php) [NEW]
+- Create a professional SPPT (Surat Pemberitahuan Pajak Terutang) template for PBB-P2.
+- Layout: Header BAPENDA, NOP, Taxpayer & Object details, NJOP breakdown (Bumi & Bangunan), and calculation summary (Tariff, NJOPTKP, PBB Terhutang).
+
+#### [MODIFY] [OfficialDocumentService.php](file:///Users/pondokit/Herd/retribusi-api/app/Services/OfficialDocumentService.php)
+- Add `generateSPPT(Bill $bill)` method.
+- Logic to extract PBB metadata (luas_tanah, kelas_bumi, luas_bangunan, kelas_bangunan) from `Bill` or `TaxObject` metadata.
+- Lookup NJOP values from `PbbNjopClassification` for the breakdown.
+
+#### [MODIFY] [BillController.php](file:///Users/pondokit/Herd/retribusi-api/app/Http/Controllers/BillController.php)
+- Add `exportSPPT(Bill $bill)` method.
+- Use `OfficialDocumentService` to get data and render the SPPT view.
+
+#### [MODIFY] [api.php](file:///Users/pondokit/Herd/retribusi-api/routes/api.php)
+- Add route `GET /bills/{bill}/sppt` in protected group.
+
+#### [DONE] [TaxHierarchySyncSeeder.php](file:///Users/pondokit/Herd/retribusi-api/database/seeders/TaxHierarchySyncSeeder.php)
+- Add sync logic for `PBJT - Jasa Catering` (PBJT-CAT) and `PBJT - Jasa Event/Lainnya` (PBJT-EVT) under Wilayah II.
+
+### Proposed Changes
+
+### [Backend] retribusi-api
+
+#### [NEW] [2026_02_19_060000_add_metadata_to_users_table.php](file:///Users/pondokit/Herd/retribusi-api/database/migrations/2026_02_19_060000_add_metadata_to_users_table.php)
+- Add `metadata` JSON column to `users` table to support avatar storage.
+
+#### [MODIFY] [User.php](file:///Users/pondokit/Herd/retribusi-api/app/Models/User.php)
+- Add `metadata` to `$fillable` and cast it as `array`.
+
+#### [MODIFY] [MeController.php](file:///Users/pondokit/Herd/retribusi-api/app/Http/Controllers/MeController.php)
+- Update `update` method to conditionally load relationships based on user model type (`Taxpayer` vs `User`).
+
+---
+
+### [Frontend] retribusi-mobile
+
+#### [MODIFY] [UserProfile.tsx](file:///Users/pondokit/Herd/retribusi-mobile/src/pages/UserProfile.tsx)
+- Remove manual `Content-Type: multipart/form-data` from `api.post` call to allow browser to correctly set the boundary.
+
+---
+
+### [Frontend] retribusi-admin
+
+#### [MODIFY] [Profile.tsx](file:///Users/pondokit/Herd/retribusi-admin/src/pages/Profile.tsx)
+- Add avatar upload UI and logic to align with the Mobile application.
+
+## Verification Plan
+
+### Automated Tests
+- Access `GET /api/bills/{id}/sppt` for a PBB bill and verify PDF generation or data structure.
+- Run `php artisan migrate` to ensure column is added.
+- Test `POST /api/me/update` with and without avatar.
+
+### Manual Verification
+- Check the Petugas/Admin application for a new "Download SPPT" button (if frontend changes are requested later, currently focusing on backend/service).
+- Test profile picture update in `retribusi-mobile`.
+- Test profile picture update in `retribusi-admin`.
+
+### [retribusi-petugas]
+#### [DONE] [ThermalPrintService.ts](file:///Users/pondokit/Herd/retribusi-petugas/src/services/ThermalPrintService.ts)
+- Implement **Web Bluetooth API** logic for connecting and sending data to 58mm thermal printers.
+
+
+---
+
+## File: docs/BRI_SNAP_JOURNEY.md
+---
+# BRI SNAP — Riwayat Perjalanan Integrasi (04-05 Agu 2026)
+
+## Ringkasan
+Akses-token BRI SNAP berhasil tembus **2007300 Successful** pada 05 Agu 2026 10:20 WITA.
+Akar masalah utama: BRI menggunakan **RSA-SHA256** signature (bukan HMAC-SHA512) dengan
+stringToSign **`X-CLIENT-KEY|X-TIMESTAMP`** (format BTN-style).
+
+## Kronologi
+| Waktu | Error | Akar Masalah |
+|-------|-------|--------------|
+| 04 Agu 08:15 | 4017300 Client Key | BRI pakai placeholder "DASHBOARD BRI" (disengaja) |
+| 04 Agu | 4017300 Signature | Client ID/Secret asli di-update, format masih beda |
+| 04 Agu | Fix flex path variants | Commit a9cdfc1 — 5 variasi path/body → 2007300 |
+| 05 Agu 07:05-09:35 | 4017300 Signature | BRI hit tiap 15 menit, tetap mismatch |
+| 05 Agu 09:50 | 5007300 General Error | BUG diagnostic (closure $request tanpa use) |
+| 05 Agu 09:57 | Fix bug 500 | Sekarang error jujur: 4017300 Signature |
+| 05 Agu 10:05 | 4017300 Signature | BRI ganti ke RSA-2048 (344 char) |
+| 05 Agu 10:15 | MATCH ditemukan | RSA-SHA256 PKCS1v15: clientKey\|timestamp |
+| **05 Agu 10:20** | **2007300 Successful** | Fix fallback RSA deployed (83ae04a) |
+
+## Root Cause
+Signature BRI untuk access-token = **RSA-SHA256 PKCS1v15**:
+```
+stringToSign = X-CLIENT-KEY|X-TIMESTAMP
+Contoh: lAeTvF1KvLlHwYS9IR94pz7irRrovTDH|2026-08-05T09:05:36+07:00
+```
+Deteksi cepat: signature 344 char base64 = RSA-2048; 88 char = HMAC-SHA512.
+
+## Fix
+1. `SnapSignatureService::verify()` — kandidat + format `clientKey|timestamp`
+2. `verifyString()` — HMAC dulu, fallback `verifyRsa()` (public key BRI)
+3. `SnapRequestCapture` (baru) — simpan raw request BRI ke storage/logs/bri_capture/
+4. `analyze_bri_capture.py` — brute-force semua format signature
+
+## Status
+- [x] Access-token B2B → 2007300 (05 Agu 10:20)
+- [ ] Inquiry VA → menunggu test BRI (VA siap: PR #2)
+- [ ] Payment VA → menunggu inquiry sukses
+- [ ] Whitelist IP outbound BRI
+
+
+---
+
+## File: docs/01_regulasi_baubau/10-migrasi-tupoksi-opd-20260901.md
+---
+# Migrasi Tupoksi OPD (1 Sep 2026)
+- OPD baru: DINKES id=22, BPKAD id=23
+- Pemetaan opd_id classification (14 layanan): 198->4 DLH, 200/202/203/207->3 Disperindag, 201->22 Dinkes, 204->10 Perikanan, 208->2 Dishub, 209->16 Pariwisata, 210/211/214->23 BPKAD, 212/213->7 PTSP
+- 206 Vila: arsip ke type 109 (dobel PBJT-HTL)
+- Hapus assignment rusak classification 9/11 (2 baris)
 
 
 ---
@@ -2139,143 +3755,312 @@ Secara keseluruhan, sistem telah memiliki **logika data (JSON)** untuk 100% dari
 
 ---
 
+## File: docs/01_regulasi_baubau/08-struktur-retribusi-halaman-layanan.md
+---
+# Struktur Retribusi Daerah — Halaman Layanan-Retribusi
+
+> Dokumen acuan implementasi tabulasi Retribusi di halaman `/layanan-retribusi`.
+> Disusun berdasarkan **Perda No. 1 Tahun 2024 tentang Pajak Daerah dan Retribusi Daerah Kota Baubau** dan **Pasal 88 ayat (3) & Pasal 87 ayat (1) UU No. 1 Tahun 2022 (UU HKPD)**.
+> Sumber teks pasal: https://djpk.kemenkeu.go.id/wp-content/uploads/2022/01/Salinan-UU-Nomor-1-Tahun-2022.pdf
+
+---
+
+## 1. Struktur Retribusi Daerah — 3 Kelompok
+
+Retribusi daerah diklasifikasikan menjadi **3 kelompok** (UU HKPD Pasal 86–89):
+
+1. **Retribusi Jasa Umum** — pelayanan publik dasar yang disediakan Pemda.
+2. **Retribusi Jasa Usaha** — penyediaan/pelayanan barang dan/atau jasa yang bersifat komersial.
+3. **Retribusi Perizinan Tertentu** — pelayanan perizinan tertentu oleh Pemda.
+
+---
+
+## 2. Retribusi Jasa Umum — 4 Jenis Aktif di M-PAD
+
+Hanya **4 jenis** yang diimplementasikan (nomor 4, 6, 7 dari daftar awal **dihapus**):
+
+| No | Jasa | Perda | Kode DB |
+|----|------|-------|---------|
+| 1 | Pelayanan Kesehatan | Perda 16/2012 | — |
+| 2 | Pelayanan Persampahan/Kebersihan | Perda 17/2012 | `RET-SMP` (198) |
+| 3 | Pelayanan Parkir Tepi Jalan Umum | Perda 20/2012 jo. 2/2018 | `RET-PRK` (199) |
+| 4 | Pelayanan Pasar | Perda 26/2012 jo. 8/2016 | — |
+
+**Yang dihapus (tidak ditampilkan):**
+- ~~Pengujian Kendaraan Bermotor~~ (Perda 24/2012 jo. 5/2018)
+- ~~Tera/Tera Ulang~~ (Perda 28/2012)
+- ~~Pengendalian Menara Telekomunikasi~~ (Perda 29/2012)
+
+---
+
+## 3. Retribusi Jasa Usaha — Objek Pasal 88 ayat (3) UU 1/2022
+
+Jenis penyediaan/pelayanan barang dan/atau jasa yang menjadi objek Retribusi Jasa Usaha (Pasal 87 ayat (1) huruf b):
+
+- **a.** Penyediaan tempat kegiatan usaha berupa pasar grosir, pertokoan, dan tempat kegiatan usaha lainnya.
+- **b.** Penyediaan tempat pelelangan ikan, ternak, hasil bumi, dan hasil hutan termasuk fasilitas lainnya dalam lingkungan tempat pelelangan.
+- **c.** Penyediaan tempat khusus parkir di luar badan jalan.
+- **d.** Penyediaan tempat penginapan/pesanggrahan/vila.
+- **e.** Pelayanan rumah pemotongan hewan ternak.
+- **f.** Pelayanan jasa kepelabuhanan.
+- **g.** Pelayanan tempat rekreasi, pariwisata, dan olahraga.
+- ~~**h.** Pelayanan penyeberangan orang atau barang dengan menggunakan kendaraan di air~~ — **DITIADAKAN di Baubau** (tidak ada layanannya).
+- **i.** Penjualan hasil produksi usaha Pemerintah Daerah.
+- **j.** Pemanfaatan aset Daerah yang tidak mengganggu penyelenggaraan tugas dan fungsi OPD dan/atau optimalisasi aset Daerah dengan tidak mengubah status kepemilikan.
+
+**Total objek Jasa Usaha yang diimplementasikan: 9** (a–g, i–j; huruf h ditiadakan).
+
+### Pemetaan ke Perda Baubau
+
+| Objek | Deskripsi | Perda Terkait |
+|-------|-----------|---------------|
+| a | Tempat kegiatan usaha (pasar grosir, pertokoan) | Perda 26/2012 (pasar) / Perda 1/2024 |
+| b | Tempat pelelangan | — |
+| c | Tempat khusus parkir (luar badan jalan) | Perda 21/2012 jo. 3/2018 |
+| d | Penginapan/pesanggrahan/vila | — |
+| e | Rumah pemotongan hewan | Perda 31/2012 |
+| f | Jasa kepelabuhanan | Perda 25/2012 jo. 6/2018 |
+| g | Rekreasi, pariwisata, olahraga | Perda 32/2012 jo. 5/2020 |
+| ~~h~~ | ~~Penyeberangan air~~ | **Ditiadakan** |
+| i | Penjualan hasil produksi Pemda | — |
+| j | Pemanfaatan aset daerah | Perda 30/2012 jo. Perwal 19/2016 |
+
+---
+
+## 4. Retribusi Perizinan Tertentu — Objek Pasal 87 ayat (1) huruf c
+
+Jenis pelayanan pemberian izin yang menjadi objek Retribusi Perizinan Tertentu:
+
+- **a.** Persetujuan bangunan gedung (PBG).
+- **b.** Penggunaan tenaga kerja asing (TKA).
+
+**Total objek Perizinan Tertentu yang diimplementasikan: 2** (a–b).
+
+### Perubahan & Catatan
+
+- **Izin Gangguan** (Perda 34/2012) — ❌ **TIDAK BERLAKU** (terhapus, tidak diimplementasikan).
+- **Izin Trayek** (Perda 23/2012) — ❌ **TIDAK BERLAKU** (tidak diimplementasikan).
+- **Izin Usaha Perikanan** (Perda 35/2012) — 🔄 **GANTI NAMA** (menyesuaikan regulasi terbaru; verifikasi penamaan final).
+- **IMB** — digantikan konsep **Persetujuan Bangunan Gedung (PBG)** sesuai objek (a).
+
+---
+
+## 5. Struktur Tabulasi Halaman Layanan-Retribusi
+
+```
+Tab: [Pajak] [Retribusi] [Aset lainnya]
+             │
+             ├─ 🔵 Jasa Umum (4)
+             │   • Pelayanan Kesehatan
+             │   • Pelayanan Persampahan/Kebersihan
+             │   • Pelayanan Parkir Tepi Jalan Umum
+             │   • Pelayanan Pasar
+             │
+             ├─ 🟢 Jasa Usaha (9 — Pasal 88(3) UU 1/2022)
+             │   • Tempat Kegiatan Usaha (a)
+             │   • Tempat Pelelangan (b)
+             │   • Tempat Khusus Parkir (c)
+             │   • Penginapan/Pesanggrahan/Vila (d)
+             │   • Rumah Pemotongan Hewan (e)
+             │   • Jasa Kepelabuhanan (f)
+             │   • Rekreasi, Pariwisata & Olahraga (g)
+             │   • Penjualan Hasil Produksi Pemda (i)
+             │   • Pemanfaatan Aset Daerah (j)
+             │
+             └─ 🟠 Perizinan Tertentu (2 — Pasal 87(1)c)
+                 • Persetujuan Bangunan Gedung (PBG)
+                 • Penggunaan Tenaga Kerja Asing (TKA)
+```
+
+### Catatan Implementasi
+
+1. **Tab Pajak** — tidak berubah, tetap seperti biasa (PBB-P2, BPHTB, Pajak Reklame, MBLB, Walet, Opsen, PBJT, Air Tanah, dll).
+2. **Tab Retribusi** — 3 sub-grup: Jasa Umum (4), Jasa Usaha (9), Perizinan Tertentu (2).
+3. **Tab Aset lainnya** — layanan terkait aset daerah.
+4. **Grouping backend**: service `category` diarahkan ke nilai: `pajak`, `jasa_umum`, `jasa_usaha`, `perizinan`, `aset` — frontend cukup render grouping.
+5. **Jasa Usaha huruf h (penyeberangan air)**: dipastikan tidak ada di data/klasifikasi aktif M-PAD.
+
+---
+
+*Dokumen ini bagian dari harmonisasi regulasi Perda 1/2024 & UU 1/2022 (HKPD). Perbarui jika ada perubahan peraturan atau keputusan pengelola.*
+
+
+---
+
 ## File: docs/01_regulasi_baubau/BAUBAU_REGULATORY_MASTER.md
 ---
-# 🏛️ BAUBAU REGULATORY MASTER (Source of Truth)
+# 🏛️ BAUBAU REGULATORY MASTER (Source of Truth 2024–2026)
+## Kompendium Regulasi Pajak Daerah dan Retribusi Daerah Kota Baubau
 
-Dokumen ini adalah acuan tunggal untuk seluruh logika bisnis sistem **MITRA (Manajemen Informasi Terpadu Retribusi dan Aset Daerah)** sesuai dengan **Perda 1/2024** dan **Perwali Baubau Nomor 8 Tahun 2025**.
-
----
-
-## 1. Jenis Pajak Daerah & Rumus Perhitungannya
-
-### A. Portofolio Wilayah I (Aset & Properti)
-
-#### 1. Pajak Bumi dan Bangunan (PBB-P2)
-Dikenakan atas kepemilikan atau pemanfaatan tanah dan bangunan.
-*   **Rumus:** `(NJOP - NJOPTKP) x Tarif`
-*   **NJOPTKP:** Ditetapkan sebesar **Rp10.000.000**.
-*   **Tarif:** Maksimal **0,3%**, khusus lahan produksi pangan/ternak **0,25%**.
-
-#### 2. Bea Perolehan Hak atas Tanah dan Bangunan (BPHTB)
-*   **Rumus:** `(NPOP - NPOPTKP) x Tarif 5%`
-*   **NPOPTKP:** 
-    *   Perolehan Pertama: **Rp80.000.000**.
-    *   Waris/Hibah Washiat (Keluarga Sedarah): **Rp300.000.000**.
-
-#### 3. Pajak Reklame
-*   **Rumus:** `Nilai Sewa Reklame (NSR) x Tarif 25%`.
-*   **Parameter:** NSR dipengaruhi oleh dimensi fisik dan **Zonasi Kelas Jalan**.
-
-#### 4. Pajak MBLB (Mineral Bukan Logam dan Batuan)
-*   **Rumus:** `(Volume x Harga Patokan) x Tarif 15%`.
-
-#### 5. Pajak Sarang Burung Walet
-*   **Rumus:** `(Volume Panen x Harga Pasar) x Tarif 10%`.
-
-#### 6. Opsen Pajak (Tambahan Pungutan)
-*   **Opsen PKB & Opsen BBNKB:** **66%** dari pokok pajak provinsi.
-
-### B. Portofolio Wilayah II (Konsumsi & Self-Assessment)
-
-#### 1. Pajak Barang dan Jasa Tertentu (PBJT)
-Berdasarkan total nilai pembayaran (omzet).
-*   **Makanan/Minuman (Restoran):** Omzet x **10%**.
-*   **Jasa Perhotelan:** Omzet x **10%**.
-*   **Jasa Parkir:** Omzet x **10%**.
-*   **Jasa Kesenian & Hiburan:** 
-    *   Umum: **10%**.
-    *   Khusus (Diskotik, Klub Malam, Karaoke): **40%**.
-*   **Tenaga Listrik:** 
-    *   Konsumsi Umum: **10%**.
-    *   Industri/Migas: **3%**.
-    *   Dihasilkan Sendiri: **1,5%**.
-
-#### 2. Pajak Air Tanah (PAT)
-*   **Rumus:** `(Volume x Harga Dasar Air/HDA) x Tarif 20%`.
-
-#### 3. Retribusi (Sewa Lapak & Jasa Umum)
-*   **Sewa Lapak**: Menggunakan sistem Koefisien (1.3 - 1.0) dikalikan tarif dasar.
+**Status**: Master Reference (Sumber Kebenaran Bisnis M-PAD)  
+**Terakhir Diperbarui**: 30 Agustus 2026  
+**Dasar Hukum Utama**:
+1. **UU No. 1 Tahun 2022** tentang Hubungan Keuangan antara Pemerintah Pusat dan Pemerintahan Daerah (HKPD).
+2. **PP No. 35 Tahun 2023** tentang Ketentuan Umum Pajak Daerah dan Retribusi Daerah (KUPDRD).
+3. **Peraturan Daerah (Perda) Kota Baubau No. 1 Tahun 2024** tentang Pajak Daerah dan Retribusi Daerah.
+4. **Peraturan Wali Kota (Perwali) Kota Baubau**:
+   * **Perwali No. 58 Tahun 2024**: Tata Cara Pemungutan Pajak Daerah dan Retribusi Daerah.
+   * **Perwali No. 63 Tahun 2024**: Pembebasan Retribusi PBG bagi Masyarakat Berpenghasilan Rendah (MBR).
+   * **Perwali No. 8 Tahun 2025**: Pembagian Portofolio Pendapatan Wilayah I dan Wilayah II (RBAC M-PAD).
+   * **Perwali No. 11 Tahun 2025**: Tata Cara Perhitungan dan Penyelenggaraan Pajak Reklame (Zonasi Jalan & NSPR).
+   * **Perwali No. 41 Tahun 2025**: Insentif Pemungutan Pajak Daerah dan Retribusi Daerah.
+   * **Perwali No. 42 Tahun 2025**: Pemungutan Opsen Pajak MBLB dan Sinergi Pemungutan.
+   * **Perwali No. 43 Tahun 2025**: Penilaian Pajak Bumi dan Bangunan Perdesaan dan Perkotaan (PBB-P2 & ZNT).
+   * **Perwali No. 55 Tahun 2025**: Penyesuaian Detail Objek dan Tarif Retribusi Jasa Umum Pasar.
 
 ---
 
-## 2. Struktur Zonasi & Tarif Spasial (Rules Engine)
+## 1. Pembagian Portofolio & Struktur Hirarki M-PAD (Perwali 8/2025)
 
-Sistem **MITRA** menggunakan alur hirarki: **Jenis Retribusi → Klasifikasi → Zona → Tarif**.
+Sistem M-PAD membagi seluruh pendapatan daerah ke dalam arsitektur **4-Tingkat Hirarki**:
 
-### A. Pajak Reklame (Zonasi Kelas Jalan)
-Menentukan besaran NSPR (Nilai Strategis Penyelenggaraan Reklame).
-*   **Kelas Jalan A (Sangat Strategis):** Jl. RA. Kartini, Jl. Yos Sudarso, Jl. Jend. Sudirman, Pantai Kamali, Kotamara.
-*   **Kelas Jalan B (Strategis):** Jl. Teuku Umar, Jl. RE Martadinata, Jl. Gatot Subroto.
-*   **Kelas Jalan C (Standar):** Jl. Imam Bonjol, Jl. Seram, dll.
+```
+Level 1: Jenis Retribusi/Pajak (Portofolio Wilayah)
+  └── Level 2: Klasifikasi Pajak/Retribusi (ID: 186–215)
+        └── Level 3: Zona / Lokasi / Kategori Tarif (ZNT, Kelas Jalan, Koefisien Lapak)
+              └── Level 4: Tarif & Formula Matematis
+```
 
-### B. PBB-P2 (Zona Nilai Tanah / ZNT)
-*   Setiap wilayah desa/kelurahan dipetakan dalam blok ZNT.
-*   **NIR (Nilai Indikasi Rata-rata):** Mencerminkan harga pasar tanah di zona tersebut.
+### Portofolio Wilayah I (Aset, Properti, dan Official Assessment - ID: 16)
+Mengelola jenis pajak dan pungutan yang berbasis pada penetapan resmi (*Official Assessment*) dan kepemilikan/penguasaan aset fisik:
+1. **PBB-P2** (Pajak Bumi dan Bangunan Perdesaan dan Perkotaan)
+2. **BPHTB** (Bea Perolehan Hak atas Tanah dan Bangunan)
+3. **Pajak Reklame**
+4. **Pajak MBLB** (Mineral Bukan Logam dan Batuan)
+5. **Pajak Sarang Burung Walet**
+6. **Opsen Pajak Provinsi** (Opsen PKB & Opsen BBNKB - efektif 5 Jan 2025)
 
-### C. Retribusi Sewa Lapak (Sistem Koefisien)
-*   **Zona Premium (1.3):** Kawasan wisata utama (Pantai Kamali/Kotamara).
-*   **Zona Strategis (1.2):** Pusat kota/perdagangan (Pelabuhan Murhum).
-*   **Zona Ekonomi (1.1):** Kawasan pasar (Wameo/Pujasera).
-*   **Zona Umum (1.0):** Kawasan permukiman.
-
-### D. Retribusi Parkir Tepi Jalan Umum
-*   **Zona Premium**: Mobil Rp 3.000, Motor Rp 2.000.
-*   **Zona Strategis**: Mobil Rp 2.000, Motor Rp 1.500.
-*   **Zona Ekonomi**: Mobil Rp 1.500, Motor Rp 1.000.
-*   **Zona Umum**: Mobil Rp 1.000, Motor Rp 1.000.
-
----
-
-## 3. Siklus Dokumen & Administrasi
-
-### A. Tahap Pendaftaran dan Pendataan
-*   **SPOPD:** Pendaftaran usaha PBJT, Reklame, PAT, MBLB, Walet.
-*   **SPOP & LSPOP:** Pendaftaran khusus PBB-P2.
-*   **SKT:** Bukti legalitas pendaftaran WP.
-*   **LKOK:** Kertas kerja pemutakhiran data lapangan.
-
-### B. Tahap Pelaporan dan Penetapan
-*   **SPTPD:** Laporan mandiri (Self Assessment) omzet bulanan.
-*   **SKPD / SKRD:** Tagihan/ketetapan resmi dari pemerintah daerah.
-*   **SPPT:** Ketetapan tagihan PBB-P2.
-*   **SKPDKB / SKPDKBT:** Ketetapan Kurang Bayar (setelah pemeriksaan).
-*   **SKPDLB / SKPDN:** Ketetapan Lebih Bayar atau Nihil.
-
-### C. Tahap Pembayaran dan Penagihan
-*   **SSPD / SSRD:** Bukti legal penyetoran pajak/retribusi.
-*   **STPD:** Tagihan sanksi administrasi/denda bunga.
-*   **Surat Teguran (1, 2, 3):** Peringatan keterlambatan pembayaran.
-*   **SPMP & Surat Paksa:** Penindakan akhir (Penyitaan/Penyegelan).
+### Portofolio Wilayah II (Konsumsi, Self-Assessment, dan Retribusi Layanan - ID: 17)
+Mengelola jenis pajak pelaporan mandiri (*Self-Assessment*) berbasis omzet serta retribusi pelayanan dinas teknis:
+1. **PBJT Makanan dan/atau Minuman** (Restoran, Rumah Makan, Kafe, Katering)
+2. **PBJT Tenaga Listrik** (Konsumsi Umum, Industri/Migas, Pembangkit Sendiri)
+3. **PBJT Jasa Perhotelan** (Hotel, Losmen, Penginapan, Kos > 10 Kamar)
+4. **PBJT Jasa Parkir** (Gedung/Pelataran Parkir Khusus)
+5. **PBJT Jasa Kesenian dan Hiburan** (Bioskop, Rekreasi, Panti Pijat, Diskotik/Karaoke/Klub Malam)
+6. **Pajak Air Tanah (PAT)**
+7. **Retribusi Jasa Umum** (5 Jenis: Kebersihan, Parkir Tepi Jalan, Pasar, PKB/KIR, Menara Telekomunikasi)
+8. **Retribusi Jasa Usaha** (9 Jenis: Pasar, Terminal, RPH, Penyeberangan Air, Rekreasi, Lab, Usaha Daerah, Pemanfaatan Aset)
+9. **Retribusi Perizinan Tertentu** (2 Jenis: PBG dan Pengesahan RPTKA TKA)
 
 ---
 
-*Dokumen ini merupakan hasil harmonisasi Perda 1/2024 dan Perwali 8/2025. Perbarui setiap terjadi perubahan aturan zonasi atau tarif baru.*
+## 2. Rincian Tarif, Threshold, & Rumus Perhitungan Resmi
+
+### A. Portofolio Wilayah I (Pajak Aset & Properti)
+
+#### 1. Pajak Bumi dan Bangunan (PBB-P2) — Perda 1/2024 & Perwali 43/2025
+* **Rumus Pokok**:
+  $$\text{Ketetapan PBB} = (\text{NJOP Total} - \text{NJOPTKP}) \times \text{Tarif}$$
+* **NJOPTKP**: Ditetapkan sebesar **Rp 10.000.000** per Wajib Pajak (untuk 1 objek dengan NJOP terbesar).
+* **Tarif Progresif PBB-P2**:
+  * NJOP s.d. Rp 1 Miliar: **0,15%**
+  * NJOP > Rp 1 Miliar s.d. Rp 2 Miliar: **0,20%**
+  * NJOP > Rp 2 Miliar s.d. Rp 5 Miliar: **0,25%**
+  * NJOP > Rp 5 Miliar: **0,30%**
+  * Lahan Produksi Pangan dan Ternak: **0,25%** (Flat).
+
+#### 2. Bea Perolehan Hak atas Tanah dan Bangunan (BPHTB) — Perda 1/2024
+* **Rumus Pokok**:
+  $$\text{BPHTB Terutang} = (\text{NPOP} - \text{NPOPTKP}) \times 5\%$$
+  *Catatan: Jika NPOP lebih kecil dari NJOP PBB, maka dasar pengenaan menggunakan NJOP PBB.*
+* **NPOPTKP (Nilai Perolehan Objek Pajak Tidak Kena Pajak)**:
+  * Perolehan Hak Pertama / Jual Beli / Tukar Menukar: **Rp 80.000.000**
+  * Hibah Wasiat / Waris (Keluarga Sedarah Garis Lurus Satu Derajat): **Rp 300.000.000**
+
+#### 3. Pajak Reklame — Perda 1/2024 & Perwali 11/2025
+* **Rumus Pokok**:
+  $$\text{Pajak Reklame} = \text{NSR (Nilai Sewa Reklame)} \times 25\%$$
+* **Komponen NSR**:
+  $$\text{NSR} = \text{NSPR (Nilai Strategis)} + \text{NPR (Nilai Pembuatan/Dimensi)}$$
+* **Zonasi Kelas Jalan (NSPR)**:
+  * **Kelas Jalan A (Sangat Strategis)**: Jl. RA Kartini, Jl. Yos Sudarso, Jl. Jend. Sudirman, Kawasan Pantai Kamali, Kawasan Kotamara.
+  * **Kelas Jalan B (Strategis)**: Jl. Teuku Umar, Jl. RE Martadinata, Jl. Gatot Subroto, Jl. Betoambari.
+  * **Kelas Jalan C (Standar)**: Jl. Imam Bonjol, Jl. Seram, Jl. Pahlawan, Jl. Sultan Murhum.
+
+#### 4. Pajak MBLB (Mineral Bukan Logam dan Batuan) — Perda 1/2024 & Perwali 42/2025
+* **Rumus**:
+  $$\text{Pajak MBLB} = (\text{Volume Tonase / } \text{m}^3 \times \text{Harga Patokan Daerah}) \times 15\%$$
+
+#### 5. Pajak Sarang Burung Walet — Perda 1/2024
+* **Rumus**:
+  $$\text{Pajak Walet} = (\text{Volume Panen (Kg)} \times \text{Harga Pasar Standar}) \times 10\%$$
+
+#### 6. Opsen Pajak Provinsi (UU 1/2022 HKPD — Berlaku Mulai 5 Januari 2025)
+* **Opsen PKB (Pajak Kendaraan Bermotor)**: **66%** dari pokok PKB terutang provinsi.
+* **Opsen BBNKB (Bea Balik Nama Kendaraan Bermotor)**: **66%** dari pokok BBNKB terutang provinsi.
 
 ---
 
-## 4. Lampiran: Pemetaan ID Teknis (Database Source of Truth)
+### B. Portofolio Wilayah II (Pajak Konsumsi / PBJT & Retribusi)
 
-Untuk keperluan integrasi sistem **MITRA**, berikut adalah pemetaan ID klasifikasi aktif pada tabel `retribution_classifications`:
+#### 1. Pajak Barang dan Jasa Tertentu (PBJT) — Perda 1/2024
+* **Dasar Pengenaan**: Jumlah pembayaran yang diterima oleh penyedia barang dan jasa (Omzet).
+* **Rincian Tarif PBJT**:
+  * **Makanan dan/atau Minuman**: **10%** *(Threshold omzet wajib pajak: > Rp 3.000.000/bulan)*.
+  * **Jasa Perhotelan**: **10%** *(Termasuk losmen, motel, villa, guest house, dan indekos > 10 kamar)*.
+  * **Jasa Parkir**: **10%** *(Penyelenggara tempat parkir khusus di luar badan jalan)*.
+  * **Jasa Kesenian dan Hiburan (Standar)**: **10%** *(Bioskop, konser, bowling, fitness, panti pijat)*.
+  * **Jasa Kesenian dan Hiburan (Khusus)**: **40%** *(Diskotik, karaoke dewasa/keluarga, klub malam, bar, dan mandi uap/spa)*.
+  * **Tenaga Listrik**:
+    * Konsumsi Listrik Umum / Rumah Tangga / Bisnis: **10%**
+    * Konsumsi Listrik Industri, Pertambangan, Migas: **3%**
+    * Tenaga Listrik yang Dihasilkan Sendiri: **1,5%**
 
-| Nama Klasifikasi | ID Database | Kode Unik | Rumus Aktif |
-| :--- | :--- | :--- | :--- |
-| **PBB-P2** | 186 | `PBB-P2` | `(njop - 10000000) * 0.003` |
-| **BPHTB** | 187 | `BPHTB` | `(npop - 80000000) * 0.05` |
-| **Pajak Reklame** | 188 | `REKLAME` | `((njopr + nspr) * luas * sisi) * 0.25` |
-| **Pajak MBLB** | 189 | `MBLB` | `(volume * harga) * 0.15` |
-| **Pajak Walet** | 190 | `WALET` | `(volume * harga) * 0.10` |
-| **Opsen Pajak** | 191 | `OPSEN` | `pokok_provinsi * 0.66` |
-| **PBJT Makan/Minum**| 192 | `PBJT-FOOD` | `omzet * 0.1` |
-| **PBJT Perhotelan** | 193 | `PBJT-HTL` | `omzet * 0.1` |
-| **PBJT Hiburan** | 194 | `PBJT-HBR` | `omzet * 0.1` |
-| **Hiburan Malam** | 195 | `PBJT-HBR-SP`| `omzet * 0.4` |
-| **Tenaga Listrik** | 196 | `PBJT-PLN` | `tagihan * 0.1` |
-| **Pajak Air Tanah** | 197 | `AIR-TANAH` | `(volume * hda) * 0.2` |
-| **Persampahan** | 198 | `RET-SMP` | `tarif_flat` |
-| **Parkir Tepi Jalan**| 199 | `RET-PRK` | `tarif_flat` |
-| **Sewa PKD (Lapak)** | 200 | `RET-PKD` | `tarif_dasar * koefisien` |
-| **Umum Lainnya** | 156 | `W1-OTH` | `tarif_flat` |
+#### 2. Pajak Air Tanah (PAT) — Perda 1/2024
+* **Rumus**:
+  $$\text{PAT} = (\text{Volume Ekstraksi } \text{m}^3 \times \text{Harga Dasar Air/HDA}) \times 20\%$$
+
+#### 3. Retribusi Jasa Umum, Jasa Usaha, dan Perizinan Tertentu
+* **Persetujuan Bangunan Gedung (PBG - DPMPTSP / PUPR)**:
+  $$\text{Retribusi PBG} = \text{Luas Bangunan } (\text{m}^2) \times \text{Indeks Lokalitas} \times \text{Indeks Terintegrasi} \times \text{SHST}$$
+  *Catatan: Pembebasan 100% untuk Masyarakat Berpenghasilan Rendah (MBR) per Perwali 63/2024.*
+* **Pengesahan Perpanjangan RPTKA (TKA - DPMPTSP)**:
+  Tarif standar kompensasi ketenagakerjaan per orang per bulan sesuai kurs BI.
+* **Pelayanan Pasar (Perwali 55/2025)**:
+  Menggunakan sistem koefisien zonasi lokasi lapak/kios (Koefisien 1.3 - 1.0 $\times$ Tarif Dasar).
+* **Parkir Tepi Jalan Umum (Dishub)**:
+  * Roda 4 (Mobil): Rp 2.000 – Rp 3.000
+  * Roda 2 (Motor): Rp 1.000 – Rp 2.000
+
+---
+
+## 3. Sanksi Administrasi & Bunga Keterlambatan (KUPDRD PP 35/2023)
+
+* **Sanksi Keterlambatan Pembayaran (STPD / STRD)**:
+  Dikenakan sanksi administratif berupa bunga sebesar **1% (satu persen) per bulan** dari pokok pajak/retribusi yang tidak atau kurang dibayar.
+* **Masa Maksimal Denda**: Dihitung paling lama **24 (dua puluh empat) bulan** sejak saat terutang.
+* **Sanksi Keterlambatan Penyampaian SPTPD**:
+  Dikenakan denda administratif tetap sebesar Rp 100.000 per masa pajak untuk orang pribadi dan Rp 500.000 untuk badan.
+
+---
+
+## 4. Siklus Dokumen Resmi Bapenda (21 Dokumen Terstandarisasi)
+
+```
+[Tahap 1: Pendaftaran]
+SPOP / SPOPD ──► LKOK (Verifikasi Lapangan) ──► SKT (Surat Keterangan Terdaftar)
+
+[Tahap 2: Pelaporan & Penetapan]
+SPTPD (Laporan Mandiri) ──► SKPD / SKRD (Ketetapan Pokok) / SPPT (PBB)
+                       └──► SKPDKB / SKPDKBT (Kurang Bayar) / SKPDLB (Lebih Bayar) / SKPDN (Nihil)
+
+[Tahap 3: Pembayaran & Penagihan]
+Bayar (BRI/QRIS) ──► SSPD / SSRD (Bukti Sah Lunas + QR TTE)
+Tunggakan        ──► STPD / STRD (Tagihan Bunga 1%) ──► Surat Teguran 1-3 ──► Surat Paksa (SPMP)
+```
+
+---
+
+## 5. Matriks Peran & Hak Akses (RBAC Ekosistem M-PAD)
+
+| Peran (Role) | Akses Portofolio | Wewenang Utama |
+| :--- | :--- | :--- |
+| **Superadmin (Kadis Bapenda)** | All (Level 1–4) | TTE Elektronik dokumen SKPD/SKRD, persetujuan penghapusan, laporan eksekutif. |
+| **Kabid / Kasubid Wilayah I** | Portofolio ID: 16 | Verifikasi PBB, BPHTB, Reklame, penetapan SKPDKB, penerbitan SPPT masal. |
+| **Kabid / Kasubid Wilayah II** | Portofolio ID: 17 | Verifikasi SPTPD bulanan PBJT, PAT, Retribusi, penerbitan SKRD. |
+| **Admin OPD (e.g., DPMPTSP, Damkar, DLH)** | OPD Terkait | Verifikasi teknis berkas, persetujuan rekomendasi teknis (e.g., Damkar = verifikator proteksi gedung). |
+| **Petugas Lapangan (Officer)** | Assigned Territory | Koleksi tagihan tunai/QRIS lapangan, cetak struk thermal BLE 58mm, audit LKOK. |
+| **Wajib Pajak (Citizen)** | Data Milik Sendiri | Pendaftaran NOP SPOP mandiri, pembayaran multi-bill SNAP BRIVA/QRIS, unduh SSPD sah. |
 
 
 ---
@@ -3148,40 +4933,43 @@ Meskipun penerbitan tagihan bersifat manual/masal, update denda dilakukan secara
 ## File: docs/02_arsitektur_database/DOMAIN_SCHEMA.md
 ---
 # 🌐 Domain Schema & Subdomain Mapping
-## Arsitektur M-PAD (April 2026)
 
-Dokumentasi ini merinci pemetaan domain dan subdomain untuk sistem M-PAD (Mitra Pajak & Retribusi Daerah) Kota Baubau.
+Dokumentasi ini merinci pemetaan domain dan subdomain untuk sistem MPAD (Mitra Pajak & Retribusi Daerah) pada semua lingkungan deployment.
 
-## 1. Lingkungan Produksi (Pemerintah Kota Baubau)
-Domain resmi yang digunakan untuk operasional publik (Wajib Pajak) dan internal (Bapenda/Petugas).
-
-| Komponen | Domain | Deskripsi |
-| :--- | :--- | :--- |
-| **Portal Layanan WP** | `mpad.baubaukota.go.id` | PWA: Pendaftaran, Inkuiri NOP PBB, E-SPPT |
-| **Dashboard Admin** | `adminmpad.baubaukota.go.id` | Backoffice: Penetapan, Verifikasi, TTE Dokumen |
-| **Backend API** | `api.sipanda.online` | Centralized Logic: CRUD, Auth, Integrasi Bank |
-| **Portal Petugas** | `petugasmpad.baubaukota.go.id` | Lapangan: Spot Check, Audit Reklame, Live Tracking |
-| **E-Registry** | `verify.baubaukota.go.id` | Validasi QR-Code TTE (Publik) |
-
-## 2. Lingkungan Staging / Testing (VPS)
-Digunakan untuk validasi fitur baru (Hotfix & Minor/Major Releases).
+## 1. Lingkungan Development (Dev)
+Digunakan murni untuk pengembangan (eksperimen fitur) dengan lingkungan VPS/Server non-kritis.
+**Host IP:** `157.10.252.74`
 
 | Komponen | Domain | Deskripsi |
 | :--- | :--- | :--- |
-| **Main Entrance** | `sipanda.online` | Mobile/Citizen frontend staging |
-| **Admin Panel** | `admin.sipanda.online` | Admin dashboard staging |
-| **API Endpoint** | `api.sipanda.online` | Backend API staging |
-| **Officer Portal** | `petugas.sipanda.online` | Petugas field portal staging |
+| **Portal Utama** | `sipanda.online` | Aplikasi Warga / Landing page |
+| **Dashboard Admin** | `admin.sipanda.online` | Panel manajemen Bapenda & OPD |
+| **Interface Petugas** | `petugas.sipanda.online` | Akses petugas lapangan |
+| **Backend API** | `api.sipanda.online` | Endpoint layanan data dev |
+| **Launch Teaser** | `launch.sipanda.online` | Halaman promosi/hitung mundur |
 
-## 3. Alur Komunikasi Data
-1. **WP/Petugas** mengirimkan request ke `api.sipanda.online`.
-2. **API** memproses logika (Formula Parser, PBB Inquiry).
-3. **Database** (MySQL) menyimpan state dan `metadata` JSON.
-4. **TTE Service** (BSrE) dipanggil untuk penandatanganan dokumen resmi.
-5. **Gateway Payment** memproses billing via `api.sipanda.online` (Redirect/Callback).
+## 2. Lingkungan Staging (UAT)
+Digunakan sebagai tiruan (*replica*) dari *Production* untuk pengujian final (UAT / *Sandboxing* bersama pihak Bank).
+
+| Komponen | Domain | Deskripsi |
+| :--- | :--- | :--- |
+| **Portal Utama** | `mpad.online` | Aplikasi Warga / Landing page staging |
+| **Dashboard Admin** | `admin.mpad.online` | Panel manajemen versi staging |
+| **Interface Petugas** | `petugas.mpad.online` | Akses petugas lapangan staging |
+| **Backend API** | `api.mpad.online` | Endpoint layanan data staging |
+
+## 3. Lingkungan Produksi (Prod)
+Lingkungan *Live* yang diakses langsung oleh masyarakat Wajib Pajak dan pegawai Pemerintahan Kota Baubau.
+
+| Komponen | Domain | Deskripsi |
+| :--- | :--- | :--- |
+| **Portal Utama** | `mpad.baubaukota.go.id` | Pintu masuk utama aplikasi/Landing page |
+| **Dashboard Admin** | `adminmpad.baubaukota.go.id` | Panel manajemen untuk Bapenda & OPD |
+| **Interface Petugas** | `petugasmpad.baubaukota.go.id` | Akses petugas lapangan (Mobile/Web) |
+| **Backend API** | `apimpad.baubaukota.go.id` | Endpoint layanan data (Core API) |
 
 ---
-*Last modified: April 2026. Unified Branding M-PAD.*
+*Terakhir Diperbarui: 7 Juli 2026*
 
 
 ---
@@ -3445,6 +5233,274 @@ Berdasarkan analisis file backup `sw_patda_backup.sql`, berikut adalah perbedaan
 
 ---
 
+## File: docs/spopd-form-structure.md
+---
+# Struktur Data Formulir SPOPD
+## Surat Pendaftaran Objek Pajak Daerah - Pemerintah Kota Bau-Bau
+
+Dokumen ini berisi struktur data lengkap dari formulir SPOPD untuk berbagai jenis Pajak Barang dan Jasa Tertentu (PBJT).
+
+---
+
+## Struktur Umum (Shared Fields)
+
+Semua formulir SPOPD memiliki field-field berikut:
+
+### Header
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `nomor_formulir` | string | Nomor urut formulir |
+| `jenis_transaksi` | enum | `perekaman_data`, `pemutakhiran_data`, `penghapusan_data` |
+
+### Data Subjek Pajak
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `npwpd` | string(20) | Nomor Pokok Wajib Pajak Daerah (format: XX-XX-XXXX-XXXXXXX) |
+| `npwpd_lama` | string(20) | NPWPD Lama (jika ada perubahan) |
+| `nama_usaha` | string(100) | Nama usaha/badan usaha |
+| `alamat_usaha` | text | Alamat lengkap usaha |
+| `nama_pemilik_pengelola` | string(100) | Nama pemilik/pengelola |
+| `nik_pemilik_pengelola` | string(16) | NIK pemilik/pengelola |
+| `alamat_pemilik_pengelola` | text | Alamat pemilik/pengelola |
+| `nomor_telepon` | string(15) | Nomor telepon |
+| `alamat_email` | string(100) | Alamat email |
+
+### Pernyataan Subjek Pajak
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `nama_subjek_pajak` | string(100) | Nama yang menandatangani |
+| `tanggal_pernyataan` | date | Tanggal pernyataan |
+| `tanda_tangan` | blob | Tanda tangan digital |
+
+### Identitas Pendata/Pejabat
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `petugas_pendata_tanggal` | date | Tanggal pendataan |
+| `petugas_pendata_tanda_tangan` | blob | Tanda tangan petugas |
+| `petugas_pendata_nama_jelas` | string(100) | Nama jelas petugas |
+| `petugas_pendata_nip` | string(20) | NIP petugas |
+| `pejabat_berwenang_tanggal` | date | Tanggal approval |
+| `pejabat_berwenang_tanda_tangan` | blob | Tanda tangan pejabat |
+| `pejabat_berwenang_nama_jelas` | string(100) | Nama jelas pejabat |
+| `pejabat_berwenang_nip` | string(20) | NIP pejabat |
+
+---
+
+## 1. PBJT ATAS TENAGA LISTRIK (Halaman 11)
+
+### Data Objek Pajak - Tenaga Listrik
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `golongan_usaha` | enum | `non_industri_pertambangan`, `industri`, `pertambangan`, `sosial` |
+| `mesin_pembangkit_nama_tipe` | string(100) | Nama/tipe mesin pembangkit listrik |
+| `mesin_pembangkit_kapasitas_daya` | integer | Kapasitas daya dalam VA |
+| `penggunaan` | enum | `sumber_listrik_utama`, `sumber_listrik_cadangan`, `sumber_listrik_darurat` |
+
+---
+
+## 2. PBJT ATAS JASA KESENIAN DAN HIBURAN (Halaman 7)
+
+### Data Objek Pajak - Kesenian dan Hiburan
+
+#### Jenis Kesenian dan Hiburan
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jenis_hiburan` | array[enum] | Multiple selection dari options berikut |
+
+**Options Jenis Hiburan:**
+- `bioskop_tradisional_film` - Bibenian Tradisional, Film (Bioskop/Keliling)
+- `diskotik_klub_malam` - Diskotik/Klub Malam
+- `sirkus_pameran_seni` - Sirkus/Pameran Seni
+- `fitness_kebugaran_sanggar_senam` - Fitness Centre/Kebugaran, Sanggar Senam
+- `karaoke` - Karaoke
+- `permainan_bilyard` - Permainan Bilyard
+- `pertunjukan_musik_tari_pameran_busana` - Pertunjukan Musik/Tari, Pameran Busana, Kontes Kecantikan
+- `permainan_ketangkasan` - Permainan Ketangkasan
+- `pertandingan_olahraga` - Pertandingan Olahraga
+
+#### Waktu Pertunjukan
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `waktu_pertunjukan` | enum | `berjadwal_tetap_reguler`, `insidental` |
+
+#### Penyelenggaraan Hiburan Insidental
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `judul_pertunjukan` | string(200) | Judul pertunjukan |
+| `jumlah_kursi_penonton` | integer | Jumlah kursi penonton |
+| `jumlah_hari_pertunjukan` | integer | Jumlah hari pertunjukan |
+
+#### Jenis/Kelas Tiket dan Tarif (Array)
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `tiket_kelas[].no` | integer | Nomor urut |
+| `tiket_kelas[].jenis_kelas` | string(50) | Jenis/kelas tiket (VIP, Regular, dll) |
+| `tiket_kelas[].jumlah` | integer | Jumlah tiket |
+| `tiket_kelas[].tarif_rp` | decimal(15,2) | Tarif dalam Rupiah |
+
+#### Hiburan Kesenian Tradisional/Film/Pertunjukan Musik (Tarif Berjadwal Tetap)
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jumlah_kursi` | integer | Jumlah kursi |
+| `jumlah_pertunjukan` | integer | Jumlah pertunjukan per hari |
+| `hari_pertunjukan` | enum | `hari` (per hari) |
+
+#### Hiburan Permainan Bilyard/Permainan Ketangkasan/Video Games
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jumlah_meja_mesin` | integer | Jumlah meja/mesin |
+| `jam_buka` | time | Jam buka |
+| `s_d` | time | Sampai dengan |
+| `tarif_rp_per` | decimal(15,2) | Tarif per satuan waktu |
+
+#### Hiburan Diskotik/Klub Malam
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `kapasitas_orang` | integer | Kapasitas dalam jumlah orang |
+| `tarif_rp` | decimal(15,2) | Tarif masuk |
+
+#### Hiburan Pusat Kebugaran/Sanggar Senam
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `kapasitas_orang` | integer | Kapasitas dalam jumlah orang |
+
+#### Tarif Membership (Array)
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `membership[].no` | integer | Nomor urut |
+| `membership[].jenis_kelas` | string(50) | Jenis/kelas membership |
+| `membership[].tarif_rp` | decimal(15,2) | Tarif dalam Rupiah |
+
+---
+
+## 3. PBJT ATAS PAJAK AIR TANAH (Halaman 14)
+
+### Data Objek Pajak - Air Tanah
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `tujuan_pemanfaatan` | enum | `non_niaga`, `niaga`, `industri_dengan_bahan_baku_air`, `pelayanan_publik_oleh_pdam` |
+| `lokasi_sumber_air` | text | Lokasi sumber air |
+| `mesin_pompa_nama_tipe` | string(100) | Nama/tipe mesin pompa |
+| `mesin_pompa_kapasitas` | decimal(10,2) | Kapasitas dalam M³/Jam |
+| `meteran_air` | enum | `ada`, `tidak_ada` |
+
+---
+
+## 4. PBJT ATAS JASA PARKIR (Halaman 12)
+
+### Data Objek Pajak - Parkir
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `lokasi` | text | Lokasi area parkir |
+| `pengelola` | enum | `dikelola_sendiri_pemilik_lahan_gedung`, `dikelola_jasa_parkir_pihak_ketiga` |
+
+#### Kapasitas Parkir
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `luas_lahan` | decimal(10,2) | Luas lahan dalam m² |
+| `parkir_roda_dua_kapasitas` | integer | Kapasitas kendaraan roda dua |
+| `parkir_roda_empat_kapasitas` | integer | Kapasitas kendaraan roda empat |
+
+#### Waktu Operasional
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `hari_operasional` | array[enum] | `senin`, `selasa`, `rabu`, `kamis`, `jumat`, `sabtu`, `minggu` |
+| `jam_buka` | time | Jam buka |
+| `jam_tutup` | time | Jam tutup (s/d) |
+| `pengecualian_libur` | text | Pengecualian/libur jika ada |
+
+#### Tarif (Rupiah)
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `tarif_sepeda` | decimal(15,2) | Tarif sepeda |
+| `tarif_sepeda_motor` | decimal(15,2) | Tarif sepeda motor |
+| `tarif_mobil_penumpang_pickup` | decimal(15,2) | Tarif mobil penumpang/pickup sejenisnya |
+| `tarif_truk_gandengan_bus_besar` | decimal(15,2) | Tarif truk gandengan/bus besar sejenisnya |
+| `tarif_truk_bus_sedang_kecil` | decimal(15,2) | Tarif truk/bus sedang/kecil sejenisnya |
+| `tarif_tambahan` | decimal(15,2) | Tarif tambahan (jika ada) |
+
+#### Karcis Parkir
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jenis_karcis` | enum | `keluaran_sistem_informasi_berbasis_komputer`, `karcis_dengan_perforasi`, `karcis_biasa`, `tidak_ada` |
+
+---
+
+## 5. PBJT ATAS JASA PERHOTELAN (Halaman 3D)
+
+### Data Objek Pajak - Perhotelan
+
+#### Jenis Hotel
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jenis_hotel` | enum | `bintang_lima`, `bintang_empat`, `bintang_tiga`, `bintang_dua`, `bintang_satu`, `non_bintang`, `rumah_kost` |
+
+#### Jaringan Hotel
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jaringan_hotel` | enum | `tidak_ada`, `nasional`, `internasional` |
+| `nama_jaringan` | string(100) | Nama jaringan hotel (jika ada) |
+
+#### Tipe dan Jumlah Kamar (Array)
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `kamar[].no` | integer | Nomor urut |
+| `kamar[].tipe_kamar` | string(50) | Tipe kamar (Standard, Deluxe, Suite, dll) |
+| `kamar[].jumlah_operasional` | integer | Jumlah kamar operasional |
+| `kamar[].jumlah_non_operasional` | integer | Jumlah kamar non-operasional |
+| `kamar[].tarif_rata_rata` | decimal(15,2) | Tarif rata-rata per kamar dalam Rupiah |
+
+#### Fasilitas Hotel
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `fasilitas_hotel` | array[enum] | Multiple selection |
+
+**Options Fasilitas:**
+- `restoran_kafetaria_bar` - Restoran/Kafetaria/Bar
+- `spa_pusat_kebugaran` - Spa/Pusat Kebugaran
+- `diskotik_karaoke_klub_malam` - Diskotik/Karaoke/Klub Malam
+- `ruang_rapat_pertemuan_ballroom` - Ruang Rapat/Pertemuan/Ballroom
+
+#### Sistem Akuntansi
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `sistem_akuntansi` | enum | `pembukuan`, `pencatatan_sederhana`, `tidak_ada` |
+
+#### Bon Penjualan (Bill)
+| Field | Tipe | Keterangan |
+|-------|------|------------|
+| `jenis_bon_penjualan` | enum | `keluaran_sistem_informasi_berbasis_komputer`, `keluaran_mesin_cash_register`, `bon_penjualan_dengan_perforasi`, `bon_penjualan_biasa`, `tidak_ada` |
+
+---
+
+## Keterangan Pengisian
+1. Isilah formulir dengan benar, jelas dan lengkap dengan menggunakan huruf balok/kapital
+2. Kolom dengan warna abu-abu diisi oleh petugas
+3. Beri tanda silang (X) pada kotak yang sesuai
+
+---
+
+## Catatan Implementasi
+
+### Jenis Pajak (tax_type)
+```
+tenaga_listrik      = PBJT Atas Tenaga Listrik
+kesenian_hiburan    = PBJT Atas Jasa Kesenian dan Hiburan
+air_tanah           = Pajak Air Tanah
+parkir              = PBJT Atas Jasa Parkir
+perhotelan          = PBJT Atas Jasa Perhotelan
+```
+
+### Status Transaksi
+```
+perekaman_data     = Pendaftaran baru
+pemutakhiran_data  = Update data existing
+penghapusan_data   = Hapus/non-aktifkan objek pajak
+```
+
+
+---
+
 ## File: docs/06_panduan_pengguna/UI_INTEGRATION_STANDARDS.md
 ---
 # UI Integration & Styling Standards
@@ -3570,6 +5626,317 @@ To ensure compatibility across tools, use these standard keys:
 
 ---
 
+## File: docs/06_panduan_pengguna/MANUAL_BOOK_MPAD.md
+---
+# BUKU PANDUAN PENGGUNA (MANUAL BOOK)
+# SISTEM INFORMASI MITRA PENDAPATAN ASLI DAERAH (M-PAD)
+### PEMERINTAH KOTA BAUBAU — BADAN PENDAPATAN DAERAH (BAPENDA)
+
+---
+
+## DAFTAR ISI
+- [BAB I: PENDAHULUAN](#bab-i-pendahuluan)
+  - 1.1 Latar Belakang & Dasar Hukum
+  - 1.2 Maksud dan Tujuan
+  - 1.3 Ruang Lingkup Sistem
+- [BAB II: DESKRIPSI SISTEM & ARSITEKTUR](#bab-ii-deskripsi-sistem--arsitektur)
+  - 2.1 Ekosistem 4 Aplikasi M-PAD
+  - 2.2 Hak Akses & Peran Pengguna (RBAC)
+  - 2.3 Persyaratan Perangkat Keras & Lunak
+- [BAB III: PANDUAN PENGGUNAAN PER PERAN (USER GUIDE)](#bab-iii-panduan-penggunaan-per-peran-user-guide)
+  - 3.1 Panduan Wajib Pajak / Warga (`retribusi-mobile`)
+    - 3.1.1 Registrasi Akun & Validasi IKD
+    - 3.1.2 Pendaftaran Objek Pajak Mandiri (SPOP / Reklame)
+    - 3.1.3 Pengecekan Tagihan & Keranjang Multi-Billing
+    - 3.1.4 Pembayaran Digital (QRIS Dinamis & BRIVA)
+    - 3.1.5 Pengunduhan Bukti Bayar Sah (SSPD) & Rating Layanan
+  - 3.2 Panduan Petugas Lapangan (`retribusi-petugas`)
+    - 3.2.1 Login Petugas & Penugasan Harian
+    - 3.2.2 Peta Lapangan & Pelacakan Objek Pajak (GIS)
+    - 3.2.3 Quick Scan QR & Pencarian Identitas Wajib Pajak
+    - 3.2.4 Penerimaan Pembayaran Tunai di Lapangan
+    - 3.2.5 Cetak Resi Thermal 58mm (Bluetooth ESC/POS)
+    - 3.2.6 Survei Lapangan & Pengisian Formulir LSPOP
+  - 3.3 Panduan Verifikator & Admin OPD (`retribusi-admin`)
+    - 3.3.1 Validasi Pelaporan Mandiri (SPTPD & Bukti Bayar)
+    - 3.3.2 Penerbitan Ketetapan (SKRD, SPPT, SKPDKB)
+    - 3.3.3 Rekonsiliasi Gateway & Monitoring Pendapatan
+  - 3.4 Panduan Superadmin (`retribusi-admin`)
+    - 3.4.1 Pengelolaan Master Tarif, Klasifikasi & Zonasi
+    - 3.4.2 Manajemen Pengguna, Hak Akses & Tanda Tangan Elektronik (TTE)
+    - 3.4.3 Ekspor Laporan Keuangan SIPD & Log Audit
+- [BAB IV: TROUBLESHOOTING & PUSAT BANTUAN](#bab-iv-troubleshooting--pusat-bantuan)
+  - 4.1 Pertanyaan yang Sering Diajukan (FAQ)
+  - 4.2 Panduan Kendala Printer Thermal Bluetooth
+  - 4.3 Kontak Helpdesk & Dukungan Teknis
+
+---
+
+## BAB I: PENDAHULUAN
+
+### 1.1 Latar Belakang & Dasar Hukum
+Dalam rangka modernisasi pengelolaan Pendapatan Asli Daerah (PAD) serta mendukung transparansi pemungutan pajak dan retribusi di Kota Baubau, Bapenda Kota Baubau meluncurkan platform **M-PAD (Mitra Pendapatan Asli Daerah)**. 
+
+Dasar hukum penyelenggaraan sistem ini meliputi:
+1. **Undang-Undang Nomor 1 Tahun 2022** tentang Hubungan Keuangan antara Pemerintah Pusat dan Pemerintahan Daerah (HKPD).
+2. **Peraturan Daerah Kota Baubau Nomor 1 Tahun 2024** tentang Pajak Daerah dan Retribusi Daerah.
+3. **Peraturan Wali Kota Baubau Nomor 11 Tahun 2025** tentang Tata Cara Pemungutan Pajak Reklame.
+4. **Peraturan Wali Kota Baubau Nomor 58 Tahun 2024** tentang Petunjuk Pelaksanaan Pajak Daerah dan Retribusi Daerah.
+
+### 1.2 Maksud dan Tujuan
+Buku panduan ini disusun untuk memberikan petunjuk teknis operasional yang jelas, sistematis, dan terstandarisasi bagi seluruh pemangku kepentingan: Wajib Pajak, Petugas Pemungut Lapangan, Pejabat OPD Pengelola, hingga Administrator Sistem.
+
+### 1.3 Ruang Lingkup Sistem
+Sistem M-PAD mencakup seluruh siklus pemungutan:
+- Pendataan dan pendaftaran objek pajak/retribusi daerah secara spasial (GIS).
+- Penilaian dan penetapan tagihan otomatis berdasarkan formula Perda.
+- Pembayaran terintegrasi Multi-Bank (H2H Bank BRI, BRIVA, QRIS Dinamis).
+- Penagihan lapangan dengan pencetakan bukti bayar instan (Thermal Printer).
+- Pelaporan real-time, audit trail, serta integrasi SIPD RI.
+
+---
+
+## BAB II: DESKRIPSI SISTEM & ARSITEKTUR
+
+### 2.1 Ekosistem 4 Aplikasi M-PAD
+1. **M-PAD Warga (`retribusi-mobile`)**: Aplikasi Progressive Web App (PWA) yang ditujukan bagi Wajib Pajak / Wajib Retribusi untuk mengakses seluruh layanan perizinan pajak, pelaporan, dan pembayaran dari smartphone.
+2. **M-PAD Petugas (`retribusi-petugas`)**: Aplikasi operasional lapangan berbasis mobile/tablet untuk pemungutan retribusi, verifikasi survei fisik, dan pencetakan struk tanda terima resmi.
+3. **M-PAD Admin (`retribusi-admin`)**: Dashboard web manajemen berbasis desktop untuk verifikasi ketetapan, monitoring penerimaan PAD harian, konfigurasi tarif, dan approval TTE.
+4. **M-PAD Core API (`retribusi-api`)**: Mesin pemrosesan transaksi pusat, database, gateway perbankan, dan validasi keamanan.
+
+### 2.2 Hak Akses & Peran Pengguna (RBAC)
+- **Wajib Pajak (Citizen)**: Mengelola objek pajak miliknya, menerbitkan invoice, membayar via QRIS/VA.
+- **Petugas Lapangan (Officer)**: Memiliki hak verifikasi objek di wilayah tugasnya, menerima bayaran tunai, dan mencetak SSPD thermal.
+- **Verifikator OPD**: Memeriksa berkas permohonan dan pelaporan SPTPD dari wajib pajak.
+- **Admin OPD**: Menerbitkan SKRD/SKPDKB dan memonitor target realisasi OPD terkait.
+- **Superadmin (Bapenda)**: Memiliki akses penuh terhadap konfigurasi sistem, tarif, user management, dan audit trail.
+
+### 2.3 Persyaratan Perangkat Keras & Lunak
+- **Aplikasi Warga & Petugas**:
+  - Smartphone Android (v8.0+) atau iOS (v14.0+) dengan koneksi internet aktif.
+  - Browser: Google Chrome, Safari, atau Microsoft Edge versi terbaru.
+  - Perangkat Tambahan Petugas: Printer Thermal Bluetooth 58mm (ESC/POS compatible).
+- **Dashboard Admin**:
+  - Komputer / Laptop dengan resolusi minimal 1366x768 piksel.
+  - Browser modern dengan dukungan HTML5 & PDF Viewer.
+
+---
+
+## BAB III: PANDUAN PENGGUNAAN PER PERAN (USER GUIDE)
+
+### 3.1 Panduan Wajib Pajak / Warga (`retribusi-mobile`)
+
+#### 3.1.1 Registrasi Akun & Validasi IKD
+1. Buka alamat aplikasi: `https://m-pad.baubaukota.go.id` pada browser ponsel Anda.
+2. Klik tombol **Daftar Akun Baru**.
+3. Masukkan NIK (Nomor Induk Kependudukan), Nama Lengkap, Nomor WhatsApp, dan Kata Sandi.
+4. Masukkan kode verifikasi OTP 6-digit yang dikirimkan ke WhatsApp Anda.
+5. Akun siap digunakan. Profil Anda otomatis tersinkronisasi.
+
+#### 3.1.2 Pendaftaran Objek Pajak Mandiri (SPOP / Reklame)
+1. Pilih menu **Layanan** → Pilih jenis pajak yang ingin didaftarkan (misal: **PBB-P2** atau **Pajak Reklame**).
+2. Tentukan titik lokasi objek pada peta interaktif (**MapPicker**).
+3. Isi ukuran fisik (contoh Reklame: Panjang, Lebar, Sisi; contoh PBB: Luas Tanah & Bangunan).
+4. Unggah foto lokasi fisik dan dokumen kepemilikan (Sertifikat/AJB/Desain Reklame).
+5. Klik **Kirim Pendaftaran**. Anda akan mendapatkan nomor registrasi pelacakan.
+
+#### 3.1.3 Pengecekan Tagihan & Keranjang Multi-Billing
+1. Buka menu **Tagihan Saya**.
+2. Sistem akan menampilkan seluruh tagihan aktif beserta rincian pokok dan denda (jika ada).
+3. Centang satu atau beberapa tagihan yang ingin dibayar sekaligus, lalu klik **Bayar Sekarang**.
+
+#### 3.1.4 Pembayaran Digital (QRIS Dinamis & BRIVA)
+1. Pada halaman konfirmasi, pilih metode pembayaran yang diinginkan:
+   - **QRIS Dinamis**: Tampilkan kode QR di layar dan scan menggunakan BCA Mobile, Livin, GoPay, OVO, Dana, ShopeePay, dsb.
+   - **Virtual Account BRI (BRIVA)**: Salin 16-digit nomor VA dan bayar via BRImo, ATM BRI, atau Agen BRILink.
+2. Status pembayaran akan otomatis terverifikasi secara *real-time* (idempotent) tanpa perlu upload bukti transfer.
+
+#### 3.1.5 Pengunduhan Bukti Bayar Sah (SSPD) & Rating Layanan
+1. Setelah pembayaran berhasil, klik tombol **Unduh Bukti Bayar (SSPD)**.
+2. Dokumen PDF ber-barcode resmi dan bernomor NTPD akan tersimpan di perangkat Anda.
+3. Berikan penilaian bintang dan ulasan kepuasan layanan Bapenda Kota Baubau.
+
+---
+
+### 3.2 Panduan Petugas Lapangan (`retribusi-petugas`)
+
+#### 3.2.1 Login Petugas & Penugasan Harian
+1. Buka aplikasi M-PAD Petugas di ponsel/tablet.
+2. Masukkan NIP/Email dan Password resmi yang diberikan Bapenda.
+3. Pada halaman beranda, periksa daftar target tugas penagihan harian Anda.
+
+#### 3.2.2 Peta Lapangan & Pelacakan Objek Pajak (GIS)
+1. Buka menu **Peta Lapangan**.
+2. Peta akan menampilkan titik-titik objek pajak di sekitar lokasi GPS Anda (Pin Hijau: Lunas, Pin Merah: Menunggak).
+3. Klik pada pin objek untuk melihat rincian nama pemilik dan jumlah tunggakan.
+
+#### 3.2.3 Quick Scan QR & Pencarian Identitas Wajib Pajak
+1. Klik tombol **Scanner QR** di navigasi bawah.
+2. Arahkan kamera ke QR Code milik Wajib Pajak atau lembar SKRD fisik.
+3. Aplikasi akan langsung membuka data identitas Wajib Pajak dan seluruh tagihannya.
+
+#### 3.2.4 Penerimaan Pembayaran Tunai di Lapangan
+1. Pilih tagihan yang akan dibayar pada halaman **Bayar Lapangan**.
+2. Pilih metode pembayaran: **Tunai (Cash / Lapangan)**.
+3. Klik **Konfirmasi Lunas**. Status tagihan seketika berubah menjadi `Lunas` di server Bapenda.
+
+#### 3.2.5 Cetak Resi Thermal 58mm (Bluetooth ESC/POS)
+1. Pastikan printer thermal mini 58mm menyala dan Bluetooth aktif.
+2. Setelah konfirmasi lunas, klik tombol **Cetak Resi**.
+3. Struk tanda terima resmi berlogo Bapenda Kota Baubau akan tercetak seketika dan dapat langsung diserahkan kepada Wajib Pajak.
+
+---
+
+### 3.3 Panduan Verifikator & Admin OPD (`retribusi-admin`)
+
+#### 3.3.1 Validasi Pelaporan Mandiri (SPTPD)
+1. Masuk ke Dashboard Admin → Menu **Verifikasi Pajak**.
+2. Periksa dokumen pendukung yang diunggah wajib pajak.
+3. Cocokkan nominal omzet atau spesifikasi teknis reklame.
+4. Klik **Setujui** untuk menerbitkan tagihan atau **Tolak** dengan menyertakan alasan revisi.
+
+#### 3.3.2 Penerbitan Ketetapan (SKRD, SPPT, SKPDKB)
+1. Buka menu **Billing & Penetapan**.
+2. Pilih penetapan massal atau per objek.
+3. Sistem secara otomatis menerapkan formula tarif Perda 1/2024 dan menghasilkan nomor SKRD resmi.
+
+---
+
+### 3.4 Panduan Superadmin (`retribusi-admin`)
+
+#### 3.4.1 Pengelolaan Master Tarif, Klasifikasi & Zonasi
+1. Buka menu **Master Data** → **Klasifikasi & Tarif Retribusi**.
+2. Administrator dapat menambah klasifikasi baru, mengatur rumus kalkulasi dinamis, serta mengunggah batas poligon zonasi.
+
+#### 3.4.2 Tanda Tangan Elektronik (TTE) & Sertifikat Digital
+1. Buka menu **Pengaturan TTE**.
+2. Kelola sertifikat digital pejabat yang berwenang menandatangani SKRD / SSPD / SPPT digital secara sah sesuai regulasi BSrE / BSSN.
+
+---
+
+## BAB IV: TROUBLESHOOTING & PUSAT BANTUAN
+
+### 4.1 Pertanyaan yang Sering Diajukan (FAQ)
+- **Q: Apakah QRIS M-PAD bisa menerima pembayaran dari semua bank?**  
+  *A: Ya, QRIS M-PAD adalah QRIS Nasional (NMID resmi) yang dapat dipindai oleh seluruh aplikasi mobile banking dan e-wallet di Indonesia.*
+- **Q: Bagaimana jika koneksi internet terputus saat petugas sedang mencetak resi?**  
+  *A: Transaksi yang sudah tersimpan dapat dicetak ulang kapan saja melalui menu Billing → Riwayat Bayar → Cetak Ulang Resi.*
+
+### 4.2 Panduan Kendala Printer Thermal Bluetooth
+1. Pastikan izin Bluetooth aktif pada browser (disarankan Google Chrome di Android).
+2. Buka menu **Printer Thermal** di aplikasi Petugas.
+3. Klik tombol **Cari & Hubungkan Printer** → Pilih nama printer Anda (misal: `MPT-II`, `RPP02N`, `POS-58`).
+4. Tekan **Cetak Struk Uji Coba** untuk memastikan koneksi stabil.
+
+### 4.3 Kontak Helpdesk & Dukungan Teknis
+- **Badan Pendapatan Daerah (Bapenda) Kota Baubau**
+- Alamat: Kompleks Perkantoran Bumi Praja Palagimata, Kota Baubau, Sulawesi Tenggara.
+- Layanan Pengaduan WhatsApp: `0811-400-XXXX`
+- Email Dukungan: `bapenda@baubaukota.go.id`
+- Portal Resmi: `https://bapenda.baubaukota.go.id`
+
+
+---
+
+## File: docs/06_panduan_pengguna/MANUAL_BOOK_SCREENSHOT_PLAN.md
+---
+# INVENTARISASI & RENCANA CAPTURE SCREENSHOT MANUAL BOOK M-PAD
+### Instruksi Khusus untuk Agent Hermes (Google Spark Media Processor)
+
+Dokumen ini memuat daftar terstruktur screenshot yang perlu diambil untuk melengkapi dokumen **MANUAL_BOOK_MPAD.md**.
+
+---
+
+## 1. Standar Penamaan & Format Aset
+
+- **Format File**: PNG / WebP berkualitas tinggi (1080p resolution).
+- **Struktur Penamaan File**: `[ROLE]_[HALAMAN]_[AKSI_ATURAN].png`
+- **Direktori Penyimpanan**: `docs/06_panduan_pengguna/assets/`
+
+---
+
+## 2. Rincian Screenshot per Peran (Total ~45 Gambar)
+
+### A. Wajib Pajak / Warga (`retribusi-mobile`) — [WARGA]
+
+| No | Nama File | Deskripsi Halaman & State Aksi | Viewport |
+| :--- | :--- | :--- | :---: |
+| 1 | `WARGA_01_welcome_screen.png` | Layar Welcome / Onboarding M-PAD Mobile | Mobile (390x844) |
+| 2 | `WARGA_02_login_form.png` | Form Login Warga dengan NIK / No. HP | Mobile (390x844) |
+| 3 | `WARGA_03_register_otp.png` | Modal input 6-digit OTP WhatsApp | Mobile (390x844) |
+| 4 | `WARGA_04_home_dashboard.png` | Beranda Warga (Quick actions Pajak, Retribusi, Aset) | Mobile (390x844) |
+| 5 | `WARGA_05_layanan_katalog.png` | Katalog Layanan Retribusi & Pajak Daerah | Mobile (390x844) |
+| 6 | `WARGA_06_mappicker_gis.png` | Komponen MapPicker penentuan titik lokasi objek | Mobile (390x844) |
+| 7 | `WARGA_07_form_pbb_spop.png` | Formulir Pendaftaran NOP Baru (SPOP Mandiri) | Mobile (390x844) |
+| 8 | `WARGA_08_form_reklame.png` | Formulir Pendaftaran Pajak Reklame (Auto Luas) | Mobile (390x844) |
+| 9 | `WARGA_09_tagihan_hub.png` | Halaman Payment Hub / Daftar Tagihan Aktif | Mobile (390x844) |
+| 10 | `WARGA_10_keranjang_multibill.png` | Keranjang Pembayaran Multi-Tagihan | Mobile (390x844) |
+| 11 | `WARGA_11_metode_bayar.png` | Pilihan Metode Bayar (QRIS, BRIVA, Petugas) | Mobile (390x844) |
+| 12 | `WARGA_12_qris_display.png` | Layar Tampilan QRIS Dinamis dan Timer | Mobile (390x844) |
+| 13 | `WARGA_13_va_display.png` | Layar Tampilan Nomor Virtual Account BRIVA | Mobile (390x844) |
+| 14 | `WARGA_14_sukses_rating.png` | Halaman Sukses Bayar + Bintang Rating Layanan | Mobile (390x844) |
+| 15 | `WARGA_15_bukti_sspd_pdf.png` | Tampilan PDF Bukti Pembayaran Sah (SSPD) | Mobile (390x844) |
+| 16 | `WARGA_16_my_qr_code.png` | Halaman QR Code Identitas Wajib Pajak | Mobile (390x844) |
+
+---
+
+### B. Petugas Lapangan (`retribusi-petugas`) — [PETUGAS]
+
+| No | Nama File | Deskripsi Halaman & State Aksi | Viewport |
+| :--- | :--- | :--- | :---: |
+| 17 | `PETUGAS_01_login.png` | Halaman Login Petugas Bapenda | Tablet / Mobile |
+| 18 | `PETUGAS_02_dashboard.png` | Dashboard Petugas & Ringkasan Target Harian | Tablet / Mobile |
+| 19 | `PETUGAS_03_peta_lapangan.png` | Peta GIS Titik Objek Pajak (Hijau/Merah) | Tablet / Mobile |
+| 20 | `PETUGAS_04_field_scanner.png` | Antarmuka Kamera Scanner QR Wajib Pajak | Tablet / Mobile |
+| 21 | `PETUGAS_05_officer_payment.png` | Halaman Pembayaran Lapangan & Pencarian WP | Tablet / Mobile |
+| 22 | `PETUGAS_06_konfirmasi_bayar.png` | Konfirmasi Bayar Tunai Multi-Tagihan | Tablet / Mobile |
+| 23 | `PETUGAS_07_struk_thermal.png` | Preview & Cetak Resi Thermal 58mm | Tablet / Mobile |
+| 24 | `PETUGAS_08_printer_pairing.png` | Halaman Pairing & Test Cetak Bluetooth Printer | Tablet / Mobile |
+| 25 | `PETUGAS_09_daftar_tugas.png` | Daftar Surat Tugas & Jadwal Lapangan | Tablet / Mobile |
+| 26 | `PETUGAS_10_form_lspop.png` | Formulir Teknis Inspeksi Bangunan (LSPOP) | Tablet / Mobile |
+
+---
+
+### C. Admin & Verifikator OPD (`retribusi-admin`) — [ADMIN]
+
+| No | Nama File | Deskripsi Halaman & State Aksi | Viewport |
+| :--- | :--- | :--- | :---: |
+| 27 | `ADMIN_01_dashboard_realisasi.png` | Dashboard Utama Realisasi PAD Kota Baubau | Desktop (1440x900) |
+| 28 | `ADMIN_02_verifikasi_sptpd.png` | Halaman Review & Verifikasi SPTPD Wajib Pajak | Desktop (1440x900) |
+| 29 | `ADMIN_03_billing_penetapan.png` | Manajemen Billing & Penerbitan SKRD | Desktop (1440x900) |
+| 30 | `ADMIN_04_rekonsiliasi_bank.png` | Tabel Rekonsiliasi Gateway Bank & QRIS | Desktop (1440x900) |
+| 31 | `ADMIN_05_manajemen_wp.png` | Daftar Wajib Pajak & Riwayat Kepatuhan | Desktop (1440x900) |
+| 32 | `ADMIN_06_peta_potensi_pad.png` | Heatmap Spasial Potensi Pajak per Wilayah | Desktop (1440x900) |
+| 33 | `ADMIN_07_tte_approval.png` | Modul Tanda Tangan Elektronik Dokumen Resmi | Desktop (1440x900) |
+| 34 | `ADMIN_08_laporan_lra.png` | Ekspor Laporan Realisasi Anggaran (LRA) | Desktop (1440x900) |
+
+---
+
+### D. Superadmin Bapenda (`retribusi-admin`) — [SUPERADMIN]
+
+| No | Nama File | Deskripsi Halaman & State Aksi | Viewport |
+| :--- | :--- | :--- | :---: |
+| 35 | `SUPER_01_master_tarif.png` | Konfigurasi Klasifikasi & Tarif Retribusi | Desktop (1440x900) |
+| 36 | `SUPER_02_master_zonasi.png` | Manajemen Zona Nilai Tanah (ZNT) Spasial | Desktop (1440x900) |
+| 37 | `SUPER_03_user_management.png` | Manajemen Pengguna & Hak Akses (RBAC) | Desktop (1440x900) |
+| 38 | `SUPER_04_wa_gateway.png` | Konfigurasi & Status WhatsApp Notification | Desktop (1440x900) |
+| 39 | `SUPER_05_audit_trail.png` | Log Audit Transaksi & Perubahan Data Sistem | Desktop (1440x900) |
+
+---
+
+## 3. Langkah Eksekusi untuk Agent Hermes
+
+1. Jalankan aplikasi frontend lokal (`npm run dev`) pada port default:
+   - `retribusi-mobile` : `http://localhost:5173`
+   - `retribusi-petugas`: `http://localhost:5174`
+   - `retribusi-admin`  : `http://localhost:5175`
+2. Atur resolusi browser sesuai viewport yang tertera pada tabel di atas.
+3. Lakukan capture dan simpan file sesuai path direktori `docs/06_panduan_pengguna/assets/[NAMA_FILE]`.
+4. Kompresi gambar dengan format WebP jika diperlukan optimasi ukuran dokumen PDF.
+
+
+---
+
 ## File: docs/06_panduan_pengguna/admin-userguide.md
 ---
 # 📄 Panduan Pengguna Lengkap (Admin) - M-PAD Kota Baubau
@@ -3633,6 +6000,94 @@ Manajemen khusus untuk Pajak Bumi dan Bangunan.
 
 ---
 *Tips Keamanan: Gunakan fitur Audit Log untuk melacak siapa yang melakukan penetapan atau perubahan status tagihan sensitif.*
+
+
+---
+
+## File: docs/MASTER_STRATEGY_MPAD_BAUBAU.md
+---
+# 📑 BLUEPRINT STRATEGIS: AKSELERASI M-PAD BAUBAU (NIK & SMART TAX)
+
+## 1. Visi Utama: Transformasi Pajak Proaktif
+M-PAD (Modernisasi Pajak Daerah) Kota BauBau bukan sekadar alat digitalisasi, melainkan sebuah ekosistem yang mengubah hubungan antara Pemerintah dan Wajib Pajak (WP). 
+*   **Target**: Meningkatkan PAD melalui kemudahan akses dan transparansi.
+*   **Inti Strategi**: NIK sebagai jangkar data (*Single Identity*) dan No HP sebagai kanal interaksi (*Communication Hub*).
+
+---
+
+## 2. Pilar I: Ekosistem NIK-Centric (Data Interoperability)
+Menjadikan NIK sebagai satu-satunya kunci akses (SSO) untuk meminimalisir redundansi data dan meningkatkan akurasi objek pajak.
+
+### A. Mekanisme Integrasi Lintas Instansi
+| Objek Pajak | Jembatan Data (Bridge) | Output Sistem |
+| :--- | :--- | :--- |
+| **PBB-P2** | NIK ↔ NOP ↔ NIB | Penarikan otomatis luas tanah/bangunan dari data BPN. |
+| **BPHTB** | NIK ↔ Sertifikat | Validasi otomatis kepemilikan aset saat transaksi. |
+| **Pajak Usaha** | NIK ↔ Data OSS | Aktivasi NPWPD instan tanpa formulir fisik. |
+| **Pajak Kendaraan** | NIK ↔ STNK | Query tagihan langsung dari basis data Korlantas. |
+
+### B. Single Identity Government (SIG)
+NIK berfungsi sebagai *Master Key* yang memungkinkan pemerintah melakukan *Profiling* WP secara komprehensif, mendeteksi potensi pajak yang belum tergali (misal: kepemilikan kendaraan mewah yang belum terdaftar PBB-nya).
+
+---
+
+## 3. Pilar II: Smart Tax Interaction (Kanal No HP Aktif)
+Mengadopsi model *Conversational Tax*—di mana pajak dibayar semudah mengirim pesan instan.
+
+### A. Hierarki Kepercayaan (Security Tiers)
+Sistem menggunakan data registrasi SIM berbasis NIK dari Kemdigi untuk membangun "High-Trust Channel":
+1.  **Level 1 (NIK Validation)**: Memastikan NIK ada dan hidup (Dukcapil).
+2.  **Level 2 (Tax Identity)**: Sinkronisasi NIK sebagai NPWP (Coretax DJP).
+3.  **Level 3 (Mobile Verified)**: Mengunci No HP yang terdaftar secara resmi atas NIK tersebut.
+4.  **Level 4 (Transactional OTP)**: Pengiriman sandi sekali pakai untuk konfirmasi pembayaran di atas ambang batas.
+
+### B. Kanal Interaksi & User Experience
+*   **WhatsApp Business API (Chatbot)**: Layanan mandiri 24/7. WP dapat mengetik "Cek Tagihan" dan sistem langsung membalas dengan nominal rincian.
+*   **Push Notification Billing**: Sistem mengirimkan invoice digital (PDF) langsung ke WA WP 14 hari sebelum jatuh tempo.
+*   **Digital Wallet Integration**: Link pembayaran yang dikirim mendukung pembayaran satu klik via QRIS, VA, atau E-Wallet terverifikasi.
+
+---
+
+## 4. Pilar III: Pengawasan & Penegakan Hukum (Supervision)
+Menggunakan data NIK untuk meningkatkan kepatuhan melalui pengawasan berbasis data (*Data-Driven Enforcement*).
+
+*   **Tax Clearance System**: Integrasi NIK dengan layanan publik lainnya. WP yang memiliki tunggakan pajak (terdeteksi via NIK) akan diminta melunasi sebelum mengakses layanan tertentu (misal: perpanjangan izin usaha).
+*   **Deteksi Aset Tersembunyi**: Pemadanan data konsumsi (Listrik/Air) dengan kepemilikan aset berbasis NIK untuk menemukan objek pajak baru.
+*   **Digital Audit Trail**: Setiap interaksi WP via No HP tercatat secara permanen, memudahkan proses audit dan meminimalisir sengketa pajak.
+
+---
+
+## 5. Skenario Interaksi: Objek Pajak Reklame (End-to-End)
+1.  **Reminder**: Sistem push WA ke pemilik reklame: *"Bpk. Ahmad, Pajak Videotron Anda jatuh tempo. Nominal: Rp 12.500.000."*
+2.  **Self-Service**: WP membalas *"INFO"*. Bot mengirimkan detail (ukuran, lokasi, foto objek).
+3.  **Objection**: WP merasa ukuran salah, balas *"KEBERATAN"*. Sistem membekukan tagihan dan menjadwalkan kunjungan petugas.
+4.  **Verification**: Petugas datang, input data di aplikasi **Retribusi-Petugas**, tagihan diperbarui secara otomatis.
+5.  **Settlement**: WP menerima revisi nominal, konfirmasi via OTP, bayar via Link.
+6.  **Legacy**: Sertifikat Lunas (SSP) dikirim dalam hitungan detik via WA dengan TTE resmi.
+
+---
+
+## 6. Matriks Kesiapan & Peta Jalan (Roadmap)
+
+### Fase 1: Short-Term (Quick Wins) - 1-3 Bulan
+*   **Update `IdentityValidationService`**: Transisi dari Mock ke API Dukcapil riil.
+*   **WhatsApp Webhook**: Implementasi *Auto-Reply* dasar untuk inkuiri tagihan.
+*   **NPWPD simplification**: Penghapusan batasan karakter input sesuai kebutuhan lapangan.
+
+### Fase 2: Medium-Term (Integration) - 4-9 Bulan
+*   **H2H BPN & Korlantas**: Penarikan data aset otomatis berbasis NIK.
+*   **Full TTE Automation**: Integrasi total `TTEService` pada setiap output dokumen tagihan/lunas.
+*   **Multi-Channel Payment**: Aktivasi H2H Payment Gateway untuk sinkronisasi lunas seketika.
+
+### Fase 3: Long-Term (Intelligence) - 12+ Bulan
+*   **AI Chatbot Advisor**: Bot yang mampu memberikan konsultasi perpajakan daerah secara cerdas.
+*   **Predictive Analytics**: Dashboard yang memprediksi realisasi PAD berdasarkan tren perilaku bayar WP per wilayah.
+
+---
+**Referensi Dokumen Konsolidasi:**
+*   *Resolusi M-PAD BauBau.docx*
+*   *plus no hp utk media PAD.docx*
+*   *Audit Sistem M-PAD April 2026*
 
 
 ---
@@ -9663,6 +12118,2401 @@ Untuk menjamin akurasi audit, sistem baru harus menghasilkan hasil perhitungan y
 
 ---
 
+## File: docs/core_apis.md
+---
+# Core APIs (MITRA)
+
+Modul ini menangani pengelolaan entitas bisnis inti: Wajib Pajak, Objek Pajak, Penagihan (Billing), dan Pembayaran. Kebanyakan endpoint ini memerlukan **Bearer Token**.
+
+## 1. Wajib Pajak (Taxpayers)
+
+### List Wajib Pajak
+- **URL**: `/taxpayers`
+- **Method**: `GET`
+- **Filter**: `?search=name_or_nik`
+
+### Cari Wajib Pajak (NIK)
+Digunakan untuk pencarian cepat saat pendaftaran objek baru.
+- **URL**: `/taxpayers/search/{nik}`
+- **Method**: `GET`
+
+---
+
+## 2. Objek Pajak (Tax Objects)
+
+### List Objek Pajak
+- **URL**: `/tax-objects`
+- **Method**: `GET`
+
+---
+
+## 3. Billing & Penagihan
+
+### Buat Tagihan (Entry Data)
+- **URL**: `/bills`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "tax_object_id": 1,
+    "amount": 500000,
+    "period_month": 3,
+    "period_year": 2026,
+    "notes": "Tagihan Maret"
+  }
+  ```
+
+### Export Dokumen (PDF)
+- **SKRD**: `/bills/{id}/skrd`
+- **SSPD**: `/bills/{id}/sspd`
+- **SPPT (PBB)**: `/bills/{id}/sppt`
+- **Method**: `GET`
+
+---
+
+## 4. Pembayaran (Payments)
+
+### Konfirmasi Pembayaran
+- **URL**: `/payments`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "bill_id": 101,
+    "payment_method": "cash",
+    "amount_paid": 500000
+  }
+  ```
+
+### Cek Tunggakan (Mobile)
+- **URL**: `/citizen/services/pending-periods`
+- **Method**: `GET`
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/MANDIRI/PROGRESS.md
+---
+# Progres Integrasi QRIS API Bank Mandiri
+
+Dokumen ini mencatat progres integrasi sistem mPAD Pemkot Baubau dengan QRIS API Bank Mandiri (H2H), berdasarkan log komunikasi dengan pihak Bank Mandiri.
+
+## Timeline Progres
+
+### 5 Mei 2026
+- **Inisiasi Komunikasi**: Pembentukan grup koordinasi yang melibatkan tim Bank Mandiri Baubau, tim Bapenda Kota Baubau, tim TBR Mandiri Regional Makassar, dan Tim TBRS Mandiri Kantor Pusat.
+
+### 7 Mei 2026
+- **Penjelasan Alur Integrasi**: Pihak Bank Mandiri menjelaskan 3 tahap integrasi:
+  1. **SIT (System Integration Test)**: Pihak bank menyediakan _sandbox_ untuk keperluan testing oleh partner (Bapenda).
+  2. **Pra UAT & UAT**: Pemberian kredensial UAT. Membutuhkan **Public Key** dan **Callback URL UAT** dari pihak Bapenda. Testing dilakukan bersama.
+  3. **PTR (Production)**: Pemberian kredensial Production. Membutuhkan **Public Key** dan **Callback URL Production**.
+- **Tindak Lanjut**: Tim Bapenda (Muhdan Fyan) telah mengirimkan data untuk pengajuan *sandbox* SIT (Nama, Email, dan No HP) kepada pihak Bank Mandiri. Pihak bank sedang memproses kredensial *sandbox*.
+
+### 25 Juni 2026
+- **Status UAT**: Tim teknis Bank Mandiri menginfokan bahwa sistem sudah bisa naik ke tahap UAT.
+- **Kebutuhan**: Pihak Bank kembali mengingatkan kebutuhan **Public Key** dan **Callback URL** dari Bapenda untuk UAT.
+
+### 29 Juni 2026
+- **Persyaratan Keamanan Baru (TLS 1.3)**: Regulator (Bank Indonesia dan ASPI) mengharuskan peningkatan standar keamanan menggunakan protokol **TLS 1.3**.
+- **Konfirmasi Kesiapan Bapenda**: Tim Teknis Bapenda mengonfirmasi bahwa sistem telah mendukung penuh TLS 1.3 dan menyatakan kesiapan untuk melaksanakan pengujian (_Get Token_, _Generate QR_, dan _Payment_). Bapenda kembali meminta kredensial _Environment_ UAT/DEV (Client ID, Secret Key, Base URL).
+
+### 1 Juli 2026
+- **Tindak Lanjut UAT**: Koordinator IT Bapenda mendesak percepatan penyediaan Kredensial Environment UAT/DEV mengingat aplikasi m-PAD akan segera di-_launching_.
+- **Generate Public Key**: Pihak Bank Mandiri menyarankan jika Public Key belum ada, tim Bapenda dapat melakukan *generate* RSA Key Pair (default 1024-bit) menggunakan tools seperti `cryptotools.net/rsagen`.
+- **Status Saat Ini**: Tim *developer* Bapenda sedang mempersiapkan *Public Key* tersebut untuk segera diserahkan ke pihak Mandiri agar kredensial UAT dapat dirilis.
+
+---
+
+## Action Items (Pending)
+
+1. [ ] **Bapenda**: Melakukan generate RSA Key Pair (Public & Private Key, direkomendasikan 1024-bit).
+2. [ ] **Bapenda**: Menyiapkan URL Endpoint Callback untuk UAT.
+3. [ ] **Bapenda**: Menyerahkan Public Key dan URL Callback UAT ke pihak Bank Mandiri.
+4. [ ] **Bank Mandiri**: Menerbitkan dan menyerahkan Kredensial UAT (Client ID, Secret Key, Base URL, dll) dan dokumentasi pendukung.
+5. [ ] **Bapenda & Bank Mandiri**: Melakukan pengujian integrasi UAT (Get Token, Generate QR, Payment, dan Notifikasi/Callback).
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BRI/SANDBOX_CONFIGURATION.md
+---
+# Konfigurasi Sandbox BRIVA SNAP
+
+Dokumen ini adalah panduan konfigurasi runtime `retribusi-api` untuk BRIVA Online model inbound: BRI memanggil endpoint token, inquiry, dan payment milik M-PAD. Nilai credential, key, IP, dan identitas resmi harus diberikan atau dikonfirmasi melalui onboarding BRI. Jangan menyalin nilai rahasia ke dokumen tracked, issue, chat, atau log validasi.
+
+Panduan ini tidak menyatakan sistem sudah lulus sandbox/UAT. Kesesuaian response SNAP terhadap spesifikasi bank merupakan task terpisah.
+
+## Endpoint yang Dipublikasikan
+
+Laravel memberi prefix `/api` pada `routes/api.php`. Endpoint runtime saat ini adalah:
+
+| Fungsi | Method dan path |
+| --- | --- |
+| Access token B2B BRIVA | `POST /api/snap/v1.1/access-token/b2b` |
+| Inquiry BRIVA | `POST /api/snap/v1.0/transfer-va/inquiry` |
+| Callback pembayaran BRIVA | `POST /api/snap/v1.0/transfer-va/payment` |
+
+Route token `/api/snap/v1.0/access-token/b2b` tetap tersedia sebagai compatibility alias, tetapi matriks akses sandbox lokal mencantumkan versi `v1.1`. Semua URL sandbox harus memakai domain publik HTTPS. Konfirmasi BRI pada 2026-07-30 menyatakan path/subdomain sebelum `/snap` dibebaskan; bagian setelah `/snap` tetap harus mengikuti template. Dengan konfirmasi ini, prefix Laravel `/api` dapat dipakai selama endpoint akhir tetap `/api/snap/v1.1/access-token/b2b`, `/api/snap/v1.0/transfer-va/inquiry`, dan `/api/snap/v1.0/transfer-va/payment`.
+
+## Environment Variable Runtime
+
+Sumber kebenaran nama variable adalah `config/snap.php`. Isi nilai sebenarnya melalui secret manager atau `.env` server yang tidak dilacak Git.
+
+### Wajib untuk request inbound BRI
+
+| Variable | Isi | Catatan |
+| --- | --- | --- |
+| `BRI_SNAP_ENABLED` | `true` setelah konfigurasi lengkap | Default `false`; selama `false`, API tidak mengiklankan BRIVA ke mobile dan create payment request BRIVA ditolak. |
+| `BRI_SNAP_PARTNER_ID` | Partner ID resmi | Dipakai untuk mencocokkan header transaksi `X-PARTNER-ID`. |
+| `BRI_SNAP_CLIENT_KEY` | Client key resmi | Dipakai untuk mencocokkan `X-CLIENT-KEY` saat meminta token. |
+| `BRI_SNAP_SIGNATURE_ALGORITHM` | `rsa_sha256` untuk sandbox BRI saat ini | Konfirmasi BRI 2026-07-30 menyatakan `X-SIGNATURE` memakai RSA-SHA256. HMAC tetap tersedia di kode hanya untuk compatibility bila partner lain memerlukannya. |
+| `BRI_SNAP_SIGNATURE_SECRET` | Shared secret BRI untuk HMAC | Jangan diisi public key. Simpan hanya di secret manager atau `.env` server yang tidak dilacak Git. |
+| `BRI_SNAP_PUBLIC_KEY_PATH` | Path public key BRI untuk RSA | Dipakai saat `BRI_SNAP_SIGNATURE_ALGORITHM=rsa_sha256`; file key jangan berada dalam Git. |
+| `BRI_SNAP_PARTNER_SERVICE_ID` | `partnerServiceId` resmi 8 digit bila diberikan BRI | Jika BRI hanya memberikan prefix VA seperti `19960`, kosongkan nilai ini dan pakai `BRI_SNAP_VA_PREFIX`. |
+| `BRI_SNAP_CUSTOMER_NO_LENGTH` | Panjang `customerNo` | Default `20`; sesuaikan jika provisioning BRI menetapkan panjang berbeda. |
+| `BRI_SNAP_VA_PREFIX` | Prefix resmi BRI atau prefix dummy local smoke | Prefix `19960` dikonfirmasi BRI sebagai environment sandbox dan hanya valid pada channel sandbox. Prefix dummy `777` hanya boleh dipakai local smoke. |
+| `BRI_SNAP_VA_LENGTH` | Panjang VA final | Default `28` untuk format `partnerServiceId + customerNo`; bila memakai prefix `19960`, set sesuai total panjang yang disetujui sandbox. Smoke lokal 2026-07-29 memakai 18 digit. |
+| `BRI_SNAP_PAYMENT_REQUEST_EXPIRY_MINUTES` | Masa aktif request | Default `1440`; harus disepakati dengan aturan produk bank. |
+
+### Kontrol keamanan bersama
+
+| Variable | Nilai yang disarankan | Perilaku runtime |
+| --- | --- | --- |
+| `SNAP_ALLOWED_IPS` | Daftar IP BRI dipisahkan koma | Pencocokan exact IP. Nilai kosong mematikan whitelist dan hanya layak untuk local development sebelum IP resmi tersedia. |
+| `SNAP_TIMESTAMP_TOLERANCE_SECONDS` | `300` | Menolak timestamp di luar toleransi. |
+| `SNAP_REQUIRE_BEARER_TOKEN` | `true` | Inquiry dan payment wajib memakai token yang diterbitkan endpoint B2B. |
+| `SNAP_TOKEN_TTL_SECONDS` | `900` | TTL token pada Laravel cache. |
+| `SNAP_IDEMPOTENCY_TTL_MINUTES` | `1440` | Retensi idempotency `X-EXTERNAL-ID`. |
+| `SNAP_MODE` | `sandbox` | Penanda environment; saat ini belum mengubah base URL atau alur callback. |
+
+Token B2B disimpan melalui Laravel Cache. Sandbox bersama atau deployment multi-instance harus memakai cache bersama/persisten, misalnya Redis atau database yang sama. Cache lokal per instance dapat membuat token valid pada satu instance tetapi ditolak pada instance lain.
+
+### Variable yang sudah tersedia tetapi belum dipakai alur inbound
+
+- `BRI_SNAP_CLIENT_SECRET` tersedia di config partner, tetapi token endpoint saat ini mengautentikasi client key dan signature request, bukan client secret secara langsung.
+- `SNAP_CALLBACK_BASE_URL` tersedia di config, tetapi endpoint inbound berasal dari route Laravel dan belum membangun URL dari nilai ini.
+- `SNAP_MPAD_PRIVATE_KEY_PATH` dan `SNAP_MPAD_PUBLIC_KEY_PATH` tersedia untuk kebutuhan signing/key exchange berikutnya, tetapi belum dikonsumsi oleh alur token, inquiry, atau payment saat ini.
+
+Jangan menganggap variable cadangan tersebut sebagai bukti implementasi outbound atau kesiapan UAT.
+
+## Penyimpanan Key
+
+Simpan key operasional di luar repository. Jika local development memakai `storage/app/keys`, direktori tersebut sudah di-ignore Git.
+
+Contoh penempatan server:
+
+```text
+/var/www/mpad/shared/keys/bri_public.pem
+/var/www/mpad/shared/keys/mpad_private.pem
+```
+
+Aturan minimum:
+
+- berikan hak baca hanya kepada user proses PHP;
+- jangan simpan private key dalam source code, database umum, atau log;
+- jangan mencetak isi key saat validasi;
+- hanya tukarkan shared secret melalui kanal onboarding resmi;
+- catat pemilik, tanggal berlaku, dan prosedur rotasi key di luar repository publik.
+
+## Urutan Konfigurasi Sandbox
+
+1. Konfirmasikan dengan BRI: domain HTTPS, partner ID, client key, IP sumber, panjang final VA/customer number, expiry, dan canonical string-to-sign. Per 2026-07-30, BRI sudah mengonfirmasi environment sandbox, prefix `19960` hanya channel sandbox, path sebelum `/snap` bebas, dan signature RSA-SHA256.
+2. Simpan public key RSA BRI melalui secret manager/file server yang tidak dilacak Git. Shared secret HMAC hanya dipakai bila ada partner lain yang secara eksplisit memakai HMAC.
+3. Isi environment server menggunakan nama variable pada tabel di atas.
+4. Pastikan database memiliki migration `payment_requests`, `payment_request_items`, dan `snap_idempotency_keys`. Jalankan migration hanya melalui prosedur deployment yang diotorisasi.
+5. Pastikan cache store dapat dipakai bersama oleh semua instance API.
+6. Bersihkan dan bangun ulang cache konfigurasi setelah perubahan environment:
+
+```powershell
+php artisan config:clear
+php artisan config:cache
+```
+
+7. Verifikasi route tanpa mencetak credential:
+
+```powershell
+php artisan route:list --path=snap
+```
+
+8. Jalankan regression test SNAP lokal:
+
+```powershell
+php artisan test tests/Feature/Payment/Snap tests/Unit/Payment/Snap --do-not-cache-result
+```
+
+9. Lakukan test positif dan negatif memakai credential sandbox resmi: token, signature salah, timestamp kedaluwarsa, IP tidak diizinkan, inquiry valid/tidak ditemukan/lunas/expired, payment valid, amount mismatch, dan duplicate `X-EXTERNAL-ID`.
+
+Baseline lokal 2026-07-28: suite feature dan unit SNAP lulus 39 test dengan 140 assertion untuk scope SNAP. Hasil lokal ini tetap bukan bukti kelulusan sandbox/UAT dengan credential dan skenario resmi BRI.
+
+## Menyiapkan VA untuk Trigger BRI
+
+Setelah payment request BRIVA aktif dibuat dari aplikasi warga/API, operator dapat mencetak paket handoff yang aman dibagikan ke BRI sandbox:
+
+```powershell
+php artisan snap:briva-sandbox-handoff {payment_request_id} --base-url=https://apimpad.baubaukota.go.id --json
+```
+
+Output command berisi nomor VA, `partnerServiceId`/`customerNo` hasil mapping konfigurasi saat ini, nominal, expiry, daftar nomor tagihan, serta URL token/inquiry/payment. Command ini read-only dan tidak mencetak credential, token, public key, private key, NIK, atau nomor HP.
+
+## Checklist Sebelum Menyerahkan Callback ke BRI
+
+- [ ] Domain sandbox dapat diakses melalui HTTPS dengan sertifikat valid.
+- [x] Path dengan prefix `/api` dapat dipakai karena BRI membebaskan path/subdomain sebelum `/snap`, selama bagian setelah `/snap` mengikuti template.
+- [ ] `BRI_SNAP_ENABLED=true` hanya setelah seluruh konfigurasi di bawah lengkap.
+- [ ] `BRI_SNAP_PARTNER_ID` dan `BRI_SNAP_CLIENT_KEY` bukan nilai contoh.
+- [x] Algoritma signature untuk sandbox BRI dikonfirmasi RSA-SHA256; public key BRI harus tersedia dan bisa dibaca aplikasi.
+- [ ] IP BRI sudah masuk `SNAP_ALLOWED_IPS`.
+- [ ] Prefix `19960` dikonfirmasi sebagai sandbox-only; total panjang VA dan expiry operasional masih perlu bukti dari spesifikasi/contoh request BRI.
+- [ ] Cache token konsisten pada seluruh instance.
+- [ ] Migration payment request dan idempotency sudah diterapkan pada environment sandbox.
+- [ ] Config cache dibangun ulang setelah perubahan environment.
+- [ ] Test positif dan negatif BRI/ASPI memiliki bukti hasil tanpa credential di log.
+- [ ] Response code dan schema telah diverifikasi terhadap spesifikasi bank yang dipakai.
+
+## Batas Local Smoke
+
+Local smoke boleh memakai prefix VA dummy atau prefix yang diberikan BRI tetapi belum aktif di channel bank. Local smoke tidak boleh disebut sandbox/UAT dan tidak boleh memakai nilai dummy pada server yang diserahkan kepada BRI.
+
+Konfirmasi BRI 2026-07-30:
+
+- Prefix `19960` adalah environment sandbox dan tidak aktif pada BRImo/ATM production.
+- VA sandbox tidak bisa diuji melalui BRImo biasa; BRI dapat membantu trigger inquiry dan payment pada channel sandbox jika M-PAD menyediakan VA.
+- Endpoint token, inquiry, dan payment yang aktif saat ini sudah sesuai selama suffix setelah `/snap` mengikuti template.
+- Signature request dari BRI memakai RSA-SHA256 dan diverifikasi dengan public key BRI yang sudah dikirimkan.
+
+Catatan smoke lokal 2026-07-29:
+
+- Public key BRI disimpan sebagai file di luar repo API, lalu `.env` lokal menunjuk ke `BRI_SNAP_PUBLIC_KEY_PATH`.
+- Dengan asumsi sementara `BRI_SNAP_SIGNATURE_ALGORITHM=rsa_sha256` dan prefix `BRI_SNAP_VA_PREFIX=19960`, API berhasil membuat payment request lokal dengan VA `199600000000000003`, membaca ulang status `pending`, lalu membatalkan request menjadi `cancelled`.
+- Uji BRImo production terhadap VA tersebut memang tidak valid karena prefix/credential masih sandbox. Langkah berikutnya adalah menyediakan VA aktif kepada BRI agar mereka men-trigger inquiry dan payment dari channel sandbox.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BRI/Rekening_Titipan_PAD.md
+---
+# Rekening Titipan PAD Bapenda (Bank BRI)
+
+**Bank:** BRI
+**Nomor Rekening:** 032601002814308
+**Atas Nama:** Titipan PAD Bapenda
+
+*Dokumen ini menyimpan informasi rekening penampungan sementara (Titipan PAD) untuk pembayaran retribusi melalui H2H BRI.*
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BRI/RINGKASAN_INTEGRASI_BRI_SNAP.md
+---
+# Blueprints & Dokumentasi Teknis Integrasi BRI SNAP BI (M-PAD Kota Baubau)
+
+Dokumen ini merupakan ringkasan komprehensif dari hasil rapat dan dokumen teknis yang terdapat dalam folder `Hasil Rapat Dengan BRI`. Dokumen ini disusun sebagai panduan utama bagi tim pengembang dan stakeholder untuk memahami alur kerja, standar keamanan, dan spesifikasi API yang diimplementasikan.
+
+---
+
+## 1. Tata Kelola & Roadmap Integrasi (Gmail Context)
+Berdasarkan korespondensi resmi BRI, integrasi ini mengikuti standar **SNAP BI** (Standar Nasional Open API Pembayaran Indonesia) yang diatur oleh Bank Indonesia.
+
+### Tahapan Implementasi:
+1.  **Administrasi & Legal**: Penandatanganan PKS (Perjanjian Kerja Sama) dan pendaftaran di Portal Developer BRIAPI.
+2.  **Sandboxing**: Pengujian fitur di lingkungan sandbox menggunakan credential dummy.
+3.  **Sertifikasi ASPI**: Melakukan self-assessment teknis melalui portal ASPI Devsite untuk mendapatkan sertifikat kelayakan.
+4.  **Produksi**: Migrasi ke lingkungan live dengan whitelisting IP dan Public Key asli.
+
+---
+
+## 2. Arsitektur Teknis & Konektivitas
+Sistem M-PAD bertindak sebagai **Partner/Mitra** yang menyediakan endpoint untuk dipanggil oleh BRI (Callback) dan memanggil API BRI.
+
+### A. Spesifikasi Koneksi (Whitelisting)
+- **IP Address**: Dibutuhkan IP Public statis dari server M-PAD untuk didaftarkan pada firewall BRI.
+- **Protokol**: Komunikasi wajib menggunakan **HTTPS** dengan TLS 1.2 ke atas.
+
+### B. Keamanan & Kriptografi
+- **Signature**: Menggunakan RSA-2048 dengan algoritma SHA-256.
+- **Header Standar SNAP**:
+  - `X-PARTNER-ID`: ID Mitra yang diberikan BRI.
+  - `X-SIGNATURE`: Signature RSA untuk validasi keaslian request.
+  - `X-TIMESTAMP`: Waktu request dalam format ISO8601.
+  - `X-EXTERNAL-ID`: ID unik untuk setiap transaksi (idempotency).
+
+---
+
+## 3. Spesifikasi API (Hasil Ekstraksi XLSX)
+
+### A. Virtual Account (BRIVA) Online
+| Fitur | Deskripsi | Endpoint Callback (M-PAD) |
+| :--- | :--- | :--- |
+| **Auth Token** | Pertukaran Client ID/Secret untuk Access Token | `/snap/v1.0/access-token/b2b` |
+| **Inquiry** | BRI mengecek data tagihan WP ke M-PAD | `/snap/v1.0/transfer-va/inquiry` |
+| **Payment** | BRI mengirim notifikasi pembayaran sukses | `/snap/v1.0/transfer-va/payment` |
+
+### B. Fitur Onboarding & KYC (Detail SIT)
+Dokumen SIT menunjukkan adanya fitur pendukung (kemungkinan untuk pendaftaran WP baru):
+- **Submit Data**: Mengirim data KTP, Nama, Tanggal Lahir (wajib sesuai KTP/Dukcapil).
+- **OTP Management**: API Resend OTP dengan masa berlaku (lifetime) **5 Menit**.
+- **Email Verification**: API Resend Email untuk verifikasi akun.
+- **Send KYC**: Integrasi dengan layanan KYC (seperti Privy) untuk persetujuan dokumen.
+- **Check Progress**: Pengecekan status pengajuan (Status `11` = Sukses, Status `4-10` = Proses).
+
+---
+
+## 4. Skenario Pengujian Fungsional (SIT)
+Berikut adalah daftar kondisi yang harus lulus uji sebelum Go-Live:
+
+### Skenario Positif (Success Path)
+- Inquiry dengan nomor VA yang valid dan muncul data Nama/Nominal sesuai sistem.
+- Payment dengan nominal yang tepat dan status di M-PAD berubah menjadi 'Lunas' seketika.
+- Resend OTP berhasil mengirim ulang kode jika belum melewati batas percobaan.
+
+### Skenario Negatif (Failure Path)
+- **Invalid Signature**: Request ditolak jika signature tidak valid (Kode `401xx01`).
+- **VA Not Found**: Respon jika nomor VA tidak terdaftar di sistem M-PAD (Kode `404xx00`).
+- **OTP Expired**: Respon jika memasukkan OTP setelah 5 menit (Kode `4030612`).
+- **Data Mismatch**: Penolakan jika Nama atau Tanggal Lahir tidak sesuai data Dukcapil saat registrasi.
+- **Already Paid**: Respon jika tagihan yang sudah lunas dibayar kembali (Kode `409xx00`).
+
+---
+
+## 5. Standar Operasional Prosedur (SOP) Rekonsiliasi
+Sesuai dengan `Template Dokumen Rekonsiliasi.docx`, proses penyamaan data keuangan dilakukan setiap hari:
+
+### Aturan Main:
+1.  **Harian**: Rekonsiliasi dilakukan untuk transaksi hari sebelumnya (H+1).
+2.  **Data Utama**: Nomor VA, Tanggal Transaksi, Nominal, dan Bank Reference Number.
+3.  **Penanganan Selisih**:
+    - Jika data ada di BRI tapi tidak ada di M-PAD (*Missing in Partner*), tim IT harus melakukan pengecekan log callback.
+    - Jika nominal berbeda, transaksi ditandai untuk investigasi manual.
+4.  **Otorisasi**: Laporan rekonsiliasi wajib ditandatangani oleh *Tested & Verified By* (IT) dan *Approved By* (Manager Keuangan).
+
+---
+
+## 6. Daftar Kepatuhan ASPI (Compliance Checklist)
+Tim IT wajib memastikan poin berikut terpenuhi di portal ASPI Devsite:
+- [ ] Implementasi Endpoint Token B2B sesuai standar SNAP.
+- [ ] Implementasi Signature Auth B2B (Asymmetric).
+- [ ] Validasi Request Body terhadap JSON Schema SNAP BI.
+- [ ] Penanganan Error Code sesuai tabel standar ASPI.
+- [ ] Pengunggahan Log Transaksi sukses dan gagal ke portal sebagai bukti UAT.
+
+---
+**Catatan**: Dokumen ini bersifat dinamis dan harus diperbarui jika ada perubahan teknis dari pihak BRI selama masa pengembangan.
+
+## 7. Sandboxing Credentials (Extracted from Value QRIS Notif Sandboxing.xlsx)
+Data berikut merupakan credential sandbox dari BRI yang wajib digunakan selama tahap pengujian:
+
+### A. Konfigurasi Email
+Email berikut telah didaftarkan pada portal Developer BRI (https://developers.bri.co.id/id):
+- **Notification QRIS**: `bapendakotabaubau21@gmail.com`
+- **BRIVA Online**: `bapendakotabaubau21@gmail.com`
+
+### B. Konfigurasi BRIVA Online (Environment Variables)
+> [!IMPORTANT]
+> **Client ID dan Client Secret di bawah ini di-generate secara mandiri oleh pihak Bapenda (M-PAD), bukan diberikan oleh BRI.**
+> Ini berarti M-PAD bertindak sebagai *Authorization Server* untuk request yang masuk dari BRI (BRI akan memanggil endpoint `/access-token/b2b` dengan kredensial ini untuk mendapatkan Access Token). Untuk tahap *Production*, Bapenda wajib men-generate kredensial baru yang aman dan menyerahkannya ke BRI.
+
+- **URL Service token**: `https://api.mpad.online/api/snap/v1.1/access-token/b2b`
+- **URL Service Notify**: `https://api.mpad.online/api/snap/v1.1/qr/qr-mpm-notify`
+- **client ID**: `[REDACTED_CLIENT_ID]` (Sandboxing)
+- **client Secret**: `[REDACTED_CLIENT_SECRET]` (Sandboxing)
+
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BRI/Flow_Bisnis_BRIAPI.md
+---
+# FLOW BISNIS INTEGRASI BRIAPI - M-PAD
+## BADAN PENDAPATAN DAERAH (BAPENDA) KOTA BAUBAU
+
+Dokumen ini menjelaskan alur teknis dan bisnis integrasi pembayaran *Host-to-Host* (H2H) menggunakan standar SNAP BI (Model Biller / Open API) antara sistem **M-PAD** (Manajemen Pendapatan Asli Daerah) Kota Baubau dengan **BRIAPI** (Bank Rakyat Indonesia).
+
+![Grafik Flow Bisnis](flow_bisnis.png)
+
+---
+
+### 1. Inisiasi Pembayaran (Pembuatan BRIVA)
+1. **Wajib Pajak (WP)** masuk ke dalam aplikasi M-PAD (melalui Web Admin, Petugas, atau Mobile App) dan memilih tagihan retribusi/pajak daerah yang belum dibayar.
+2. Wajib Pajak memilih metode pembayaran **Bank BRI (Virtual Account / BRIVA)**.
+3. Sistem **M-PAD (Backend)** meng-generate Nomor *Virtual Account* secara internal yang merupakan kombinasi kode *biller* dan nomor tagihan/SKRD.
+4. Aplikasi M-PAD menampilkan **Nomor BRIVA** beserta batas waktu pembayaran kepada Wajib Pajak. *(Pada tahap ini, sistem M-PAD belum melakukan pemanggilan API ke pihak bank).*
+
+### 2. Pengecekan & Pembayaran (Inquiry)
+1. Wajib Pajak memasukkan Nomor BRIVA melalui salah satu *channel* pembayaran Bank BRI (Brimo, ATM, Agen BRILink, atau Teller).
+2. Sistem BRI melakukan pengecekan tagihan dengan memanggil *endpoint Inquiry* milik server M-PAD (`POST /snap/v1.0/transfer-va/inquiry`).
+3. Server M-PAD memvalidasi token otorisasi H2H (OAuth2 B2B), *Digital Signature*, dan *Timestamp* dari *request* BRI tersebut.
+4. Server M-PAD mencari tagihan berdasarkan nomor BRIVA, lalu merespons dengan informasi detail tagihan (Nama WP dan Nominal Pasti).
+5. Channel Bank BRI menampilkan detail tagihan kepada Wajib Pajak.
+6. Setelah valid, Wajib Pajak menekan tombol bayar/konfirmasi. Saldo WP terpotong dan dana masuk ke rekening (RKUD) Bapenda Kota Baubau di Bank BRI.
+
+### 3. Konfirmasi Otomatis (Payment / Callback)
+1. Detik itu juga setelah pembayaran sukses diproses, sistem **BRIAPI** mengirimkan *webhook* notifikasi pembayaran sukses ke *endpoint Payment* M-PAD (`POST /snap/v1.0/transfer-va/payment`).
+2. Server **M-PAD** menerima *request* tersebut dan memvalidasi kembali keaslian *Digital Signature* serta *Timestamp*.
+3. Server M-PAD memverifikasi bahwa nominal yang ditransfer sudah sesuai dengan nominal tagihan.
+4. M-PAD memperbarui status tagihan di dalam *database* menjadi **LUNAS (Paid)**.
+5. M-PAD mengirimkan balasan `HTTP 200 OK` ke BRIAPI (dengan *PaymentFlagStatus* sukses) sebagai tanda notifikasi berhasil diterima.
+
+### 4. Penyelesaian & Penerbitan Struk
+1. Sistem M-PAD mencatat riwayat transaksi secara mendetail ke dalam *Payment Logs* dan *Virtual Ledger* pemerintah daerah.
+2. Wajib Pajak menerima notifikasi di aplikasi M-PAD bahwa pembayaran telah sukses.
+3. M-PAD secara otomatis menerbitkan **Bukti Bayar Sah (SSRD / Surat Setoran Retribusi Daerah)** yang dilengkapi dengan QR Code dan dapat diunduh (di-*download*) oleh Wajib Pajak maupun Petugas Bapenda secara *real-time*.
+
+---
+*Dokumen ini merupakan lampiran pendukung untuk pengajuan operasional BRIAPI - Bapenda Kota Baubau.*
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BRI/SNAP_RESPONSE_VERIFICATION.md
+---
+# Verifikasi Response BRIVA SNAP terhadap SIT BRI
+
+Tanggal audit: 2026-07-22  
+Scope: endpoint inbound BRIVA yang aktif pada `retribusi-api`, yaitu access token, inquiry VA, dan payment VA.
+
+## Kesimpulan
+
+Response code dan message yang eksplisit pada SIT untuk token invalid, signature, mandatory/format, inquiry, payment, paid, expired, not found, serta invalid amount sudah diselaraskan pada scope endpoint aktif. Artefak dokumentasi BRIAPI Virtual Account/BRIVA Online v2.0 yang diberikan pada 2026-07-28 kini menjadi sumber schema resmi untuk field inti Inquiry dan Payment. Jawaban BRI pada 2026-07-30 mengonfirmasi bahwa prefix `19960` adalah sandbox-only, BRImo production tidak dapat men-trigger VA tersebut, path sebelum `/snap` bebas, dan signature request memakai RSA-SHA256. Sistem tetap belum dapat dinyatakan siap UAT karena contoh request lengkap, canonical string, replay identik, total panjang/expiry VA operasional, IP whitelist, dan lifecycle/status/report VA masih memerlukan bukti operasional BRI.
+
+## Sumber yang Dibandingkan
+
+- `seethis/SIT_FUNCTIONAL_TEST_SCENARIOS_V4_1.md`, bagian `Transfer VA`, baris skenario 11.1-11.33. Dokumen ini adalah ekspor Markdown dari workbook SIT lokal.
+- `docs/10_payment_gateway_h2h/BRI/snap_va.csv` hanya untuk path endpoint yang diajukan pada akses sandbox. Nilai credential di dalam file tidak disalin ke dokumen ini.
+- `routes/api.php` untuk route runtime.
+- `SnapBIController`, `SnapResponseMapper`, `SnapBrivaService`, dan service security SNAP untuk perilaku response saat ini.
+- `tests/Feature/Payment/Snap` dan `tests/Unit/Payment/Snap` untuk bukti test lokal.
+- Artefak dokumentasi BRIAPI Virtual Account/BRIVA Online v2.0 yang memuat schema request/response Inquiry dan Payment, response code, timeout, serta aturan rekonsiliasi.
+- Jawaban teknis BRI 2026-07-30 tentang environment sandbox, channel sandbox, path callback, RSA-SHA256, dan mekanisme trigger inquiry/payment oleh BRI.
+
+## Path Endpoint
+
+| Fungsi | Path matriks sandbox lokal | Route runtime | Status |
+| --- | --- | --- | --- |
+| Access token | `/api/snap/v1.1/access-token/b2b` | `v1.1` tersedia; `v1.0` juga tersedia sebagai alias | PASS |
+| Inquiry VA | `/api/snap/v1.0/transfer-va/inquiry` | Tersedia | PASS |
+| Payment VA | `/api/snap/v1.0/transfer-va/payment` | Tersedia | PASS |
+
+## Matriks Response SIT terhadap Implementasi
+
+Kode `xx` pada skenario umum mengikuti service code endpoint: `24` untuk inquiry dan `25` untuk payment. Penerapan angka tersebut pada kode umum adalah inferensi dari pola SIT dan harus dikonfirmasi pada contoh resmi BRI sebelum UAT.
+
+| SIT | Skenario | Expected SIT | Implementasi saat audit | Status |
+| --- | --- | --- | --- | --- |
+| 11.1 | Access token invalid | `401xx01`, `Invalid Token (B2B)` | Inquiry `4012401`; payment `4012501`; keduanya memiliki feature test | PASS pada service aktif |
+| 11.2 | Unauthorized signature | `401xx00`, `Unauthorized. [reason]` | Inquiry `4012400`; payment `4012500`; message mengikuti reason signature | PASS pada service aktif |
+| 11.3 | Missing mandatory field | `400xx02`, `Invalid Mandatory Field {...}` | Header dan field body yang dipakai service menghasilkan `4002402`/`4002502` | PASS pada kontrak aktif; schema final belum tersedia |
+| 11.4 | Invalid field format | `400xx01`, `Invalid Field Format {...}` | Validator dasar identifier, paid amount, dan currency menghasilkan `4002401`/`4002501` | PASS pada kontrak aktif; schema final belum tersedia |
+| 11.5 | Duplicate `X-EXTERNAL-ID` | `409xx00`, `Conflict` | Payload berbeda ditolak `4092400`; replay payload sama mengembalikan response tersimpan; payment belum memakai service code `25` | PARTIAL, perlu keputusan BRI |
+| 11.6 | Inquiry VA valid | `2002400`, `Successful` | Sesuai dan memiliki feature test | PASS |
+| 11.7 | Inquiry VA sudah lunas | `4042414`, `Paid Bill` | Kode dan message sesuai, memiliki feature test | PASS |
+| 11.8 | Inquiry VA kedaluwarsa | `4032400`, `Transaction Expired` | Kode dan message sesuai, memiliki feature test | PASS |
+| 11.9 | Inquiry VA tidak terdaftar | `4042412`, `Invalid Bill/Virtual Account [Reason]` | Kode dan message sesuai, memiliki feature test | PASS |
+| 11.10 | Payment VA valid | `2002500`, `Successful` | Sesuai, termasuk settlement multi-bill | PASS |
+| 11.11 | Payment VA tidak terdaftar | `4042512`, `Invalid Bill/Virtual Account [Reason]` | Kode dan message sesuai, memiliki feature test | PASS |
+| 11.12 | Payment VA invalid amount | `4042513`, `Invalid Amount` | Kode dan message sesuai; settlement tidak terjadi | PASS |
+| 11.13-11.18 | Status/create/update/delete lifecycle VA | `2002600` sampai `2003100` | Route belum tersedia | BLOCKED, konfirmasi scope produk BRI |
+| 11.32 | Get report VA | `2003500`, `Successful` | Route belum tersedia | BLOCKED, konfirmasi kebutuhan rekonsiliasi/report BRI |
+| 11.33 | Transaction status inquiry | `2003600`, `Successful` | Route belum tersedia | BLOCKED, konfirmasi path dan schema BRI |
+
+Skenario 11.19-11.31 adalah alur Partner A-PJP-Partner B dan tidak dimasukkan ke scope implementasi sampai BRI menyatakan produk tersebut wajib untuk M-PAD.
+
+## Status Implementasi PAY-SNAP-ERR-001
+
+Implementasi memakai service code `24` untuk inquiry, `25` untuk payment, `73` untuk access token, dan `52` untuk QR notification pada pipeline security. `SnapRequestValidator` menutup field inti dan field tambahan yang didokumentasikan untuk endpoint aktif. Regression lokal feature dan unit SNAP lulus 39 test dengan 140 assertion.
+
+## Response Body dan Schema BRIAPI v2.0
+
+Artefak BRIAPI v2.0 menyediakan contoh JSON serta mandatory/optional rule untuk field inti. Implementasi kini mengembalikan:
+
+- Inquiry: `virtualAccountData` dengan `partnerServiceId`, `customerNo`, `virtualAccountNo`, `virtualAccountName`, `inquiryRequestId`, `totalAmount`, `inquiryStatus`, dan object `inquiryReason` berisi `english` serta `indonesia`.
+- Payment: `virtualAccountData` dengan identitas VA, `paymentRequestId`, `paidAmount`, `paymentFlagStatus`, dan object `paymentFlagReason` berisi `english` serta `indonesia`.
+- Validator menerima field tambahan Payment yang didokumentasikan, yaitu `trxId`, `trxDateTime`, `hashedSourceAccountNo`, dan `additionalInfo.hashedSourceAccountName`, serta memastikan `paymentRequestId` sama dengan `inquiryRequestId` bila alur dimulai dari Inquiry.
+
+`additionalInfo.info1` sampai `info5` tetap optional dan belum diisi karena belum ada kebutuhan bisnis M-PAD untuk mengirim catatan tambahan kepada customer. `billDetails` tetap dipertahankan sebagai extension internal untuk multi-tagihan, sedangkan data kontak internal tidak lagi dikirim dalam response BRIVA.
+
+Status schema field inti: PASS berdasarkan artefak BRIAPI v2.0 dan feature regression lokal. Status UAT keseluruhan tetap OPEN karena aturan canonical string-to-sign, contoh request resmi, total panjang/expiry VA operasional, IP whitelist, serta lifecycle/status/report belum dikonfirmasi.
+
+## Keputusan Signature
+
+Konfirmasi BRI 2026-07-30 menyatakan request dari BRI memakai `RSA-SHA256` untuk `X-SIGNATURE`. Implementasi sekarang mendukung konfigurasi `rsa_sha256` dengan public key BRI dari `BRI_SNAP_PUBLIC_KEY` atau `BRI_SNAP_PUBLIC_KEY_PATH`; HMAC-SHA512 tetap tersedia hanya sebagai compatibility konfigurasi partner lain. BRI masih perlu memberi contoh request lengkap agar canonical string-to-sign, path yang masuk signature, dan encoding signature dapat dibuktikan terhadap sandbox mereka.
+
+Data yang masih dibutuhkan dari BRI:
+
+- contoh request dan response JSON untuk token, inquiry, payment, dan setiap error;
+- aturan canonical string-to-sign serta path yang masuk ke signature;
+- konfirmasi service code final untuk error umum pada endpoint payment terhadap contoh response resmi;
+- aturan replay `X-EXTERNAL-ID` dengan payload identik;
+- daftar field mandatory, format, panjang, enum, decimal amount, total panjang VA, dan expiry;
+- IP sumber BRI untuk whitelist bila sandbox ditembak dari IP tetap;
+- scope lifecycle/status/report VA yang benar-benar wajib untuk produk BRIVA M-PAD.
+
+## Temuan Credential Hygiene
+
+File sumber sandbox yang tracked memuat nilai yang diberi label sebagai credential. Nilainya tidak dicantumkan di dokumen ini. Sebelum repo dibagikan atau dipakai UAT:
+
+1. konfirmasikan apakah nilai tersebut masih aktif;
+2. rotasi melalui PIC/portal BRI bila pernah aktif;
+3. redaksi file tracked dan tentukan apakah history Git perlu dibersihkan;
+4. simpan nilai pengganti hanya melalui secret manager atau `.env` server yang tidak tracked.
+
+Tindakan rotasi dan rewrite history memerlukan otorisasi pengguna serta koordinasi eksternal, sehingga dicatat sebagai blocker terpisah.
+
+## Tindak Lanjut
+
+- `PAY-SNAP-ERR-001`: selesai untuk kode/message yang eksplisit dan field pada kontrak aktif; schema final tetap menunggu artefak BRI.
+- `PAY-SNAP-LIFE-001`: konfirmasikan dan implementasikan lifecycle/status/report hanya setelah path dan schema resmi diberikan BRI.
+- `PAY-SEC-001`: rotasi/redaksi credential-like values pada dokumen sandbox tracked dengan prosedur yang disetujui.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BRI/Panduan_Screenshot_TPRA.md
+---
+# Panduan Penyediaan Screenshot untuk Assessment TPRA BNI
+
+Berdasarkan arsitektur sistem mPaD, berikut adalah panduan detail mengenai screenshot apa saja yang harus dipersiapkan untuk memenuhi permintaan dokumen pendukung pada formulir TPRA BNI:
+
+## 1. Autentikasi (MFA / Login System)
+**Yang diminta:** Bukti pengamanan saat login aplikasi/sistem.
+
+**Cara mendapatkan Screenshot:**
+* Buka halaman Login aplikasi mPaD (Admin/Petugas).
+* Ambil screenshot dari form login.
+* *(Opsional)* Jika sistem saat ini sudah memiliki fitur OTP (via WhatsApp/SMS) atau PIN, ambil screenshot saat layar meminta OTP tersebut. 
+* **Keterangan di Excel:** Jika belum ada MFA (hanya username & password), Anda bisa menuliskan: *"Saat ini menggunakan standar keamanan otentikasi JWT (JSON Web Token) dengan password terenkripsi bcrypt. Pengembangan MFA masuk dalam roadmap berikutnya."*
+
+## 2. Antivirus & Perlindungan Server
+**Yang diminta:** Bukti perlindungan terhadap malware di server.
+
+**Cara mendapatkan Screenshot:**
+* Karena mPaD di-host di VPS (seperti Biznet NEO/Linux), ambil screenshot terminal VPS Anda yang menunjukkan status keamanan.
+* Jalankan perintah `sudo ufw status` (menunjukkan Firewall aktif) atau `sudo systemctl status fail2ban` (menunjukkan pencegahan brute-force aktif), lalu screenshot terminalnya.
+
+## 3. Pengamanan Akses Server H2H
+**Yang diminta:** Daftar siapa saja yang punya akses (kredensial) ke server.
+
+**Cara mendapatkan Screenshot:**
+* Buka terminal/SSH VPS server produksi mPaD Anda.
+* Ketik perintah `getent group sudo` atau `cat /etc/passwd | grep bash`.
+* Ambil screenshot hasilnya untuk membuktikan bahwa hanya user tertentu (admin/developer) yang memiliki hak akses shell ke server, dan tidak ada "sharing user-ID".
+
+## 4. Audit Trail (Log Aktivitas)
+**Yang diminta:** Catatan rekam jejak aktivitas API / H2H (siapa yang mengakses dan kapan).
+
+**Cara mendapatkan Screenshot:**
+* Buka database mPaD Anda dan ambil screenshot tabel `activity_logs` (jika Anda menggunakan library log) yang mencatat log user.
+* **Alternatif:** Ambil screenshot isi dari file `storage/logs/laravel.log` yang menampilkan *request* API masuk, atau screenshot dashboard Laravel Telescope / Pulse.
+
+## 5. API Security Tools
+**Yang diminta:** Tools untuk memantau keamanan dan mencegah serangan API (seperti DDOS/Spam).
+
+**Cara mendapatkan Screenshot:**
+* Jika domain mPaD menggunakan **Cloudflare**, buka dashboard Cloudflare bagian *Security -> WAF (Web Application Firewall)* atau *Events*, lalu screenshot.
+* **Alternatif dari Kode:** Buka file middleware atau `RouteServiceProvider.php`, lalu screenshot baris kode `RateLimiter::for('api', ...)` yang membatasi limit hit API (contoh: *60 request per menit*) untuk mencegah *spam/brute-force*.
+
+## 6. Keamanan Data Pribadi (Enkripsi)
+**Yang diminta:** Bukti bahwa data rahasia dilindungi (disandikan).
+
+**Cara mendapatkan Screenshot:**
+* **Data in Rest:** Buka database mPaD (melalui DBeaver/phpMyAdmin), lalu ambil screenshot pada tabel `users`. Tunjukkan bahwa kolom `password` isinya berupa karakter acak (sudah di-*hash* menggunakan Bcrypt).
+* **Data in Transit:** Buka API mPaD di browser, klik ikon gembok (Lock) di URL bar, dan ambil screenshot sertifikat **SSL / HTTPS (Connection is secure)**.
+
+---
+
+### Tips Memasukkan ke Excel:
+1. Beri nama file screenshot yang jelas (contoh: `1_Keamanan_Login.png`, `2_UFW_Firewall_Server.png`).
+2. Masukkan semua gambar ke folder Google Drive (misalnya: **"Lampiran Assessment BNI - mPaD"**), atur aksesnya menjadi **"Anyone with the link can view"**.
+3. Di file Excel TPRA, pada kolom **"Attachment Supporting Document"**, Anda cukup menuliskan: *"Terlampir pada tautan Google Drive berikut: [Masukkan Link Drive Anda]"*.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Persiapan_Meeting_Integrasi_BNI.md
+---
+# Poin Pembahasan IT mPaD - Meeting Integrasi H2H BNI
+
+**Topik:** Rencana Integrasi Pembayaran H2H Virtual Account & QRIS API (Standar SNAP BI)
+**Tanggal:** Jumat, 17 Juli 2026
+**Posisi Kita:** Tim Teknis Bapenda (Sistem mPaD)
+
+Sebagai tim teknis mPaD, fokus kita dalam meeting ini adalah memastikan arsitektur sistem mPaD dapat terhubung dengan mulus dan aman ke sistem BNI sesuai standar BI. Berikut adalah daftar pertanyaan dan poin konfirmasi yang perlu Anda sampaikan kepada Tim IT BNI:
+
+## 1. Topologi, Infrastruktur & Keamanan (Network & Security)
+- **Whitelisting IP:** "Kami akan menyiapkan IP Public server produksi mPaD (Biznet NEO). Kami butuh daftar IP Address Public dari sisi BNI (baik untuk UAT maupun Production) agar dapat kami _whitelist_ di firewall server kami."
+- **Konektivitas:** "Apakah koneksi menggunakan Internet Publik biasa (dengan pengamanan JWS/Signature standar SNAP) atau BNI mewajibkan penggunaan VPN IP-Sec (Leased Line)?"
+- **Dokumen Arsitektur:** "Kami sedang menyiapkan dokumen Topologi Jaringan, ke mana dokumen teknis ini harus kami _submit_ nantinya?"
+
+## 2. Standar Kriptografi & Signature (SNAP BI)
+- **Pertukaran Key (Asymmetric RSA):** "Untuk standar SNAP BI, apakah kami (mPaD) harus men-generate RSA Key Pair (Private & Public Key) sendiri dan mengirimkan Public Key-nya ke BNI, atau BNI menyediakan sistem portal untuk pendaftaran _Key_?"
+- **Library/SDK:** "Apakah BNI menyediakan contoh _code_, _SDK_, atau _library_ (khususnya untuk PHP/Laravel) untuk mempermudah pembuatan Signature (Asymmetric RS256 / HMAC SHA256)?"
+
+## 3. Skema Transaksi H2H & Fitur Unggulan (JIT Billing & NIK Inquiry)
+- **Keputusan Arsitektur Integrasi (Model Aggregator/Push):** Sesuai arahan Kepala Bapenda (Bpk. Massad), alur yang disepakati adalah **Bapenda yang secara aktif menembak API Create VA (Push) ke BNI**.
+- **Two-Way Handshake & Mitigasi Gagal Transfer:** Kami akan menerapkan mekanisme dua arah: Bapenda melakukan *Create VA*, lalu BNI merespons dengan *Real-time Callback/Webhook* saat terbayar. M-PAD juga dilengkapi *Check Status API* untuk *auto-correction* saat proses rekonsiliasi (*menyandingkan data*) harian.
+- **Just-In-Time (JIT) Penalty Engine:** "Saat Wajib Pajak mengakses tagihan di mPaD, _engine_ kami akan menghitung denda keterlambatan secara presisi detik itu juga, baru kemudian kami *Push Create VA* beserta nominal final ke BNI."
+- **Idempotency Check:** "Untuk _Payment_, sistem kami memiliki _Idempotency Check_ untuk mencegah _double payment_. Jika terjadi _retry_ dari BNI karena _timeout_ jaringan, tagihan akan otomatis terkunci."
+- **Reverse Inquiry Berbasis NIK (Ultimate UX):** "Kami memiliki fitur di mana Wajib Pajak cukup memberikan 16-digit NIK ke Teller/ATM, dan API kami akan mengembalikan _array_ seluruh tagihan aktif (PBB, Reklame, Retribusi). Apakah fitur _Multi-Inquiry_ ini didukung di _channel_ BNI?"
+
+## 4. Alur Transaksi QRIS (API Dinamis)
+- **Penolakan QRIS Statis:** "Kami menegaskan bahwa mPaD **tidak dapat menggunakan QRIS Statis** (stiker/cetak). Kami mutlak membutuhkan **QRIS Dinamis via API (Open API/H2H)** agar nominal terkunci otomatis dan _callback_ bisa kami terima secara _real-time_."
+- **Standar Keamanan API:** "Apakah format API QRIS Dinamis ini sudah menggunakan standar **SNAP BI (Signature Asymmetric RSA/HMAC)**, atau masih menggunakan _legacy API_ BNI?"
+- **Masa Berlaku (Expiry Time):** "Apakah batas waktu kedaluwarsa (_expiry time_) QR Code ini bisa kami atur sendiri secara dinamis dari sisi mPaD (misal: kadaluarsa dalam 24 jam)?"
+- **Limit Transaksi:** "Berapa limit maksimal nominal tagihan untuk satu kali *scan* QRIS Dinamis BNI ini? Mengingat tagihan PBB/Pajak Daerah terkadang bernominal besar di atas Rp10.000.000."
+- **Skenario Layar Teller/POS (Terminal ID):** "Jika digunakan di loket Bapenda atau tablet Petugas (sebagai POS), apakah API mengharuskan kami mengirim **Terminal ID** spesifik per alat, atau cukup 1 _Merchant ID_ global?"
+- **Skenario QR Expired di Loket:** "Jika _QR Code_ kedaluwarsa sebelum sempat di-_scan_ oleh warga, apakah API mengizinkan kami me-request _Generate_ QR ulang dengan **Nomor Transaksi (Bill ID) yang sama**, atau harus _generate_ Bill ID baru?"
+- **Notifikasi Keberhasilan (Callback):** "Saat warga selesai bayar, apakah BNI langsung menembak _webhook_ ke server kami detik itu juga (_real-time_), atau ada jeda?"
+- **Check Status API:** "Apabila _callback_ dari BNI gagal kami terima (misal karena jaringan), apakah tersedia API _Check Status_ untuk mengecek status pembayaran QRIS secara manual dari sisi kami?"
+
+## 5. Otomasi Pasca-Bayar & Rekonsiliasi (Settlement Kas Daerah)
+- **Settlement H+0 (Real-time Kas Daerah):** "Di presentasi BNI disebutkan _settlement_ (pencairan) QRIS adalah H+1. Mengingat ini adalah uang negara (Pajak Daerah), apakah BNI bisa memberikan pengecualian **Settlement H+0 (Hari yang sama)** langsung masuk ke Rekening Kas Umum Daerah (RKUD) tanpa menunggu keesokan harinya?"
+- **Auto-TTE Hook (BSrE):** "Informasikan bahwa _Response HTTP 200 OK_ dari BNI pada saat _Payment_ akan langsung memicu _webhook_ ke server BSrE untuk penerbitan Bukti Bayar ber-TTE saat itu juga."
+- **Rekonsiliasi Otomatis:** "Setiap pukul 00:00, sistem mPaD melakukan _Matching Harian_. Kami membutuhkan **Format Laporan Rekonsiliasi harian** dari BNI, dan bagaimana SOP untuk _Force Settlement_ jika ada transaksi anomali (_pending_ di mPaD tapi sukses di BNI)?"
+
+## 6. Daftar Kebutuhan Teknis (API Handshake) & UAT
+- **Dokumentasi & Sandbox:** "Kapan kami bisa mendapatkan Dokumentasi API Terbaru (Spesifikasi Inquiry-Payment, Create VA, Generate QRIS) beserta Kredensial Sandbox/UAT?"
+- **Parameter UI/UX:** "Berapa batas maksimal karakter (Spasi/Huruf) yang diperbolehkan tampil di layar ATM/Mobile Banking BNI untuk 'Nama Wajib Pajak' dan 'Detail Tagihan'?"
+- **Grup Komunikasi Teknis:** "Kami mengusulkan agar dibuatkan grup komunikasi teknis khusus (misal via WhatsApp) antara Developer mPaD dan Tim IT Support BNI agar proses _troubleshooting_ selama UAT berjalan cepat."
+
+---
+**💡 Tips Saat Meeting:**
+Anda dapat melakukan _screen-sharing_ **Dokumen Topologi Jaringan H2H** yang telah disiapkan sebelumnya untuk menunjukkan kesiapan arsitektur mPaD kepada pihak BNI.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Panduan_Pengisian_Form_Internal_BNI.md
+---
+# Panduan Pengisian Form Internal Integrasi Layanan API BNI (v1.3)
+
+**Dokumen Acuan:** `Form Internal Integrasi Layanan API BNI_v1.3_.pdf`
+**Konteks Sistem:** M-PAD (Smart Revenue System) - Bapenda Kota Baubau
+
+> [!NOTE]
+> **Konteks Penting**
+> Di bagian atas form (Hal. 1) tertulis jelas: **"(TIDAK UNTUK DIISI OLEH NASABAH ATAU EKSTERNAL)"**. 
+> Formulir ini sebenarnya adalah dokumen internal Divisi WDC BNI. Namun dalam prakteknya, pihak Bank sering mengirimkan draf ini agar Nasabah/Mitra menyetorkan data (menjawab/mengisi) sesuai format tersebut, untuk kemudian mereka *input* ke sistem internal BNI.
+>
+> Panduan di bawah ini disusun agar selaras dengan arsitektur **M-PAD**, khusus untuk layanan **Virtual Account** dan **QRIS Dinamis (Standar SNAP BI)**.
+
+---
+
+## Halaman 1: Informasi Pemohon
+Bagian ini mendefinisikan identitas institusi dan tujuan penggunaan API.
+
+- **Jenis Permohonan:** ☑️ Pendaftaran Layanan
+- **Nama Perusahaan:** `Bapenda Kota Baubau` (atau Pemerintah Kota Baubau)
+- **Nama Alias:** `M-PAD (Smart Revenue System)`
+- **Jenis Usaha:** ☑️ **Bukan Teknologi Finansial**. (Tuliskan: `Instansi Pemerintah Daerah - Badan Pendapatan Daerah`)
+- **Tujuan Penggunaan API:** `Integrasi pembayaran Pajak dan Retribusi Daerah secara Host-to-Host (H2H) menggunakan Virtual Account dan QRIS Dinamis API (Standar SNAP BI) ke sistem M-PAD.`
+- **Nomor Aplikasi/Formulir Produk:** `M-PAD`
+
+---
+
+## Halaman 2: Contact Person (Data PIC)
+Bagian ini berisi daftar orang yang bertanggung jawab secara teknis dan operasional.
+
+- **Daftar PIC:** Isi nama-nama tim teknis Bapenda (Project Manager, PIC Credentials, PIC Integrasi API).
+- *Saran:* Gunakan email resmi kedinasan (misal domain `@baubaukota.go.id` jika ada) agar terlihat lebih kredibel di sisi BNI.
+- **Penggunaan Layanan API (Tabel Bawah):** 
+  - **KOSONGKAN SEMUA** (termasuk *One Gate Payment, SNAP Transfer Credit, MPN*).
+  - *Alasan:* M-PAD berfokus pada **Penerimaan (Collection)** PAD, bukan layanan transfer dana/MPN.
+
+---
+
+## Halaman 3: Layanan API (2)
+Bagian ini khusus untuk layanan P2P, RDN, dan Remittance.
+
+- **Tindakan:** **KOSONGKAN SEMUA** *(RDN, P2P Lending, RDF, Outgoing/Incoming Remittance, BNI Move)*.
+
+---
+
+## Halaman 4: Layanan API (3) 👉 FOKUS UTAMA VIRTUAL ACCOUNT
+Halaman ini sangat krusial karena memuat persetujuan layanan Virtual Account H2H.
+
+- **BNIDirect, FSCM, VA Debit, E-Collection:** KOSONGKAN.
+- **SNAP Virtual Account:** **(WAJIB DICENTANG)**
+  - ☑️ **Create VA** *(Digunakan oleh JIT Penalty Engine M-PAD untuk "Push" pembuatan tagihan spesifik ke BNI).*
+  - ☑️ **Update VA** *(Opsional tapi disarankan, jika M-PAD butuh mengubah nominal atau masa kadaluarsa VA yang sudah aktif).*
+  - ☑️ **Inquiry VA (VA Billing)** *(Wajib untuk mendukung fitur Reverse Inquiry NIK/Multi-tagihan wajib pajak).*
+  - ☑️ **Payment (Callback)** *(Sangat krusial untuk menerima Notifikasi Pembayaran Real-time, yang akan men-trigger Auto-TTE BSrE).*
+  - ☑️ **Inquiry Status** *(Digunakan sebagai "Check Status API" untuk sinkronisasi paksa dan rekonsiliasi harian jika webhook BNI gagal diterima akibat masalah jaringan).*
+- **URL Callback Notif DEV:** `https://apimpad.baubaukota.go.id/api/v1/payment/bni/callback` *(Ubah dengan routing Staging M-PAD jika berbeda).*
+- **URL Callback Notif PROD:** `https://api.baubaukota.go.id/api/v1/payment/bni/callback` *(Ubah dengan routing Production M-PAD jika berbeda).*
+
+---
+
+## Halaman 5: Layanan API (4) 👉 FOKUS UTAMA QRIS DINAMIS
+Halaman ini krusial untuk pembayaran via QRIS sesuai standar SNAP.
+
+- **VA Payment, SPC, SMART VA, SNAP Direct Debit:** KOSONGKAN.
+- **QRIS (MPM):** **(WAJIB DICENTANG)**
+  - ☑️ **Generate QR** *(Sistem M-PAD menolak QRIS Statis, sehingga wajib menggunakan API untuk Generate QRIS Dinamis per nomor tagihan).*
+  - ☑️ **Payment Notification** *(Webhook untuk menerima notifikasi real-time saat QRIS berhasil dibayar).*
+  - ☑️ **Query Payment** *(API untuk mengecek status transaksi QRIS secara manual jika dibutuhkan).*
+- **URL Callback Notif DEV:** `https://api.mpad.online/api/v1/payment/bni/qris/callback`
+- **URL Callback Notif PROD:** `https://apimpad.baubaukota.go.id/api/v1/payment/bni/qris/callback`
+
+---
+
+## Halaman 6: Layanan API (5)
+Bagian ini mengatur limit transaksi (Rate Limiting).
+
+- **QRIS (CPM), Sharing Billers, dll:** KOSONGKAN.
+- **Klasifikasi Pembatasan Hit Transaksi:** Pilih ☑️ **HIGH (10 - 150 Avg Hit/Jam)**.
+  - *Alasan:* Sebagai antisipasi traffic tinggi saat musim puncak pembayaran PBB-P2 jatuh tempo.
+
+---
+
+## Halaman 7: Data Layanan API Virtual Account
+Detail spesifik mengenai tipe VA yang akan diterbitkan.
+
+- **Tipe VA:** ☑️ **Billing** 
+  - *Alasan:* Sistem M-PAD menggunakan skema "Closed Payment", di mana nominal tagihan dikunci secara spesifik oleh Bapenda dan tidak bisa diubah oleh Wajib Pajak di layar ATM/Mobile Banking.
+- **Tipe VA Debit / Cardless:** Abaikan (Jika dari BNI mewajibkan diisi, pilih "Tidak Berkartu").
+- **SNAP Direct Debit & Disbursement (Bagian Bawah):** KOSONGKAN.
+
+---
+
+## Halaman 8: Data Detail IP Layanan API 👉 KRUSIAL UNTUK WHITELISTING JARINGAN
+Sesuai dengan agenda meeting terkait *Network & Security*, BNI wajib mem-whitelist IP M-PAD.
+
+- **Nama Layanan API:** `SNAP Virtual Account & QRIS MPM`
+- **Aksi:** ☑️ **TAMBAH**
+- **IP Dev:** Isi dengan **IP Public Server Biznet NEO** yang digunakan untuk Staging (`sipanda.online`).
+- **IP Prod:** Isi dengan **IP Public Server Biznet NEO** yang digunakan untuk Production (`baubaukota.go.id`).
+
+> [!IMPORTANT]
+> Tanpa mendaftarkan alamat IP di bagian ini, seluruh request API dari server M-PAD ke server BNI (seperti *Create VA* atau *Generate QRIS*) akan diblokir oleh Firewall BNI (terkena *Connection Timeout / Access Denied*).
+
+---
+
+## Halaman 9: Validasi
+- **KOSONGKAN.** 
+- Halaman ini murni diperuntukkan bagi coretan pengesahan dan tanda tangan internal divisi implementor BNI sendiri (Product Specialist & Department Head).
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Flow_Bisnis_BNI.md
+---
+# FLOW BISNIS INTEGRASI BNI - M-PAD
+## BADAN PENDAPATAN DAERAH (BAPENDA) KOTA BAUBAU
+
+Dokumen ini menjelaskan alur teknis dan bisnis integrasi pembayaran *Host-to-Host* (H2H) menggunakan standar SNAP BI (Model Biller / Open API) antara sistem **M-PAD** (Manajemen Pendapatan Asli Daerah) Kota Baubau dengan **Bank BNI**.
+
+![Grafik Flow Bisnis](flow_bisnis_bni.png)
+
+---
+
+### 1. Inisiasi Pembayaran (Pembuatan VA)
+1. **Wajib Pajak (WP)** masuk ke dalam aplikasi M-PAD (melalui Web Admin, Petugas, atau Mobile App) dan memilih tagihan retribusi/pajak daerah yang belum dibayar.
+2. Wajib Pajak memilih metode pembayaran **Bank BNI (Virtual Account)**.
+3. Sistem **M-PAD (Backend)** meng-generate Nomor *Virtual Account* secara internal yang merupakan kombinasi kode *biller* institusi dan nomor tagihan/SKRD.
+4. Aplikasi M-PAD menampilkan **Nomor BNI VA** beserta batas waktu pembayaran kepada Wajib Pajak. *(Pada tahap ini, sistem M-PAD belum melakukan pemanggilan API ke pihak bank).*
+
+### 2. Pengecekan & Pembayaran (Inquiry)
+1. Wajib Pajak memasukkan Nomor BNI VA melalui salah satu *channel* pembayaran Bank BNI (BNI Mobile Banking, ATM, BNI Direct, Agen46, atau Teller).
+2. Sistem BNI melakukan pengecekan tagihan dengan memanggil *endpoint Inquiry* milik server M-PAD (`POST /snap/v1.0/transfer-va/inquiry`).
+3. Server M-PAD memvalidasi token otorisasi H2H (OAuth2 B2B), *Digital Signature*, dan *Timestamp* dari *request* BNI tersebut.
+4. Server M-PAD mencari tagihan berdasarkan nomor VA, lalu merespons dengan informasi detail tagihan (Nama WP dan Nominal Pasti).
+5. Channel Bank BNI menampilkan detail tagihan kepada Wajib Pajak.
+6. Setelah valid, Wajib Pajak menekan tombol bayar/konfirmasi. Saldo WP terpotong dan dana masuk ke rekening (RKUD) Bapenda Kota Baubau di Bank BNI.
+
+### 3. Konfirmasi Otomatis (Payment / Callback)
+1. Detik itu juga setelah pembayaran sukses diproses, sistem **BNI** mengirimkan *webhook* notifikasi pembayaran sukses ke *endpoint Payment* M-PAD (`POST /snap/v1.0/transfer-va/payment`).
+2. Server **M-PAD** menerima *request* tersebut dan memvalidasi kembali keaslian *Digital Signature* serta *Timestamp*.
+3. Server M-PAD memverifikasi bahwa nominal yang ditransfer sudah sesuai dengan nominal tagihan.
+4. M-PAD memperbarui status tagihan di dalam *database* menjadi **LUNAS (Paid)**.
+5. M-PAD mengirimkan balasan `HTTP 200 OK` ke BNI (dengan *PaymentFlagStatus* sukses) sebagai tanda notifikasi berhasil diterima.
+
+### 4. Penyelesaian & Penerbitan Struk
+1. Sistem M-PAD mencatat riwayat transaksi secara mendetail ke dalam *Payment Logs* dan *Virtual Ledger* pemerintah daerah.
+2. Wajib Pajak menerima notifikasi di aplikasi M-PAD bahwa pembayaran telah sukses.
+3. M-PAD secara otomatis menerbitkan **Bukti Bayar Sah (SSRD / Surat Setoran Retribusi Daerah)** yang dilengkapi dengan QR Code dan dapat diunduh (di-*download*) oleh Wajib Pajak maupun Petugas Bapenda secara *real-time*.
+
+---
+*Dokumen ini merupakan lampiran pendukung untuk pengajuan operasional BNI - Bapenda Kota Baubau.*
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Topologi_dan_Arsitektur.md
+---
+# Topologi & Arsitektur Jaringan (M-PAD Bapenda)
+
+## Arsitektur Aplikasi
+Aplikasi M-PAD (Pajak Daerah) dibangun menggunakan arsitektur **Monolithic (MVC)**.
+Backend: PHP Laravel 11.
+Database: PostgreSQL / MySQL.
+Web Server: Nginx.
+
+## Topologi Jaringan
+```mermaid
+graph TD
+    Client[BNI Gateway] -->|HTTPS / TLS 1.2+| WAF[Web Application Firewall / Load Balancer]
+    WAF -->|Port 443| Server[VPS Neo Cloud Bapenda]
+    
+    subgraph Neo Cloud VPS
+        Server --> App[M-PAD Laravel Backend]
+        App --> DB[(Database Master)]
+    end
+```
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Lampiran_Assessment_BNI/.venv/lib/python3.14/site-packages/numpy/random/LICENSE.md
+---
+**This software is dual-licensed under the The University of Illinois/NCSA
+Open Source License (NCSA) and The 3-Clause BSD License**
+
+# NCSA Open Source License
+**Copyright (c) 2019 Kevin Sheppard. All rights reserved.**
+
+Developed by: Kevin Sheppard (<kevin.sheppard@economics.ox.ac.uk>,
+<kevin.k.sheppard@gmail.com>)
+[http://www.kevinsheppard.com](http://www.kevinsheppard.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal with
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimers.
+
+Redistributions in binary form must reproduce the above copyright notice, this
+list of conditions and the following disclaimers in the documentation and/or
+other materials provided with the distribution.
+
+Neither the names of Kevin Sheppard, nor the names of any contributors may be
+used to endorse or promote products derived from this Software without specific
+prior written permission.
+
+**THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH
+THE SOFTWARE.**
+
+
+# 3-Clause BSD License
+**Copyright (c) 2019 Kevin Sheppard. All rights reserved.**
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+**THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGE.**
+
+# Components
+
+Many parts of this module have been derived from original sources, 
+often the algorithm's designer. Component licenses are located with 
+the component code.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Lampiran_Assessment_BNI/.venv/lib/python3.14/site-packages/pip/_vendor/idna/LICENSE.md
+---
+BSD 3-Clause License
+
+Copyright (c) 2013-2025, Kim Davies and contributors.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Lampiran_Assessment_BNI/.venv/lib/python3.14/site-packages/numpy-2.5.1.dist-info/licenses/numpy/_core/src/npysort/x86-simd-sort/LICENSE.md
+---
+BSD 3-Clause License
+
+Copyright (c) 2022, Intel. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Lampiran_Assessment_BNI/.venv/lib/python3.14/site-packages/numpy-2.5.1.dist-info/licenses/numpy/fft/pocketfft/LICENSE.md
+---
+Copyright (C) 2010-2018 Max-Planck-Society
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice, this
+  list of conditions and the following disclaimer in the documentation and/or
+  other materials provided with the distribution.
+* Neither the name of the copyright holder nor the names of its contributors may
+  be used to endorse or promote products derived from this software without
+  specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Lampiran_Assessment_BNI/.venv/lib/python3.14/site-packages/numpy-2.5.1.dist-info/licenses/numpy/random/LICENSE.md
+---
+**This software is dual-licensed under the The University of Illinois/NCSA
+Open Source License (NCSA) and The 3-Clause BSD License**
+
+# NCSA Open Source License
+**Copyright (c) 2019 Kevin Sheppard. All rights reserved.**
+
+Developed by: Kevin Sheppard (<kevin.sheppard@economics.ox.ac.uk>,
+<kevin.k.sheppard@gmail.com>)
+[http://www.kevinsheppard.com](http://www.kevinsheppard.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal with
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimers.
+
+Redistributions in binary form must reproduce the above copyright notice, this
+list of conditions and the following disclaimers in the documentation and/or
+other materials provided with the distribution.
+
+Neither the names of Kevin Sheppard, nor the names of any contributors may be
+used to endorse or promote products derived from this Software without specific
+prior written permission.
+
+**THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH
+THE SOFTWARE.**
+
+
+# 3-Clause BSD License
+**Copyright (c) 2019 Kevin Sheppard. All rights reserved.**
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+**THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGE.**
+
+# Components
+
+Many parts of this module have been derived from original sources, 
+often the algorithm's designer. Component licenses are located with 
+the component code.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Lampiran_Assessment_BNI/.venv/lib/python3.14/site-packages/numpy-2.5.1.dist-info/licenses/numpy/random/src/mt19937/LICENSE.md
+---
+# MT19937
+
+Copyright (c) 2003-2005, Jean-Sebastien Roy (js@jeannot.org)
+
+The rk_random and rk_seed functions algorithms and the original design of
+the Mersenne Twister RNG:
+
+  Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  1. Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  2. Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  3. The names of its contributors may not be used to endorse or promote
+  products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER
+OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Original algorithm for the implementation of rk_interval function from
+Richard J. Wagner's implementation of the Mersenne Twister RNG, optimised by
+Magnus Jonsson.
+
+Constants used in the rk_double implementation by Isaku Wada.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Lampiran_Assessment_BNI/.venv/lib/python3.14/site-packages/numpy-2.5.1.dist-info/licenses/numpy/random/src/sfc64/LICENSE.md
+---
+# SFC64
+
+## The MIT License
+
+Adapted from a C++ implementation of Chris Doty-Humphrey's SFC PRNG.
+
+https://gist.github.com/imneme/f1f7821f07cf76504a97f6537c818083
+
+Copyright (c) 2018 Melissa E. O'Neill
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Lampiran_Assessment_BNI/.venv/lib/python3.14/site-packages/numpy-2.5.1.dist-info/licenses/numpy/random/src/pcg64/LICENSE.md
+---
+# PCG64
+
+## The MIT License
+
+PCG Random Number Generation for C.
+
+Copyright 2014 Melissa O'Neill <oneill@pcg-random.org>
+
+Permission is hereby granted, free of charge, to any person obtaining 
+a copy of this software and associated documentation files (the "Software"), 
+to deal in the Software without restriction, including without limitation 
+the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in 
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS 
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR 
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER 
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Lampiran_Assessment_BNI/.venv/lib/python3.14/site-packages/numpy-2.5.1.dist-info/licenses/numpy/random/src/philox/LICENSE.md
+---
+# PHILOX
+
+Copyright 2010-2012, D. E. Shaw Research.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright
+  notice, this list of conditions, and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions, and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+* Neither the name of D. E. Shaw Research nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Lampiran_Assessment_BNI/.venv/lib/python3.14/site-packages/numpy-2.5.1.dist-info/licenses/numpy/random/src/splitmix64/LICENSE.md
+---
+# SPLITMIX64
+
+Written in 2015 by Sebastiano Vigna (vigna@acm.org)
+
+To the extent possible under law, the author has dedicated all copyright
+and related and neighboring rights to this software to the public domain
+worldwide. This software is distributed without any warranty.
+
+See <http://creativecommons.org/publicdomain/zero/1.0/>.
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Lampiran_Assessment_BNI/.venv/lib/python3.14/site-packages/numpy-2.5.1.dist-info/licenses/numpy/random/src/distributions/LICENSE.md
+---
+## NumPy
+
+Copyright (c) 2005-2017, NumPy Developers.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above
+   copyright notice, this list of conditions and the following
+   disclaimer in the documentation and/or other materials provided
+   with the distribution.
+
+* Neither the name of the NumPy Developers nor the names of any
+   contributors may be used to endorse or promote products derived
+   from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+## Julia
+
+The ziggurat methods were derived from Julia.
+
+Copyright (c) 2009-2019: Jeff Bezanson, Stefan Karpinski, Viral B. Shah,
+and other contributors:
+
+https://github.com/JuliaLang/julia/contributors
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Lampiran_Assessment_BNI/.venv/lib/python3.14/site-packages/pip-26.0.dist-info/licenses/src/pip/_vendor/idna/LICENSE.md
+---
+BSD 3-Clause License
+
+Copyright (c) 2013-2025, Kim Davies and contributors.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BNI/Lampiran_Assessment_BNI/Topologi_dan_Arsitektur.md
+---
+# Topologi & Arsitektur Jaringan (M-PAD Bapenda)
+
+## Arsitektur Aplikasi
+Aplikasi M-PAD (Pajak Daerah) dibangun menggunakan arsitektur **Monolithic (MVC)**.
+Backend: PHP Laravel 11.
+Database: PostgreSQL / MySQL.
+Web Server: Nginx.
+
+## Topologi Jaringan
+![Topologi Jaringan](Topologi_dan_Arsitektur.png)
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BPD/BANK_SULTRA_AFT_ASPI_CONTRACT.md
+---
+# Bank Sultra AFT ASPI Contract Audit
+
+Tanggal audit: 2026-08-03
+Scope task: `AFT-ASPI-001`
+Status: kontrak target terdokumentasi; produk final Bank Sultra masih harus dikonfirmasi sebelum runtime coding.
+
+## Kesimpulan
+
+AFT atau auto-debit Bank Sultra harus diperlakukan sebagai produk SNAP keluarga Transfer Debit, bukan sebagai BRIVA. Implementasi runtime belum boleh memakai path, payload, atau response dummy yang ada saat ini. Produk final yang harus dipilih bersama Bank Sultra adalah salah satu dari dua jalur berikut:
+
+1. Direct Debit H2H: service code `54/55/56/57/58`.
+2. Direct Debit BI-FAST/e-Mandate: service code `70/71/72`.
+
+Rekomendasi teknis awal adalah mulai dari Direct Debit H2H hanya jika Bank Sultra mengonfirmasi bahwa SKDR/account binding diselesaikan di luar API dan M-PAD cukup men-trigger pendebetan. Jika Bank Sultra mensyaratkan e-mandate yang diregistrasikan melalui API, gunakan Direct Debit BI-FAST/e-Mandate.
+
+## Non-Scope
+
+Jangan mengubah atau menggabungkan task ini dengan BRIVA. Jalur berikut tetap non-scope:
+
+- `POST /api/snap/v1.0/transfer-va/inquiry`
+- `POST /api/snap/v1.0/transfer-va/payment`
+- `POST /api/citizen/payment-requests`
+- service/config/test BRIVA yang sudah berjalan
+
+Setiap implementasi AFT harus memakai namespace/config/service Bank Sultra sendiri agar regression BRIVA tetap stabil.
+
+## Sumber Audit
+
+- ASPI API Services: `https://apidevportal.aspi-indonesia.or.id/api-services`
+- ASPI Transfer Debit: `https://apidevportal.aspi-indonesia.or.id/api-services/transfer-debit`
+- ASPI Direct Debit: `https://apidevportal.aspi-indonesia.or.id/api-services/transfer-debit/direct-debit`
+- ASPI Direct Debit BI-FAST: `https://apidevportal.aspi-indonesia.or.id/api-services/transfer-debit/direct-debit-bi-fast`
+- ASPI Keamanan: `https://apidevportal.aspi-indonesia.or.id/api-services/keamanan`
+- Lokal: `docs/10_payment_gateway_h2h/BPD/API_Spec_BPD_AFT_DirectDebit.md`
+- Lokal: `app/Jobs/ExecuteAutoDebitAFT.php`
+- Lokal: `app/Http/Controllers/Api/Merchant/KalkulatorBisnisController.php`
+- Lokal: `app/Http/Middleware/BankSecurityCheck.php`
+- Lokal: `tests/Feature/AftTriggerEngineTest.php`
+
+## Kandidat Produk 1: Direct Debit H2H
+
+| Fungsi | Service code | Method | Path ASPI | Catatan |
+| --- | --- | --- | --- | --- |
+| Payment | `54` | `POST` | `.../{version}/debit/payment-host-to-host` | Kandidat utama untuk trigger pemotongan AFT dari rekening merchant ke rekening penampung pajak. |
+| Status | `55` | `POST` | `.../{version}/debit/status` | Wajib dipakai bila payment dapat menghasilkan pending/in-progress atau timeout. |
+| Notify | `56` | `POST` | `.../{version}/debit/notify` | Perlu dikonfirmasi apakah Bank Sultra akan memanggil M-PAD setelah pendebetan selesai. |
+| Cancel | `57` | `POST` | `.../{version}/debit/cancel` | Jangan expose aksi mobile sebelum Bank Sultra mengonfirmasi lifecycle cancel. |
+| Refund | `58` | `POST` | `.../{version}/debit/refund` | Bukan scope awal kecuali proses koreksi pajak mensyaratkannya. |
+
+Kontrak field penting yang harus dipetakan:
+
+- `partnerReferenceNo`: ID transaksi M-PAD yang idempotent.
+- `merchantId` atau `subMerchantId`: ID merchant sesuai provisioning Bank Sultra.
+- `amount.value`: string decimal dua digit, contoh `10000.00`.
+- `amount.currency`: `IDR`.
+- `validUpTo`, `urlParams`, `payOptionDetails`, dan field customer/token: hanya dipakai jika Bank Sultra menyatakan wajib untuk produk yang dipilih.
+- `responseCode`: mengikuti pola SNAP `HTTP code + service code + case code`; contoh service lain pada portal adalah `2005500`, `2005600`, `2005700`, dan `2005800`. Untuk Payment `54`, konfirmasi contoh resmi Bank Sultra karena output portal yang dirender perlu dicocokkan dengan aturan panjang `responseCode`.
+
+## Kandidat Produk 2: Direct Debit BI-FAST/e-Mandate
+
+| Fungsi | Service code | Method | Path ASPI | Catatan |
+| --- | --- | --- | --- | --- |
+| Registrasi e-Mandate | `70` | `POST` | `.../{version}/debit/fast-emandate` | Dipakai bila mandat pendebetan harus didaftarkan ke bank via API. |
+| Trigger Direct Debit Transfer | `71` | `POST` | `.../{version}/debit/fast-payment` | Dipakai untuk payment setelah `eMandateReffId` tersedia. |
+| Notify Direct Debit | `72` | `POST` | `.../{version}/debit/fast-notify` | Callback status dari bank ke M-PAD. |
+
+Kontrak field penting yang harus dipetakan:
+
+- `bankCode`: kode bank berdasarkan Bank Indonesia Code.
+- `sourceAccountNo` dan `sourceAccountName`: rekening yang didebet; wajib berasal dari data kontrak/merchant yang sah.
+- `beneficiaryAccountNo` dan `beneficiaryAccountName`: rekening tujuan/penampung pajak.
+- `billerId`, `billerName`, `customerId`: wajib untuk registrasi e-mandate.
+- `expiredDatetime`: masa berlaku e-mandate.
+- `eMandateReffId`: wajib untuk payment dan notify setelah registrasi.
+- `amount.value` dan `amount.currency`: nominal debit dan mata uang.
+
+## Header, Signature, dan Security Baseline
+
+Baseline ASPI yang harus dipenuhi sebelum outbound AFT aktif:
+
+- OAuth 2.0 dan Bearer token.
+- Header transaksi minimal dari sampel ASPI: `Authorization`, `X-TIMESTAMP`, `X-SIGNATURE`, `X-PARTNER-ID`, `X-EXTERNAL-ID`, dan `CHANNEL-ID`; field tambahan seperti `Authorization-Customer`, `X-IP-ADDRESS`, `X-DEVICE-ID`, lokasi, atau `ORIGIN` harus mengikuti produk Bank Sultra.
+- Access token memakai asymmetric signature `SHA256withRSA` dengan string-to-sign yang dikonfirmasi bank.
+- Signature transaksi dapat memakai `HMAC_SHA512` atau asymmetric signature sesuai produk dan provisioning Bank Sultra; jangan mengasumsikan sama dengan BRIVA BRI.
+- `X-EXTERNAL-ID` tidak boleh dipakai ulang pada hari yang sama untuk payload berbeda. Replay identik harus dirancang idempotent di API.
+- TLS harus mengikuti standar ASPI; TLS 1.3 menjadi target, TLS 1.2 hanya bila cipher minimum dan kebijakan bank mengizinkan.
+
+## Gap Implementasi Lokal Saat Ini
+
+| Area | Kondisi sekarang | Gap terhadap ASPI |
+| --- | --- | --- |
+| Dokumen lama BPD | `API_Spec_BPD_AFT_DirectDebit.md` memakai `/snap/v1.0/direct-debit/payment` dan response `2000000`/`status=SUCCESS`. | Path dan response belum sama dengan ASPI Transfer Debit. Dokumen lama harus dianggap draft historis, bukan kontrak implementasi. |
+| Job AFT | `ExecuteAutoDebitAFT` memakai fallback URL placeholder, source/destination dummy, header minimal, dan success check `status === SUCCESS`. | Harus diganti service SNAP Bank Sultra dengan token/signature/header lengkap, parser `responseCode`, timeout, pending, failure, dan idempotency. |
+| Controller merchant | `KalkulatorBisnisController` memakai tarif 10%, `city_id=1`, dan langsung dispatch job. | Tarif, city, rekening, merchant, dan SKDR harus berasal dari backend/kontrak resmi; submit harus ditolak bila readiness belum lengkap. |
+| Security generic H2H | `BankSecurityCheck` memakai HMAC SHA256 atas `bill_number + timestamp + amount`. | Tidak cukup untuk SNAP Bank Sultra. Buat security service/middleware Bank Sultra terpisah. |
+| Config | `ExecuteAutoDebitAFT` membaca `services.bpd.*`, tetapi `config/services.php` belum mendefinisikan blok BPD. | `AFT-API-002` harus menambah config default-off tanpa credential placeholder. |
+| Test | `AftTriggerEngineTest` masih menerima dummy success dan dapat skip route webhook. | Regression baru harus menguji readiness gate, payload/header, parser responseCode, pending/failure/timeout, idempotency, dan audit masking tanpa credential nyata. |
+
+## Pertanyaan Wajib ke Bank Sultra
+
+1. Produk final yang dipakai: Direct Debit H2H atau Direct Debit BI-FAST/e-Mandate?
+2. Base URL sandbox dan production, termasuk prefix path sebelum `/{version}/...`.
+3. Versi API final: `v1.0` atau versi lain.
+4. Mekanisme token: B2B saja atau perlu B2B2C/Authorization-Customer?
+5. Algoritma signature transaksi: `HMAC_SHA512`, `SHA256withRSA`, atau varian bank-specific.
+6. Canonical string-to-sign untuk access token dan transaksi.
+7. Nilai resmi `client_key`, `partner_id`, `channel_id`, merchant/biller ID, dan kode bank.
+8. Aturan `X-EXTERNAL-ID`: uniqueness, TTL, replay identik, dan response untuk payload berbeda.
+9. Field wajib request/response untuk payment, status, notify, cancel, refund, atau e-mandate.
+10. Status yang mungkin muncul: success, pending/in-progress, failed, expired, cancelled, reversed.
+11. Aturan timeout dan retry yang tidak menggandakan debit.
+12. Apakah Bank Sultra akan mengirim notify callback ke M-PAD, dan path callback yang disetujui.
+13. Format rekening sumber/tujuan, masking, validasi nama rekening, dan larangan menyimpan raw payload.
+14. Biaya transaksi AFT, fee type, dan bukti PKS bebas biaya jika diklaim Rp 0.
+15. Syarat legal SKDR/e-mandate, termasuk apakah mandat harus diregistrasikan ke bank.
+16. IP whitelist dan sertifikat/TLS requirement.
+17. Skenario SIT/UAT positif dan negatif yang harus lulus.
+
+## Urutan Implementasi Setelah Kontrak Dipilih
+
+1. `AFT-API-002`: readiness gate dan config default-off.
+2. `AFT-API-003`: service SNAP Bank Sultra untuk token, signature, headers, payload, response parser, dan audit masking.
+3. `AFT-API-004`: job AFT memakai service resmi dan tidak settle dari dummy status.
+4. `AFT-API-005`: hardening endpoint merchant, ownership, SKDR, city, tarif, rekening.
+5. `AFT-API-006`: kontrak availability/status aman untuk mobile.
+6. `AFT-API-007`: regression test dan guard BRIVA.
+
+## Acceptance AFT-ASPI-001
+
+- Kontrak kandidat Direct Debit dan Direct Debit BI-FAST terdokumentasi.
+- Gap implementasi lokal terhadap ASPI terdokumentasi.
+- Pertanyaan eksternal ke Bank Sultra terdokumentasi.
+- Scope BRIVA ditandai non-scope.
+- Tidak ada perubahan runtime, route, schema, `.env`, credential, atau key.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BPD/API_Spec_BPD_AFT_DirectDebit.md
+---
+# Spesifikasi API Direct Debit (Auto Fund Transfer)
+## Terintegrasi dengan Standar SNAP BI
+
+> Status 2026-08-03: dokumen ini adalah draft historis dan belum boleh dipakai sebagai kontrak implementasi runtime. Path `/snap/v1.0/direct-debit/payment`, response `2000000`, dan field `status=SUCCESS` di bawah belum sesuai audit ASPI terbaru. Gunakan `BANK_SULTRA_AFT_ASPI_CONTRACT.md` sebagai rujukan kerja `AFT-ASPI-001`, lalu tunggu konfirmasi produk final Bank Sultra sebelum coding.
+
+### 1. Tujuan Dokumen
+Spesifikasi ini disusun untuk tim IT Bank Pembangunan Daerah (Bank Sultra) agar mengekspos dua (2) endpoint API utama yang dibutuhkan oleh M-PAD (Sultra Connect) guna mengeksekusi mekanisme *Auto-Debit* (AFT) Pajak Daerah secara *Host-to-Host* (H2H).
+
+### 2. Keamanan & Otorisasi
+- Autentikasi menggunakan OAuth 2.0 (B2B Token) standar SNAP BI.
+- Menggunakan *Digital Signature* (SHA-256 with RSA) dan Header `X-TIMESTAMP`, `X-PARTNER-ID`, `X-EXTERNAL-ID`.
+
+---
+
+### 3. API 1: Webhook Notifikasi Saldo Masuk
+*Bank menembak M-PAD ketika ada transaksi konsumen masuk ke rekening operasional Wajib Pajak (Merchant).*
+
+- **Method:** `POST`
+- **URL (M-PAD):** `https://api.baubaukota.go.id/snap/v1.0/webhook/incoming-transfer`
+- **Payload Request dari Bank:**
+```json
+{
+  "partnerReferenceNo": "BNK-20260709-12345",
+  "accountNo": "1234567890", // Rekening Merchant
+  "transactionAmount": {
+    "value": "110000.00",
+    "currency": "IDR"
+  },
+  "transactionDate": "2026-07-09T12:00:00+08:00",
+  "description": "Pembayaran QRIS Konsumen"
+}
+```
+
+---
+
+### 4. API 2: Direct Debit (AFT)
+*M-PAD menembak Bank BPD untuk memotong otomatis komponen Pajak (10%) dari rekening Merchant ke Rekening Kas Daerah (Escrow Pajak).*
+
+- **Method:** `POST`
+- **URL (Bank BPD):** `https://api.banksultra.co.id/snap/v1.0/direct-debit/payment`
+- **Payload Request dari M-PAD:**
+```json
+{
+  "partnerReferenceNo": "MPAD-AFT-20260709-001",
+  "merchantId": "MERCHANT-001",
+  "sourceAccountNo": "1234567890", // Rekening Merchant
+  "destinationAccountNo": "0987654321", // Rekening Kas Daerah
+  "amount": {
+    "value": "10000.00", // Hanya memotong pajak (10% dari 100rb)
+    "currency": "IDR"
+  },
+  "feeAmount": {
+    "value": "0.00", // Bebas Biaya (PKS Pemda)
+    "currency": "IDR"
+  },
+  "remark": "Auto-Debit Pajak PBJT"
+}
+```
+- **Response Sukses (Bank BPD):**
+```json
+{
+  "responseCode": "2000000",
+  "responseMessage": "Successful",
+  "partnerReferenceNo": "MPAD-AFT-20260709-001",
+  "referenceNo": "BPD-REF-998877",
+  "status": "SUCCESS"
+}
+```
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BTN/Spesifikasi_BTN_Open_API.md
+---
+# DOKUMEN SPESIFIKASI BTN OPEN API (Virtual Account Series v2.04)
+
+Dokumen ini merupakan ringkasan spesifikasi requirement pada layanan BTN OPEN API berdasarkan standar SNAP Bank Indonesia.
+
+## 1. Otorisasi & Autentikasi
+
+Layanan OPEN API Bank BTN menggunakan standarisasi SNAP.
+*   **OAuth ID**: Digunakan untuk `X-CLIENT-KEY` dan komposisi `X-SIGNATURE` pada layanan Get Token.
+*   **Apikey ID**: Digunakan untuk `X-PARTNER-ID` pada layanan selain Get Token.
+*   **Apikey Secret**: Digunakan sebagai `clientSecret` membentuk `X-SIGNATURE` pada layanan selain Get Token.
+
+### 1.1 Autentikasi Signature
+
+**A. Retrieve Token (Asymmetric SHA256withRSA)**
+```text
+stringToSign = X-CLIENT-KEY + "|" + X-TIMESTAMP
+X-SIGNATURE = SHA256withRSA(stringToSign, privateKey)
+```
+
+**B. Layanan API (Symmetric HMAC-SHA512)**
+```text
+stringToSign = HTTPMethod + ":" + EndpointUrl + ":" + AccessToken + ":" + Lowercase(HexEncode(SHA-256(minify(RequestBody)))) + ":" + X-TIMESTAMP
+X-SIGNATURE = HMAC-SHA512(stringToSign, clientSecret) dalam base64
+```
+
+### 1.2 Header Standar Layanan API
+
+*   `Authorization`: `Bearer <token>`
+*   `Content-Type`: `application/json`
+*   `X-TIMESTAMP`: Format ISO 8601 (Contoh: `2023-03-15T10:10:00+07:00`, Max toleransi ± 2 menit)
+*   `X-SIGNATURE`: Base64 HMAC-SHA512 signature
+*   `X-PARTNER-ID`: Apikey ID
+*   `X-EXTERNAL-ID`: Unik per request (hanya alfanumerik, max 16 karakter)
+*   `CHANNEL-ID`: Channel ID 5 digit angka (misal `00001`)
+*   `Origin`: Nama Domain Anda
+
+---
+
+## 2. Retrieve Akses Token (B2B)
+**Endpoint**: `POST /snap/v1/access-token/b2b`
+*(Sesuai dokumen menggunakan base url dev: https://devapi.btn.co.id)*
+
+**Request Body**:
+```json
+{
+  "grantType": "client_credentials",
+  "additionalInfo": {}
+}
+```
+
+**Response**: (2007300 Successful) Mengembalikan `accessToken` dengan `expiresIn` 900 detik (15 menit).
+
+---
+
+## 3. Akun Virtual (Virtual Account Management)
+
+### 3.1 Create VA
+**Endpoint**: `POST /snap/v1/transfer-va/create-va`
+
+**Request Body Parameters**:
+*   `partnerServiceId` (String 8, M): Kode Bank + Kode Institusi (Left-Pad Spasi)
+*   `customerNo` (String 14, M): Nomor Pelanggan
+*   `virtualAccountNo` (String 19, M): Nomor Virtual Account
+*   `virtualAccountName` (String 30, M): Nama Virtual Account
+*   `trxId` (String 19, M): ID Transaksi (Unique)
+*   `totalAmount` (Object, M): Berisi `value` (String 21) dan `currency` (String 3, 'IDR')
+*   `virtualAccountTrxType` (String 1, M): Jenis Transaksi (Full/Partial)
+*   `expiredDate` (String 25, O): Tanggal expired
+*   `description`, `payment`, `paymentCode`, `currentAccountNo` dll pada `additionalInfo`.
+
+### 3.2 Inquiry VA
+**Endpoint**: `POST /snap/v1/transfer-va/inquiry-va`
+
+**Request Body**: `partnerServiceId`, `customerNo`, `virtualAccountNo`, `trxId`.
+
+### 3.3 Update VA
+**Endpoint**: `POST /snap/v1/transfer-va/update-va`
+
+**Request Body**: Sama seperti Create VA.
+
+### 3.4 Delete VA
+**Endpoint**: `POST /snap/v1/transfer-va/delete-va`
+
+**Request Body**: `partnerServiceId`, `customerNo`, `virtualAccountNo`, `trxId`.
+
+### 3.5 Report VA
+**Endpoint**: `POST /snap/v1/transfer-va/report`
+
+**Request Body Parameters**:
+*   `partnerServiceId` (String 8, M)
+*   `startDate` (String 10, O): yyyy-MM-dd
+*   `endDate` (String 10, O): yyyy-MM-dd
+
+---
+
+## 4. Transfer Akun Virtual (Payment & Callback)
+
+### 4.1 Inquiry
+**Endpoint**: `POST /{Your Domain}/snap/v1/transfer-va/inquiry`
+
+**Request Body Parameters**:
+*   `partnerServiceId`, `customerNo`, `virtualAccountNo`
+*   `trxDateInit`, `channelCode`, `language`, `sourceBankCode`
+*   `inquiryRequestId` (String 12, M)
+
+### 4.2 Payment
+**Endpoint**: `POST /{Your Domain}/snap/v1/transfer-va/payment`
+
+**Request Body Parameters**:
+*   `partnerServiceId`, `customerNo`, `virtualAccountNo`
+*   `trxId` (String 19, C)
+*   `paymentRequestId` (String 12, M): Sama dengan `inquiryRequestId`
+*   `paidAmount`, `totalAmount`
+*   `trxDateTime`, `referenceNo`, `journalNum`, `flagAdvise`
+*   `billDetails` (Object)
+
+### 4.3 Status
+**Endpoint**: `POST /snap/v1/transfer-va/status`
+
+**Request Body**:
+*   `partnerServiceId`, `customerNo`, `virtualAccountNo`
+*   `inquiryRequestId` (String 12, M)
+*   `paymentRequestId` (String 12, O)
+
+---
+
+## 5. Kode Respon (Standard SNAP)
+
+Format Kode Respon: `[HTTP Code] + [Service Code] + [Case Code]`
+Contoh Sukses: `200` + `11` + `00` (tergantung service code)
+
+*   `200 XX 00`: Successful
+*   `400 XX 00/01/02`: Bad Request (Parsing Error, Invalid Format, Missing Field)
+*   `401 XX 00/01/02/03`: Unauthorized (Signature Invalid, Token Expired/Not Found)
+*   `403 XX 00`: Transaction Expired
+*   `404 XX 01`: Transaction Not Found
+*   `409 XX 00`: Conflict (Duplicate X-EXTERNAL-ID)
+*   `409 XX 01`: Duplicate partnerReferenceNo
+*   `500 XX 00/01/02`: Internal/External Server Error
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BTN/Kredensial_DEV/informasi_callback_dev.md
+---
+# Kredensial & Informasi Callback DEV - Bapenda Kota Baubau (M-PAD)
+
+Berikut adalah informasi yang dibutuhkan oleh Bank BTN untuk melakukan pengujian Callback ke sistem m-PAD Bapenda Kota Baubau pada environment DEV/UAT.
+
+## 1. URL Endpoint Callback (M-PAD)
+Sistem M-PAD telah menyediakan endpoint sesuai dengan standar SNAP BI:
+*   **Access Token B2B:** `https://apimpad.baubaukota.go.id/api/snap/v1.1/access-token/b2b`
+*   **Inquiry Callback (BRIVA):** `https://apimpad.baubaukota.go.id/api/snap/v1.0/transfer-va/inquiry`
+*   **Payment Callback (BRIVA):** `https://apimpad.baubaukota.go.id/api/snap/v1.0/transfer-va/payment`
+*   **QRIS Notify:** `https://apimpad.baubaukota.go.id/api/snap/v1.1/qr/qr-mpm-notify`
+
+## 2. Kredensial Callback (DEV)
+Untuk otentikasi saat memanggil endpoint callback di atas, Bank BTN dapat menggunakan kredensial berikut untuk melakukan generate signature atau access token:
+*   **Client ID / OAuth ID:** `MPADBTN2026DEV`
+*   **Client Secret:** `MPADBTNSECRET2026DEV`
+
+## 3. Public Key Bapenda (DEV)
+File Public Key (Asymmetric RSA) telah kami sertakan pada folder ini dengan nama file `bapenda_public_key.pem`. Public Key ini digunakan untuk memverifikasi _signature_ dari layanan akses token M-PAD.
+
+---
+*Tim Pengembang IT (M-PAD)*
+*Bapenda Kota Baubau*
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BTN/PROGRESS.md
+---
+# Progres Integrasi Open API Bank BTN
+
+Dokumen ini mencatat progres tahapan administratif dan teknis integrasi sistem mPAD Pemkot Baubau dengan Open API Bank BTN (H2H), berdasarkan log komunikasi dengan pihak Bank BTN.
+
+## Timeline Progres
+
+### 8 Mei 2026
+- **Inisiasi Dokumen**: Permintaan formulir API, draft NDA (Non-Disclosure Agreement), dan PKS (Perjanjian Kerja Sama).
+- **Tindak Lanjut**: Pihak BTN telah mengirimkan dokumen-dokumen persyaratan untuk kelengkapan layanan OPEN API untuk dilengkapi oleh Bapenda.
+
+### 11 Mei 2026
+- **Pengembalian Draft PKS**: Pihak Bapenda telah menyusun dan mengirimkan Draft PKS kepada BTN (dengan bagian yang di-_highlight_ merah untuk diisi oleh pihak bank).
+
+### 25 Juni 2026
+- **Penyetoran Data PIC**: Pihak bank meminta kelengkapan data *Person in Charge* (PIC) untuk keperluan pengelola _user_ dan _password_.
+- **Tindak Lanjut**: Bapenda menyerahkan data sebagai berikut:
+  - Kepala Bapenda: Muhammad Massad, S.E., M.Si.
+  - PIC 1 (Internal Bapenda/Kabid Wil-1): Fauziah, SP., M.Si.
+  - PIC 2 (Arsitektur System/Pengembang): Muhdan Fyan Syah Sofian
+  - Email Resmi Bapenda: `bapendakotabaubau21@gmail.com`
+
+### 1 Juli 2026
+- **Permintaan Kredensial UAT**: Koordinator IT Bapenda meminta pihak BTN memfasilitasi Kredensial Environment UAT/DEV (Client ID, Secret Key, Base URL) karena sistem sudah mendukung TLS 1.3 dan m-PAD akan segera *launching*.
+- **Kendala (Bottleneck) Administratif**: Pihak BTN mengonfirmasi bahwa penyerahan kredensial (Key) baru dapat dilakukan setelah dokumen fisik **NDA dan Formulir API ditandatangani oleh manajemen BTN**. Saat itu, NDA sudah di-ttd, namun fisik Formulir API masih menunggu tanda tangan.
+
+### 13 Juli 2026 (Update Terkini)
+- **Clearance Administratif**: BTN mengonfirmasi bahwa dokumen fisik **NDA dan Formulir API telah ditandatangani sepenuhnya** oleh BTN dan Bapenda Baubau. Status: **Siap untuk _development_**.
+- **Arahan Pimpinan**: Kepala Bapenda (Pak Massad) menginstruksikan tim pengembang untuk segera masuk ke tahap percepatan *development*.
+- **Penyerahan Dokumen API Spesifikasi**: Pihak BTN meminta email *corporate* untuk mengirimkan dokumen spesifikasi API. Bapenda telah memberikan alamat email: `bapenda@baubaukota.go.id`.
+
+---
+
+## Action Items (Pending / Next Steps)
+
+1. [ ] **Bank BTN**: Mengirimkan Dokumen Spesifikasi API ke email `bapenda@baubaukota.go.id`.
+2. [ ] **Bank BTN**: Menyerahkan Kredensial UAT/DEV (Client ID, Secret Key, Base URL, dll) karena persyaratan administratif telah selesai.
+3. [ ] **Tim Pengembang (Bapenda)**: Mempelajari dokumen spesifikasi API dari BTN dan melakukan setup _environment_ UAT berdasarkan kredensial yang diberikan.
+4. [ ] **Tim Pengembang (Bapenda)**: Memulai *development* integrasi teknis dan pengujian (testing) konektivitas API.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BTN/README_SYNC.md
+---
+# Integrasi Google Drive BTN
+
+Folder lokal ini terintegrasi dengan Google Drive Bapenda untuk penyimpanan dokumen kerjasama bank.
+
+## Informasi Google Drive
+- **Folder Root:** `Titipan PAD Bapenda` (Kerjasama Bank-Bank)
+- **Folder ID:** `123TxbA9AanrdI4VvKWUh5GTqOFyHGZ6V`
+- **Link:** [Google Drive](https://drive.google.com/drive/folders/123TxbA9AanrdI4VvKWUh5GTqOFyHGZ6V)
+- **Folder Sinkronisasi:** `BTN`
+
+## Cara Sinkronisasi
+Jalankan script `sync_gdrive.sh` yang ada di direktori ini untuk menyalin semua file lokal ke Google Drive secara otomatis menggunakan `rclone`.
+
+```bash
+./sync_gdrive.sh
+```
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BTN/Flow_Bisnis_BTN.md
+---
+# FLOW BISNIS INTEGRASI BTN - M-PAD
+## BADAN PENDAPATAN DAERAH (BAPENDA) KOTA BAUBAU
+
+Dokumen ini menjelaskan alur teknis dan bisnis integrasi pembayaran *Virtual Account* menggunakan standar **BTN OPEN API** (SNAP) antara sistem **M-PAD** (Manajemen Pendapatan Asli Daerah) Kota Baubau dengan **Bank BTN**.
+
+---
+
+### 1. Inisiasi & Pendaftaran Tagihan (Create VA)
+1. **Wajib Pajak (WP)** masuk ke dalam aplikasi M-PAD (melalui Web Admin, Petugas, atau Mobile App) dan memilih tagihan retribusi/pajak daerah yang belum dibayar.
+2. Wajib Pajak memilih metode pembayaran **Bank BTN (Virtual Account)**.
+3. Sistem **M-PAD (Backend)** meng-generate ID Transaksi unik dan menyusun data tagihan.
+4. M-PAD melakukan pemanggilan ke server BTN (`POST /snap/v1/transfer-va/create-va`) untuk mendaftarkan tagihan secara resmi di sistem bank.
+5. Server BTN merespons dengan status berhasil, dan Aplikasi M-PAD menampilkan **Nomor BTN VA** beserta batas waktu pembayaran kepada Wajib Pajak.
+
+### 2. Pengecekan Pembayaran (Inquiry)
+1. Wajib Pajak memasukkan Nomor BTN VA melalui salah satu *channel* pembayaran Bank BTN (BTN Mobile, ATM, Internet Banking, atau Teller).
+2. Terdapat 2 opsi skema Inquiry pada BTN Open API:
+   * **Skema Internal Bank**: Bank BTN mengecek tagihan secara internal berdasarkan data yang sudah di-push melalui *Create VA* sebelumnya.
+   * **Skema Biller (Callback)**: Sistem BTN memanggil *endpoint Inquiry* milik server M-PAD (`POST /{Domain M-PAD}/snap/v1/transfer-va/inquiry`) untuk memvalidasi tagihan secara *real-time*.
+3. Channel Bank BTN menampilkan detail tagihan (Nama WP dan Nominal Tagihan) kepada Wajib Pajak.
+4. Wajib Pajak menekan tombol bayar/konfirmasi. Saldo WP terpotong dan dana masuk ke rekening (RKUD) Bapenda Kota Baubau di Bank BTN.
+
+### 3. Konfirmasi Otomatis (Payment Callback)
+1. Sesaat setelah pembayaran sukses diproses pada jaringan Bank BTN, sistem **BTN** mengirimkan *webhook/callback* notifikasi pembayaran sukses ke *endpoint Payment* milik M-PAD (`POST /{Domain M-PAD}/snap/v1/transfer-va/payment`).
+2. Server **M-PAD** menerima *request* tersebut dan memvalidasi keaslian *Digital Signature* (Symmetric HMAC-SHA512) serta *Timestamp*.
+3. Server M-PAD memverifikasi bahwa nominal yang ditransfer sudah sesuai dengan nominal tagihan.
+4. M-PAD memperbarui status tagihan di dalam *database* menjadi **LUNAS (Paid)**.
+5. M-PAD mengirimkan balasan `HTTP 200 OK` (Kode Respon Sukses `2002500` atau sesuai service code) ke BTN sebagai tanda notifikasi berhasil diterima dan diproses.
+
+### 4. Penyelesaian & Penerbitan Struk
+1. Sistem M-PAD mencatat riwayat transaksi secara mendetail ke dalam *Payment Logs* dan *Virtual Ledger* pemerintah daerah.
+2. Wajib Pajak menerima notifikasi di aplikasi M-PAD (misalnya pada M-PAD Mobile) bahwa pembayaran telah sukses.
+3. M-PAD secara otomatis menerbitkan **Bukti Bayar Sah (SSRD / Surat Setoran Retribusi Daerah)** yang dilengkapi dengan QR Code otentikasi. Bukti ini sah secara hukum dan dapat diunduh oleh Wajib Pajak maupun Petugas Bapenda secara *real-time*.
+
+---
+*Dokumen ini merupakan panduan implementasi teknis dan alur bisnis antara Bapenda Kota Baubau dan Bank BTN berlandaskan dokumen Spesifikasi BTN OPEN API (Virtual Account Series v2.04).*
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/mPaD_H2H_API_Specification.md
+---
+# 🏦 Spesifikasi Teknis Integrasi API H2H mPaD Bapenda
+**Versi:** 1.0.0 | **Tanggal:** 7 Juli 2026 | **Pemilik:** Bapenda Kota Baubau (Tim IT mPaD)
+
+Dokumen ini merupakan panduan teknis resmi (*Functional Specification Document* / FSD) untuk mitra Perbankan (Bank Daerah maupun Nasional) yang akan melakukan integrasi sistem pembayaran Retribusi dan Pajak Daerah melalui jalur Host-to-Host (H2H) dengan sistem mPaD Kota Baubau.
+
+---
+
+## 1. Arsitektur & Protokol Keamanan
+
+Semua komunikasi API H2H wajib menggunakan protokol **HTTPS** dan mengimplementasikan **IP Whitelisting** di sisi Firewall Bapenda. Skema autentikasi menggunakan **HMAC-SHA256**.
+
+### 1.1. Header Wajib
+Setiap *request* HTTP ke server mPaD harus menyertakan header berikut:
+
+| Header | Deskripsi | Wajib | Contoh |
+|:---|:---|:---:|:---|
+| `X-Signature` | Tanda tangan digital menggunakan HMAC-SHA256. | Ya | `a1b2c3d4...` |
+| `X-Timestamp` | Waktu saat request dikirim (format ISO 8601). | Ya | `2026-07-07T10:00:00Z` |
+| `Accept` | Format respon yang diterima. | Ya | `application/json` |
+
+### 1.2. Rumus Pembentukan Signature
+Signature dihitung menggunakan kunci rahasia (**Secret Key**) yang dibagikan secara aman secara *offline* kepada pihak Bank.
+
+```javascript
+// 1. Siapkan data yang akan dienkripsi (gabungan string)
+// Untuk Inquiry: amount = 0
+data_string = bill_number + timestamp + amount;
+
+// 2. Generate HMAC-SHA256
+signature = HMAC_SHA256(data_string, secret_key);
+```
+
+---
+
+## 2. Alur Transaksi (Sequence Diagram)
+
+Berikut adalah visualisasi standar pertukaran data antara Sistem Bank dan Sistem mPaD.
+
+```mermaid
+sequenceDiagram
+    participant Nasabah
+    participant Bank as Sistem Bank
+    participant mPaD as Sistem mPaD (Bapenda)
+
+    Note over Nasabah,mPaD: 1. Proses Inquiry (Cek Tagihan)
+    Nasabah->>Bank: Input Nomor Bayar/Tagihan
+    Bank->>mPaD: POST /api/v1/bank/inquiry
+    mPaD-->>Bank: Response: Detail Tagihan & Nominal
+    Bank-->>Nasabah: Tampilkan Rincian Tagihan
+
+    Note over Nasabah,mPaD: 2. Proses Payment (Pelunasan)
+    Nasabah->>Bank: Konfirmasi Pembayaran & PIN
+    Bank->>Bank: Debet Saldo Nasabah
+    Bank->>mPaD: POST /api/v1/bank/payment
+    mPaD->>mPaD: Update Status "LUNAS" & Generate NTPD
+    mPaD-->>Bank: Response: Sukses + NTPD
+    Bank-->>Nasabah: Cetak Struk / Resi Pembayaran
+```
+
+---
+
+## 3. Spesifikasi Endpoint API
+
+**Base URL (Sandbox/UAT):** `https://api.mpad.online`  
+**Base URL (Production):** `https://apimpad.baubaukota.go.id`  
+
+### 3.1. Inquiry (Cek Tagihan)
+Digunakan oleh Bank untuk mengambil detail tagihan berdasarkan nomor bayar yang diinput oleh WP (Wajib Pajak).
+
+- **URL**: `POST /api/v1/bank/inquiry`
+- **Body Request**:
+```json
+{
+  "bill_number": "PBJT-202601-XX"
+}
+```
+- **Response (200 OK - Tagihan Ditemukan)**:
+```json
+{
+  "status": "success",
+  "response_code": "00",
+  "data": {
+    "bill_number": "PBJT-202601-XX",
+    "taxpayer_name": "MUHDAN FYAN",
+    "tax_object": "RUMAH MAKAN SEDAP",
+    "period": "2026-01",
+    "amount_pokok": 1000000,
+    "penalty_amount": 20000,
+    "total_amount": 1020000,
+    "due_date": "2026-02-15 23:59:59"
+  }
+}
+```
+
+### 3.2. Payment Notification (Pelunasan)
+Digunakan oleh Bank untuk memberitahukan mPaD bahwa dana Nasabah telah berhasil didebet. **Endpoint ini bersifat *Idempotent*.**
+
+- **URL**: `POST /api/v1/bank/payment`
+- **Body Request**:
+```json
+{
+  "bill_number": "PBJT-202601-XX",
+  "amount_paid": 1020000,
+  "transaction_id": "NTB-12345678",
+  "channel": "MOBILE_BANKING",
+  "payment_date": "2026-07-07 10:15:00"
+}
+```
+- **Response (200 OK - Pembayaran Sukses)**:
+```json
+{
+  "status": "success",
+  "response_code": "00",
+  "data": {
+    "ntpd": "NTPD-20260707-ABC123XYZ",
+    "bill_number": "PBJT-202601-XX",
+    "status": "LUNAS"
+  }
+}
+```
+
+### 3.3. Reversal (Pembatalan)
+Digunakan oleh Bank apabila terjadi kegagalan (misal timeout koneksi) *setelah* mengirimkan *Payment*, sehingga transaksi harus dibatalkan/di-rollback.
+
+- **URL**: `POST /api/v1/bank/reversal`
+- **Body Request**:
+```json
+{
+  "transaction_id": "NTB-12345678",
+  "reason": "Technical Timeout at Bank Switch"
+}
+```
+- **Response (200 OK)**:
+```json
+{
+  "status": "success",
+  "response_code": "00",
+  "message": "Reversal berhasil diproses, tagihan kembali ke status BELUM BAYAR"
+}
+```
+
+---
+
+## 4. Daftar Response Code (RC) Standar
+
+Untuk memudahkan *mapping* dengan sistem Core Banking, mPaD mengadopsi standar *Response Code* ISO 8583 (dimodifikasi):
+
+| RC | HTTP Status | Keterangan | Tindakan Mitra Bank |
+|:---:|:---:|:---|:---|
+| **00** | `200` | Sukses / Approved | Tampilkan rincian / Terbitkan Struk |
+| **05** | `401` | Unauthorized (Signature salah) | Periksa *Secret Key* atau sinkronisasi waktu |
+| **14** | `422` | Tagihan Sudah Terbayar / Lunas | Tolak transaksi, informasikan ke WP |
+| **54** | `404` | Nomor Tagihan Tidak Ditemukan | Periksa input nomor bayar |
+| **55** | `422` | Nominal Pembayaran Tidak Sesuai | Pastikan `amount_paid` = `total_amount` |
+| **88** | `403` | IP Address Tidak Terdaftar | Hubungi Tim IT mPaD untuk open firewall |
+| **99** | `500` | Internal Server Error / Timeout | Lakukan retri (*Reversal* jika Payment menggantung) |
+
+---
+
+## 5. Mekanisme Rekonsiliasi & Settlement
+
+1. **Waktu Cut-Off:** Cut-off transaksi harian mPaD adalah pukul **23:59:59 WITA**.
+2. **File Rekonsiliasi (H+1):** 
+   - Pihak Bank menyediakan *File Rekon* (.txt/.csv) atau endpoint SFTP yang berisi daftar transaksi sukses (NTB, Nomor Bayar, Nominal, Waktu).
+   - Sistem mPaD akan menarik/mengolah file tersebut setiap pukul 02:00 WITA.
+3. **Penanganan Selisih (Discrepancy):** 
+   - Transaksi ada di Bank, tapi tidak ada di mPaD $\rightarrow$ mPaD akan meng-update status menjadi Lunas secara manual/otomatis.
+   - Transaksi ada di mPaD, tapi batal di Bank $\rightarrow$ mPaD akan membatalkan tagihan.
+
+---
+
+## 6. Skenario UAT & Sandboxing
+
+Sebelum *Go-Live*, tim teknis Bank diwajibkan melakukan *User Acceptance Test* (UAT) di *Environment Sandbox* mPaD dengan menyelesaikan *Test Case* berikut:
+
+| Skenario UAT | Nomor Bayar (Dummy) | Hasil yang Diharapkan |
+|:---|:---|:---|
+| Skenario Normal (Inquiry $\rightarrow$ Bayar) | `DUMMY-0001` | Sukses, NTPD terbit. |
+| Tagihan Sudah Lunas | `DUMMY-LUNAS-02` | Ditolak, RC 14. |
+| Nomor Tidak Ditemukan | `DUMMY-INVALID-9`| Ditolak, RC 54. |
+| Bayar Kurang dari Total Tagihan | `DUMMY-KURANG-5` | Ditolak, RC 55. |
+| Reversal Flow | `DUMMY-0003` | Inquiry Sukses $\rightarrow$ Payment Sukses $\rightarrow$ Reversal Sukses $\rightarrow$ Inquiry tagihan menjadi *Belum Bayar*. |
+
+---
+
+## 7. Kanal Eskalasi & Support
+
+Jika terjadi kendala integrasi atau *downtime* pada sistem *Production*, tim Bank dapat menghubungi PIC Bapenda Kota Baubau berikut:
+
+- **Helpdesk Teknis mPaD:** (Diisi Nomor WA/Email Helpdesk)
+- **Email Surat Resmi:** bapenda@baubaukota.go.id
+- **Waktu Layanan Integrasi:** Senin - Jumat (08:00 - 16:00 WITA)
+
+> [!CAUTION]
+> Segala pertukaran **Secret Key** dan IP *Whitelisting Production* tidak boleh dikirim melalui grup WhatsApp atau *channel* tidak terenkripsi, melainkan dikirim melalui Email Resmi instansi.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/API_H2H_INTEGRATION_GUIDE.md
+---
+# 🏦 mPaD Host-to-Host (H2H) API Specification
+
+Dokumen ini menjelaskan spesifikasi teknis untuk mengintegrasikan sistem perbankan dengan Gateway Pembayaran mPaD (Host-to-Host Multi-Bank).
+
+---
+
+## 🔐 Keamanan (Security)
+
+Semua komunikasi API H2H wajib menggunakan protokol **HTTPS** dan skema autentikasi **HMAC-SHA256**.
+
+### Header Wajib
+Setiap request ke server mPaD harus menyertakan header berikut:
+
+| Header | Deskripsi | Contoh |
+|:---|:---|:---|
+| `X-Signature` | Tanda tangan digital HMAC-SHA256. | `a1b2c3d4...` |
+| `X-Timestamp` | Waktu saat request dikirim (ISO 8601). | `2026-04-19T10:00:00Z` |
+| `Accept` | Harus diset ke `application/json`. | `application/json` |
+
+### Rumus Signature
+Signature dihitung menggunakan kunci rahasia (**Secret Key**) yang dibagikan secara aman kepada pihak Bank.
+
+```javascript
+// Struktur Data untuk Signature
+data = bill_number + timestamp + amount;
+
+// Algoritma
+signature = HMAC_SHA256(data, secret_key);
+```
+*Catatan: Gunakan `amount = 0` untuk request Inquiry.*
+
+---
+
+## 📡 Endpoint Integrasi
+
+### 1. Inquiry (Cek Tagihan)
+Digunakan oleh Bank untuk mengambil detail tagihan berdasarkan nomor bayar.
+
+**Request:**
+- **URL**: `POST /api/v1/bank/inquiry`
+- **Body**:
+```json
+{
+  "bill_number": "PBJT-202601-XX"
+}
+```
+
+**Response (Success):**
+```json
+{
+  "status": "success",
+  "data": {
+    "bill_number": "PBJT-202601-XX",
+    "taxpayer_name": "MUHDAN FYAN",
+    "tax_object": "RUMAH MAKAN SEDAP",
+    "period": "2026-01",
+    "amount_pokok": 1000000,
+    "penalty_amount": 20000,
+    "total_amount": 1020000,
+    "due_date": "2026-02-15 23:59:59"
+  }
+}
+```
+
+---
+
+### 2. Payment Notification (Pelunasan)
+Digunakan oleh Bank untuk memberitahukan bahwa pembayaran telah berhasil diproses di sisi bank.
+
+**Request:**
+- **URL**: `POST /api/v1/bank/payment`
+- **Body**:
+```json
+{
+  "bill_number": "PBJT-202601-XX",
+  "amount_paid": 1020000,
+  "transaction_id": "NTB-12345678",
+  "channel": "MOBILE_BANKING"
+}
+```
+
+**Response (Success):**
+```json
+{
+  "status": "success",
+  "data": {
+    "ntpd": "NTPD-20260419-ABC123XYZ",
+    "bill_number": "PBJT-202601-XX",
+    "status": "LUNAS"
+  }
+}
+```
+
+---
+
+### 3. Reversal (Pembatalan)
+Digunakan oleh Bank untuk membatalkan transaksi yang sudah terlanjur dikirim karena kesalahan teknis di sisi bank (misal: timeout).
+
+**Request:**
+- **URL**: `POST /api/v1/bank/reversal`
+- **Body**:
+```json
+{
+  "transaction_id": "NTB-12345678",
+  "reason": "Technical Timeout"
+}
+```
+
+**Response (Success):**
+```json
+{
+  "status": "success",
+  "message": "Reversal berhasil diproses"
+}
+```
+
+---
+
+## ⚠️ Kode Status & Error
+
+| Kode | Arti | Keterangan |
+|:---|:---|:---|
+| `200` | OK | Request berhasil diproses. |
+| `401` | Unauthorized | Signature atau Timestamp tidak valid. |
+| `403` | Forbidden | IP Bank tidak terdaftar dalam whitelist. |
+| `404` | Not Found | Nomor tagihan atau transaksi tidak ditemukan. |
+| `422` | Unprocessable Entity | Tagihan sudah lunas atau nominal tidak sesuai. |
+| `500` | Server Error | Terjadi kesalahan internal pada sistem mPaD. |
+
+---
+
+> [!TIP]
+> **Idempotency**: Endpoint Payment Notification bersifat idempotent. Mengirim ulang `transaction_id` yang sama untuk tagihan yang sama akan mengembalikan respon sukses yang sama tanpa menduplikasi data pembayaran.
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BACKEND_DEVELOPER_REFERENCE.md
+---
+# 🛠️ Backend Developer Reference: Payment System
+
+Dokumen ini merupakan referensi teknis bagi pengembang internal mPaD untuk memahami arsitektur dan alur kerja sistem pembayaran Host-to-Host (H2H).
+
+---
+
+## 🏗️ Arsitektur: Driver Pattern
+
+Sistem pembayaran mPaD dirancang agar *extensible* menggunakan **Driver Pattern**. Seluruh logika gateway harus mengimplementasikan `PaymentGatewayInterface`.
+
+### Komponen Utama:
+1. **`PaymentGatewayInterface`**: Kontrak standar untuk seluruh gateway (Inquiry, Notify, Reversal, Reconcile).
+2. **`PaymentManager`**: *Entry point* yang memilih driver yang tepat berdasarkan konfigurasi `payment.default`.
+3. **`BankSultraDriver`**: Implementasi spesifik untuk integrasi Host-to-Host Bank Sultra.
+4. **`QRISDriver`**: Implementasi untuk pembayaran berbasis QRIS (Dynamic QR).
+
+---
+
+## 🔄 Alur Kerja Internal (Internal Workflows)
+
+### 1. JIT Billing (Just-In-Time)
+Berbeda dengan sistem lama, mPaD tidak menyimpan denda secara statis setiap hari. Denda dihitung secara *real-time* saat terjadi **Inquiry** atau **Payment Notification**.
+
+- **Service**: `BillingService::getPendingPeriods()`
+- **Logic**: Menentukan denda berdasarkan selisih bulan dari tanggal jatuh tempo hingga hari ini sesuai Perda (2% per bulan, max 24 bulan).
+- **Integritas**: Saat pembayaran diterima, denda yang berlaku didokumentasikan di kolom `penalty_at_payment` pada tabel `bills`.
+
+### 2. Idempotency & NTB
+Untuk mencegah duplikasi pembayaran pada sistem H2H Bank, sistem menggunakan **NTB (Nomor Transaksi Bank)** sebagai kunci unik.
+- Setiap notifikasi pembayaran dicek terhadap `payments.reference_number`.
+- Jika NTB sudah ada, API akan mengembalikan respon sukses (Idempotent) tanpa memproses ulang transaksi.
+
+### 3. Automated TTE Hook (Digital Signature)
+Setelah status tagihan diupdate menjadi `lunas`, sistem secara otomatis memicu pembuatan dan penandatanganan dokumen elektronik (SSPD/SSRD).
+- **Service**: `OfficialDocumentService::signDocument()`
+- **Trigger**: Terletak di dalam `DB::transaction()` pada masing-masing driver.
+- **Dampak**: Wajib pajak segera mendapatkan kuitansi digital yang sah secara hukum sesaat setelah membayar.
+
+---
+
+## 📈 Auditing & Observability
+
+Setiap komunikasi yang masuk melalui `BankH2HController` dicatat secara detail untuk kebutuhan forensik dan audit.
+- **Tabel**: `payment_gateway_logs` / `payment_audits`
+- **Data yang dicatat**: Request payload, Response body, HTTP code, dan IP pengirim.
+- **Monitoring**: Admin dapat melihat log ini di menu **H2H Monitoring** pada Dashboard Admin.
+
+---
+
+## 🛠️ Menambahkan Driver Baru
+
+Untuk menambahkan dukungan bank atau metode pembayaran baru:
+1. Buat class baru di `app/Services/Payment/Drivers`.
+2. Implementasikan `PaymentGatewayInterface`.
+3. Daftarkan driver di `config/payment.php`.
+4. Tambahkan logika *routing* atau *provider* jika diperlukan.
+
+---
+
+## 🔐 Keamanan & Audit (Security Audit Findings)
+
+Berdasarkan audit keamanan terbaru:
+- **Timestamp Validation**: Sangat disarankan untuk memverifikasi kedaluwarsa (expiration) dari `X-Timestamp` untuk mencegah serangan Replay.
+- **Data Isolation**: Dokumentasi publik (PDF) harus selalu diverifikasi otoritasnya menggunakan data session/token sebelum diunduh.
+- **Error Handling**: Hindari membocorkan stack trace atau detail query SQL dalam respon API publik.
+
+---
+
+> [!CAUTION]
+> **Database Transaction**: Selalu gunakan `DB::transaction()` saat melakukan update status tagihan dan pembuatan record pembayaran untuk menjaga integritas data (Atomicity).
+
+
+---
+
+## File: docs/10_payment_gateway_h2h/BPN/walkthrough_h2h_bpn.md
+---
+# Ringkasan Penyelesaian: Integrasi H2H BPN & Modul e-BPHTB PPAT
+
+Seluruh rencana implementasi untuk integrasi Host-to-Host (H2H) antara **NIB BPN**, **NOP Bapenda**, dan sinkronisasi **Zona Nilai Tanah (ZNT)** telah selesai dieksekusi dengan baik. Sistem kini berfungsi sebagai *policy filter* sesuai dengan arahan Pak Massad dan Bu Ochi.
+
+## Perubahan Backend (`retribusi-api`)
+- **[NEW] Migrations & Models**: Berhasil membuat tabel `bpn_h2h_mappings` (untuk memetakan relasi NIB dan NOP beserta nilai ZNT) dan tabel `bphtb_submissions` (untuk menyimpan histori transaksi PPAT beserta *status flag* ZNT).
+- **[MODIFY] FormulaParserService**: Menambahkan logika komparasi *real-time* di method `calculateBPHTB`. Saat transaksi e-BPHTB disubmit, sistem akan membandingkan Nilai Perolehan Objek Pajak (NPOP / Transaksi Riil) dengan nilai ZNT BPN. Jika Transaksi Riil < ZNT, maka `final_npop` akan dipaksa menggunakan ZNT BPN dan transaksi diberi status `UNDER_ZNT_FLAG`.
+- **[NEW] API Endpoints**: Menambahkan controller `H2HBphtbController` beserta routing di `routes/api.php` untuk:
+  - `POST /api/h2h/bphtb/simulate`: Mensimulasikan pajak dan melakukan pengecekan H2H.
+  - `POST /api/h2h/bphtb/submit`: Menyimpan pelaporan transaksi final dengan ZNT-check.
+  - `GET /api/h2h/bphtb/mappings`: *Endpoint* bagi admin Bapenda memantau daftar NIB yang terhubung.
+
+## Perubahan Frontend (`retribusi-admin`)
+- **[NEW] Sub-menu "H2H BPN & BPHTB"**: Menambahkan akses menu baru di bilah samping (*sidebar*) yang ditujukan untuk *Role* `admin` maupun `opd` (yang bertindak sebagai administrator/supervisor PPAT).
+- **[NEW] Halaman Dashboard (Mapping & e-BPHTB)**: Menghadirkan antarmuka 2-*tabs*:
+  1. **Mapping NIB - NOP**: Menampilkan daftar tabel pasangan NIB dan NOP, status sinkronisasi, serta nominal batas wajar ZNT.
+  2. **Form e-BPHTB (Kalkulasi PPAT)**: Form khusus bagi PPAT untuk memproses perhitungan BPHTB secara mandiri. Form ini memicu validasi silang (Simulasi) ke *backend*. Jika nilai transaksi berada di bawah Nilai Kewajaran ZNT, sistem akan menampilkan [Peringatan Visual (Alert)](/retribusi-admin/src/components/h2h/BphtbPpatForm.tsx) dengan status "UNDER ZNT FLAG".
+
+## Catatan Lanjutan
+> [!NOTE]
+> * API saat ini sudah siap untuk di-*hit* oleh BPN jika PKS (MoU) sudah selesai ditandatangani. *Endpoint* internal Bapenda dapat di-*expose* ke BPN menggunakan arsitektur Gateway.
+> * PPAT dapat menguji coba Modul e-BPHTB langsung di *staging server* saat di-*deploy*.
+
+
+---
+
+## File: docs/surveillance_tte.md
+---
+# Surveillance & TTE (Advanced - MITRA)
+
+Modul ini digunakan oleh Pengawas dan Admin untuk memantau kepatuhan, audit trail, serta proses legalisasi dokumen secara digital (TTE).
+
+## 1. Surveillance (Pengawasan)
+
+### Audit Logs
+Melihat riwayat aktifitas user di sistem.
+- **URL**: `/pengawas/audit-logs`
+- **Method**: `GET`
+
+### Deteksi Anomali
+Melihat Wajib Pajak atau tagihan yang diidentifikasi tidak wajar.
+- **URL**: `/pengawas/anomalies`
+- **Method**: `GET`
+
+### Monitoring Penegakan (Enforcement)
+- **List Notifikasi**: `/pengawas/enforcements` (Method: `GET`)
+- **Approve Notifikasi**: `/pengawas/enforcements/{id}/approve` (Method: `POST`)
+
+---
+
+## 2. Tax Amnesty (Penghapusan Denda)
+
+Digunakan untuk mengajukan atau menyetujui penghapusan denda administratif.
+- **Ajukan Amnesty**: `/amnesty` (Method: `POST`)
+- **Setujui/Tolak**: `/amnesty/{id}/approve` atau `/amnesty/{id}/reject` (Method: `POST`)
+
+---
+
+## 3. E-Registry & TTE
+
+### Registrasi E-Doc
+Melihat dokumen yang terdaftar di registry.
+- **URL**: `/tte/documents`
+- **Method**: `GET`
+
+### Tanda Tangan Digital (Sign)
+Melakukan proses TTE pada tagihan (Bill).
+- **URL**: `/tte/sign`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "bill_id": 1,
+    "passphrase": "your_secure_passphrase"
+  }
+  ```
+
+### Verifikasi TTE (Public Access)
+Memeriksa keabsahan tanda tangan digital pada dokumen.
+- **URL**: `/tte/verify/{document_number}`
+- **Method**: `GET`
+
+
+---
+
 ## File: docs/03_proses_bisnis_penagihan/INVOICING_WORKFLOW.md
 ---
 # M-PAD Invoicing Workflow & Performance
@@ -10426,6 +15276,86 @@ Setiap jenis pajak memiliki atribut unik yang menentukan dasar pengenaan pajak (
 
 ---
 
+## File: docs/99_umum_system/laporan_pengerjaan_23_juni.md
+---
+# Laporan Komprehensif Pengerjaan Sistem M-PAD & Pemeliharaan Server
+**Tanggal**: 23 Juni 2026 (Rekapitulasi Penuh Hari Ini)
+**Tim/Agent**: Antigravity AI
+**Proyek**: Ekosistem M-PAD (Retribusi Baubau) & Leantime Project Management
+
+Dokumen ini merangkum seluruh pekerjaan, penambahan fitur, perubahan kode, serta file yang ditambahkan/diedit pada sistem dari sesi pengerjaan sebelumnya (sore/sebelum maghrib) hingga malam ini.
+
+---
+
+## 1. Modul Integrasi H2H BPN (NIB x NOP) & Pengajuan e-BPHTB
+**Tujuan**: Membangun sistem Host-to-Host (H2H) dengan BPN untuk sinkronisasi NIB dan NOP, serta mengotomatisasi validasi Zona Nilai Tanah (ZNT) untuk mencegah *under-invoicing* nilai transaksi oleh PPAT.
+
+**Yang Dikerjakan & File yang Diubah:**
+*   **[NEW] Tabel & Migration (Backend):**
+    *   `database/migrations/2026_06_23_112000_create_bpn_h2h_mappings_table.php`
+    *   `database/migrations/2026_06_23_112000_create_bphtb_submissions_table.php`
+*   **[NEW] Model Eloquent (Backend):**
+    *   `app/Models/BpnH2hMapping.php`
+    *   `app/Models/BphtbSubmission.php`
+*   **[MODIFY] Logika Kalkulasi & Service (Backend):**
+    *   `app/Services/FormulaParserService.php` : Diubah untuk menyuntikkan *ZNT Cross-check Logic*. Apabila Nilai Perolehan Objek Pajak (NPOP) < ZNT BPN, sistem akan memaksa penggunaan harga ZNT dan menetapkan status *UNDER_ZNT_FLAG*.
+*   **[NEW/MODIFY] Controller & Routes (Backend):**
+    *   `app/Http/Controllers/H2HBphtbController.php` : Controller baru untuk menghandle `/api/h2h/bphtb/simulate`, `/submit`, dan `/mappings`.
+    *   `routes/api.php` : Menambahkan rute-rute *endpoint* API baru untuk H2H BPN.
+*   **[NEW/MODIFY] UI & Komponen (Frontend - `retribusi-admin`):**
+    *   `src/components/h2h/NibNopMappingList.tsx` : UI dasbor untuk memantau status pemetaan NIB, NOP, dan harga ZNT.
+    *   `src/components/h2h/BphtbPpatForm.tsx` : UI formulir simulasi & *submit* BPHTB untuk digunakan oleh PPAT, dilengkapi *alert visual* otomatis apabila transaksi melanggar batas ZNT.
+    *   `src/components/H2HBpn.tsx` : Halaman *wrapper* utama.
+    *   `src/App.tsx` & `src/components/Layout.tsx` : Menyuntikkan *routing* frontend dan menambahkan *menu sidebar* "H2H BPN & BPHTB".
+
+---
+
+## 2. Sistem Onboarding & Persetujuan Notaris/PPAT (e-BPHTB)
+**Tujuan**: Mencegah akses publik yang tidak sah pada sistem BPHTB dengan menerapkan pendaftaran mandiri yang harus melalui tahapan persetujuan (Approval) fisik oleh Ka. Bapenda.
+
+**Yang Dikerjakan & File yang Diubah:**
+*   **[NEW] Fitur Pendaftaran Mandiri (Public Registration):**
+    *   `src/components/RegisterPpat.tsx` : Halaman bagi PPAT untuk membuat akun baru. Akun akan dibuat dengan status **PENDING** secara default dan diberikan peran `ROLE_NOTARIS`.
+*   **[NEW] Dasbor Persetujuan (Approval Desk):**
+    *   `src/components/NotarisApproval.tsx` : Halaman khusus untuk Admin/Ka. Bapenda (Role `ROLE_KEPALA_BAPENDA`). Berfungsi untuk melihat antrean Notaris yang *pending*.
+*   **[MODIFY] Fitur Aktivasi & WaGateway (Backend/Frontend):**
+    *   Tombol "Setujui & Aktifkan" dibuat. Ketika di-klik, status berubah menjadi **ACTIVE** dan *WaGatewayService* dit-trigger untuk mengirim pesan WhatsApp ke Notaris bahwa akun mereka siap digunakan.
+
+---
+
+## 3. Resolusi Bug & Stabilisasi Frontend (retribusi-admin)
+**Tujuan**: Menangani error *blocking* yang merusak *build* atau berpotensi membuat halaman blank di lingkungan *production*.
+
+**Yang Dikerjakan & File yang Diubah:**
+*   **[FIX] Error Koneksi API (`SyntaxError: Unexpected token '<'`):**
+    *   Disebabkan oleh Vite dev server yang mengalami *fallback* ke `index.html` akibat URL API yang tidak spesifik. Diperbaiki dengan mengimplementasikan standar pemanggilan global menggunakan `import.meta.env.VITE_API_URL` ke komponen *fetching* (termasuk di `RegisterPpat.tsx`, `NotarisApproval.tsx`, dan `NibNopMappingList.tsx`).
+*   **[FIX] Halaman Crash (`Uncaught ReferenceError: H2HBpn is not defined`):**
+    *   `src/App.tsx` : Memperbaiki import dependensi `H2HBpn` yang hilang dan mematikan sistem navigasi.
+*   **[FIX] Grafik Error Recharts (`width/height should be greater than 0`):**
+    *   `src/components/Dashboard.tsx` : Menambahkan `minWidth={0} minHeight={0}` pada `ResponsiveContainer` agar grafik pendapatan tidak menyebabkan console memerah.
+
+---
+
+## 4. Blueprint & Pemetaan Arsitektur Testing (Omni Workspace)
+**Tujuan**: Mempersiapkan lingkungan ekosistem untuk *End-to-End (E2E) Testing* secara tuntas agar *deployment* berikutnya di-verifikasi sepenuhnya.
+
+**Yang Dikerjakan & Ditempatkan di Sistem:**
+*   **[NEW] Artefak**: `docs/07_testing_kualitas/testing_architecture_map.md`
+*   Menyelesaikan survei sistem meliputi 4 repositori (Admin, Petugas, Mobile, API). Memetakan lebih dari 160 API route, 31 Controller, dan 34 Model.
+*   Menyusun **8 Fase Pengujian Master**, yang merangkum keseluruhan SOP dan *flow* wajib dari proses: RBAC, Manajemen Objek Pajak, Pembuatan Tagihan (Billing), Pembayaran Bank (Settlement), Penindakan Uji Petik, hingga Cetak Laporan BPK.
+
+---
+
+## 5. Investigasi Insiden VPS & Leantime (502 Bad Gateway / 500 Error)
+**Tujuan**: Melakukan *debugging* kerusakan *container* `leantime.sarjanakomputer.id`.
+
+**Yang Dikerjakan & Analisis Ditemukan:**
+*   **[MODIFY] VPS `docker-compose.yml`**: Memperbaiki variabel URL dari HTTP ke HTTPS untuk menghindari pemblokiran skrip *Content Security Policy (CSP)* oleh Cloudflare.
+*   **[ANALISIS] Error `db:migrate` (Call to a member function make() on null):** Menemukan bahwa *crash* disebabkan oleh hilangnya variabel environment `.env` di dalam root *Docker container* setelah instalasi ulang/recreation, menyebabkan *database engine* gagal masuk ke MariaDB. Langkah pembenahan selanjutnya mewajibkan injeksi ulang `.env` pada VPS.
+
+
+---
+
 ## File: docs/99_umum_system/MASTER_KNOWLEDGE_BASE.md
 ---
 # 🧠 MASTER KNOWLEDGE BASE: M-PAD Documentation
@@ -10573,6 +15503,50 @@ Daftar port dan akses lokal untuk pengembangan dan pengujian otomatis (run_all.s
 
 ---
 *Catatan: Dokumen ini wajib diperbarui setiap kali ada folder atau file dokumentasi baru yang ditambahkan ke dalam sistem.*
+
+
+---
+
+## File: docs/99_umum_system/STRUCTURAL_INTEGRITY_GUIDE.md
+---
+# 🏛️ MPAD Structural & Hierarchical Integrity Guide
+**Version**: 2.0 (Wilayah-Centric)
+**Status**: ACTIVE PROTOCOL
+
+## 1. Arsitektur Hirarki 4-Tingkat
+Sistem MPAD (Retribusi) Kota Baubau dibangun di atas 4 tingkatan hirarki yang **TIDAK BOLEH** diubah strukturnya guna menjaga konsistensi pelaporan keuangan (SIPD/BPK).
+
+| Level | Nama | Keterangan | Aturan Mutlak |
+| :--- | :--- | :--- | :--- |
+| **L1** | **Wilayah** | Pembagian administratif utama. | Hanya ada 2: **Wilayah I** & **Wilayah II**. |
+| **L2** | **OPD** | Organisasi Perangkat Daerah. | Terikat pada Wilayah & Jenis Pajak. |
+| **L3** | **Klasifikasi** | Jenis Pajak/Retribusi (PBJT, Parkir, dll). | **JANGAN DIHAPUS**. Gunakan mapping relasi. |
+| **L4** | **Tarif (Rates)** | Nominal atau persentase tarif. | Berdasarkan Zonasi/Kelas Jalan. |
+
+## 2. Aturan Relasi Database (Wilayah-Centric)
+Aplikasi ini beralih dari model "Jenis Pajak Global" ke model "Wilayah-Centric".
+- **Jenis Pajak (Types)**: Sekarang hanya direpresentasikan oleh dua entitas utama di tabel `retribution_types`:
+  1. `Wilayah I` (Kecamatan: Wolio, Murhum, Betoambari, Batupoaro)
+  2. `Wilayah II` (Kecamatan: Kokalukuna, Sorawolio, Lea-Lea, Bungi)
+- **Mapping Klasifikasi**: Seluruh klasifikasi pajak yang ada (Pajak Hotel, Restoran, Parkir, dll) harus dikaitkan ke salah satu dari dua Wilayah tersebut.
+- **Data Persistence**: Menghapus klasifikasi akan memutus relasi pada tabel `bills` dan `payments` historis. **Hanya lakukan penonaktifan (is_active = 0) atau relinking, bukan deletion.**
+
+## 3. Protokol Keamanan Data
+Setiap operasi yang bersifat destruktif terhadap database (`truncate`, `drop`, `delete` tanpa soft-delete) wajib:
+1. Menampilkan peringatan: `⚠️ PERINGATAN: Operasi ini akan menghapus data historis penagihan!`
+2. Memerlukan konfirmasi eksplisit dari user/agen.
+
+## 4. Pipeline Sinkronisasi & Testing
+Urutan sinkronisasi yang sah:
+1. **LOCAL**: Run `qa7_ultimate_mpad_audit.php` & `run_role_e2e_test.php`.
+2. **DEV**: Sinkronkan Local ke Dev branch. Jalankan testing integrasi.
+3. **STAGING**: Sinkronkan Dev/Local ke Staging. Lakukan User Acceptance Test (UAT).
+4. **PRODUCTION**: 
+   - Sinkronkan kode sumber.
+   - **DATABASE**: Jangan lakukan sinkronisasi data/migrasi destruktif ke Production sebelum verifikasi Staging selesai 100%.
+
+---
+*Dokumen ini merupakan Source of Truth untuk pengembangan struktural MPAD.*
 
 
 ---
@@ -11047,10 +16021,10 @@ Dokumen ini adalah referensi lengkap arsitektur sistem M-PAD yang mencakup selur
 
 | Repo | Stack | Deskripsi | Domain (Prod) |
 |------|-------|-----------|----------------|
-| `retribusi-api` | Laravel 11 + MySQL | Backend API | `api.sipanda.online` |
-| `retribusi-admin` | React + Vite + TS | Dashboard Admin/BAPENDA | `admin.sipanda.online` |
-| `retribusi-petugas` | React + Vite + TS | App Petugas Lapangan | `petugas.sipanda.online` |
-| `retribusi-mobile` | React + Vite + TS | App Warga (PWA) | `sipanda.online` |
+| `retribusi-api` | Laravel 11 + MySQL | Backend API | `apimpad.baubaukota.go.id` |
+| `retribusi-admin` | React + Vite + TS | Dashboard Admin/BAPENDA | `adminmpad.baubaukota.go.id` |
+| `retribusi-petugas` | React + Vite + TS | App Petugas Lapangan | `petugasmpad.baubaukota.go.id` |
+| `retribusi-mobile` | React + Vite + TS | App Warga (PWA) | `mpad.baubaukota.go.id` |
 
 ---
 
@@ -11239,6 +16213,67 @@ Pengawas (Dashboard)              API                         Target Data
 
 ---
 
+## File: docs/penalty_scheme.md
+---
+# Skema Penalty & Denda (MITRA)
+
+Dokumen ini menjelaskan mekanisme perhitungan sanksi administrasi (bunga), denda keterlambatan lapor, serta prosedur penghapusan denda (amnesty) berdasarkan **Perwali No. 58/2024**.
+
+## 1. Sanksi Administrasi (Bunga Keterlambatan)
+
+Sanksi bunga dihitung dari total pokok pajak yang belum dibayar. Perhitungannya dimulai 1 hari setelah melewati **Jatuh Tempo (Due Date)**.
+
+### Tarif Bunga per Bulan
+Tarif bunga dibedakan berdasarkan jenis penetapan atau kondisi keterlambatan:
+
+| Jenis Sanksi | Tarif / Bulan | Keterangan |
+| :--- | :--- | :--- |
+| **STPD** | 1.0% | Keterlambatan Pembayaran/Setoran (Standar) |
+| **SKPDKB** | 1.8% | Hasil Pemeriksaan Umum |
+| **Jabatan** | 2.2% | Pemeriksaan karena tidak lapor/tidak pembukuan |
+| **Lainnya** | 0.6% | Angsuran, Penundaan, atau Salah Hitung |
+
+### Aturan Perhitungan Waktu
+- **Bagian Bulan dihitung Penuh**: Keterlambatan 1 hari tetap dihitung sebagai 1 bulan penuh.
+- **Maksimal Durasi**: Sanksi bunga maksimal dikenakan untuk **24 bulan**.
+- **Rumus**: `Sanksi = Pokok x Tarif x Jumlah Bulan (Max 24)`
+
+---
+
+## 2. Denda Keterlambatan Lapor (Fixed Fine)
+
+Khusus untuk jenis pajak **Self Assessment** (Wilayah II), wajib pajak wajib melaporkan omzetnya (SPTPD) setiap bulan.
+- **Denda**: Rp 100.000,- (flat) jika tidak melapor tepat waktu.
+
+---
+
+## 3. Ketentuan Khusus PBB-P2
+
+PBB-P2 memiliki kebijakan khusus terkait masa tenggang:
+- **Jatuh Tempo Standar**: Biasanya 10 November pada tahun berjalan.
+- **Grace Period Baru**: Wajib Pajak baru (Pendaftaran Baru) diberikan masa tenggang **6 bulan** sejak pendaftaran sebelum mulai dikenakan bunga jika belum bayar.
+
+---
+
+## 4. Amnesty & Waiver (Penghapusan Denda)
+
+Sistem MITRA mendukung pengajuan penghapusan atau pengurangan denda melalui modul **Amnesty**.
+
+### Prosedur
+1. **Pengajuan**: Petugas lapangan atau Admin mengajukan permohonan atas permintaan Wajib Pajak dengan menyertakan alasan.
+2. **Jenis Pengurangan**:
+   - **Persentase**: Contoh: Pengurangan 50% atau 100% (penghapusan total).
+   - **Nominal Tetap**: Contoh: Pengurangan sebesar Rp 50.000.
+3. **Persetujuan**: Harus disetujui oleh **Kabid** atau **Super Admin** melalui dashboard sebelum tagihan (Bill) diperbarui.
+
+---
+
+## 5. Otomasi Sistem
+Sistem menjalankan command `bills:calculate-penalties` secara berkala (Cron Job) untuk memperbarui nilai sanksi pada seluruh tagihan yang berstatus `pending` dan telah melewati jatuh tempo.
+
+
+---
+
 ## File: docs/09_sistem_logic_study/ANALISIS_LOGIKA_MPAD.md
 ---
 # Analisis Logika Inti Sistem M-PAD
@@ -11334,43 +16369,189 @@ Pusat kendali data master untuk memvalidasi pemetaan subjek (WP) dan objek (Aset
 
 ---
 
+## File: docs/05_modul_aplikasi/retribusi_persampahan.md
+---
+# Layanan Retribusi: Pelayanan Persampahan/Kebersihan
+
+**Dasar Hukum**: Perda Kota Baubau No. 1 Tahun 2024
+**Kategori**: Retribusi Jasa Umum
+**Pengelola**: Dinas Lingkungan Hidup (DLH)
+
+## 1. Skema Perhitungan & Regulasi
+Tarif ditetapkan secara flat per bulan berdasarkan klasifikasi golongan sumber sampah (Rumah Tangga, Niaga, Industri, dll).
+
+## 2. Matriks Riset Blanko OPD
+
+### A. Warga (`retribusi-mobile`)
+- Warga mendaftar sebagai pelanggan kebersihan.
+- **Form Minimalis**: Hanya mengisi titik lokasi rumah/toko (MapPicker GIS) dan nama lengkap. 
+- Tarif golongan disembunyikan dan akan ditentukan oleh petugas DLH.
+
+### B. Petugas DLH (`retribusi-petugas`)
+- Petugas verifikasi mendatangi lokasi.
+- Menentukan klasifikasi sumber sampah (contoh: apakah ini rumah tangga kecil atau ruko niaga besar).
+
+### C. Admin & API (`retribusi-api`)
+- API menerbitkan tagihan bulanan (SKRD) secara massal.
+- Warga bisa membayar via aplikasi E-Retribusi M-PAD (QRIS/VA) tanpa harus didatangi petugas penagih ke rumah.
+
+
+---
+
 ## File: docs/05_modul_aplikasi/petugas-DOMAIN_SCHEMA.md
 ---
 # 🌐 Domain Schema & Subdomain Mapping
 
-Dokumentasi ini merinci pemetaan domain dan subdomain untuk sistem MPAD (Mitra Pajak & Retribusi Daerah) baik di lingkungan Produksi maupun Staging.
+Dokumentasi ini merinci pemetaan domain dan subdomain untuk sistem MPAD (Mitra Pajak & Retribusi Daerah) pada semua lingkungan deployment.
 
-## 1. Lingkungan Produksi (Pemerintah Kota Baubau)
-Domain resmi yang digunakan untuk operasional publik dan internal.
+## 1. Lingkungan Development (Dev)
+Digunakan murni untuk pengembangan (eksperimen fitur) dengan lingkungan VPS/Server non-kritis.
+**Host IP:** `157.10.252.74`
+
+| Komponen | Domain | Deskripsi |
+| :--- | :--- | :--- |
+| **Portal Utama** | `sipanda.online` | Aplikasi Warga / Landing page |
+| **Dashboard Admin** | `admin.sipanda.online` | Panel manajemen Bapenda & OPD |
+| **Interface Petugas** | `petugas.sipanda.online` | Akses petugas lapangan |
+| **Backend API** | `api.sipanda.online` | Endpoint layanan data dev |
+| **Launch Teaser** | `launch.sipanda.online` | Halaman promosi/hitung mundur |
+
+## 2. Lingkungan Staging (UAT)
+Digunakan sebagai tiruan (*replica*) dari *Production* untuk pengujian final (UAT / *Sandboxing* bersama pihak Bank).
+
+| Komponen | Domain | Deskripsi |
+| :--- | :--- | :--- |
+| **Portal Utama** | `mpad.online` | Aplikasi Warga / Landing page staging |
+| **Dashboard Admin** | `admin.mpad.online` | Panel manajemen versi staging |
+| **Interface Petugas** | `petugas.mpad.online` | Akses petugas lapangan staging |
+| **Backend API** | `api.mpad.online` | Endpoint layanan data staging |
+
+## 3. Lingkungan Produksi (Prod)
+Lingkungan *Live* yang diakses langsung oleh masyarakat Wajib Pajak dan pegawai Pemerintahan Kota Baubau.
 
 | Komponen | Domain | Deskripsi |
 | :--- | :--- | :--- |
 | **Portal Utama** | `mpad.baubaukota.go.id` | Pintu masuk utama aplikasi/Landing page |
 | **Dashboard Admin** | `adminmpad.baubaukota.go.id` | Panel manajemen untuk Bapenda & OPD |
-| **Backend API** | `api.sipanda.online` | Endpoint layanan data (Core API) |
 | **Interface Petugas** | `petugasmpad.baubaukota.go.id` | Akses petugas lapangan (Mobile/Web) |
-
-## 2. Lingkungan Staging / Development (VPS)
-Digunakan untuk testing fitur baru sebelum di-deploy ke produksi.
-**Host IP:** `157.10.252.74`
-
-| Komponen | Domain | Deskripsi |
-| :--- | :--- | :--- |
-| **Main Entrance** | `sipanda.online` | Pintu masuk utama lingkungan dev |
-| **Admin Panel** | `admin.sipanda.online` | Dashboard admin versi staging |
-| **API Endpoint** | `api.sipanda.online` | Backend API untuk development |
-| **Officer Portal** | `petugas.sipanda.online` | Antarmuka petugas versi staging |
-| **Launch Teaser** | `launch.sipanda.online` | Halaman promosi/hitung mundur |
-
-## 3. Domain Alternatif / Legacy
-Domain lain yang mungkin masih terdaftar dalam konfigurasi sistem (CORS/SSL):
-- `sipanda.online`
-- `admin.sipanda.online`
-- `petugas.sipanda.online`
-- `api.sipanda.online`
+| **Backend API** | `apimpad.baubaukota.go.id` | Endpoint layanan data (Core API) |
 
 ---
-*Terakhir Diperbarui: 3 Maret 2026*
+*Terakhir Diperbarui: 7 Juli 2026*
+
+
+---
+
+## File: docs/05_modul_aplikasi/sewa_tanah_bangunan.md
+---
+# Layanan Aset: Sewa Tanah dan Bangunan
+
+**Dasar Hukum**: Perda Kota Baubau No. 1 Tahun 2024
+**Kategori**: Retribusi Jasa Usaha (Pemanfaatan Kekayaan Daerah)
+
+## 1. Skema Peraturan
+Penyewaan ruko, gedung serbaguna, dan tanah Pemda. Berbasis **Kontrak (Perjanjian Kerja Sama)**. Tagihan (Billing) bersifat *recurring* atau *term* sesuai durasi kontrak.
+
+## 2. Matriks Riset Blanko OPD
+
+### A. Warga (`retribusi-mobile`)
+- Warga mengakses "Katalog Aset Daerah" di aplikasi.
+- Memilih tanggal sewa mulai & selesai (sistem menolak otomatis jika tanggal sudah dibooking/bentrok - *Anti-Double Booking Interlock*).
+- Menulis tujuan penggunaan aset.
+
+### B. Admin OPD (`retribusi-admin`)
+- Admin BPKAD / OPD terkait me-review permohonan.
+- Melakukan *appraisal* untuk menentukan tarif jika belum ada tarif baku.
+- Menerbitkan draft kontrak.
+
+### C. Penandatanganan & Penagihan (API)
+- Warga dan Kepala OPD menyetujui kontrak via Tanda Tangan Elektronik (Pakta Integritas / BSrE).
+- API men-*generate* tagihan (SKRD) secara otomatis sebelum jatuh tempo masa sewa setiap bulan/tahun.
+
+### D. Petugas Lapangan (`retribusi-petugas`)
+- Petugas melakukan inspeksi/surveillance (menggunakan LKOK Aset + GPS Kamera) untuk memastikan aset tidak rusak, tidak dialihfungsikan, atau tidak disub-sewakan ke pihak lain secara ilegal.
+
+
+---
+
+## File: docs/05_modul_aplikasi/reklame_workflow.md
+---
+# Skema Layanan & Cara Kerja Pajak Reklame M-PAD
+
+Layanan Pajak Reklame di ekosistem M-PAD (ID Klasifikasi: **188**) menerapkan skema **Official Assessment** (ditetapkan oleh Fiskus/Pemerintah), berbeda dengan pajak seperti Hotel/Restoran yang menerapkan *Self Assessment*. 
+
+Sesuai filosofi **Riset Blanko OPD**, pendaftaran pajak reklame tidak lagi menggunakan form rumit yang membingungkan warga, melainkan dipisahkan antara input kasat mata warga dan form teknis lapangan petugas.
+
+Berikut adalah detail skema cara kerja hulu-ke-hilir untuk layanan Reklame berdasarkan regulasi (Perwali 11/2025 & Perda 1/2024):
+
+---
+
+## 1. Skema Perhitungan (Kalkulasi Otomatis API)
+Sistem M-PAD (`retribusi-api`) memiliki kalkulator pajak yang menghitung Pajak Terutang secara definitif berdasarkan rumus: 
+**`Pajak Terutang = Nilai Sewa Reklame (NSR) x Tarif (25%)`**
+
+NSR dibentuk dari komponen-komponen berikut yang dihitung otomatis oleh server, tanpa perlu diinput oleh warga:
+*   **NJOPR (Nilai Jual Objek Pajak Reklame):** Dihitung berdasarkan **Luas x Tarif Jenis Reklame**. Jika luas kurang dari 1 meter persegi, sistem otomatis membulatkan ke atas menjadi 1 m2.
+*   **NSPR (Nilai Strategis Penyelenggaraan Reklame):** Nilai tambah berdasarkan zonasi yang dideteksi otomatis via peta GIS Bapenda:
+    *   **Kelas Jalan A (Sangat Strategis)**
+    *   **Kelas Jalan B (Strategis)**
+    *   **Kelas Jalan C (Standar)**
+*   **Multiplier (Faktor Pengali Khusus):** Rokok / Minuman Beralkohol (1.1), Lokasi Indoor / Mall (0.5).
+
+---
+
+## 2. Matriks Blanko OPD (Pendaftaran & Billing)
+Proses manual formulir kertas telah ditransformasikan ke dalam 3 tahapan (*Cross-Repo Sync*):
+
+1. **Aplikasi Warga (`retribusi-mobile`):** Warga hanya memilih kategori (Misal: Spanduk), mengetik judul iklan, menjatuhkan *pin* titik di peta (MapPicker), menginput panjang & lebar fisik (luas otomatis readonly), serta mengunggah desain materi/foto fisik. Warga **tidak menginput** NSPR, durasi hari spesifik, maupun rumus tarif.
+2. **Penetapan Admin (`retribusi-admin`):** Verifikator Bapenda memeriksa kesesuaian gambar dan ukuran. Jika disetujui, sistem mengunci nilai dan menerbitkan **SKPD** (Surat Ketetapan Pajak Daerah).
+3. **Immutability:** SKPD yang telah diterbitkan (menjadi `Bill`) berstatus terkunci (*immutable*) dan tidak dapat diubah angkanya tanpa melalui prosedur audit ketat.
+
+---
+
+## 3. Skema Operasional Petugas Lapangan (Penertiban Reklame)
+Petugas lapangan menggunakan aplikasi khusus `retribusi-petugas` untuk melakukan **Billboard Audit (Penertiban Reklame)**:
+*   **Visual Evidence (Bukti Otentik):** Petugas wajib mengambil foto kondisi reklame di lapangan yang tersemat **koordinat GPS** (Anti-Fake GPS) sebagai bukti sah pemasangan.
+*   **Uji Petik / Pencocokan Data:** Petugas mencocokkan fisik reklame dengan data yang ada di *database* server (misal: apakah reklamenya membesar atau sudah kedaluwarsa).
+*   **Digital LKOK:** Hasil inspeksi dicatat ke dalam **Lembar Kerja Objek Khusus (LKOK)** digital yang di-TTE (Tanda Tangan Elektronik) oleh petugas di tempat.
+*   **Flagging Reklame Liar:** Jika ditemukan reklame terpasang namun belum memiliki NPWPD (Nomor Pokok Wajib Pajak Daerah) atau belum berizin, petugas memberikan *flag* "Anomaly" atau "Unregistered" pada aplikasi.
+
+---
+
+## 4. Penindakan & Penagihan Aktif (Enforcement)
+Berdasarkan data dari petugas lapangan, sistem akan melakukan eskalasi:
+*   **Kurang Bayar:** Jika reklame ternyata lebih besar/banyak dari yang dilaporkan, Admin akan menerbitkan **SKPDKB** (Surat Ketetapan Pajak Daerah Kurang Bayar).
+*   **Siklus Teguran:** Jika Wajib Pajak menunggak, sistem `Billing` akan secara berkala mencetak Surat Teguran 1, 2, 3.
+*   **Penyegelan:** Untuk reklame liar atau menunggak berat, sistem menerbitkan **SPMP** (Surat Paksa) sebagai dasar hukum petugas lapangan menempelkan **Stiker Penertiban (Disegel)** atau pembongkaran.
+
+
+---
+
+## File: docs/05_modul_aplikasi/retribusi_pbg.md
+---
+# Layanan Retribusi: Persetujuan Bangunan Gedung (PBG)
+
+**Dasar Hukum**: Perda No. 1/2024 & Perwali 63/2024
+**Kategori**: Retribusi Perizinan Tertentu
+**Pengelola**: DPMPTSP & Dinas PUPR
+
+## 1. Skema Perhitungan & Regulasi
+- **Rumus**: `Luas Bangunan (m2) x Indeks Lokalitas x Indeks Terintegrasi x SHST (Standar Harga Satuan Tertinggi)`
+- **Pembebasan 100%**: Berlaku untuk Masyarakat Berpenghasilan Rendah (MBR).
+
+## 2. Matriks Riset Blanko OPD
+
+### A. Warga (`retribusi-mobile`)
+- Warga mengajukan IMB/PBG dengan menginput **Luas Bangunan Kasat Mata** dan mengunggah file desain (Siteplan/Arsitektur) serta surat tanah.
+- Warga mencentang "Pengajuan MBR" jika memenuhi syarat (melampirkan Surat Keterangan Tidak Mampu).
+
+### B. Petugas Teknis PUPR (`retribusi-petugas`)
+- Tim teknis turun ke lapangan membawa LKOK (Lembar Kerja Objek Khusus) digital.
+- Mereka meninjau kondisi lapangan, lalu sistem/petugas menentukan **Indeks Terintegrasi** dan **Indeks Lokalitas** (Field Teknis, disembunyikan dari warga).
+
+### C. Backend API & Admin Bapenda
+- API mengkalkulasi keseluruhan indeks dan menerbitkan SKRD PBG.
+- Setelah Warga membayar (QRIS/VA), sistem memberi lampu hijau kepada DPMPTSP untuk menerbitkan izin PBG definitif.
 
 
 ---
@@ -11390,6 +16571,52 @@ Referensikan file ini untuk memastikan Anda bekerja di versi yang stabil.
 
 > [!NOTE]
 > Sumber kebenaran utama ada di `retribusi-api/docs/STABLE_BASELINE.md`.
+
+
+---
+
+## File: docs/05_modul_aplikasi/pajak_sarang_walet.md
+---
+# Layanan Pajak: Sarang Burung Walet
+
+**Dasar Hukum**: Perda Kota Baubau No. 1 Tahun 2024
+**Sistem Pemungutan**: Official Assessment
+**Tarif**: 10%
+**Rumus**: `(Volume Panen Kg x Harga Pasar Standar) x 10%`
+
+## Matriks Riset Blanko OPD
+1. **Warga**: Mendaftarkan lokasi gedung walet (MapPicker GIS) dan estimasi kasat mata.
+2. **Petugas Lapangan**: Turun ke lapangan pada saat panen untuk melakukan *surveillance* dan menimbang riil volume panen, di-input ke LKOK di aplikasi petugas.
+3. **API**: Menghitung 10% dari nilai jual panen tersebut, mencetak SKPD.
+
+
+---
+
+## File: docs/05_modul_aplikasi/pbjt_hiburan.md
+---
+# Layanan Pajak: PBJT Jasa Kesenian dan Hiburan
+
+**Dasar Hukum**: Perda Kota Baubau No. 1 Tahun 2024
+**Sistem Pemungutan**: Self-Assessment
+**Tarif Utama**: 
+- Hiburan Standar (Bioskop, Konser, Bowling, Panti Pijat): **10%**
+- Hiburan Khusus (Diskotik, Karaoke, Klub Malam, Spa): **40%**
+
+## 1. Skema Perhitungan & Regulasi
+Pajak dikenakan berdasarkan jenis hiburan yang disediakan.
+- **Rumus**: `Pajak Terutang = Omzet Kotor x Tarif (10% atau 40%)`
+
+## 2. Matriks Riset Blanko OPD (Digitalisasi M-PAD)
+
+### A. Warga / Pengusaha Hiburan (`retribusi-mobile`)
+- **SPOPD**: WP mendaftar lokasi dan jenis hiburan. Sistem akan menyembunyikan penentuan tarif (10% atau 40%) dari WP.
+- **SPTPD**: Lapor omzet bulanan, unggah bukti tiket terjual/rekap billing.
+
+### B. Admin & Backend API (`retribusi-api` & `retribusi-admin`)
+- Berdasarkan kategori yang diverifikasi Admin, API akan menetapkan pengali (10% atau 40%) pada omzet yang dilaporkan.
+
+### C. Petugas Lapangan (`retribusi-petugas`)
+- **Inspeksi Malam (Patroli)**: Petugas Satpol PP/Bapenda mendatangi tempat hiburan, mencatat kapasitas ruangan, jumlah pengunjung *real-time*, dan membandingkannya dengan pelaporan SPTPD di sistem menggunakan form Uji Petik.
 
 
 ---
@@ -11468,6 +16695,40 @@ Menjalankan perintah penagihan paksa.
 ## 🔗 Integrasi
 - Backend: REST API `retribusi-api`.
 - Frontend: Vite + React + Tailwind CSS.
+
+
+---
+
+## File: docs/05_modul_aplikasi/retribusi_pasar.md
+---
+# Layanan Retribusi: Pelayanan Pasar
+
+**Dasar Hukum**: Perda No. 1/2024 & Perwali 55/2025
+**Kategori**: Retribusi Jasa Umum / Jasa Usaha
+**Sistem Pemungutan**: Official Assessment (Recurring Billing)
+
+## 1. Skema Perhitungan & Regulasi
+Tarif sewa lapak/kios/pelataran pasar dikalikan **Koefisien Zonasi**:
+- Premium (1.3): Kawasan strategis/wisata.
+- Strategis (1.2): Pusat perdagangan.
+- Ekonomi (1.1): Pasar Wameo, dll.
+- Umum (1.0).
+
+## 2. Matriks Riset Blanko OPD
+
+### A. Warga / Pedagang (`retribusi-mobile`)
+- Pedagang mengajukan sewa lapak dengan memilih lokasi di peta pasar, menginput jenis dagangan, dan mengunggah KTP.
+- Pedagang hanya melihat "Tarif Akhir", tanpa perlu mengisi form koefisien zonasi.
+
+### B. Petugas Penagih (`retribusi-petugas`)
+- Petugas pasar berkeliling membawa aplikasi M-PAD. 
+- Aplikasi menampilkan daftar lapak yang menunggak (berbasis jarak/GPS).
+- Pembayaran dilakukan via **QRIS Offline** atau **Tunai**.
+- Petugas mencetak struk **SSRD Thermal Bluetooth** di tempat (menggantikan karcis sobek rawan fraud).
+
+### C. Admin & API
+- API otomatis menerbitkan tagihan (SKRD) bulanan/harian.
+- Admin mengawasi realisasi penerimaan per blok pasar secara *real-time*.
 
 
 ---
@@ -11660,39 +16921,90 @@ Route::middleware(['auth:api', 'role:inventory'])->group(function () {
 ---
 # 🌐 Domain Schema & Subdomain Mapping
 
-Dokumentasi ini merinci pemetaan domain dan subdomain untuk sistem MPAD (Mitra Pajak & Retribusi Daerah) baik di lingkungan Produksi maupun Staging.
+Dokumentasi ini merinci pemetaan domain dan subdomain untuk sistem MPAD (Mitra Pajak & Retribusi Daerah) pada semua lingkungan deployment.
 
-## 1. Lingkungan Produksi (Pemerintah Kota Baubau)
-Domain resmi yang digunakan untuk operasional publik dan internal.
+## 1. Lingkungan Development (Dev)
+Digunakan murni untuk pengembangan (eksperimen fitur) dengan lingkungan VPS/Server non-kritis.
+**Host IP:** `157.10.252.74`
+
+| Komponen | Domain | Deskripsi |
+| :--- | :--- | :--- |
+| **Portal Utama** | `sipanda.online` | Aplikasi Warga / Landing page |
+| **Dashboard Admin** | `admin.sipanda.online` | Panel manajemen Bapenda & OPD |
+| **Interface Petugas** | `petugas.sipanda.online` | Akses petugas lapangan |
+| **Backend API** | `api.sipanda.online` | Endpoint layanan data dev |
+| **Launch Teaser** | `launch.sipanda.online` | Halaman promosi/hitung mundur |
+
+## 2. Lingkungan Staging (UAT)
+Digunakan sebagai tiruan (*replica*) dari *Production* untuk pengujian final (UAT / *Sandboxing* bersama pihak Bank).
+
+| Komponen | Domain | Deskripsi |
+| :--- | :--- | :--- |
+| **Portal Utama** | `mpad.online` | Aplikasi Warga / Landing page staging |
+| **Dashboard Admin** | `admin.mpad.online` | Panel manajemen versi staging |
+| **Interface Petugas** | `petugas.mpad.online` | Akses petugas lapangan staging |
+| **Backend API** | `api.mpad.online` | Endpoint layanan data staging |
+
+## 3. Lingkungan Produksi (Prod)
+Lingkungan *Live* yang diakses langsung oleh masyarakat Wajib Pajak dan pegawai Pemerintahan Kota Baubau.
 
 | Komponen | Domain | Deskripsi |
 | :--- | :--- | :--- |
 | **Portal Utama** | `mpad.baubaukota.go.id` | Pintu masuk utama aplikasi/Landing page |
 | **Dashboard Admin** | `adminmpad.baubaukota.go.id` | Panel manajemen untuk Bapenda & OPD |
-| **Backend API** | `api.sipanda.online` | Endpoint layanan data (Core API) |
 | **Interface Petugas** | `petugasmpad.baubaukota.go.id` | Akses petugas lapangan (Mobile/Web) |
-
-## 2. Lingkungan Staging / Development (VPS)
-Digunakan untuk testing fitur baru sebelum di-deploy ke produksi.
-**Host IP:** `157.10.252.74`
-
-| Komponen | Domain | Deskripsi |
-| :--- | :--- | :--- |
-| **Main Entrance** | `sipanda.online` | Pintu masuk utama lingkungan dev |
-| **Admin Panel** | `admin.sipanda.online` | Dashboard admin versi staging |
-| **API Endpoint** | `api.sipanda.online` | Backend API untuk development |
-| **Officer Portal** | `petugas.sipanda.online` | Antarmuka petugas versi staging |
-| **Launch Teaser** | `launch.sipanda.online` | Halaman promosi/hitung mundur |
-
-## 3. Domain Alternatif / Legacy
-Domain lain yang mungkin masih terdaftar dalam konfigurasi sistem (CORS/SSL):
-- `sipanda.online`
-- `admin.sipanda.online`
-- `petugas.sipanda.online`
-- `api.sipanda.online`
+| **Backend API** | `apimpad.baubaukota.go.id` | Endpoint layanan data (Core API) |
 
 ---
-*Terakhir Diperbarui: 3 Maret 2026*
+*Terakhir Diperbarui: 7 Juli 2026*
+
+
+---
+
+## File: docs/05_modul_aplikasi/retribusi_rptka.md
+---
+# Layanan Retribusi: Pengesahan RPTKA TKA
+
+**Dasar Hukum**: Perda Kota Baubau No. 1 Tahun 2024
+**Kategori**: Retribusi Perizinan Tertentu
+**Pengelola**: Dinas Tenaga Kerja / DPMPTSP
+
+## 1. Skema Perhitungan & Regulasi
+Dikenakan atas pengesahan Rencana Penggunaan Tenaga Kerja Asing (TKA) perpanjangan. Tarif kompensasi dihitung per bulan/per TKA dalam US Dollar, lalu dikonversi ke Rupiah menggunakan kurs Bank Indonesia saat hari pembayaran.
+
+## 2. Matriks Riset Blanko OPD
+1. **Warga/Perusahaan (`retribusi-mobile`)**: Perusahaan menginput jumlah TKA dan durasi kerja. Mengunggah paspor/dokumen pendukung.
+2. **Admin**: Verifikasi berkas.
+3. **API (`retribusi-api`)**: Otomatis menarik data Kurs BI *real-time* via API Eksternal untuk mengonversi tarif dasar ke Rupiah, lalu menerbitkan tagihan SKRD.
+
+
+---
+
+## File: docs/05_modul_aplikasi/pbjt_perhotelan.md
+---
+# Layanan Pajak: PBJT Jasa Perhotelan
+
+**Dasar Hukum**: Perda Kota Baubau No. 1 Tahun 2024
+**Sistem Pemungutan**: Self-Assessment
+**Tarif Utama**: 10% dari Dasar Pengenaan Pajak (DPP)
+
+## 1. Skema Perhitungan & Regulasi
+Dikenakan atas penyediaan akomodasi seperti hotel, losmen, motel, villa, guest house, dan indekos (dengan jumlah kamar > 10).
+- **DPP**: Omzet / jumlah pembayaran yang diterima penyedia jasa perhotelan.
+- **Rumus**: `Pajak Terutang = Omzet Kotor x 10%`
+
+## 2. Matriks Riset Blanko OPD (Digitalisasi M-PAD)
+
+### A. Warga / Pemilik Hotel (`retribusi-mobile`)
+- **Pendaftaran (SPOPD)**: WP memilih titik kordinat bangunan hotel (MapPicker), menginput **jumlah kamar** (kasat mata), dan foto bangunan.
+- **Pelaporan (SPTPD)**: WP melapor omzet bulanan secara mandiri dan mengunggah rekap sistem reservasi.
+
+### B. Admin & Backend API (`retribusi-api` & `retribusi-admin`)
+- API menghitung `Omzet x 10%` dan mencetak SKPD digital.
+- Jika WP telat melapor, API otomatis menambahkan denda administratif dan bunga keterlambatan 1% per bulan.
+
+### C. Petugas Lapangan (`retribusi-petugas`)
+- **Surveillance**: Petugas memeriksa tingkat okupansi kamar (hunian) secara fisik jika dicurigai ada manipulasi laporan omzet, menggunakan form LKOK digital di lapangan.
 
 
 ---
@@ -11791,6 +17103,203 @@ A specialized POS system for **Toko Kelontong**, bridging the gap between deskto
 
 ---
 
+## File: docs/05_modul_aplikasi/implementasi_onboarding_ppat.md
+---
+# Alur Aktivasi & Persetujuan Akun Notaris/PPAT oleh Ka.Bapenda
+
+Rencana implementasi ini menguraikan tahapan untuk menambahkan alur pendaftaran mandiri (Public Registration) bagi Notaris/PPAT, yang mana akun mereka akan secara *default* berada pada status `PENDING`, dan memerlukan aktivasi manual oleh Kepala Bapenda (atau Super Admin) melalui dasbor khusus.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Keputusan Role & Akses:** Saat ini sistem tidak memiliki *role* spesifik `kepala_bapenda`. Apakah hak akses untuk menyetujui akun Notaris ini akan digabungkan ke `super_admin`, atau kita perlu membuat *role* baru khusus `kepala_bapenda`? Pada rencana ini, saya mengasumsikan hak akses akan diberikan pada `super_admin`.
+
+## Open Questions
+
+> [!WARNING]
+> 1. **Dokumen Persyaratan:** Dokumen apa saja yang wajib diunggah oleh Notaris saat mendaftar? (Misal: SK PPAT, KTP, atau Surat Permohonan). Saya akan menyiapkan fitur *upload* dokumen di *frontend*.
+> 2. **Halaman Pendaftaran:** Apakah halaman pendaftaran Notaris (Public Registration) akan kita letakkan menyatu dengan *Login Screen* di `retribusi-admin` (contoh: tombol "Daftar sebagai PPAT")?
+
+---
+
+## Proposed Changes
+
+### 1. Backend (`retribusi-api`)
+
+#### [MODIFY] `app/Models/User.php`
+- Menambahkan konstanta baru: `const ROLE_NOTARIS = 'notaris';`
+- Menambahkan *helper function* `isNotaris()`.
+
+#### [MODIFY] `app/Http/Controllers/AuthController.php`
+- Menambahkan method `registerNotaris(Request $request)` yang menerima input (Nama, NIK, Email, Password, serta *file upload* SK PPAT ke `metadata`).
+- Mengatur agar nilai *default* user yang baru dibuat adalah `role = 'notaris'` dan `status = 'pending'`.
+
+#### [NEW] `app/Http/Controllers/NotarisApprovalController.php`
+- Membuat *controller* baru yang difokuskan untuk Dasbor Persetujuan Ka.Bapenda.
+- Method `index()`: Mengambil daftar semua Notaris, baik yang berstatus `pending`, `active`, maupun `rejected`.
+- Method `approve($id)`: Mengubah status *user* menjadi `active`.
+- Method `reject($id)`: Mengubah status *user* menjadi `rejected`.
+
+#### [MODIFY] `routes/api.php`
+- **Public Routes:** Menambahkan `POST /notaris/register` di grup *throttled*.
+- **Protected Routes:** Menambahkan rute manajemen `api/notaris-approvals` dengan akses khusus untuk `super_admin`.
+
+---
+
+### 2. Frontend (`retribusi-admin`)
+
+#### [NEW] `src/pages/auth/RegisterPpat.tsx`
+- Menambahkan halaman publik baru (tidak dikunci oleh *login*) bagi Notaris untuk mengisi formulir pendaftaran dan mengunggah dokumen SK.
+
+#### [MODIFY] `src/pages/Login.tsx` atau `src/App.tsx`
+- Menambahkan *link* navigasi menuju halaman Registrasi PPAT pada halaman *Login*.
+- Mendaftarkan rute `/register-ppat` di `App.tsx`.
+
+#### [NEW] `src/pages/NotarisApproval.tsx`
+- Membuat halaman dasbor *Approval Desk* untuk Kepala Bapenda. Menampilkan antrean pendaftaran PPAT dalam format tabel (mencakup data NIK, Nama, dan *link* dokumen SK).
+- Menyediakan tombol *Action* **[Setujui & Aktifkan]** dan **[Tolak]**.
+
+#### [MODIFY] `src/components/Layout.tsx` (Sidebar)
+- Menambahkan sub-menu baru **"Aktivasi PPAT"** di bawah *section* 'Pengawasan' atau 'Sistem', yang hanya dapat dilihat oleh Ka.Bapenda (`super_admin`).
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- Eksekusi *endpoint* pendaftaran PPAT via cURL atau *tinker* untuk memverifikasi bahwa status secara mutlak menjadi `pending`.
+- Pengujian *login* dengan akun berstatus `pending` harus ditolak oleh sistem.
+
+### Manual Verification
+1. Mensimulasikan notaris yang mendaftar melalui UI `/register-ppat`.
+2. Login sebagai Ka.Bapenda (`super_admin`), mengakses menu Aktivasi PPAT, dan menekan tombol Setujui.
+3. Mencoba login menggunakan kredensial Notaris tersebut untuk memverifikasi bahwa akun telah berhasil diakses dan masuk ke menu e-BPHTB.
+
+
+---
+
+## File: docs/05_modul_aplikasi/pbb_p2.md
+---
+# Layanan Pajak: PBB-P2 (Pajak Bumi dan Bangunan)
+
+**Dasar Hukum**: Perda No. 1/2024 & Perwali 43/2025
+**Sistem Pemungutan**: Official Assessment
+**Tarif Progresif**: 0.15% - 0.30% (Tergantung NJOP Total)
+**NJOPTKP**: Rp 10.000.000
+
+## 1. Skema Perhitungan & Regulasi
+PBB-P2 menggunakan tarif progresif berdasarkan nilai aset:
+- Lahan Pangan/Ternak: Flat 0.25%.
+- NJOP ≤ Rp 1M: 0.15%
+- NJOP > Rp 1M - Rp 2M: 0.20%
+- NJOP > Rp 2M - Rp 5M: 0.25%
+- NJOP > Rp 5M: 0.30%
+**Rumus**: `(NJOP Bumi + NJOP Bangunan - NJOPTKP) x Tarif Progresif`
+
+## 2. Matriks Riset Blanko OPD (Cross-Repo Interlock)
+
+### A. Warga (`retribusi-mobile`)
+- Warga mengajukan pendaftaran/pemecahan NOP baru (SPOP).
+- **Desain Citizen-Centric**: Warga HANYA menggambar poligon tanah di MapPicker, memperkirakan luas bangunan, mengunggah SHM, dan mencentang Pakta Integritas. Warga **tidak tahu dan tidak mengisi** ZNT atau NJOP.
+
+### B. Petugas Lapangan (`retribusi-petugas`)
+- Petugas verifikasi mendatangi lokasi.
+- **Form Teknis (LSPOP)**: Petugas mengisi spesifikasi teknis (jenis atap, dinding, lantai, daya listrik, keberadaan kolam renang). Sistem API akan mengonversi ini menjadi *Nilai Bangunan*.
+
+### C. Backend API (`retribusi-api`)
+- Mengambil titik koordinat/poligon tanah warga, memadukannya dengan layer peta ZNT Bapenda (Spatial Query).
+- Mengkalkulasi NJOP Bumi (Luas x ZNT) dan NJOP Bangunan (dari LSPOP Petugas).
+- Menerapkan NJOPTKP Rp 10 Juta dan menerbitkan tagihan **SPPT**.
+
+
+---
+
+## File: docs/05_modul_aplikasi/pbjt_makanan_minuman.md
+---
+# Layanan Pajak: PBJT Makanan dan Minuman
+
+**Dasar Hukum**: Perda Kota Baubau No. 1 Tahun 2024
+**Sistem Pemungutan**: Self-Assessment
+**Tarif Utama**: 10% dari Dasar Pengenaan Pajak (DPP)
+**Threshold (PTKP)**: Omzet minimal Rp 3.000.000 / bulan
+
+## 1. Skema Perhitungan & Regulasi
+PBJT Makanan dan Minuman dikenakan atas penyediaan makanan/minuman oleh restoran, rumah makan, kafe, dan katering.
+- **DPP**: Jumlah pembayaran yang diterima oleh penyedia (Omzet Kotor).
+- **Rumus**: `Pajak Terutang = Omzet Kotor x 10%`
+
+## 2. Matriks Riset Blanko OPD (Digitalisasi M-PAD)
+Pendekatan *Citizen-Centric Design* diterapkan untuk memisahkan kompleksitas dari Wajib Pajak:
+
+### A. Warga / Pemilik Usaha (`retribusi-mobile`)
+- **Registrasi (SPOPD)**: Wajib Pajak mendaftar dengan memilih lokasi restoran di peta (MapPicker GIS) dan mengunggah foto tempat usaha. IKD (Identitas Kependudukan Digital) terisi otomatis.
+- **Pelaporan (SPTPD)**: Setiap bulan, WP hanya menginput **Total Omzet Kotor** dan mengunggah rekap kasir/buku kas. WP **tidak perlu** memikirkan tarif 10% atau denda.
+
+### B. Admin & Backend API (`retribusi-api` & `retribusi-admin`)
+- API otomatis mengkalkulasi `Omzet x 10%` dan menerbitkan SKPD.
+- Admin memvalidasi laporan SPTPD secara digital di dashboard.
+
+### C. Petugas Lapangan (`retribusi-petugas`)
+- **Spot Check**: Petugas datang ke restoran membawa aplikasi untuk melakukan uji petik (Tally Counter jumlah pengunjung atau cek *Tapping Box*).
+- Jika ada anomali (under-reporting), petugas mengisi form audit lapangan (LSPOP teknis) yang akan otomatis men-trigger Admin menerbitkan **SKPDKB** (Kurang Bayar).
+
+
+---
+
+## File: docs/05_modul_aplikasi/dishub_petugas_pattern.md
+---
+# Layanan Pajak Dishub & Pola Petugas M-PAD
+
+Dokumen ini menjelaskan detail mengenai **Layanan Pajak Dinas Perhubungan (Dishub)** dan **Pola Operasional Petugas Lapangan** yang telah didokumentasikan dan diterapkan secara langsung ke dalam ekosistem M-PAD (khususnya pada aplikasi `retribusi-petugas`, `retribusi-api`, dan `retribusi-admin`).
+
+---
+
+## 1. Layanan Retribusi Parkir Dishub di M-PAD
+
+Sesuai dengan dokumen regulasi (`BAUBAU_REGULATORY_MASTER.md`) dan arsitektur sistem (`MEGA_DOCUMENTATION.md`), retribusi parkir bukan dikelola oleh Bapenda, melainkan menjadi wewenang **Dinas Perhubungan (opd_id=2)**.
+
+Penerapannya dalam sistem M-PAD:
+
+- **Sentralisasi Pendapatan (Automated Billing):**
+  Meskipun transaksinya bersifat receh/mikro (misal: Rp2.000), sistem backend `ParkingController` didesain untuk otomatis men-*generate* *record* tagihan (`Bill`) ke tabel utama. Hal ini krusial agar laporan keuangan BPK/SIPD tetap konsisten dalam satu format neraca, tanpa membedakan pajak besar (seperti Reklame) dan retribusi kecil (Parkir).
+  
+- **Manajemen Shift & Wallet Jukir:**
+  Juru Parkir (Jukir) bekerja berdasarkan siklus **Satu Shift per Hari** (menggunakan tabel `jukir_wallets`). Sistem merekam jumlah kendaraan masuk (R2/R4), total uang tunai yang dipegang Jukir, dan total uang yang langsung masuk Kas Daerah via QRIS. Pada akhir hari, Jukir wajib melakukan "Tutup Shift" sebagai bentuk pertanggungjawaban (rekonsiliasi).
+
+- **Live Dashboard Pengawasan:**
+  Aktivitas titik parkir, status shift Jukir yang sedang aktif, serta aliran dana terpantau secara *real-time* oleh Admin Dishub / Pengawas melalui widget khusus di `PengawasDashboard.tsx` (`retribusi-admin`).
+
+---
+
+## 2. Pola Petugas Lapangan (Officer Workflow & UI/UX)
+
+Berdasarkan dokumen pedoman `field_efficiency/SKILL.md` serta implementasi `ParkingQuickCashier.tsx`, pola kerja petugas M-PAD difokuskan pada **"Zero-Friction & High Speed"** untuk meminimalisir interaksi manusia dengan layar aplikasi.
+
+Pola operasional yang diterapkan:
+
+### A. Pola *Quick-Tap* (Kasir Cepat Jukir)
+- **Satu Kali Sentuh:** Petugas Jukir tidak perlu mengisi form panjang. Antarmuka menggunakan desain *Quick-Tap*—hanya menekan tombol ikon **Motor (Rp 2.000)** atau **Mobil (Rp 3.000)**, dan sistem langsung mencatatnya ke database.
+- **QRIS Offline Dinamis (Zero-Latency):** Untuk meminimalisir ketergantungan sinyal internet lapangan, QRIS di-generate 100% secara lokal (*offline*) di perangkat petugas. Aplikasi membaca payload QRIS statis, lalu menginjeksi nominal (Tag 54) dan menyuntikkan *Reference ID* unik (Tag 62), serta menghitung ulang algoritma CRC16 (Tag 63) seketika dalam hitungan milidetik.
+- **Referral Counter:** Sistem menggunakan generator unik `MM-XXXX` (reset bulanan otomatis berdasar RTC perangkat) sebagai referensi bukti transaksi tanpa perlu koneksi ke server pusat untuk mengambil nomor antrean.
+
+### B. Pola *Smart QR Redirection* & *Auto-Inquiry* (Petugas Pendata/Pajak)
+- **Context-Aware Scanner:** Petugas tidak perlu memilih "Saya mau scan PBB" atau "Saya mau scan SKRD". Petugas cukup membuka kamera, dan aplikasi akan membaca *payload* QR. Jika QR dari blanko PBB, aplikasi otomatis membuka halaman pendataan PBB. Jika QR berisi ID Tagihan, otomatis membuka halaman *Billing/Payment Modal*.
+- **Target < 15 Detik:** Desain arsitekturnya mewajibkan bahwa dari saat petugas menyorot kamera ke QR hingga muncul modal pembayaran, petugas tidak perlu menekan tombol pencarian. *Inquiry* (pencarian data) tertrigger otomatis sehingga transaksi bisa selesai di bawah 15 detik.
+
+### C. Pola Bukti Kerja (Digital LKOK & Thermal Print)
+- **Bukti Cetak / Digital:** Jukir dapat mencetak struk retribusi menggunakan printer Thermal Bluetooth kecil yang dibawa di pinggang, sehingga wajib pajak mendapat bukti fisik. 
+- **LKOK (Lembar Kerja Objek Khusus):** Untuk petugas peninjau lapangan (pajak reklame, PBB), setiap kunjungan menghasilkan form observasi digital yang langsung terintegrasi dengan koordinat GPS dan foto (*geotagging*).
+
+### D. Pola Penugasan berbasis *Geofencing* (Rencana/Protokol)
+- **Task Sorting:** Tugas patroli atau tagihan tunggakan diurutkan di aplikasi petugas berdasarkan jarak (radius GPS) terdekat dari titik berdiri petugas saat itu, meminimalisir waktu mondar-mandir di lapangan.
+- **Location Lockdown:** Pembatasan aksi "Bayar/Verifikasi" jika petugas tidak berada secara fisik di titik koordinat objek pajak (untuk menghindari fraud, petugas tidak bisa mencatat kunjungan dari warung kopi/rumah).
+
+> [!NOTE]
+> Secara garis besar, ekosistem untuk **Petugas** di mPaD tidak dirancang seperti aplikasi formulir biasa, melainkan didesain selayaknya **mesin EDC kasir + GPS Tracker**—harus cepat, andal saat minim sinyal (QRIS offline), dan termonitor secara *real-time* oleh instansi (Bapenda/Dishub).
+
+
+---
+
 ## File: docs/05_modul_aplikasi/pos-MAIN-tech_stack.md
 ---
 # 🚀 POS System Tech Stack
@@ -11805,6 +17314,23 @@ A specialized POS system for **Toko Kelontong**, bridging the gap between deskto
 
 ---
 *Last Updated: 2024*
+
+
+---
+
+## File: docs/05_modul_aplikasi/pajak_air_tanah.md
+---
+# Layanan Pajak: Pajak Air Tanah (PAT)
+
+**Dasar Hukum**: Perda Kota Baubau No. 1 Tahun 2024
+**Sistem Pemungutan**: Official Assessment
+**Tarif**: 20%
+**Rumus**: `(Volume Ekstraksi m3 x Harga Dasar Air) x 20%`
+
+## Matriks Riset Blanko OPD
+1. **Warga**: Warga (Pemilik sumur bor/industri) mendaftarkan titik sumur (MapPicker) dan mengunggah foto water meter (SIP).
+2. **Petugas**: Petugas datang mencatat angka meteran riil di aplikasi `retribusi-petugas` (LKOK).
+3. **API**: Menghitung tarif progresif/harga dasar air berdasarkan volume ekstraksi (m3), lalu menerbitkan tagihan SKPD.
 
 
 ---
@@ -12187,6 +17713,34 @@ public function processTransaction($data) {
 
 ---
 
+## File: docs/05_modul_aplikasi/bphtb.md
+---
+# Layanan Pajak: BPHTB
+
+**Dasar Hukum**: Perda Kota Baubau No. 1 Tahun 2024
+**Sistem Pemungutan**: Official Assessment (Melibatkan PPAT/Notaris)
+**Tarif**: 5%
+**NPOPTKP**: Jual Beli (Rp 80 Juta), Waris (Rp 300 Juta)
+
+## 1. Skema Perhitungan & Regulasi
+Dikenakan atas perolehan hak atas tanah dan/atau bangunan.
+- Jika NPOP (Nilai Transaksi) < NJOP PBB, maka yang digunakan adalah NJOP PBB.
+- **Rumus**: `(NPOP/NJOP - NPOPTKP) x 5%`
+
+## 2. Matriks Riset Blanko OPD
+
+### A. Warga / PPAT (`retribusi-mobile` / Web PPAT)
+- Notaris / Warga menginput NOP, NIK pembeli/penjual, dan **Nilai Transaksi Kasat Mata**. Mengunggah draft Akta/Sertifikat.
+- Warga tidak perlu menghitung NPOPTKP secara manual.
+
+### B. Admin & Backend API (`retribusi-admin` & `retribusi-api`)
+- API membandingkan Nilai Transaksi dengan database NJOP PBB. Mengambil nilai tertinggi.
+- API mengurangkan Rp 80 Juta atau Rp 300 Juta, lalu mengalikan 5% secara otomatis (Readonly bagi Warga).
+- Admin me-review dan membubuhkan TTE untuk menerbitkan SSPD BPHTB (Syarat Pembuatan Akta di BPN).
+
+
+---
+
 ## File: docs/05_modul_aplikasi/pos-MAIN-security.md
 ---
 # 🔒 Security Architecture - POS System
@@ -12288,6 +17842,1530 @@ The application is designed to be fully responsive for both browser usage and Go
 2. **Inisialisasi Dokumentasi:** Migrasi dari `task-ai.txt` (sebelumnya kosong).
 3. **Penyelarasan Baseline:** Menggunakan commit ID dari `retribusi-api` sebagai jangkar stabilitas.
 4. **PWA Optimization (Next Step):** Memastikan service worker bekerja optimal untuk notifikasi tagihan.
+
+
+---
+
+## File: docs/05_modul_aplikasi/sewa_alat_berat.md
+---
+# Layanan Aset: Sewa Alat Berat / Kendaraan
+
+**Kategori**: Retribusi Jasa Usaha
+**Pengelola**: Dinas PUPR / DLH
+
+## Matriks Riset Blanko OPD
+1. **Warga**: Memesan unit excavator/buldoser dari katalog aplikasi. Mengisi lama hari pemakaian dan titik lokasi proyek (MapPicker).
+2. **Admin**: Validasi ketersediaan unit.
+3. **Petugas Operator**: Menggunakan aplikasi petugas untuk clock-in dan clock-out operasional alat berat di lokasi proyek Warga (GPS tracking).
+4. **API**: Menerbitkan SKRD harian berdasarkan durasi pemakaian alat aktual di lapangan.
+
+
+---
+
+## File: docs/05_modul_aplikasi/pajak_mblb.md
+---
+# Layanan Pajak: Mineral Bukan Logam dan Batuan (MBLB)
+
+**Dasar Hukum**: Perda Kota Baubau No. 1/2024 & Perwali 42/2025
+**Tarif**: 15%
+**Rumus**: `(Volume Tonase/m3 x Harga Patokan Daerah) x 15%`
+
+## Matriks Riset Blanko OPD
+1. **Warga**: Pengusaha tambang galian C melaporkan estimasi volume galian kasar kasat mata.
+2. **Petugas**: Petugas lapangan / surveyor mencatat volume angkut riil truk (ritase) di portal keluar menggunakan form teknis `retribusi-petugas`.
+3. **API**: Mengalikan volume final dengan harga patokan bupati/walikota dan membebankan tarif 15%.
+
+
+---
+
+## File: docs/11_pre_launch_readiness/MATERI_RAPAT_KADIS_PTSP_MPAD.md
+---
+# 📄 MATERI RINGKAS RAPAT KOORDINASI
+## Integrasi Layanan Perizinan DPMPTSP Kota Baubau dalam Ekosistem Digital M-PAD
+
+**Dokumen**: Bahan Rapat Koordinasi Kepala Dinas Penanaman Modal dan Pelayanan Terpadu Satu Pintu (DPMPTSP) bersama Badan Pendapatan Daerah (Bapenda) Kota Baubau  
+**Topik**: Pemetaan Bidang Layanan, Integrasi OSS, dan Kesiapan Retribusi Perizinan Tertentu di M-PAD  
+**Tanggal**: 30 Agustus 2026  
+**Status**: Siap Paparan / Dokumen Final  
+
+---
+
+### 1. Eksekutif Ringkasan (Executive Summary)
+
+Sistem Informasi Manajemen Pajak, Retribusi, dan Aset Daerah (**M-PAD**) Kota Baubau telah rampung dibangun sebagai platform terpadu penghimpunan Pendapatan Asli Daerah (PAD). Salah satu pilar strategisnya adalah sinergi bersama **DPMPTSP Kota Baubau** untuk memastikan setiap perizinan daerah yang memiliki unsur retribusi dapat dihitung secara transparan, otomatis, dan terhubung langsung ke kas daerah secara *real-time*.
+
+---
+
+### 2. Jawaban Pemetaan: Berapa Layanan, Berapa Bidang?
+
+Berdasarkan struktur master data produksi M-PAD (Perda Kota Baubau No. 1 Tahun 2024 tentang Pajak Daerah dan Retribusi Daerah):
+
+```mermaid
+graph TD
+    MPAD["Ekosistem M-PAD (31 Layanan)"] --> P1["1. Pajak Daerah (13 Layanan)"]
+    MPAD --> P2["2. Retribusi Jasa Usaha (9 Layanan)"]
+    MPAD --> P3["3. Retribusi Jasa Umum (5 Layanan)"]
+    MPAD --> P4["4. Retribusi Perizinan Tertentu (2 Layanan - DPMPTSP LIVE)"]
+    MPAD --> P5["5. Pemanfaatan Aset Daerah (1 Layanan)"]
+    MPAD --> P6["6. Dana Bagi Hasil / Opsen (1 Layanan)"]
+```
+
+#### Rincian 5 Bidang Aktif M-PAD:
+1. **Pajak Daerah (13 Jenis Pajak)**: PBB-P2, BPHTB, Reklame, PBJT (Makanan/Minuman, Perhotelan, Parkir, Kesenian/Hiburan, Tenaga Listrik), PAT, MBLB, Sarang Burung Walet, dan Pajak Opsen.
+2. **Retribusi Jasa Usaha (9 Jenis Retribusi)**: Pasar, Tempat Pelelangan, Terminal, Rumah Potong Hewan, Penyeberangan di Air, Tempat Rekreasi/Olahraga, Laboratorium Lingkungan, Produksi Usaha Daerah, dan Aset JU.
+3. **Retribusi Jasa Umum (5 Jenis Retribusi)**: Pelayanan Kebersihan/Persampahan, Pelayanan Parkir Tepi Jalan Umum, Pelayanan Pasar Umum, Pengujian Kendaraan Bermotor (KIR), dan Pengendalian Menara Telekomunikasi.
+4. **Retribusi Perizinan Tertentu (2 Jenis Retribusi — Domain Utama DPMPTSP)**:
+   * **PBG (`PZ-PBG` / ID: 212)**: Retribusi Persetujuan Bangunan Gedung.
+   * **TKA (`PZ-TKA` / ID: 213)**: Retribusi Penggunaan Tenaga Kerja Asing / Pengesahan RPTKA Perpanjangan.
+5. **Pemanfaatan Barang Milik Daerah / Aset (1 Jenis)**: Sewa tanah, gedung, dan peralatan daerah.
+
+---
+
+### 3. Status Layanan Olahan DPMPTSP yang Telah LIVE di M-PAD
+
+Layanan perizinan berikut **sudah berstatus AKTIF dan siap digunakan** di lingkungan M-PAD tanpa perlu menunggu pengembangan modul tambahan:
+
+| Kode Layanan | Nama Layanan | Dasar Hukum / Formula | Status di M-PAD | Alur di Lapangan |
+| :--- | :--- | :--- | :---: | :--- |
+| **`PZ-PBG`** (ID: 212) | **Persetujuan Bangunan Gedung (PBG)** | Standar Luas Bangunan $\times$ Indeks Lokalitas $\times$ Indeks Terintegrasi $\times$ SHST | ✅ **LIVE & Teruji** | Pemohon input parameter fisik/SIMBG $\rightarrow$ Sistem hitung SKRD otomatis $\rightarrow$ Bayar via BRI/QRIS $\rightarrow$ Verifikasi DPMPTSP/PUPR $\rightarrow$ Terbit Sertifikat PBG. |
+| **`PZ-TKA`** (ID: 213) | **Pengesahan Perpanjangan RPTKA** | Tarif Kompensasi per Tenaga Kerja Asing / Bulan (sesuai kurs BI & regulasi Kemnaker) | ✅ **LIVE & Teruji** | Perusahaan sponsor unggah berkas $\rightarrow$ Auto-generate billing SKRD $\rightarrow$ Rekonsiliasi kas daerah instan $\rightarrow$ DPMPTSP terbitkan pengesahan. |
+
+---
+
+### 4. Sinergi M-PAD dengan Online Single Submission (OSS) & Tata Ruang
+
+```
+┌─────────────────────────┐          ┌─────────────────────────┐
+│     OSS RBA (Pusat)     │          │    DPMPTSP Kota Baubau  │
+│  - Penerbitan NIB       │          │  - Verifikasi Berkas    │
+│  - Data Perusahaan      │          │  - Rekomendasi Teknis   │
+└────────────┬────────────┘          └────────────┬────────────┘
+             │                                    │
+             ▼                                    ▼
+┌──────────────────────────────────────────────────────────────┐
+│                    PORTAL TERPADU M-PAD                      │
+│  - Validasi NIB / NOP / NPWPD Terpadu                        │
+│  - Hitung Otomatis Billing SKRD Retribusi Perizinan          │
+│  - Gateway Multi-Bank & QRIS Dinamis                         │
+│  - E-Registry & Verifikasi Dokumen Publik (QR Code Sah)      │
+└──────────────────────────────────────────────────────────────┘
+```
+
+1. **Prinsip Kemudahan Data (Interoperabilitas)**:
+   * Jika integrasi API langsung ke server OSS Pusat masih dalam proses antrian teknis kementerian, pemohon cukup memasukkan nomor NIB di formulir M-PAD.
+   * Petugas DPMPTSP dapat langsung memvalidasi kecocokan NIB pada dashboard admin backoffice.
+2. **Keterkaitan Tata Ruang (GISTARU / Poligon Wilayah)**:
+   * Lokasi objek bangunan/usaha di M-PAD dilengkapi koordinat GIS (Latitude/Longitude) yang langsung memetakan objek ke Zona Nilai Tanah (ZNT) dan kesesuaian tata ruang daerah.
+3. **Anti-Fraud & Idempoten**:
+   * Setiap pembayaran retribusi PBG dan TKA mengunci nomor SKRD secara otomatis, mencegah duplikasi pembayaran atau manipulasi nominal retribusi di luar sistem.
+
+---
+
+### 5. Rekomendasi Aksi untuk Rapat Pimpinan
+
+1. **Penerbitan Surat Edaran Bersama**:
+   * Menetapkan M-PAD sebagai kanal resmi pembayaran retribusi PBG dan TKA di lingkungan Pemkot Baubau.
+2. **Aktivasi Akun Operator DPMPTSP**:
+   * Menugaskan staf verifikator DPMPTSP untuk login ke portal Admin M-PAD (`adminmpad.baubaukota.go.id`) menggunakan role `opd` DPMPTSP yang sudah disiapkan.
+3. **Sosialisasi ke Notaris, Konsultan Arsitek, & Pelaku Usaha**:
+   * Memberikan buku panduan pembayaran digital (Manual Book M-PAD) agar proses izin bangunan dan ketenagakerjaan menjadi 100% *paperless* dan non-tunai.
+
+
+---
+
+## File: docs/11_pre_launch_readiness/M-PAD_READINESS_GUIDE.md
+---
+# 🚀 M-PAD Pre-Launch Readiness Guide
+*(Dokumen Serah Terima & Catatan Tim Pengembang)*
+
+Dokumen ini adalah **Catatan Teknis Resmi** yang menjabarkan daftar pekerjaan esensial (*mandatory*) yang harus dieksekusi oleh tim pengembang **sembari menunggu akses API Key / Sandbox dari Bank Mitra (H2H)**. Jika seluruh poin di bawah ini terpenuhi, maka sistem M-PAD dinyatakan 100% *Production-Ready* dan siap *Go-Live* kapan saja *Sandbox* dibuka.
+
+> [!WARNING]
+> **Kondisi Saat Ini (Telah Dieksekusi)**
+> - Antarmuka *E-Wallet / Saldo* di `retribusi-mobile` telah **DIBERSIHKAN**. Aplikasi warga kini mengarah 100% ke *Direct Payment* (Tanpa Uang Elektronik).
+> - Antarmuka *Login* warga telah diubah menjadi berbasis **NIK & Nomor WhatsApp**.
+> - Fitur Lapor GPS (Warga) dan *Searchable Dropdown* (Petugas) sudah terpasang.
+
+---
+
+## 🛠️ DAFTAR TUGAS TIM PENGEMBANG (BACKEND & ADMIN)
+
+Berikut adalah cetak biru teknis yang **harus** dilanjutkan oleh tim *Backend* dan *Admin*:
+
+### 1. Sinkronisasi Modul Identitas (WA Gateway & OTP)
+Karena *Frontend* sudah dirombak menggunakan OTP, tim *Backend* wajib mengintegrasikan API dengan Node.js Baileys:
+- **Tugas API:** Buat `App\Services\WaGatewayService` yang melakukan POST ke `http://localhost:3001/send-message`.
+- **Tugas Auth:** Ubah `AuthController.php`. Hilangkan validasi *password*. Saat NIK dipanggil, buat 6-digit angka *random*, simpan di *Cache* / *Database* (dengan `expires_at` 5 menit), lalu tembak melalui WA Gateway.
+- **Tugas Dukcapil:** Pastikan validasi NIK tersambung ke `IdentityValidationService` agar NIK fiktif tidak bisa menerima OTP.
+
+### 2. Modul Agregasi PBB-P2 (Primadona PAD)
+M-PAD tidak akan lengkap jika PBB tidak masuk ke dalam satu pintu:
+- **Database:** Eksekusi migrasi tabel `user_nops` (Relasi: `user_id` -> banyak `nop`).
+- **Endpoint:** Buat rute `POST /api/citizen/nops/link` untuk mengecek NOP ke *database* Bapenda dan menautkannya ke profil warga.
+- **Billing Service:** Pastikan kelas penagihan menggabungkan data `retribution_bills` dan data tunggakan PBB dari NOP yang tersambung saat warga membuka *Dashboard* mereka.
+
+### 3. Tunggakan Parsial (*Checkout List*)
+Warga seringkali hanya sanggup membayar tunggakan beberapa tahun terakhir saja.
+- **Tugas Mobile:** Ubah UI `Tagihan.tsx` menggunakan komponen *Checkbox*. Kirimkan dalam bentuk *Array* JSON `{"bill_ids": [12, 13]}` saat *checkout*.
+- **Tugas API:** Ubah `BillController` untuk tidak menghitung *total tagihan keseluruhan*, melainkan melakukan iterasi (SUM) hanya pada `id` yang dikirim dalam *array*.
+
+### 4. Administrasi Mutasi Objek Pajak (Peralihan Aset)
+Integritas data kepemilikan sangat krusial agar tidak ada salah tagih (*Omni-Sync Protocol*).
+- **Tugas Admin:** Buat panel "Mutasi Wajib Pajak" di Web Vue/React Admin.
+- **Tugas API (`MutationController`):**
+  - Ubah *foreign key* `user_id` dari Objek Pajak (`tax_objects`) dari pengguna Lama ke Baru.
+  - **CRITICAL (Sapu Bersih):** Batalkan (`void`) seluruh tugas inspeksi (*notices*) Petugas Lapangan untuk Wajib Pajak lama.
+  - Hapus tagihan tertunggak dari *Dashboard* Mobile warga lama, lalu *assign* tagihan tersebut ke warga baru.
+
+### 5. Buku Rekap Keuangan Bapenda (LRA Real-Time)
+Kepala Bapenda membutuhkan *Dashboard* penerimaan sebelum bank melakukan *End-of-Day (EOD)* rekonsiliasi.
+- **Tugas API:** Kembangkan kueri analitik (GROUP BY `retribution_types.name`, `DATE(payments.created_at)`) di `AnalyticsController` untuk menghitung uang yang sudah berstatus `Success`.
+- **Tugas Admin:** Buat grafik Visual / Tabel Harian yang mengekspor data ini ke format PDF/Excel.
+
+---
+
+## 🔒 INFRASTRUKTUR & PERSIAPAN SANDBOX BANK
+
+Ketika pihak Bank (BRI/Sultra/Mandiri) menelepon untuk memberikan akses *Sandbox*, pastikan hal-hal berikut sudah ada di tangan administrator VPS:
+
+> [!IMPORTANT]
+> 1. **IP Publik Statis (Production & Staging):** Siapkan IP VPS (Misal Biznet Neo) untuk didaftarkan ke sistem *Whitelisting* Bank. Jika IP berubah, API Bank akan langsung me- *reject* koneksi (Error 401).
+> 2. **Signature BRIVA BRI:** Konfirmasi BRI 2026-07-30 menyatakan `X-SIGNATURE` sandbox BRIVA memakai RSA-SHA256. Simpan public key BRI sebagai file server/secret yang tidak dilacak Git, arahkan `BRI_SNAP_PUBLIC_KEY_PATH`, dan tetap konfirmasi canonical string serta encoding signature kepada tim IT BRI. Partner SNAP lain dapat memiliki mekanisme key yang berbeda.
+> 3. **Callback / Webhook URL:** Siapkan domain publik (bukan *localhost* atau IP) yang sudah bersertifikat SSL (HTTPS) valid untuk rute `POST /snap/v1.0/transfer-va/payment`. Bank tidak akan mau menembak ke URL HTTP biasa.
+
+
+---
+
+## File: docs/11_pre_launch_readiness/WA_E2E_TEST_RESULT.md
+---
+# Hasil Pengujian E2E WhatsApp Gateway (M-PAD Notification Subsystem)
+
+**Tanggal Pengujian:** 30 Agustus 2026  
+**Target Komponen:** OpenWA / Baileys Engine VPS (`127.0.0.1:2785` / port internal container), `WaGatewayService.php`, `GenerateAutomatedTeguran.php`, `SendDueDateNotifications.php`.  
+**Leantime Ticket Reference:** #2055
+
+---
+
+## 1. Arsitektur Gateway
+
+Sistem notifikasi WhatsApp M-PAD beroperasi secara non-blocking melalui REST Bridge:
+
+```
+[ Laravel Backend / Cron Jobs ]
+        ↓ HTTP POST /send-message (Payload: { number, message })
+[ WA Gateway Engine (VPS: 127.0.0.1:2785) ]
+        ↓ WebSocket Multi-Device Protocol
+[ WhatsApp Web Infrastructure / Meta Servers ]
+        ↓ Push Notification
+[ Smartphone Wajib Pajak / Petugas ]
+```
+
+---
+
+## 2. Parameter Endpoint & Kontrak Payload
+
+### A. Cek Status Koneksi
+- **Endpoint**: `GET /api/admin/wa-gateway/status`
+- **Headers**: `Authorization: Bearer <ADMIN_TOKEN>`
+- **Response Format**:
+```json
+{
+  "status": "ONLINE",
+  "connected": true,
+  "user": "6281234567890@c.us",
+  "qr": null
+}
+```
+
+### B. Pengujian Kirim Pesan (Test Send)
+- **Endpoint**: `POST /api/admin/wa-gateway/send-test`
+- **Headers**: `Authorization: Bearer <ADMIN_TOKEN>`
+- **Request Body**:
+```json
+{
+  "phone": "081234567890",
+  "message": "Halo! Ini adalah pesan uji coba sistem notifikasi M-PAD Kota Baubau.",
+  "type": "custom"
+}
+```
+- **Response Format**:
+```json
+{
+  "success": true,
+  "message": "Pesan WhatsApp berhasil dikirim",
+  "detail": "Halo! Ini adalah pesan uji coba sistem notifikasi M-PAD Kota Baubau."
+}
+```
+
+### C. Otomasi Pengiriman Notifikasi Tagihan (Surat Teguran & Jatuh Tempo)
+- Command: `php artisan notifications:send-due-date` (H-3 sebelum jatuh tempo).
+- Command: `php artisan teguran:generate-automated` (Surat Teguran I, II, III).
+- Template Pesan:
+```
+*PEMERINTAH KOTA BAUBAU - BAPENDA*
+Pemberitahuan Tagihan Daerah (M-PAD)
+
+Yth. Bapak/Ibu {NAMA_WP},
+Tagihan retribusi/pajak Anda dengan nomor *{BILL_NUMBER}* sebesar *Rp {TOTAL_AMOUNT}* akan jatuh tempo pada *{DUE_DATE}*.
+
+Silakan melakukan pembayaran melalui aplikasi M-PAD Mobile atau Virtual Account / QRIS resmi Bapenda Kota Baubau.
+```
+
+---
+
+## 3. Hasil Verifikasi & Quality Check
+
+| Skenario Uji | Target | Hasil | Status |
+| :--- | :--- | :--- | :---: |
+| **Normalisasi Nomor Telepon** | Format `08...` → `628...` | Sukses di-format di `WaGatewayService.php` | ✅ PASS |
+| **Pesan OTP Register/Login** | Kode 6 digit OTP acak | Template OTP 5 menit terkirim | ✅ PASS |
+| **Pesan Peringatan Tagihan** | Variable binding (Nama, NOP, Total) | Data tersinkron dengan tabel `bills` | ✅ PASS |
+| **Error Handling Offline** | Timeout 10 detik fallback ke Log | Log tersimpan tanpa merusak request thread | ✅ PASS |
+
+
+---
+
+## File: docs/Dokumen_Perencanaan_Sistem_Pendapatan_Baubau.md
+---
+# DOKUMEN PERENCANAAN (LAPORAN AKHIR) PENGEMBANGAN SISTEM INFORMASI PENDAPATAN DAERAH TERINTEGRASI
+**BADAN PENDAPATAN DAERAH (BAPENDA) KOTA BAUBAU**
+
+---
+
+## BAB I: PENDAHULUAN
+
+### 1.1 Latar Belakang
+Dalam konstelasi tata kelola pemerintahan modern, disrupsi teknologi dan transformasi digital telah berevolusi dari sekadar wacana menjadi tulang punggung operasional (*Good Corporate Governance*). Di ranah pemerintahan tingkat daerah, khususnya dalam manajemen fiskal, digitalisasi merupakan instrumen absolut guna meminimalisir kebocoran anggaran, meningkatkan akurasi data, dan mendongkrak Pendapatan Asli Daerah (PAD) secara eksponensial. Kota Baubau, yang secara geografis dan strategis bertindak sebagai simpul ekonomi maritim terkemuka di kawasan timur Indonesia, menyadari urgensi yang sangat mendesak untuk melakukan modernisasi sistem pemungutan pajak dan retribusi daerah.
+
+Selama hampir satu dekade terakhir, Badan Pendapatan Daerah (Bapenda) Kota Baubau beroperasi dengan bertumpu pada ekosistem digital warisan (*legacy system*) yang dibangun secara reaktif, sporadis, dan terfragmentasi. Sistem terdahulu, yakni Sistem Informasi Manajemen Pendapatan Daerah (SIMPAD), dirancang pada era di mana arsitektur perangkat lunak belum mempertimbangkan skalabilitas dan konektivitas. Akibatnya, sistem ini beroperasi secara terisolasi (silo) tanpa adanya benang merah integrasi data antar instansi maupun dengan pihak ketiga.
+
+Keterisolasian ini memicu efek domino berupa rentetan problematika birokratis yang melumpuhkan efisiensi pelayanan publik. Permasalahan mendasar bermula dari kewajiban wajib pajak yang harus melakukan entri data secara repetitif pada berbagai platform yang berbeda. Di level administratif, kelambanan sinkronisasi dan rekonsiliasi data pembayaran dengan pihak perbankan mitra (Bank Sultra) menjadi rutinitas yang melelahkan, mengingat proses tersebut masih mengandalkan pertukaran *file* (*flat-file transfer*) secara manual di akhir hari (*End-of-Day*). Lebih mengerikan lagi, tumpukan teknologi yang usang membuat postur keamanan siber sistem tersebut sangat rapuh terhadap ancaman peretasan modern. Oleh landasan kritis tersebut, dokumen perencanaan strategis ini disusun sebagai cetak biru (*blueprint*) perombakan radikal. Infrastruktur IT Bapenda Kota Baubau akan didekonstruksi dan dibangun ulang menuju arsitektur *Enterprise-Grade* yang tidak hanya cerdas dan gesit, namun juga terintegrasi secara *real-time* dan asinkron dengan jaringan perbankan nasional, mewujudkan visi Baubau Smart City 2030.
+
+### 1.2 Rencana Kerja Perencanaan
+Ruang lingkup pekerjaan perencanaan arsitektur digital ini tidak dilakukan secara serampangan, melainkan disusun secara sistematis melalui metodologi terstruktur. Pekerjaan ini dipecah ke dalam tiga fase krusial untuk memastikan proses transisi teknologi berjalan mulus tanpa mendisrupsi pelayanan pajak yang sedang berlangsung:
+1. **Tahap 1: Studi Forensik dan Analisis Kelayakan Lingkungan Eksisting.** Pada fase fundamental ini, tim analis melakukan penetrasi dan audit forensik secara menyeluruh terhadap anatomi basis data sistem lama. Tujuan utamanya adalah untuk membedah dan mengekstraksi skema tabel yang ada, mendeteksi anomali, membersihkan data sampah, serta mengeleminasi data ganda (*data redundancy*) yang menyesatkan. Selain itu, fase ini juga memetakan tingkat kesiapan dan literasi digital Sumber Daya Manusia (SDM) di internal Bapenda, serta menganalisis kebutuhan spesifikasi parameter pertukaran data *Host-to-Host* (H2H) dengan bank mitra secara presisi.
+2. **Tahap 2: Perancangan Teknis, Topologi & Arsitektur Sistem.** Beranjak dari hasil temuan komprehensif di lapangan, fase kedua berfokus pada dapur arsitektur. Di sini, insinyur merumuskan konfigurasi infrastruktur komputasi awan (*Cloud Server/VPS*) yang mengusung konsep *High Availability* dan redundansi. Fase ini juga merancang lapis demi lapis perimeter keamanan jaringan, mulai dari *Virtual Private Network* (VPN) terenkripsi hingga proteksi *Web Application Firewall* (WAF). Pemilihan tumpukan teknologi (*Tech-Stack*) yang tahan banting (seperti kerangka kerja Laravel 11 untuk *backend* dan React/Flutter untuk *frontend*) ditetapkan secara absolut pada tahap ini.
+3. **Tahap 3: Pelaporan, Dokumentasi, dan Pengesahan Legal.** Seluruh cetak biru arsitektur, rancangan teknis, matriks pengembangan perangkat lunak, dan spesifikasi infrastruktur jaringan dikompilasi secara metodis menjadi Dokumen Laporan Akhir ini. Dokumen ini bertindak sebagai kitab suci teknis atau *Single Source of Truth* bagi seluruh pemangku kepentingan (*stakeholders*), vendor pengembang perangkat lunak, hingga rujukan bagi auditor IT dari BPK di masa yang akan datang.
+
+### 1.3 Dasar Hukum
+Perancangan arsitektur sistem pengelolaan kas daerah yang mengelola miliaran rupiah uang negara tidak boleh berdiri di ruang hampa. Seluruh pondasi sistem diikat oleh kepatuhan hukum (*legal compliance*) yang sangat ketat guna menjamin keabsahan transaksi elektronik secara yuridis di mata pengadilan:
+1. **Undang-Undang Nomor 11 Tahun 2008** (sebagaimana telah diubah terakhir dengan UU No. 1 Tahun 2024) tentang Informasi dan Transaksi Elektronik (ITE). Undang-undang ini memberikan payung hukum dan melegitimasi penggunaan Tanda Tangan Elektronik (TTE) Tersertifikasi dalam penerbitan produk hukum seperti Surat Ketetapan Pajak Daerah (SKPD), menjadikannya setara dengan stempel basah konvensional.
+2. **Undang-Undang Nomor 1 Tahun 2022** tentang Hubungan Keuangan Antara Pemerintah Pusat dan Pemerintahan Daerah (HKPD). Regulasi ini menjadi landasan ontologis dalam penentuan, pengklasifikasian, dan penetapan tarif dasar atas seluruh pungutan pajak dan retribusi yang diimplementasikan di dalam algoritma sistem.
+3. **Peraturan Daerah (Perda) Kota Baubau Nomor 1 Tahun 2024** tentang Pajak Daerah dan Retribusi Daerah (PDRD). Perda ini secara eksplisit memandatkan restrukturisasi dan digitalisasi tata cara pemungutan terpadu demi menekan angka kebocoran pajak di lapangan.
+4. **Pedoman Standar Nasional Open API Pembayaran (SNAP)** yang diterbitkan oleh Bank Indonesia. Regulasi ini merupakan kitab suci integrasi perbankan yang mengikat tata cara dan standar kriptografi pertukaran data finansial *Open API* antara *server* Bapenda dan *server* perbankan di seluruh wilayah Republik Indonesia.
+
+### 1.4 Ruang Lingkup
+**Ruang Lingkup Lokasi dan Geografis:** Pusat kendali operasional, lalu lintas data, dan pemantauan sistem (*Command Center*) akan bermarkas di Kantor Badan Pendapatan Daerah Kota Baubau. Kendati demikian, jangkauan fungsionalitas dan skalabilitas sistem menembus batas tembok kantor. Sistem ini akan melayani seluruh spektrum tempat usaha—mulai dari perhotelan bintang, restoran, papan reklame komersial, hingga tambang Mineral Bukan Logam dan Batuan (MBLB)—di seluruh penjuru wilayah administratif Kota Baubau. Sistem juga membentangkan jaring kawat virtual (VPN) secara langsung ke pangkalan data Bank Pembangunan Daerah (BPD Sultra) serta memberikan akses pendaftaran nirkabel (*mobile-first*) dari genggaman gawai warga masyarakat di manapun mereka berada.
+
+**Ruang Lingkup Substansi Fungsional:** Secara teknis rekayasa perangkat lunak, sistem ini dirancang untuk memonopoli dan memfasilitasi seluruh siklus hidup perpajakan (*end-to-end tax lifecycle*). Alur dimulai dari pendaftaran subjek dan objek pajak secara mandiri via aplikasi (*E-SPOPD*), proses verifikasi, mesin penetapan nilai tagihan (*Billing Engine*) yang sangat dinamis dan cerdas menghitung denda secara matematis, modul pembayaran *Host-to-Host* nirsentuh yang menggugurkan keharusan warga antre di loket, hingga proses puncak berupa penerbitan produk hukum berbentuk Surat Ketetapan Pajak Daerah (SKPD) bermaterai Tanda Tangan Elektronik dari Badan Siber dan Sandi Negara (BSrE).
+
+### 1.5 Pendekatan dan Metodologi
+Sebagai respons atas lambannya metodologi pengembangan perangkat lunak konvensional (seperti *Waterfall*), proyek strategis ini mengadopsi pendekatan **Agile System Development Life Cycle (SDLC)** dengan prinsip kolaborasi partisipatif tingkat tinggi. Dalam kerangka kerja *Agile*, pengembangan sistem raksasa dipecah menjadi siklus-siklus iterasi pendek yang disebut *sprints* (biasanya berdurasi dua minggu). 
+
+Pimpinan Bapenda, kepala bidang, dan aparatur pajak secara rutin dilibatkan secara mendalam untuk mengevaluasi, mengkritik, dan menyempurnakan purwarupa (*prototype*) antarmuka pada setiap perayaan akhir *sprint*. Keterlibatan aktif ini memastikan bahwa produk perangkat lunak yang sedang dikonstruksi tetap lentur dan selaras dengan manuver kebijakan dinamis pemerintah daerah. Bapenda tidak perlu menunggu hingga akhir tahun saat proyek selesai untuk menyadari bahwa aplikasi tidak sesuai kebutuhan; koreksi arah kemudi dapat dilakukan seketika pada setiap *sprint*.
+
+---
+
+## BAB II: KAJIAN TEORI
+
+### 2.1 Teori Arsitektur Sistem Informasi
+Membangun platform dengan kaliber transaksi finansial pemerintahan membutuhkan fondasi arsitektur perangkat lunak yang dirancang untuk menahan beban skala ekstrem (*extreme scalability*).
+*   **N-Tier Architecture (Arsitektur Multi-Lapis):** Pendekatan rekayasa perangkat lunak yang secara logis dan fisik memisahkan aplikasi ke dalam tiga lapisan (atau lebih) yang sepenuhnya terisolasi. Yakni Lapisan Presentasi (*Front-end/UI*), Lapisan Logika Bisnis (*Backend API*), dan Lapisan Penyimpanan Persisten (*Database*). Keunggulan mutlak dari arsitektur ini adalah kemandirian skalabilitas. Apabila terjadi lonjakan jutaan pengakses (DDoS atau *traffic* warga) saat tenggat waktu pembayaran pajak akhir bulan, tim DevOps Bapenda cukup melipatgandakan *server front-end* tanpa memberikan tekanan atau membahayakan stabilitas mesin pangkalan data di lapisan terdalam.
+*   **Microservices & Service-Oriented Architecture (SOA):** Pendekatan modern yang dengan berani membongkar dan mereduksi aplikasi monolitik raksasa menjadi kumpulan layanan-layanan mikro yang beroperasi mandiri dan berkomunikasi via *API RESTful*. Dalam SOA, fungsi 'Kalkulator Denda', 'Gerbang Pembayaran', dan 'Sistem Manajemen Akun' berjalan sebagai entitas *server* independen. Jika modul 'Gerbang Pembayaran' mengalami kejatuhan akibat kendala jaringan bank, modul 'Pendaftaran Akun' akan tetap beroperasi normal tanpa ikut terseret mati, memastikan ketersediaan sistem (*High Availability*).
+
+### 2.2 Teori Basis Data Modern
+*   **Unified Database & JSON Schema-less Metadata:** Desain basis data tradisional yang sangat mengandalkan relasi ketat (*strict relational*) seringkali berujung pada mimpi buruk. Apabila sistem harus mengelola puluhan jenis pajak dengan kolom syarat yang berbeda-beda, relasi antar tabel (JOIN) yang terlalu masif akan merenggut memori CPU saat pemanggilan (*query time*). Penerapan teori *Unified Database* yang mengadopsi kemampuan *metadata JSON* dalam basis data relasional modern (PostgreSQL/MySQL 8+) memungkinkan sistem menyimpan variabel data yang bentuknya bebas, dinamis, dan tak terbatas di dalam satu sel kolom tunggal, menghancurkan hambatan performa kueri yang berbelit.
+*   **In-Memory Caching (Redis/Memcached):** Anatomi perangkat keras menuntut bahwa pencarian data di media penyimpanan fisik (*Solid State Drive/NVMe*) memakan waktu hitungan milidetik. Jika dikalikan dengan ratusan ribu permintaan serentak, proses ini akan memicu *bottleneck* pada I/O disk peladen. *In-Memory Caching* melalui teknologi Redis mengatasi hukum fisika ini dengan menyimpan seluruh hasil komputasi dan data yang paling sering diakses secara langsung ke dalam RAM utama komputer (*Random Access Memory*). Strategi ini merubah waktu latensi komputasi dari level milidetik menjadi level mikrodetik, menciptakan pengalaman dan ilusi perpindahan halaman web yang instan di layar pengguna.
+
+### 2.3 Teori Kriptografi dan Keamanan Siber
+Mengingat aplikasi ini menjadi lalu lintas bagi kas negara, seluruh transaksi finansial mutlak membutuhkan tameng perlindungan tingkat militer untuk menumpas manipulasi *cyber* di ranah publik.
+*   **Asymmetric Encryption (Kriptografi Kunci Publik RSA-2048 / ECDSA):** Mekanisme sandi matematis yang memastikan bahwa setiap paket data sensitif yang keluar dari *server* dikunci menggunakan kunci publik milik penerima. Hebatnya, secara hukum probabilitas matematis, sandi ini hanya bisa dibongkar dan dibaca oleh pemegang kunci privat (Server Bapenda yang terisolasi). Sistem ini mengeleminasi kemungkinan intersepsi, pencurian, atau penyadapan data oleh sindikat peretas yang menyamar di tengah jaringan (*Man-in-the-Middle Attack*).
+*   **Hash-based Message Authentication Code (HMAC-SHA256):** Sebuah algoritma leburan kriptografis satu arah yang secara otomatis menempel pada setiap tajuk permintaan jaringan (*Header HTTP Request*). Protokol ini berfungsi bak segel lilin pada surat rahasia. Jika terdapat satu digit saja angka nominal tagihan pajak yang dicoba dimodifikasi oleh peretas (misalnya merubah tagihan Rp 10.000.000 menjadi Rp 10.000) saat data melayang melintasi jaringan internet, leburan nilai HMAC akan berantakan secara matematis. Kegagalan validasi HMAC ini akan memicu *firewall* peladen untuk secara agresif menolak koneksi dan memblokir IP penyerang seketika secara otomatis.
+
+---
+
+## BAB III: GAMBARAN SISTEM EKSISTING (STUDI SEBELUMNYA)
+
+Membangun gedung pencakar langit digital yang baru tidak akan pernah bermakna tanpa melakukan evaluasi klinis dan introspektif terhadap kelemahan fundamental arsitektur terdahulu. Tim arsitek senior telah diterjunkan untuk melakukan studi forensik mendalam (*Reverse Engineering*) dan pembongkaran paksa terhadap kode sumber sistem warisan (*legacy system*) yang menempati direktori `/old`, yang ditinggalkan oleh pengembang lama. Studi otopsi digital ini berhasil menyingkap sejumlah patologi dan kerentanan sangat kritis yang menjadi justifikasi tak terbantahkan atas keharusan perombakan total ekosistem ini.
+
+### 3.1 Arsitektur Monolitik dan Keterpecahan Kode (Fenomena Silo)
+Pemeriksaan pada struktur kode sumber (*source code*) lama memperlihatkan realita yang memprihatinkan; sistem ini dibangun dengan pengabaian total terhadap standar industri rekayasa perangkat lunak. Sistem sama sekali absen dari penggunaan kerangka kerja modern (*Framework MVC*) maupun paradigma *Object-Oriented Programming* (OOP). Aplikasi murni dibangun secara tradisional menggunakan barisan kode *"PHP Native Spaghetti"* (`index.php`, `main.php`) yang bercampur baur antara logika *database*, *query SQL* mentah, dan antarmuka HTML dalam satu fail yang sama. Kondisi ini melahirkan sistem yang rapuh, mudah hancur ketika dimodifikasi, dan sangat mustahil untuk dipelihara dalam jangka panjang (*unmaintainable*). 
+
+Lebih jauh, patologi paling fatal terletak pada keterpecahan fisik atau isolasi modul secara absolut (*Silo Effect*). Sistem secara sewenang-wenang membedakan pengelolaan 9 Jenis Pajak Daerah (diinangkan dalam direktori `/old/9pajak`) dan BPHTB (diinangkan dalam direktori `/old/bphtb`) seolah-olah keduanya adalah dua entitas negara yang berbeda dengan dua pangkalan data yang saling tidak sudi mengenal satu sama lain. Kondisi amorf ini menjadi biang kerok utama terciptanya **Redudansi Data Massal yang Sangat Parah**. Bayangkan skenario wajib pajak yang memiliki aset restoran sekaligus properti ruko; ia akan dipaksa untuk diinput, didata, dan diverifikasi berulang kali di kedua sub-sistem tersebut. Cacat bawaan ini merusak integritas *Master Data*, membingungkan staf Bapenda saat melakukan audit, dan menyabotase mimpi besar pemerintah untuk menciptakan Nomor Pokok Wajib Pajak Daerah (NPWPD) yang tunggal dan terpusat.
+
+### 3.2 Kematian Tumpukan Teknologi (Tech-Stack Obsolescence & Vulnerabilities)
+Dari spektrum presentasi antarmuka pengguna (*User Interface*), sistem warisan ini masih tersandera oleh teknologi pustaka (*library frontend*) prasejarah. Penelusuran menyingkap bahwa sistem aktif bergantung pada kerangka kerja **jQuery versi 1.4.2**—sebuah pustaka usang yang peluncuran perdananya dilakukan lebih dari 14 tahun yang lalu (2010)—serta bergantung pada **Ext-Core JS**. 
+
+Mempertahankan pustaka yang sudah berstatus *End-of-Life* (EOL) dan ditinggalkan pengembangnya ini berarti sistem secara sengaja tidak lagi menerima suntikan tambalan keamanan (*security patches*) terbaru. Kondisi ini mengekspos Bapenda menjadi ladang empuk dan target sasaran empuk bagi eksploitasi kerentanan tingkat dasar (seperti *Cross-Site Scripting / XSS*) oleh peretas amatir sekalipun. Di sisi kenyamanan pengguna, antarmuka lawas ini di- *coding* menggunakan dimensi tabel kaku (*non-responsive*), membuatnya hancur berantakan dan nyaris mustahil dioperasikan secara normal manakala diakses melalui peramban *smartphone* oleh petugas verifikator di lapangan.
+
+### 3.3 Bom Waktu Basis Data (*Monolithic Bottleneck & ACID Violations*)
+Penetrasi lebih dalam pada jantung penyimpanan data mengungkap fakta yang lebih mengkhawatirkan. Analisis terhadap fail ekstraksi cadangan pangkalan data lama (`sw_patda_backup.sql`) yang membengkak hingga berukuran masif (108 Megabytes, tersusun dari jutaan baris data relasional tanpa partisi) menelanjangi implementasi desain relasional yang usang dan tidak memenuhi kaidah *ACID (Atomicity, Consistency, Isolation, Durability)*. 
+
+Seluruh tumpukan histori transaksi dari tahun ke tahun, *log* rekam jejak pengguna, hingga tabel referensi tarif induk dicampur-adukkan menjadi satu tanpa adanya kesadaran akan mekanisme pemisahan arsip (*archiving*), tabel *history*, maupun konfigurasi sistem pendelegasian memori *caching*. Akibat dari kecerobohan arsitektur ini sudah dapat diprediksi secara matematis: dalam kondisi nyata (*real-world scenario*), khususnya saat menginjak musim puncak pembayaran pajak (jatuh tempo akhir tahun/bulan), ledakan permintaan dan antrean eksekusi *query SQL* yang sangat brutal akan menghantam dan membebani leher botol (*bottleneck*) satu peladen *database* tunggal hingga menyebabkan CPU kewalahan 100%. Rangkaian proses ini pada akhirnya selalu berujung pada satu titik malapetaka: server lumpuh total dan memuntahkan pesan kegagalan koneksi (*Database Connection Timeout*). Fakta destruktif tak terbantahkan inilah yang menjadi fondasi dan argumen utama mengapa migrasi total menuju ekosistem *Micro-service* dengan percepatan teknologi penyangga *Redis In-Memory Cache* bukan lagi sebuah pilihan, melainkan keharusan untuk bertahan hidup.
+
+---
+
+## BAB IV: ANALISIS KEBUTUHAN DAN ARSITEKTUR SISTEM
+
+Sebagai antitesis langsung dari sistem lama yang rentan, rapuh, dan kaku, arsitektur masa depan ini didesain dan dirangkai sejak baris kode pertama (*from scratch*) berbasis awan murni (*Cloud-Native*). Sistem baru ini mengadopsi dan bernapas dengan filosofi Ketersediaan Tinggi Mutlak (*Absolute High Availability*).
+
+### 4.1 Skema Topologi Infrastruktur Cloud
+
+<div class="mermaid" style="max-width: 800px; margin: 20px auto;">
+flowchart TD
+    classDef cloud fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef server fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100
+    classDef db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef firewall fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c
+    classDef network fill:#f3e5f5,stroke:#303f9f,stroke-width:2px,color:#1a237e
+
+    subgraph AreaPublik[KANAL INTERNET PUBLIK DAN INTRANET]
+        Warga[Wajib Pajak Browser dan Mobile Apps]:::cloud
+        Perbankan[Sistem Core Banking Mitra]:::cloud
+        Petugas[Intranet VPN Bapenda]:::cloud
+    end
+
+    subgraph AreaKeamanan[PERIMETER KEAMANAN SIBER DMZ]
+        WAF[Web Application Firewall L7 Anti DDoS]:::firewall
+        LB[L4 L7 API Load Balancer]:::network
+    end
+
+    subgraph AreaVPS[KLASTER APLIKASI MICROSERVICES VPS]
+        Node1[App Server Node 01 Laravel]:::server
+        Node2[App Server Node 02 Auto Scaling]:::server
+    end
+
+    subgraph AreaDB[DATA CENTER DAN PERSISTENSI]
+        DBMaster[Database Master MySQL PostgreSQL]:::db
+        Redis[Redis Cache Server Session Store]:::db
+        ObjectStorage[S3 Object Storage PDF Media]:::db
+    end
+
+    Warga -->|HTTPS TLS 1.3| WAF
+    Perbankan -->|IPSEC VPN Kriptografi| WAF
+    Petugas -->|HTTPS Private VPN| WAF
+
+    WAF -->|Traffic Bersih| LB
+    LB -->|Distribusi 50 Persen| Node1
+    LB -->|Distribusi 50 Persen| Node2
+
+    Node1 -->|Read Write ORM| DBMaster
+    Node1 -->|Set Get Cache| Redis
+    Node1 -->|Signed URL| ObjectStorage
+
+    Node2 -->|Read Write ORM| DBMaster
+    Node2 -->|Set Get Cache| Redis
+    Node2 -->|Signed URL| ObjectStorage
+</div>
+
+**Analisis Mendalam Arsitektur Jaringan:** Topologi radikal ini mengamputasi paradigma lama di mana peladen terekspos telanjang ke internet. Konfigurasi jaringan kini memusatkan seluruh tameng perlindungan pada *Web Application Firewall* (WAF) di lapis terluar (Lapisan 7 OSI Layer). Dengan arsitektur ini, lalu lintas (*traffic*) data yang datang dari internet publik tidak akan pernah memiliki akses langsung (*direct routing*) untuk menyentuh, apalagi mengeksploitasi mesin *Database*. WAF bertugas bak pasukan elit pabean; ia membongkar setiap paket HTTP yang datang secara *real-time*, mendeteksi dan menghancurkan secara brutal paket yang membawa muatan virus, *malware*, maupun kode injeksi SQL berbahaya (*SQL Injection Payload*). 
+
+Setelah paket data dipastikan steril, WAF baru akan meneruskannya ke komponen penengah, yakni *API Load Balancer*. Perangkat penyeimbang beban ini secara cerdas menganalisis tingkat kesibukan server dan mendistribusikan beban (*request*) secara proporsional dan adil (menggunakan algoritma *Round-Robin* atau *Least-Connection*) ke sekumpulan *Node Server* aplikasi yang berjejer beroperasi di dalam Neo Cloud VPS. Apabila salah satu peladen mendadak terbakar atau mati lampu, *Load Balancer* akan serta merta mengalihkan seluruh lalu lintas ke peladen cadangan dalam sepersekian detik, menggaransi ketersediaan layanan publik yang kebal terhadap kelumpuhan mesin.
+
+### 4.2 Spesifikasi Proses Bisnis Berorientasi Digital
+Demi merampingkan dan membabat habis rantai birokrasi yang panjang dan berbelit, seluruh modul bisnis utama dimodernisasi menjadi subsistem elektronik serba otomatis dan cerdas:
+
+<div class="mermaid" style="max-width: 800px; margin: 20px auto;">
+flowchart TD
+    classDef step fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef decision fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100
+    classDef endnode fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+
+    A[Wajib Pajak Buka Aplikasi]:::step
+    B(Input NIK dan NPWP):::step
+    C{Sistem Validasi Dukcapil dan DJP}:::decision
+    D[Notifikasi Error Data Tidak Valid]:::step
+    E(Tentukan Titik Peta Google Maps):::step
+    F(Unggah Foto Usaha ke S3 Storage):::step
+    G(Isi Detail Objek Pajak):::step
+    H(Submit E-SPOPD):::step
+    I[Petugas Bapenda Verifikasi Lapangan]:::step
+    J{Kesesuaian Data}:::decision
+    K[Tolak dan Kembalikan Revisi]:::step
+    L[Terbitkan NPWPD dan SKPD Elektronik]:::endnode
+
+    A --> B
+    B --> C
+    C -->|Gagal| D
+    C -->|Valid| E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+    I --> J
+    J -->|Tidak Sesuai| K
+    J -->|Sesuai| L
+</div>
+
+1.  **Modul Registrasi dan Pemetaan Mandiri E-SPOPD (Electronic - Surat Pemberitahuan Objek Pajak Daerah):** Sistem ini secara definitif akan mengakhiri era penggunaan formulir pendaftaran berbahan kertas fisik yang rentan hilang, kusam, atau terbakar. Modul portal E-SPOPD memberikan otonomi penuh bagi warga masyarakat. Wajib pajak, cukup dari layar sentuh gawai mereka, dapat menginput NIK, NPWP, menentukan dan memvalidasi titik koordinat lokasi usaha mereka secara presisi via satelit terintegrasi (Google Maps API), hingga mengunggah bukti foto lokasi kedai, restoran, atau hotel. Hebatnya, jutaan berkas visual (*image files*) ini sama sekali tidak akan menelan kapasitas ruang penyimapanan VPS aplikasi, karena secara otomatis diterbangkan dan diinangkan pada ekosistem awan S3 *Object Storage* yang murah dan tak terbatas.
+
+<div class="mermaid" style="max-width: 800px; margin: 20px auto;">
+flowchart TD
+    classDef step fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef server fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100
+    classDef db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef decision fill:#f3e5f5,stroke:#303f9f,stroke-width:2px,color:#1a237e
+
+    WP[Wajib Pajak]:::step
+    MB(JIT Billing Engine Aktif):::step
+    App[App Server Laravel]:::server
+    Redis(Kalkulasi Tagihan Denda):::db
+    DB(Kunci Transaksi Idempotency):::db
+    API[Push API Create VA QRIS SNAP]:::server
+    Bank[Core Banking Bank Mitra]:::server
+    Tampil(Tampilkan Kode Bayar QR ke WP):::step
+    WP2{WP Membayar di ATM MB}:::decision
+    Bayar(Saldo WP Dipotong):::step
+    API2[Webhook Real-time Payment SNAP]:::server
+    App2[App Server Update Status Lunas]:::server
+    GenPDF(Generate TTE Bukti Lunas PDF):::step
+    Bank2[Mitigasi Selesai Rekonsiliasi]:::server
+
+    WP -->|Pilih Bayar di mPaD| MB
+    MB --> App
+    App --> Redis
+    Redis --> DB
+    DB --> API
+    API --> Bank
+    Bank -->|Response VA Number QR| App
+    App --> Tampil
+    Tampil --> WP2
+    WP2 -->|Selesai Bayar| Bayar
+    Bayar --> API2
+    API2 --> App2
+    App2 --> GenPDF
+    App2 -->|API Response 200 OK| Bank2
+</div>
+
+2.  **Modul Kecerdasan Penetapan *JIT (Just-In-Time) Billing & Penalty Engine*:** Pada sistem ortodoks, mesin peladen akan menghitung, mengkompilasi, dan merumuskan seluruh nilai tagihan pajak dan denda jutaan wajib pajak secara massal di awal tahun. Proses konyol ini sangat memboroskan tenaga memori komputasi untuk data yang belum tentu diakses hari itu juga. Menghapus kebiasaan itu, sistem Bapenda baru beroperasi menggunakan algoritma perhitungan JIT. Logika matematika denda (kumulatif otomatis 2% per bulan) hanya akan diproses, dihitung, dan dimunculkan di layar dalam durasi sepersekian mikrosekon, *hanya dan hanya jika* wajib pajak bersangkutan memicu tombol permintaan rincian tagihan di aplikasi mPaD. Sistem mPaD kemudian secara aktif mengirimkan tagihan tersebut ke pihak Bank Mitra (Pola *Create VA/Push*). Inovasi ini menghemat miliaran instruksi CPU yang sia-sia setiap harinya.
+3.  **Digitalisasi Tanda Tangan Elektronik (TTE) Tersertifikasi:** Sistem ini dengan tegas meniadakan prosedur feodal pimpinan yang harus membubuhkan stempel basah pada tumpukan ratusan dokumen kertas. Setiap berkas produk hukum berupa Surat Ketetapan Pajak Daerah (SKPD) akan secara otomatis di- *generate* oleh *backend server* menjadi dokumen berformat *Portable Document Format (PDF)*. Selanjutnya, fail ini dikirimkan via *API Gateway* menuju mesin kriptografi terpusat milik Balai Sertifikasi Elektronik (BSrE - Badan Siber dan Sandi Negara RI) untuk direstui dan dibubuhi Sertifikat Digital berenkripsi tinggi (*Passphrase P12/QR Code*). Dokumen maya ini mengikat secara yuridis dan memiliki legitimasi hukum setara, bahkan lebih aman dari stempel basah di ruang pengadilan.
+4.  **Integrasi Interkoneksi Perbankan Otomatis (Host-to-Host):** Menggunakan standar **Two-Way Handshake** asinkron seketika (T+0) dari BI SNAP Nasional. Bapenda bertindak aktif melakukan *Create VA* (Push), lalu begitu uang kas wajib pajak dipotong secara elektronik, mesin bank akan menembakkan (*webhook*) sinyal pelunasan ke peladen Bapenda. Dalam hitungan kurang dari 30 milidetik, layar *dashboard* pengawasan petugas Bapenda akan berubah status menjadi warna hijau "LUNAS". Integrasi nirmanusia ini secara instan membumihanguskan ritual pencocokan rekonsiliasi data manual akhir bulan, ditambah mitigasi *Check Status* otomatis untuk memitigasi gagal transfer.
+
+### 4.3 Standar Keamanan Sistem Tingkat Lanjut
+Infrastruktur finansial daerah mutlak dilindungi dengan tameng digital yang diimpor dari standar praktik keamanan industri perbankan (PCI-DSS):
+1.  **Geo-Blocking Nasional & IP Whitelisting Ekstrem:** Titik kumpul (*Endpoint*) atau jalur masuk sistem pembayaran (*Gateway*) ke dalam *server* Bapenda akan dikunci rapat-rapat dalam ruang isolasi jaringan yang kedap udara. *Firewall* sistem dikonfigurasi untuk hanya sudi membukakan pintu dan mengizinkan paket data dari daftar Alamat IP statis (*IP Whitelist*) milik server *Core Banking* jaringan Bank Mitra terdaftar (Bank Sultra/Himbara) yang bisa menembus masuk. Kunjungan, pemindaian port (*port scanning*), atau percobaan injeksi kode acak dari belahan dunia luar (internet internasional) akan dicekik mati dan dijatuhkan secara diam-diam (*blackhole routing / drop*) tanpa perlu memberikan konfirmasi balasan (*timeout*).
+2.  **Otorisasi Sesi Tak Bertuan berbasis JWT (JSON Web Token):** Pada aplikasi tradisional, sesi administratif (*login admin*) disimpan secara permanen di dalam tabel pangkalan data, yang memicu kelembaman pembacaan. Meruntuhkan dogma tersebut, sistem baru tidak mengingat siapapun di *database*. Sistem menyuntikkan stempel elektronik berupa kepingan data JWT (*stateless*) pada *browser* gawai pengguna sesaat setelah kata sandi diverifikasi sah. Jika laptop admin hilang, tertinggal di kedai kopi, atau teretas secara fisik, *token* berteknologi tinggi ini telah ditanamkan kode DNA mati otomatis (*expiration time*) berumur sangat pendek. Begitu durasi waktu habis, token akan kadaluwarsa dan membakar dirinya sendiri, memutus akses penyerang secara mekanis dan alamiah tanpa campur tangan manusia.
+
+---
+
+## BAB V: RENCANA KERJA DAN TIM PENGEMBANG INTI
+
+Membidani lahirnya ekosistem tata kelola perpajakan kelas kakap ini tidak cukup hanya mengandalkan tumpukan perangkat keras mahal. Keberhasilan implementasi proyek ini bertumpu sepenuhnya pada orkestrasi, sinergi, dan kedisiplinan sumber daya manusia ahli di bidang rekayasa perangkat lunak, serta spesifikasi mesin komputasi yang diarsiteki dengan presisi matematis.
+
+### 5.1 Susunan Personil Inti Eksekutor Arsitektur
+Proyek transformasi ini tidak mentolerir keamatiran; ia mengamanatkan kolaborasi elit tim insinyur perangkat lunak dengan kualifikasi jam terbang *Enterprise Level* yang solid:
+1.  **Project Manager & Scrum Master (1 Orang Profesional):** Bertindak sebagai dirigen tunggal dan panglima proyek. Sosok ini memegang kendali penuh dalam menjembatani kebuntuan komunikasi. Tanggung jawab absolutnya adalah memetakan dan menerjemahkan paragraf-paragraf kaku di dalam regulasi Perda Bapenda Kota Baubau menjadi desain spesifikasi teknis rekayasa perangkat lunak. Ia juga bertugas mengorkestrasi kelancaran irama kerja tim pengembang dalam siklus *sprint* harian, menjaga agar tidak meleset dari linimasa.
+2.  **System Analyst & Database Architect (1 Orang Insinyur Senior):** Ilmuwan data yang mendesain nyawa dan pembuluh darah dari keseluruhan sistem. Tanggung jawabnya melingkupi perancangan cetak biru arsitektur relasional puluhan entitas tabel, merumuskan dan mengeksekusi normalisasi tingkat ketiga (3NF), serta bereksperimen menciptakan formula algoritma penyusutan basis data yang efisien (*Unified Metadata*). Sosok ini juga diamanatkan untuk memvalidasi presisi alur diagram pertukaran data *Host-to-Host* dengan institusi perbankan mitra secara sinkron.
+3.  **Senior Backend & DevOps Engineer (2 Orang Ahli Logika Mesin):** Para spesialis elit rekayasa mesin *server* yang berpikir dalam barisan algoritma. Fasih berinteraksi dengan bahasa pemrograman mutakhir (khususnya *framework* ekosistem Laravel 11 dan Node.js). Pekerjaan harian mereka adalah menjahit *endpoint API RESTful*, membangun jembatan *gateway* sistem kriptografi asimetris yang kedap retas, mengeksekusi kecerdasan buatan dalam modul *Penalty Engine*, serta mengatur orkestrasi penggelaran kode ke peladen awan melalui lintasan *Continuous Integration/Continuous Deployment* (CI/CD) secara mulus.
+4.  **Frontend & Mobile App Developer (2 Orang Kreator Visual):** Seniman tata letak digital dan insinyur antarmuka yang mengemban tugas krusial menerjemahkan desain purwarupa (*Figma*) ke dalam barisan kode fungsional. Mengandalkan kerangka kerja kelas dunia React.js (untuk versi peramban *desktop* pejabat dan kasir) serta Flutter (untuk kompilasi aplikasi *mobile smartphone* Android/iOS bagi wajib pajak). Tim ini menjadi garda terdepan untuk menjamin pengalaman antarmuka (*User Experience*) pengguna yang sangat responsif, intuitif, ramah difabel, adaptif terhadap layar sekecil apapun, tanpa lag sekecil apapun.
+5.  **Quality Assurance & Security Penetration Tester (1 Orang Analis Forensik Keamanan):** Personil khusus bayangan yang justru ditugaskan untuk menghancurkan, merusak, dan mencari celah fatal dari sistem perangkat lunak yang telah susah payah dibangun. Secara destruktif dan intensif membanjiri leher botol server dengan puluhan ribu permintaan artifisial per detik menggunakan skrip simulasi (*JMeter Stress-Test*) untuk mencari titik batas maksimum kejatuhan peladen sebelum *crash*. Di sisi keamanan, melakukan peretasan terkendali berlapis atau Uji Penetrasi (*Penetration-Test*) gaya *Black Box* guna mencegah potensi infiltrasi nyata oleh oknum nakal dari belahan dunia luar sebelum aplikasi mengudara.
+
+### 5.2 Spesifikasi Kebutuhan Infrastruktur Komputasi (Server & Jaringan)
+Pembangunan pondasi proyek ekosistem perbendaharaan daerah memfokuskan investasi jangka panjangnya pada kapabilitas ekosistem *Cloud Computing* dengan filosofi desentralisasi dan redundansi tinggi. Membeli dan memelihara kotak *server* fisik berdebu di pojok ruangan kantor Bapenda resmi dihentikan karena biaya perawatannya yang irasional.
+
+| Kategori Infrastruktur Sistem | Spesifikasi Rekomendasi Mesin (Level Batas Minimal) | Deskripsi Utilitas Beban Operasional |
+| :--- | :--- | :--- |
+| **Virtual Private Server (VPS)** | Klaster *Cloud* Terdedikasi (Neo Cloud / Google Cloud / AWS). Spesifikasi Otak Komputasi vCPU: Minimum 8 Cores (Hyper-Threaded), Memori RAM: 16 GB *Error-Correcting Code*, Ruang Diska NVMe Gen4: 250 GB. Berjalan di atas Sistem Operasi Linux Ubuntu 24.04 LTS (Long Term Support). Jaringan Internet *Bandwidth* Terdedikasi minimal 100 Mbps simetris. | Bertindak sebagai lokomotif komputasi utama penggerak ekosistem *Web Server* Nginx, menanggung beban *runtime engine* PHP 8.3 dengan optimasi JIT (*Just-In-Time*), merender HTML, dan mengeksekusi mesin proses pekerja latar belakang yang tak pernah tidur (Daemon API Worker). |
+| **Database Server (Managed Service/Decoupled)** | Mesin Komputasi Khusus Data (Instans Terdedikasi dengan vCPU: 4 Core, RAM 8GB), dipersenjatai Mesin RDBMS Standar Industri (MySQL 8.0+ Enterprise / PostgreSQL 16). Alokasi Penyimpanan Awal 100 GB. | Dapur rahasia dari miliaran angka transaksi (*Relational State*). Berdasarkan hukum ketat arsitektur keamanan, jantung basis data mutlak dipisahkan secara fisik dan geografis dari lingkungan VPS aplikasi awam (*Decoupled Architecture*). Kebijakan ini menggaransi keutuhan rekam jejak finansial warga agar selamat seandainya peladen aplikasi diretas atau terbakar. |
+| **In-Memory Cache & Session Server** | Instans Khusus Berbasis Mesin Redis *In-Memory Datastore Engine* (atau alternatif klaster Memcached). RAM 4GB Terdedikasi. | Gudang data kilat berkecepatan cahaya (karena beroperasi penuh tanpa menyentuh *Hard-Disk*). Bertugas menelan lalu lintas data sesi pengguna administratif *login* JWT dan melakukan aksi potong kompas perhitungan kalkulasi nilai tarif variabel statis secara instan dalam skala waktu satu per juta detik (mikrosekon). |
+| **Keamanan Perimeter Siber Tingkat Aplikasi (WAF)** | Sistem Perlindungan Otomatis berbasis *Web Application Firewall* (WAF) dengan Langganan Lisensi Kelas *Enterprise* (infrastruktur global Cloudflare atau F5 Networks). | Mengambil peran sebagai militer lapis garda terdepan sistem di garis luar batas negara. Bertanggung jawab atas inspeksi bongkar muat enkripsi SSL/TLS berlapis, mendeteksi lalu menguapkan gelombang serangan *Traffic Bot* peretas otomatis asal luar negeri, serta sanggup mencekik mati durasi gempuran badai penolakan layanan masif terdistribusi atau *Distributed Denial of Service* (DDoS) skala Terabytes per detiknya dalam hitungan detik. |
+| **Cloud Object Storage Berkapasitas Tak Terbatas** | Protokol Penyimpanan Objek Terdistribusi yang kompatibel dengan arsitektur Amazon S3 (AWS S3, DigitalOcean Spaces, atau peladen penyimpanan mandiri MinIO Server). Batas cadangan awal dimulai dari skala 500GB, dengan kemampuan pemuaian ruang tanpa batas (*infinite auto-expansion*). | Menyediakan ekosistem lumbung fail berkapasitas maha-luas secara absolut untuk menampung puluhan hingga ratusan ribu pertumbuhan artefak digital Bapenda (foto visual titik pemasangan reklame di pinggir jalan, swafoto wajib pajak verifikasi restoran, hingga hamparan arsip legal PDF SKPD yang tercetak beribu-ribu dan telah di-TTE) tanpa pernah mengganggu sesak ruang di dalam diska cakram keras memori Sistem Operasi VPS aplikasi utama. |
+
+---
+
+## BAB VI: INDIKASI PROGRAM DAN RUTE OPERASIONAL
+
+Menjelmakan puluhan dokumen analisa menjadi produk piranti lunak utuh, operasional, dan bebas eror membutuhkan disiplin manajemen waktu kemiliteran. Siklus Hidup Pengembangan Sistem (*SDLC*) diikat ketat ke dalam termin-termin penyerahan target progres untuk menekan risiko membengkaknya waktu (*Scope Creep*) demi menjamin penyampaian hasil perangkat lunak final di garis penyelesaian tepat pada waktunya.
+
+### 6.1 Jadwal Pelaksanaan Rekayasa Konstruksi (Timeline)
+Realisasi cetak biru megaproyek transformasi ini diurai sedemikian rupa ke dalam matriks rute perjalanan (*roadmap*) empat bulanan yang berkarakter sangat agresif, transparan, serta dapat dipertanggungjawabkan progres pertumbuhannya dari minggu ke minggu.
+
+| Tahapan Metodologis & Gugus Tugas Aktivitas Proyek | Bulan 1 | Bulan 2 | Bulan 3 | Bulan 4 |
+| :--- | :---: | :---: | :---: | :---: |
+| **FASE A: PENELITIAN, ANALISIS ARSITEKTURAL & DESAIN MUKA** | | | | |
+| 1. Evaluasi Klinis *Legacy System* & Penggalian Bedah Rumus Kompleksitas Perda Bapenda Baubau | ▉ | | | |
+| 2. Perancangan Anatomi Purwarupa Visual (*Mockup UI/UX Wireframe*) Modern yang Sepenuhnya Responsif | ▉ | ▉ | | |
+| 3. Rekayasa Konseptual Basis Data Skema *Unified* & Penentuan Patokan Ketat Topologi Jaringan Server | | ▉ | | |
+| **FASE B: PENGKODEAN INTENSIF & INTEGRASI LAPIS BACKEND** | | | | |
+| 1. Perakitan Otak Modul Autentikasi Rahasia JWT & Konstruksi Pendaftaran Mandiri E-SPOPD Digital | | ▉ | ▉ | |
+| 2. Pembuatan Otak Mesin *JIT Billing*, Kalkulasi Matematika Denda Dinamis, & Templatisasi SKPD Otomatis | | | ▉ | ▉ |
+| 3. Orkestrasi Tingkat Tinggi Penjahitan API H2H SNAP BI Beserta Keamanan Kriptografinya | | | ▉ | ▉ |
+| **FASE C: INTEGRASI EKSTERNAL, SIMULASI UJI COBA & AUDIT** | | | | |
+| 1. *Sandbox Testing* Bolak-Balik Terkoneksi dengan Lingkungan Simulasi Bank & Uji Stempel Digital BSrE | | | | ▉ |
+| 2. Pengeksekusian Audit Keamanan Uji Penetrasi (*Pen-Test*) & Penyatuan Gempuran Uji Beban Beruntun | | | | ▉ |
+| **FASE D: UAT & PELUNCURAN PRODUKSI (MOMENTUM GO-LIVE)** | | | | |
+| 1. Uji Penerimaan Pengguna Final (*User Acceptance Test*) Oleh Barisan Pimpinan & Petugas Bapenda | | | | ▉ |
+| 2. Penyelenggaraan Bimbingan Teknis Literasi SDM & Peluncuran Publikasi Warga yang Sangat Terukur | | | | ▉ |
+
+### 6.2 Indikasi Perawatan Berkelanjutan (*SLA Maintenance Lifecycle*)
+Paradigma kolot yang menganggap peluncuran produk (*Go-Live*) adalah panggung penutupan dan akhir dari umur penyelesaian proyek harus dihancurkan. Sejatinya, platform perangkat lunak arsitektur mutakhir berderajat setara dengan bernapasnya organisme hidup mekanis yang sensitif. Peladen sistem mutlak menuntut perlakuan protektif dan ritual pemantauan ketat yang bergulir tanpa henti secara reguler guna menjamin tingkat kesehatan pernapasan mesin, merawat kepatuhan terhadap parameter *Service Level Agreement* (SLA) waktu beroperasi (ketersediaan *uptime*) di angka fantastis 99.9% setahun, dan menyiapkan obat penawar darurat dari berbagai serangan cuaca siber:
+
+<div class="mermaid" style="max-width: 800px; margin: 20px auto;">
+flowchart LR
+    classDef check fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef backup fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100
+    classDef update fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+
+    A(Pengecekan Harian Radar Log Error):::check
+    B(Monitoring Lonjakan CPU):::check
+    C(Validasi API Handshake Bank):::check
+    D(Replikasi Database Mingguan):::backup
+    E(Flushing Cache Redis):::backup
+    F(Update Security Patch Bulanan):::update
+    G(Perpanjangan Sertifikat SSL):::update
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+</div>
+
+*   **Protokol Inspeksi Medis Harian (Operasional):** Pengecekan ritin yang wajib dilakukan teknisi di setiap pagi, berfokus kepada pembacaan radar grafik *Log* jejak kegagalan peladen internal merespons aplikasi (*HTTP Error Code 500*). Memantau secara teliti apakah ada lonjakan pembengkakan anomali memakan porsi utilisasi inti komputasi prosesor (CPU) pada indikator matriks panel layar VPS, dan tak kalah penting, menunaikan ritual pengecekan rutinitas akan kestabilan kelancaran rute konektivitas jabat tangan komunikasi antar peladen (*API Handshake*) melalui terowongan VPN ke markas besar pangkalan data Server Bank Mitra.
+*   **Protokol Pembersihan Mingguan (Restorasi):** Pengawalan ritual pengeksekusian penyedotan dan penyalinan data (*Backup Replication*) secara terenkripsi yang berisi keseluruhan volume memori pangkalan data produksi mutakhir milik instansi Bapenda, kemudian diterbangkan lintas udara secara paksa menjauhi *server* utama ke arah lokasi penyimpanan darurat awan geografis tersier berskala sekunder. Aksi evakuasi digital (*Off-site Disaster Recovery Plan*) ini dipersiapkan matang guna mengantipasi perlawanan balik jikalau letak *data center* bangunan fisik penyedia awan inti dilanda musibah gempa bumi ekstrem. Teknisi juga melakukan manuver cuci perut pangkalan data, yaitu pengeksekusian *flushing script* untuk membuang endapan sampah *cache* peladen Redis yang dikhawatirkan mulai mengkristal dan membekukan arus data aplikasi.
+*   **Protokol Audit dan Ekspansi Bulanan (Evolusi):** Ritual perombakan di lapisan genetik di mana para pengembang teknis diwajibkan menyuntikkan rentetan barisan pembaharuan rilis tambalan keamanan (*Security Hot-Patching*) yang paling terbaru menimpa tubuh rangka modul kerangka kerja sistem (baik di perpustakaan pustaka bahasa *open-source* Laravel maupun komponen infrastruktur sistem Nginx/Node.js). Injeksi obat berjadwal ketat ini diperuntukkan secara murni dalam menangkal ancaman kebangkitan hantu *Zero-Day Exploit* yang baru saja dirumuskan oleh komplotan sindikat peretas siber internasional dalam bulan yang berjalan. Teknisi ditugaskan untuk melakukan peninjauan ketepatan presisi nilai tagihan kalkulator tarif lalu lintas utilitas memori mesin awan (*Cloud Billing Consumption*), diakhiri dengan perpanjangan validasi masa berlaku izin sertifikat gembok keamanan lalu lintas data pengunjung portal yang mengenkripsi protokol HTTPS (*SSL/TLS Handshake Certificate*).
+
+---
+
+## BAB VII: KESIMPULAN
+
+Manifestasi perancangan dan penciptaan Dokumen Perencanaan (Blueprint) Arsitektur Mega Sistem Informasi Pendapatan Daerah Terintegrasi Pemerintah Kota Baubau ini tidak diciptakan berlandaskan dari omong kosong belaka, melainkan dihidupkan sepenuhnya dari rahim dan roh tuntutan fundamental birokrasi pemerintahan era kiwari yang cerdas dan transparan (*Smart-Governance*). Ini sama sekali bukan lagi mengenai pendanaan proyek artifisial yang sekadar dipersembahkan untuk melaburkan lapisan tata bedak agar antarmuka grafis sistem dan layar monitor petugas lama Bapenda terlihat sedikit modern. Melainkan, karya ini adalah wujud nyata dari sebuah operasi bedah restrukturisasi dan ambutasi penyakit kronis fundamental yang dengan sengaja mereformasi dan membalikkan tatanan cara kerja hierarki mesin komputasi operasional dari instrumen pemerintahan warisan zaman batu menuju panggung spektakuler *Enterprise-Grade Scalable Platform*. 
+
+Studi dan investigasi forensik berlapis mendalam yang diotaki oleh ahli arsitek (*Reverse Engineering Study Analysis*) pada sisa-sisa jasad kode pemrograman sistem warisan prasejarah (yakni artefak ekosistem manajemen aplikasi warisan SIMPAD peninggalan dekade era pemrograman skrip *PHP Native* yang berantakan) pada akhirnya sukses menyingkap dan menelanjangi sebuah kebenaran data historis fakta pahit absolut: bahwa krisis inkonsistensi data massal yang terus saja merongrong kualitas laporan keuangan akhir tahun pemerintah selama hampir sedekade belakangan sejatinya disumbangkan dan diakibatkan sepenuhnya oleh arsitektur desain fatal berbentuk *silo*. Sistem pajak yang membedah dan memutus tali hubungan urat nadi pertukaran identitas entitas warga antara klaster aplikasi sembilan Pajak Daerah komersial di satu sisi yang berdiam kaku melawan kekolotan isolasi klaster aplikasi perpajakan pendaftaran perolehan BPHTB warga di sudut ruangan yang berbeda. Permasalahan penyakit kronis menahun dengan cacat genetik ini pada akhirnya telah dijawab secara lantang, totaliter, tak terbantahkan, dan komprehensif melalui proposal metode pembedahan ulang yang teramat jenius dengan berpondasikan penciptaan mesin kerangka wadah *Unified Single-Schema Database Entity*. Kerangka ini menyatukan dan melebur paksa jutaan riwayat identitas jejak entitas warga beserta seluruh rekam jejak finansial perpajakannya kembali ke dalam satu rahim relasi sentral dan pusat pusaran tunggal sebagai penyedia sumber kebenaran abadi mutlak tak terbantahkan (*Single Absolute Source of Truth*).
+
+Migrasi integrasi modern yang berskala radikal membentangkan jaring arsitektur lapisan penengah *N-Tier Application Layer* dengan penyemat gerbang penyaring militer perimeter penjaga keamanan internet ganda—menggabungkan kekebalan *Web Application Firewall* (WAF) dan kompleksitas lapisan sandi Kriptografi Algoritma Asimetris dalam mereduksi celah serangan dari luar—sehingga secara ajaib akan langsung seketika menggaransi ketahanan ketersediaan waktu nyala operasional server (*Supreme High Availability*) secara abadi. Keterlibatan campur tangan kalkulator algoritma buatan dinamis perumus kecerdasan waktu pengeksekusian nilai tagihan perpajakan di titik paling optimal *Just-In-Time* (JIT) dan penandatanganan protokol pembuka kanal interaksi rekonsiliasi jalur cepat dan instan Asinkron terowongan pita lebar mesin Host-to-Host (H2H) sukses besar dalam upaya suci menihilkan kutukan rutinitas penderitaan kewajiban mencetak kertas rekapitulasi sinkronisasi data tagihan uang secara manual kerja lembur yang menghantui kelelahan para petugas staf aparatur di dalam gedung Bapenda dari minggu ke minggu; berhasil menyulap dan mengonversi proses perputaran pencocokan roda birokratis sinkronisasi finansial yang sedemikian lamban, menyiksa dan manual menjadi kedigdayaan kecepatan badai rekonsiliasi elektronik yang benar-benar tercipta magis seketika melintasi waktu penyatuan mutakhir sinkron nyata yang tereksekusi langsung dan selesai penuh di bawah fraksi batas kecepatan dalam satuan seperseribu detik (*Real-Time T+0 Clearance Status*). Secara manifestasi nyata yang disaksikan sejarah, terlahirnya arsitektur ekosistem perpajakan pemerintahan daerah kota revolusioner ini memblokir habis celah rembesan kelemahan kebocoran uang fiskal pendapatan negara sedini mungkin sejak uang itu berpindah tangan dari dompet warga masuk ke ATM, menopang pilar transparansi akuntabilitas integritas laporan mesin perbendaharaan daerah ke tingkat yang tak pernah terbayangkan sebelumnya, merevolusi eskalasi grafik tingkat kurva kapasitas penyerapan pemungutan pajak daerah secara ultra-agresif dan sistematis, sekaligus menyemat, memahat abadi, dan menerbangkan nama serta harga diri martabat prestasi kegemilangan Pemerintahan Kota Baubau menduduki tahta di barisan pucuk pimpinan yang paling terdepan pada gelaran konstelasi perebutan supremasi perintis inovasi peradaban pelayanan transformasi pemerintahan era revolusi tata kelola digital terpadu *Smart City Governance* bergengsi tingkat nasional di tanah air Republik Indonesia.
+
+
+
+---
+
+## File: docs/mpad_claim_validation.md
+---
+# Validasi Klaim M-PAD: Evaluasi & Skema Pengujian
+
+Dokumen ini memvalidasi setiap klaim dalam deskripsi sistem M-PAD terhadap kode aktual di keempat repository, lalu menyiapkan skema pengujian untuk setiap poin.
+
+---
+
+## Bagian 1: Hasil Evaluasi Klaim
+
+### Legenda Status
+| Ikon | Arti |
+|------|------|
+| ✅ | **Terverifikasi** — Kode implementasi ada dan fungsional |
+| ⚠️ | **Parsial/Mock** — Kode ada tapi menggunakan data dummy atau belum terintegrasi penuh |
+| ❌ | **Belum Terimplementasi** — Tidak ditemukan kode yang mendukung klaim |
+
+---
+
+### A. Tahap 1: Pendaftaran
+
+| # | Klaim | Status | Bukti Kode |
+|---|-------|--------|------------|
+| A1 | **Mobile: Registrasi mandiri dari HP** | ✅ | `retribusi-mobile/src/pages/Register.tsx` — form registrasi warga dengan NIK, `ServiceDetail.tsx` — daftar objek pajak mandiri |
+| A2 | **Mobile: Integrasi NIK (e-KYC)** | ⚠️ | `IdentityValidationService.php` — ada tapi **mock** (hanya reject NIK ending '999'), belum terkoneksi ke API Dukcapil asli |
+| A3 | **Mobile: Upload foto izin usaha** | ✅ | `ServiceDetail.tsx` — form upload file dengan `FormData`, dikirim ke API `citizen/services/{id}/register` |
+| A4 | **Petugas: Daftar WP baru + GPS Tagging** | ✅ | `retribusi-petugas/src/pages/TaxpayerManagement.tsx` — Step 1-4 dengan GPS auto-detect & MapPicker |
+| A5 | **Admin: Verifikasi dokumen** | ✅ | `retribusi-admin/src/pages/Verification.tsx` — approve/reject, `VerificationController.php` |
+| A6 | **Admin: NPWPD auto-generate** | ✅ | `Taxpayer::resolveNpwpd()` & `generateNpwpd()` — format `P.YYYY.XXXXX`, terintegrasi di `TaxpayerController@store` |
+
+### B. Tahap 2: Pendataan
+
+| # | Klaim | Status | Bukti Kode |
+|---|-------|--------|------------|
+| B1 | **Petugas: Verifikasi lapangan (uji petik)** | ✅ | `retribusi-admin/src/pages/spot-checks/SpotCheckForm.tsx` + `SpotCheckList.tsx`, API endpoint `/api/spot-checks` |
+| B2 | **Petugas: Foto visual lokasi** | ✅ | `TaxpayerManagement.tsx` Step 3 — `Camera` upload, `CloudinaryService.php` — upload ke cloud |
+| B3 | **Petugas: GPS koordinat** | ✅ | Step 4 map + `getCurrentLocation()` geolocation API + draggable Marker |
+| B4 | **Petugas: Metadata dinamis** | ✅ | Step 3 — dynamic `form_schema` rendering (select, text, number, checkbox, textarea, google_map, constant) |
+| B5 | **Admin: Heatmap Potensi** | ✅ | `RevenueHeatmap.tsx` + `HeatmapLayer.tsx`, API `/api/analytics/heatmap`, toggle markers/heatmap di Dashboard |
+| B6 | **Admin: Overlay Zona Nilai Tanah (ZNT)** | ⚠️ | `HeatmapLayer` ada, tapi **tidak ada layer ZNT terpisah** yang di-overlay. Data peta hanya berbasis revenue heatmap |
+| B7 | **Mobile: SPTPD Self-Assessment** | ✅ | `SptpdReporting.tsx` — filter `is_self_assessment`, form "Lapor Omzet", API `citizen/sptpd` |
+
+### C. Tahap 3: Penetapan
+
+| # | Klaim | Status | Bukti Kode |
+|---|-------|--------|------------|
+| C1 | **Admin: Formula Parser Engine** | ✅ | `FormulaParserService.php` — `calculate()` method, `calculatePenalty()`, digunakan di `BillingService` & `BillController` |
+| C2 | **Admin: Perhitungan otomatis berdasarkan Perda** | ✅ | `BillingService::calculateAmountForPeriod()` — lookup `RetributionRate` + `calculation_formula`, variabel dari metadata |
+| C3 | **Admin: TTE (Tanda Tangan Elektronik)** | ⚠️ | `TTEService.php` + `OfficialDocumentService::signDocument()` — kode ada dan terintegrasi di billing flow, tapi **mock BSrE** (belum konek API BSRE/DSIGN asli) |
+| C4 | **Admin: Dokumen SKPD/SPPT digital** | ✅ | `DocumentController.php` — generate PDF untuk SKRD, SPPT, Surat Teguran. `PdfController.php` — template PDF |
+| C5 | **Mobile: Push notification (WA/App)** | ⚠️ | `WhatsAppService.php` ada, digunakan di `GenerateAutomatedTeguran` & `MonthlyReportController`, tapi `SendDueDateNotifications` masih **Log::info mock** |
+| C6 | **Mobile: E-SPPT/E-SKPD PDF download** | ✅ | `PdfController.php` — endpoint generate PDF, `DocumentController` — berbagai template dokumen resmi |
+
+### D. Tahap 4: Penagihan
+
+| # | Klaim | Status | Bukti Kode |
+|---|-------|--------|------------|
+| D1 | **Mobile: QRIS Dinamis** | ⚠️ | `QRISDriver.php` — inquiry, notify, reconcile lengkap. Tapi `qr_string` menggunakan **mock EMVCo string**, belum konek ke QRIS aggregator asli |
+| D2 | **Mobile: Virtual Account** | ⚠️ | `PaymentGatewayController.php` — support `va_bca, va_mandiri, va_bri` tapi masih **mock response** |
+| D3 | **Mobile: E-Bukti Bayar (SSPD) real-time** | ✅ | `BillingService::settleBill()` — update status + trigger TTE signing otomatis, return receipt data |
+| D4 | **Petugas: Billing On-the-spot + QR scan** | ✅ | `PaymentConfirmation.tsx` — konfirmasi bayar dari petugas, `FieldScanner.tsx` — QR scanner |
+| D5 | **Petugas: Cetak struk bluetooth** | ⚠️ | Referensi ada di `PaymentVerification.tsx` & `PbbBapenda.tsx` (error handler "Pastikan printer Bluetooth terhubung"), tapi **implementasi print engine** Web Bluetooth API tidak ditemukan secara eksplisit |
+| D6 | **Admin: Dashboard real-time** | ✅ | `DashboardController.php` — statistik aggregate, trend, chart. `Dashboard.tsx` admin — card pendapatan, grafik, peta |
+| D7 | **Admin: Penalty Engine (2%/bulan)** | ✅ | `CalculateBillPenalties.php` — command otomatis, `FormulaParserService::calculatePenalty()`, scheduler-ready |
+| D8 | **Admin: Auto Surat Teguran → Surat Paksa** | ✅ | `GenerateAutomatedTeguran.php` — eskalasi otomatis: Teguran 1 (7 hari) → Teguran 2 (14 hari) → field action, kirim WA |
+
+### E. Tupoksi Platform & Pemotongan Birokrasi
+
+| # | Klaim | Status | Bukti Kode |
+|---|-------|--------|------------|
+| E1 | **Paperless: E-Document + QR TTE** | ✅ | `TTEService.php` — generate QR verification URL, `PublicVerificationController.php` — publik verifikasi dokumen via QR |
+| E2 | **Unified Database (1 akun = semua pajak)** | ✅ | Model `Taxpayer` → many-to-many `retributionTypes` & `retributionClassifications`, NIK sebagai primary link |
+| E3 | **Tanpa antrean loket Bank** | ⚠️ | Infrastruktur payment gateway ada (QRIS + Bank H2H), tapi masih **mock** — perlu integrasi bank asli |
+| E4 | **Rekonsiliasi H+0** | ⚠️ | `reconcile()` method ada di BankSultra & QRIS driver + endpoint API, tapi belum ada **cron scheduler** yang menjalankan harian secara otomatis |
+| E5 | **Amnesty (penghapusan denda)** | ✅ | `AmnestyManagement.tsx` admin — CRUD + approve/reject, API `/api/amnesty` |
+| E6 | **Mobile: Amnesty dari warga** | ❌ | Tidak ada halaman amnesty di `retribusi-mobile`. Fitur hanya tersedia dari sisi admin/pengawas |
+
+---
+
+## Bagian 2: Ringkasan Skor
+
+| Kategori | Terverifikasi ✅ | Parsial ⚠️ | Belum Ada ❌ |
+|----------|-----------------|-----------|------------|
+| **A. Pendaftaran** (6 poin) | 5 | 1 | 0 |
+| **B. Pendataan** (7 poin) | 6 | 1 | 0 |
+| **C. Penetapan** (6 poin) | 4 | 2 | 0 |
+| **D. Penagihan** (8 poin) | 4 | 3 | 0 |  
+| **E. Tupoksi & Birokrasi** (6 poin) | 3 | 2 | 1 |
+| **TOTAL (33 poin)** | **22 (67%)** | **9 (27%)** | **2 (6%)** |
+
+> [!IMPORTANT]
+> **22 dari 33 klaim sepenuhnya terverifikasi.** 9 klaim ada infrastrukturnya tapi menggunakan mock/dummy data (terutama payment gateway dan e-KYC). 2 klaim belum diimplementasikan sama sekali (amnesty mobile & ZNT overlay).
+
+---
+
+## Bagian 3: Skema Pengujian Komprehensif
+
+### Metodologi
+Pengujian dilakukan via **API testing** (`curl`/`read_url_content`) terhadap server lokal (`127.0.0.1:8000`) tanpa screenshot browser. Setiap test case memiliki:
+- **Prasyarat** (data yang diperlukan)
+- **Langkah** (HTTP request yang dieksekusi)
+- **Ekspektasi** (response yang diharapkan)
+- **Klaim yang diuji** (mapping ke kode klaim di atas)
+
+---
+
+### TC-A: Tahap Pendaftaran
+
+#### TC-A1: Registrasi Warga (Mobile) → Klaim A1, A2
+```
+PRASYARAT: Server API berjalan
+LANGKAH:
+  1. POST /api/citizen/register
+     Body: { nik: "7404012309900001", name: "Test Warga", phone: "08123456789", password: "password123" }
+  2. POST /api/citizen/register  
+     Body: { nik: "7404012309900999", ... }  ← NIK ending '999' (Dukcapil mock reject)
+EKSPEKTASI:
+  1. → 201 Created, response berisi token & user data
+  2. → 422 Validation Error, message "NIK tidak terdaftar di sistem Dukcapil"
+```
+
+#### TC-A2: Pendaftaran WP oleh Petugas + GPS + Auto NPWPD → Klaim A4, A6
+```
+PRASYARAT: Login sebagai petugas, memiliki opd_id
+LANGKAH:
+  1. POST /api/taxpayers
+     Body: { nik: "7404010101010001", name: "WP Baru", address: "Jl. Soekarno", 
+             retribution_type_ids: [1], latitude: -5.463, longitude: 122.607 }
+     (tanpa npwpd)
+EKSPEKTASI:
+  → 201 Created
+  → response.data.npwpd MATCH format "P.2026.XXXXX"
+  → response.data.latitude = -5.463
+```
+
+#### TC-A3: NIK Detection (WP sudah ada) → Klaim A6
+```
+PRASYARAT: WP dari TC-A2 sudah terdaftar
+LANGKAH:
+  1. POST /api/taxpayers
+     Body: { nik: "7404010101010001", name: "WP Baru Objek 2", retribution_type_ids: [2] }
+EKSPEKTASI:
+  → 200 OK (update existing)
+  → npwpd SAMA dengan TC-A2 (detected by NIK)
+```
+
+#### TC-A4: Verifikasi Dokumen oleh Admin → Klaim A5
+```
+PRASYARAT: Login sebagai admin/opd, ada verification pending
+LANGKAH:
+  1. GET /api/verifications?status=pending
+  2. PUT /api/verifications/{id}/approve
+     Body: { notes: "Dokumen lengkap dan valid" }
+EKSPEKTASI:
+  1. → 200 OK, list verifications with status "pending"
+  2. → 200 OK, status berubah menjadi "approved"
+```
+
+---
+
+### TC-B: Tahap Pendataan
+
+#### TC-B1: Uji Petik (Spot Check) → Klaim B1
+```
+PRASYARAT: Login sebagai pengawas
+LANGKAH:
+  1. POST /api/spot-checks
+     Body: { taxpayer_id: 1, tax_object_id: 1, findings: "Sesuai data", result: "compliant" }
+  2. GET /api/spot-checks
+EKSPEKTASI:
+  1. → 201 Created
+  2. → 200 OK, list spot checks termasuk data baru
+```
+
+#### TC-B2: Upload Foto & Metadata Dinamis → Klaim B2, B3, B4
+```
+PRASYARAT: Login sebagai petugas
+LANGKAH:
+  1. POST /api/taxpayers/{id} (multipart/form-data)
+     Body: { foto_lokasi_open_kamera: [file.jpg], 
+             metadata: { "jumlah_kursi": 20, "luas_m2": 50 },
+             latitude: -5.462, longitude: 122.608 }
+EKSPEKTASI:
+  → 200 OK
+  → metadata.foto_lokasi_open_kamera = Cloudinary URL
+  → metadata.jumlah_kursi = 20
+  → latitude/longitude updated
+```
+
+#### TC-B3: Heatmap Analytics → Klaim B5
+```
+PRASYARAT: Login sebagai admin
+LANGKAH:
+  1. GET /api/analytics/heatmap
+EKSPEKTASI:
+  → 200 OK
+  → Array of { latitude, longitude, intensity/revenue }
+```
+
+#### TC-B4: SPTPD Self-Assessment (Mobile) → Klaim B7
+```
+PRASYARAT: Login sebagai warga (citizen), punya objek is_self_assessment
+LANGKAH:
+  1. GET /api/citizen/tax-objects  → filter is_self_assessment
+  2. POST /api/citizen/sptpd
+     Body: { tax_object_id: X, period: "2026-04", revenue: 50000000 }
+EKSPEKTASI:
+  1. → 200 OK, objek dengan is_self_assessment = true
+  2. → 201 Created, SPTPD record dengan status "submitted"
+```
+
+---
+
+### TC-C: Tahap Penetapan
+
+#### TC-C1: Formula Parser → Auto Perhitungan Nominal → Klaim C1, C2
+```
+PRASYARAT: Klasifikasi retribusi dengan calculation_formula (misal: "omzet * 0.10")
+LANGKAH:
+  1. POST /api/bills/generate
+     Body: { tax_object_id: X, period: "2026-04" }
+EKSPEKTASI:
+  → 201 Created
+  → amount dihitung otomatis dari formula (bukan manual input)
+  → bill_number tergenerate
+```
+
+#### TC-C2: TTE Signing → Klaim C3
+```
+PRASYARAT: Bill sudah ada
+LANGKAH:
+  1. POST /api/bills/sign-tte
+     Body: { bill_id: X, notes: "Penetapan resmi" }
+EKSPEKTASI:
+  → 200 OK
+  → response berisi signed_at, doc_number, verification_url, qr_code
+```
+
+#### TC-C3: Generate PDF Dokumen → Klaim C4, C6
+```
+PRASYARAT: Bill & Taxpayer exists
+LANGKAH:
+  1. GET /api/documents/skrd/{bill_id}
+  2. GET /api/public/pdf/npwpd/{taxpayer_id}
+EKSPEKTASI:
+  1. → 200 OK, Content-Type: application/pdf
+  2. → 200 OK, Content-Type: application/pdf
+```
+
+---
+
+### TC-D: Tahap Penagihan
+
+#### TC-D1: QRIS Payment Flow → Klaim D1
+```
+PRASYARAT: Bill unpaid
+LANGKAH:
+  1. POST /api/payment/generate
+     Body: { bill_id: X, method: "qris" }
+  2. POST /api/v1/bank/h2h/notify (mock callback)
+     Body: { bill_number: "INV-...", amount: ..., bank_code: "QRIS", trx_id: "TRX123" }
+EKSPEKTASI:
+  1. → 200 OK, response berisi qr_string, qr_image_url, expiry
+  2. → 200 OK, bill status → "paid", NTPD generated
+```
+
+#### TC-D2: Virtual Account Payment → Klaim D2
+```
+PRASYARAT: Bill unpaid
+LANGKAH:
+  1. POST /api/payment/generate
+     Body: { bill_id: X, method: "va_bri" }
+EKSPEKTASI:
+  → 200 OK, response berisi va_number, expiry_date
+```
+
+#### TC-D3: Bank H2H Settlement + Auto TTE → Klaim D3
+```
+PRASYARAT: Bill unpaid
+LANGKAH:
+  1. POST /api/v1/bank/h2h/notify
+     Body: { bill_number: "INV-...", amount: ..., bank_code: "SULTRA", trx_id: "H2H-001" }
+EKSPEKTASI:
+  → 200 OK
+  → Bill status = "paid"
+  → payment_method = "h2h"
+  → ntpd NOT NULL
+  → TTE auto-signed (official_documents record created)
+```
+
+#### TC-D4: Petugas Billing On-the-spot → Klaim D4
+```
+PRASYARAT: Login sebagai petugas
+LANGKAH:
+  1. POST /api/payments
+     Body: { bill_id: X, payment_method: "cash", amount: 100000, notes: "Bayar tunai di lokasi" }
+EKSPEKTASI:
+  → 201 Created, payment recorded, bill status updated
+```
+
+#### TC-D5: Penalty Engine (Denda Otomatis 2%/bulan) → Klaim D7
+```
+PRASYARAT: Bill dengan due_date 2 bulan lalu, status unpaid
+LANGKAH:
+  1. php artisan billing:calculate-penalties
+  2. GET /api/bills/{id}
+EKSPEKTASI:
+  → penalty_amount > 0
+  → penalty_amount ≈ (amount * 0.02 * 2)  [2% x 2 bulan]
+```
+
+#### TC-D6: Auto Surat Teguran Eskalasi → Klaim D8
+```
+PRASYARAT: Bill overdue > 7 hari, belum ada enforcement notice
+LANGKAH:
+  1. php artisan enforcements:generate-drafts
+  2. GET /api/enforcement-notices?bill_id=X
+EKSPEKTASI:
+  → EnforcementNotice record created
+  → type = "teguran_1"
+  → status = "draft"
+  → number format "TEG1-..."
+```
+
+---
+
+### TC-E: Cross-Platform & Birokrasi
+
+#### TC-E1: Paperless → QR Verification → Klaim E1
+```
+LANGKAH:
+  1. GET /api/verify/{document_number}
+EKSPEKTASI:
+  → 200 OK, document details dengan signer info, signed_at, QR verification
+```
+
+#### TC-E2: Unified Database → 1 NIK Multi Pajak → Klaim E2
+```
+PRASYARAT: Taxpayer dengan 2+ retribution types
+LANGKAH:
+  1. GET /api/taxpayers/{id}?include=retributionTypes,retributionClassifications
+EKSPEKTASI:
+  → 200 OK
+  → retribution_types count ≥ 2
+  → Semua menggunakan NIK yang sama
+```
+
+#### TC-E3: Amnesty Management → Klaim E5
+```
+PRASYARAT: Login sebagai pengawas/kabid
+LANGKAH:
+  1. POST /api/amnesty
+     Body: { bill_id: X, reason: "Program amnesty 2026", waive_percentage: 100 }
+  2. POST /api/amnesty/{id}/approve
+     Body: { notes: "Disetujui Kabid" }
+  3. GET /api/bills/{bill_id}
+EKSPEKTASI:
+  1. → 201 Created, amnesty request
+  2. → 200 OK, status "approved"
+  3. → waived_penalty_amount > 0, effective penalty reduced
+```
+
+#### TC-E4: Reconciliation → Klaim E4
+```
+PRASYARAT: Ada transaksi yang sudah dibayar
+LANGKAH:
+  1. POST /api/v1/bank/h2h/reconcile
+     Body: { driver: "bank_sultra", transactions: [...] }
+EKSPEKTASI:
+  → 200 OK, reconciliation summary (matched, unmatched counts)
+```
+
+---
+
+## Bagian 4: Prioritas Perbaikan
+
+Berdasarkan evaluasi, berikut item yang perlu ditindaklanjuti agar klaim 100% valid:
+
+### Prioritas Tinggi (Klaim utama yang masih mock)
+| # | Item | Status | Aksi yang Diperlukan |
+|---|------|--------|---------------------|
+| 1 | e-KYC Dukcapil | ⚠️ Mock | Integrasi API Dukcapil asli atau SIAK Daerah |
+| 2 | QRIS Aggregator | ⚠️ Mock | Integrasi ke QRIS aggregator (Bank Sultra/Netzme) |
+| 3 | Virtual Account Bank | ⚠️ Mock | Integrasi H2H ke BRI/Mandiri/BCA |
+| 4 | TTE BSrE | ⚠️ Mock | Integrasi API BSrE Kemkominfo |
+
+### Prioritas Sedang (Fitur klaim tapi belum lengkap)
+| # | Item | Status | Aksi yang Diperlukan |
+|---|------|--------|---------------------|
+| 5 | Amnesty dari Mobile | ❌ | Buat halaman amnesty di `retribusi-mobile` |
+| 6 | ZNT Overlay di Peta | ⚠️ | Tambahkan layer GeoJSON ZNT dari BPN di peta admin |
+| 7 | Bluetooth Print Engine | ⚠️ | Implementasi Web Bluetooth API untuk thermal printer |
+| 8 | WA Notification Due Date | ⚠️ | Ubah dari `Log::info` mock ke `WhatsAppService::send()` yang sudah ada |
+| 9 | Cron Reconciliation | ⚠️ | Tambahkan scheduler di `Kernel.php` untuk reconcile harian |
+
+### Prioritas Rendah (Nice to have)
+| # | Item | Aksi |
+|---|------|------|
+| 10 | Push Notification Firebase | Integrasi FCM untuk mobile app |
+| 11 | E-Wallet (GoPay, OVO) | Tambahkan driver payment selain QRIS |
+
+
+---
+
+## File: docs/pak massad.md
+---
+[5/7, 19.14] Pak ‌‌ ‌🇲‌‌‌‌🇦‌‌🇸‌‌🇸‌‌🇦‌‌🇩‌ Komander: Berdasarkan arsitektur terbaru M-PAD (Management Information Tax, Retribution, and Asset Pendapatan Asli Daerah) yang telah mengintegrasikan pilar Pajak, Retribusi, dan Aset, berikut adalah pemutakhiran menyeluruh mengenai siapa saja (aktor/pengguna) yang dapat menggunakan dan mengakses sistem ini, lengkap dengan batasan hak aksesnya (User Access Matrix):
+I. Internal Pemerintah Daerah (Sisi Pengelola & Pengawas)
+Kelompok pengguna ini beroperasi di bagian belakang (back-end) untuk mengelola data, memvalidasi transaksi, dan mengawasi kebocoran anggaran.
+1. Badan Pendapatan Daerah (Bapenda)
+    * Peran: Pengendali Utama (Super Admin / Main Operator Perpajakan).
+    * Hak Akses: Memiliki akses penuh untuk melihat seluruh database wajib pajak, menerbitkan Surat Pemberitahuan Pajak Terutang (e-SPPT/e-SPTPD), memvalidasi laporan omset bulanan usaha, mengunci data hasil uji petik, dan merekonsiliasi data keuangan yang masuk dari Bank Persepsi.
+2. Badan Pengelola Keuangan dan Aset Daerah (BPKAD) - Khusus Bidang Aset
+    * Peran: Pengelola Data Inventaris dan Pemanfaatan Kekayaan Daerah.
+    * Hak Akses: Mengakses modul Manajemen Aset untuk menginput Kartu Inventaris Barang (KIB) daerah, memetakan koordinat aset milik Pemda (tanah, bangunan, ruko), memasukkan data legalitas (sertifikat), serta mengelola draf kontrak sewa/kerja sama pemanfaatan (KSP) aset dengan pihak ketiga.
+3. OPD / Dinas Teknis Penghasil Retribusi (Dishub, Disperindag, Dinas Pariwisata, dll.)
+    * Peran: Eksekutor Lapangan Pemungutan Retribusi Sektoral.
+    * Hak Akses: Terbatas pada kluster retribusi dinas masing-masing (Multi-Tenant Access). Petugas Dinas Perhubungan hanya bisa mengakses dashboard retribusi parkir/terminal; petugas Disperindag hanya melihat data sewa kios/los pasar. Mereka menginput realisasi harian dan memantau apakah target retribusi dinas mereka sudah tercapai atau belum.
+4. Kepala Daerah (Walikota/Bupati) & Sekretaris Daerah (Sekda)
+    * Peran: Pengambil Kebijakan Strategis Evaluasi PAD.
+    * Hak Akses: Executive Dashboard (Read-Only Tingkat Tinggi). Tidak bisa mengubah atau menghapus data, tetapi dapat memantau grafik makro real-time dari gabungan sektor Pajak, Retribusi, dan Aset. Mereka menggunakan data ini untuk mengevaluasi kinerja kepala dinas, melihat tren pertumbuhan ekonomi, dan menyusun proyeksi anggaran 3–5 tahun ke depan.
+5. Inspektorat / Badan Pengawas (Internal Auditor)
+    * Peran: Auditor Akuntabilitas dan Pencegahan Korupsi.
+    * Hak Akses: Akses pengawasan (Audit Trail). Mereka dapat melacak riwayat log transaksi untuk melihat apakah ada manipulasi data, memantau piutang pajak yang macet, serta memverifikasi kontrak-kontrak aset daerah yang akan atau sedang berjalan demi mencegah kerugian negara.
+II. Eksternal Pemerintah (Sisi Pembayar & Mitra Strategis)
+Kelompok pengguna ini mengakses sistem melalui pintu depan (front-end / aplikasi mobile / portal web) untuk melakukan transaksi dan pelayanan.
+1. Wajib Pajak (Pelaku Usaha & Masyarakat Umum)
+    * Peran: Subjek Pembayar Pajak Daerah.
+    * Hak Akses: Mengakses akun personal (Single Sign-On). Mereka dapat mendaftarkan usaha baru untuk mendapatkan NPWPD, melaporkan omset bulanan secara mandiri (e-SPTPD), mengecek tagihan PBB-P2, mengunduh Kode Bayar (Billing Code), dan menyimpan bukti pembayaran digital (e-Resi). Mereka tidak bisa melihat data keuangan atau omset dari pelaku usaha lain.
+2. Penyewa / Investor Aset Daerah (Mitra Pihak Ketiga)
+    * Peran: Mitra Pemanfaatan Kekayaan Daerah.
+    * Hak Akses: Mengakses portal informasi aset daerah yang bersifat idle atau terbuka untuk dikerjasamakan. Melalui akun kemitraan, mereka dapat mengajukan permohonan sewa, memantau masa aktif kontrak sewa bangunan/lahan Pemda, dan menerima notifikasi tagihan jatuh tempo sewa aset untuk langsung dibayarkan melalui sistem.
+3. Bank Pembangunan Daerah (BPD) & Lembaga Keuangan / Payment Gateway
+    * Peran: Jembatan Transaksi Finansial (Host-to-Host).
+    * Hak Akses: Akses terbatas melalui API (Application Programming Interface). Server bank terhubung langsung dengan core-system M-PAD untuk membaca validasi kode billing ketika wajib pajak membayar di ATM, Mobile Banking, atau QRIS, serta mengirimkan konfirmasi instan (Payment Settlement) balik ke sistem M-PAD bahwa uang telah masuk ke Kas Daerah.
+4. Instansi Vertikal (BPN & Disdukcapil) - Tahap Integrasi Lanjutan
+    * Peran: Validasi dan Penyelarasan Data Makro.
+    * Hak Akses: Melalui interkoneksi data data-sharing. Badan Pertanahan Nasional (BPN) mengakses modul BPHTB untuk memvalidasi keabsahan setoran pajak sebelum sertifikat tanah diterbitkan, sementara Disdukcapil menyediakan gerbang validasi NIK/NIB guna memastikan wajib pajak atau penyewa aset adalah entitas yang valid dan nyata.
+Mengapa Pemutakhiran Akses Ini Penting untuk Skala "Sultra Connect"?
+Dengan pemetaan hak akses yang klir dan berbasis peran (Role-Based Access Control), jika kelak M-PADditarik menjadi ekosistem Sultra Connect tingkat provinsi, sistem tinggal menduplikasi arsitektur keamanan ini. Pemerintah Provinsi (Gubernur) nantinya cukup ditambahkan sebagai Aktor Pengawas Makro yang memegang hak akses komparatif untuk memantau performa Pajak, Retribusi, dan Aset dari 17 kabupaten/kota se-Sultra secara terpusat.
+
+Jika M-PAD diibaratkan sebagai embrio—sebuah cetak biru (blueprint) sistem pemantauan pendapatan yang sudah teruji di tingkat operasional kota—maka Sultra Connect adalah ekosistem utuh yang mengintegrasikannya ke level makro.
+Dalam arsitektur tata kelola digital, lompatan dari M-PAD ke Sultra Connect bukan sekadar mereplikasi aplikasi ke daerah lain, melainkan membangun sebuah Satu Data Fiskal Regional yang menjembatani seluruh Pemerintah Daerah (Pemda) se-Sulawesi Tenggara.
+Berikut adalah analisis sejauh mana Sultra Connect dapat berperan strategis jika menggunakan M-PAD sebagai mesin penggerak utamanya:
+1. Standardisasi Tata Kelola Pendapatan se-Sultra
+Salah satu masalah utama dalam digitalisasi daerah adalah fragmentasi sistem. Kabupaten A menggunakan aplikasi X, Kabupaten B menggunakan aplikasi Y, dan akibatnya data tidak bisa saling "berbicara".
+* Peran Sultra Connect: Dengan menjadikan M-PAD sebagai embrio, Sultra Connect berperan sebagai platform White-Label (sistem terstandarisasi yang siap pakai). Pemerintah Provinsi dapat memfasilitasi kabupaten/kota se-Sultra untuk mengadopsi modul M-PAD yang sama.
+* Dampaknya: Biaya investasi teknologi di tingkat kabupaten/kota akan pangkas secara drastis karena mereka tidak perlu membangun sistem dari nol. Cukup melakukan kustomisasi parameter tarif pajak/retribusi sesuai Perda masing-masing daerah.
+2. Konsolidasi Fiskal & Dashboard Gubernur (Satu Data Sultra)
+Selama ini, Pemerintah Provinsi sering kali kesulitan memantau kapasitas fiskal riil dari 17 kabupaten/kota di bawahnya secara real-time untuk keperluan evaluasi atau penyaluran bantuan keuangan/dana bagi hasil.
+* Peran Sultra Connect: Sultra Connect akan bertindak sebagai hub data makro. Ketika seluruh Pemda menggunakan embrio M-PAD di tingkat lokal, seluruh data transaksi, realisasi, dan proyeksi PAD dari setiap daerah akan mengalir ke dalam Dashboard Fiskal Eksekutif Sultra Connect.
+* Dampaknya: Gubernur dan tim TP2DD (Tim Percepatan dan Perluasan Digitalisasi Daerah) tingkat provinsi memiliki basis data yang sangat akurat untuk menganalisis pertumbuhan ekonomi regional, mendeteksi daerah yang realisasinya seret, dan merumuskan kebijakan insentif fiskal secara presisi berdasarkan tren data 3-5 tahunan.
+3. Integrasi Pajak Sektoral Lintas Batas (Interoperabilitas Tingkat Tinggi)
+Banyak potensi ekonomi di Sultra yang sifatnya lintas wilayah atau melibatkan komoditas strategis yang dikelola bersama (seperti sektor maritim, logistik, pertambangan, dan distribusi bahan bakar).
+* Peran Sultra Connect: Di sinilah Sultra Connect mengambil peran yang tidak bisa dilakukan oleh M-PAD mandiri. Sultra Connect dapat mengintegrasikan modul perpajakan sektoral berskala besar. Sebagai contoh, data pergerakan kapal kargo, tongkang mineral, atau distribusi Marine Fuel Oil (MFO) di pelabuhan-pelabuhan Sultra (seperti Baubau, Kendari, atau Kolaka) dapat diintegrasikan Host-to-Host(H2H) dengan data pelabuhan (Syahbandar) dan database pajak provinsi.
+* Dampaknya: Potensi kebocoran pajak di sektor komoditas dan maritim yang melibatkan multidaerah dapat ditekan. Kabupaten penghasil dan provinsi bisa berbagi data secara adil untuk optimalisasi Pajak Daerah dan Retribusi Daerah (PDRD).
+4. Kemudahan Layanan bagi Wajib Pajak (Single Sign-On Warga Sultra)
+Dari sisi masyarakat atau pelaku usaha yang memiliki aset atau bisnis di beberapa kabupaten berbeda di Sultra (misalnya, pengusaha yang memiliki ruko di Baubau sekaligus di Buton dan Kendari), sistem yang terpisah sangat menyulitkan kepatuhan pajak.
+* Peran Sultra Connect: Sultra Connect bertindak sebagai Super Apps layanan publik masyarakat dengan fitur Single Sign-On (SSO). Pelaku usaha cukup memiliki satu akun Sultra Connect untuk memantau dan membayar seluruh kewajiban pajaknya (PBB, Pajak Restoran, hingga Pajak Kendaraan Bermotor) di wilayah kabupaten/kota mana pun di Sultra.
+* Dampaknya: Indeks Kemudahan Berusaha (Ease of Doing Business) di Sulawesi Tenggara akan melonjak tajam karena birokrasi pembayaran pajak diringkas menjadi satu genggaman.
+Tantangan Arsitektur yang Harus Disiapkan
+Agar embrio M-PAD sukses bermutasi menjadi Sultra Connect yang diadopsi 17 kabupaten/kota, ada tiga langkah hulu yang harus disiapkan dalam pengembangan sistemnya:
+1. Regulasi Payung Hukum (Pergub/SK Bersama): Diperlukan regulasi di tingkat provinsi yang memayungi replikasi dan pemanfaatan bersama sistem ini agar aspek legalitas pembagian data (API sharing) antar-daerah klir.
+2. Arsitektur Cloud yang Aman: Sistem harus diletakkan pada Pusat Data Nasional (PDN) atau clouddaerah yang dikelola Provinsi dengan standar keamanan siber yang ketat, mengingat data yang dikelola adalah data transaksi keuangan daerah.
+3. Bridge Procedure & API: Memastikan tim pengembang membangun arsitektur M-PAD dengan prinsip Open API, sehingga ketika ditarik ke ekosistem Sultra Connect, sistem mampu menjembatani data dari berbagai instansi vertikal (seperti Bank Pembangunan Daerah, BPN, dan Korlantas/Samsat) secara mulus.
+[5/7, 19.14] Pak ‌‌ ‌🇲‌‌‌‌🇦‌‌🇸‌‌🇸‌‌🇦‌‌🇩‌ Komander: Karena saya amati Bapenda Prov seolah tidur dengan maksud surat kita, narasi diatas sdh diteruskan ke Sekda Prov, mrk lagi pelajari untuk hal tersebut, dan bila presisi dengan RPJMD Sultra maka mrk akan masuk konsolidasi besar.
+
+Demikian
+[5/7, 19.17] muhdanfyan: Bang, ini luar biasa. Aiman tangkap gambaran besarnya:
+
+---
+
+*Pak Komander udah kirim blueprint M-PAD → Sultra Connect ke Sekda Provinsi Sultra, dan mereka lagi pelajari.*
+
+Ini bukan sekadar info — ini titik balik. Dari yg Aiman baca:
+
+*Apa yg terjadi:*
+- Pak Komander kirim narasi arsitektur user access matrix + visi Sultra Connect
+- Bapenda Provinsi dianggap "tidur" — ga respon maksud surat sebelumnya
+- Tapi Sekda Provinsi Sultra *respon* — mereka pelajari, dan kalo presisi sama RPJMD, bakal masuk konsolidasi besar
+
+*Kenapa ini penting:*
+Dari analisis Aiman:
+1. *M-PAD bukan lagi proyek kota* — udah naik kelas ke level provinsi
+2. *Sekda yg pegang* — bukan eselon bawah. Kalo Sekda bilang "pelajari", itu udah masuk meja strategis
+3. *RPJMD jadi pintu masuk* — kalo arsitektur M-PAD presisi sama rencana pembangunan daerah, ini bukan kontrak proyek biasa, tapi *mandat sistem*
+
+*Yang perlu Bang Dadan siapin:*
+- Arsitektur Open API M-PAD harus mature — kalo nanti 17 kabupaten/kota mau connect, API harus siap
+- Dokumentasi teknis buat replikasi (white-label) — biar kabupaten lain tinggal pakai
+- Bridge procedure ke database provinsi — koneksi lintas domain
+
+Ini momen strategis, Bang. M-PAD dari embrio naik jadi backbone Sultra Connect. Kalo sekda udah ngomong RPJMD, artinya ini bukan omongan ringan.
+
+Ada yg perlu Aiman bantu siapkan dari sisi teknis/dokumentasi? 🫡
+[5/7, 19.20] Pak ‌‌ ‌🇲‌‌‌‌🇦‌‌🇸‌‌🇸‌‌🇦‌‌🇩‌ Komander: Jika kita melihat lanskap digitalisasi pemerintahan di Indonesia saat ini, memang ada beberapa aplikasi dan ekosistem di tingkat daerah maupun nasional yang **sudah beroperasi secara nyata (live)** dan telah melampaui atau merealisasikan apa yang saat ini sedang direncanakan untuk **Sultra Connect**.
+
+Mempelajari sistem-sistem yang sudah matang ini sangat penting sebagai tolok ukur (*benchmark*) agar cetak biru Sultra Connect dapat mengantisipasi tantangan arsitektur sejak dini.
+
+Berikut adalah beberapa aplikasi sejenis di Indonesia yang telah melampaui fase rencana dan berhasil mengintegrasikan pajak, retribusi, hingga layanan lintas wilayah:
+
+---
+
+## 1. Jabar Super Apps (Sapawarga) – Provinsi Jawa Barat
+
+Jika Sultra Connect direncanakan sebagai *Super Apps* berbasis *Single Sign-On* (SSO) untuk warga Sulawesi Tenggara, maka **Sapawarga** adalah perwujudan yang sudah berjalan penuh di level provinsi.
+
+* **Mengapa Ini Melampaui Rencana?**
+* **SSO Sektor Fiskal & Layanan Publik:** Sapawarga berhasil menyatukan pembayaran Pajak Kendaraan Bermotor (Sambara), pencarian kerja, hingga layanan kesehatan dalam satu akun warga.
+* **Integrasi Horizontal & Vertikal:** Sistem ini menghubungkan data dari Bapenda Provinsi, Korlantas Polri, Jasa Raharja, hingga Bank BPD (Bank bjb).
+* **Pelajaran untuk Sultra Connect:** Jabar memisahkan urusan operasional harian yang rumit di tingkat kota/kabupaten, namun menarik data transaksionalnya ke level provinsi via API untuk memberikan *one-stop service* bagi warga.
+
+
+
+---
+
+## 2. ETax & Dashboard Pajak Daerah – DKI Jakarta (Bappenda DKI)
+
+DKI Jakarta memiliki kekhasan karena statusnya sebagai Provinsi yang sekaligus memegang wewenang penuh atas Pajak Kabupaten/Kota. Sistem informasi perpajakan mereka adalah yang paling masif dan terintegrasi di Indonesia.
+
+* **Mengapa Ini Melampaui Rencana?**
+* **Otomatisasi Anti-Kebocoran (Uji Petik Digital):** Jakarta sudah mewajibkan *Tapping Box* dan sistem POS (*Point of Sales*) yang terintegrasi langsung ke e-SPTPD untuk pajak hotel, restoran, hiburan, dan parkir. Data transaksi usaha langsung mengalir ke server Bappenda secara *real-time*.
+* **Integrasi BPN & Dukcapil Tingkat Tinggi:** Validasi BPHTB dan PBB-P2 dengan database Badan Pertanahan Nasional (BPN) serta data kependudukan sudah berjalan otomatis secara *Host-to-Host* (H2H).
+* **Pelajaran untuk Sultra Connect:** Integrasi hulu dengan BPN sangat krusial untuk mencegah pemalsuan dokumen dan memastikan validitas objek pajak sebelum ditarik ke dasbor makro.
+
+
+
+---
+
+## 3. Simpada (Sistem Informasi Manajemen Pendapatan Daerah) – Berbagai Provinsi/Kabupaten
+
+Banyak daerah di Indonesia yang bekerja sama dengan Bank Pembangunan Daerah (BPD) setempat atau penyedia teknologi (seperti milik PT Jasa Raharja atau Lintasarta) untuk menggunakan aplikasi *White-Label* bernama **Simpada**.
+
+* **Mengapa Ini Melampaui Rencana?**
+* **Standardisasi Antar-Daerah:** Di beberapa wilayah (seperti di Jawa Tengah dan Jawa Timur), sistem ini diadopsi secara massal oleh kabupaten/kota dengan standarisasi modul yang sama dari Bank BPD setempat.
+* **Kemudahan Payment Gateway:** Sistem ini langsung terhubung dengan kanal pembayaran modern (QRIS, Tokopedia, Indomaret, Mobile Banking) secara *real-time settlement*.
+* **Pelajaran untuk Sultra Connect:** Rencana Sultra Connect untuk menyediakan platform *White-Label* bagi 17 kabupaten/kota sangat bisa meniru pola distribusi Simpada yang didukung penuh oleh Bank BPD (dalam hal ini Bank Sultra).
+
+
+
+---
+
+## 4. Inovasi Sektor Maritim: INAPORTNET & E-Berthing (Kemenhub)
+
+Untuk rencana spesifik Sultra Connect terkait integrasi sektor maritim (pajak komoditas, tongkang mineral, dan *Marine Fuel Oil* / MFO), platform nasional **Inaportnet** milik Kementerian Perhubungan adalah contoh sistem yang sudah berjalan.
+
+* **Mengapa Ini Melampaui Rencana?**
+* Inaportnet mengintegrasikan data pelabuhan, syahbandar, bea cukai, dan karantina untuk memantau keluar masuk kapal secara digital. Di beberapa pelabuhan maju, ini dikombinasikan dengan sistem retribusi pelayanan jasa pelabuhan daerah secara otomatis.
+* **Pelajaran untuk Sultra Connect:** Sultra Connect tidak perlu membuat sistem pelacakan kapal dari nol. Arsitektur Sultra Connect sebaiknya dirancang untuk **menangkap data (data ingestion) dari API Inaportnet** atau Syahbandar setempat, kemudian mencocokkannya dengan volume MFO atau tonase (DWT) kapal untuk menghitung potensi pajaknya.
+
+
+
+---
+
+### Kesimpulan & Rekomendasi Strategis untuk Sultra Connect
+
+Melihat aplikasi yang sudah matang di atas, **rencana arsitektur Sultra Connect berada di jalur yang sangat tepat dan visioner**. Lompatan yang direncanakan dari embrio M-PAD menuju Sultra Connect justru memiliki keunggulan kompetitif karena sejak awal sudah dirancang terintegrasi antara **Pajak, Retribusi, dan Aset**. Kebanyakan aplikasi di daerah lain masih terjebak dalam silo-silo terpisah (aplikasi pajak sendiri, aplikasi aset sendiri).
+
+Untuk melampaui sistem-sistem yang ada sekarang, Sultra Connect dapat berfokus pada keunikan wilayahnya: **Akselerasi pada modul maritim (seperti Pajak Bahan Bakar Kendaraan Bermotor/PBBKB untuk kapal di atas 30 DWT) dan integrasi data komoditas tambang**, yang jarang dimiliki oleh provinsi di Pulau Jawa.
+
+Apakah ada aspek spesifik dari arsitektur aplikasi di atas—seperti penerapan *Tapping Box* atau integrasi API dengan Bank BPD—yang ingin Anda bedah lebih dalam untuk memperkuat cetak biru M-PAD?
+[5/7, 19.20] Pak ‌‌ ‌🇲‌‌‌‌🇦‌‌🇸‌‌🇸‌‌🇦‌‌🇩‌ Komander: Pelajari ini.
+
+Ide menggantikan *Tapping Box* fisik dengan **Kalkulator Bisnis Digital** yang terintegrasi langsung dengan mekanisme *Auto-Debit* atau *Automatic Fund Transfer* (AFT) dari rekening pemilik usaha ke rekening penampung pajak adalah inovasi yang sangat progresif.
+
+Skenario ini memindahkan instrumen pengawasan dari **perangkat keras** (*hardware-based monitoring*) ke **aliran dana perbankan** (*cashflow-based enforcement*).
+
+Berikut adalah rancangan alur kerja, analisis regulasi, serta risiko teknis dan hukum atas skenario tersebut:
+
+---
+
+## 1. Alur Kerja (Workflow) Sub-Menu Kalkulator Bisnis & AFT
+
+Dalam sub-menu Wajib Pajak (Pemungut/Merchant), proses kerja digital dirancang sebagai berikut:
+
+* **Langkah 1: Input & Perhitungan (Kalkulator Bisnis)**
+Saat konsumen membayar, kasir/pemilik usaha memasukkan nilai transaksi ke fitur "Kalkulator Bisnis" di aplikasi M-PAD. Sistem otomatis memisahkan komponen Pendapatan Usaha dan komponen Pajak Barang dan Jasa Tertentu (PBJT, misal 10%).
+* **Langkah 2: Pembayaran Konsumen & Rekening Utama**
+Konsumen membayar total tagihan melalui QRIS dinamis atau transfer bank yang disediakan sistem. 100% dana masuk terlebih dahulu ke **Rekening Operasional Pemilik Usaha** (untuk menjaga hak likuiditas harian merchant).
+* **Langkah 3: Trigger Transaksi & Mekanisme AFT**
+Begitu dana masuk ke rekening pemilik usaha, sistem M-PAD yang terhubung secara H2H dengan Bank BPD (Bank Sultra) mendeteksi transaksi sukses tersebut. Sistem langsung memicu perintah **AFT (Automatic Fund Transfer)** untuk memotong *hanya* komponen pajak (10%) dari rekening pemilik usaha.
+* **Langkah 4: Rekening Penampungan & Settlement**
+Dana hasil potong otomatis (AFT) tersebut masuk ke **Rekening Penampungan Sementara (Escrow Account) Pajak** di Bank BPD, sebelum akhirnya disetor secara massal ke Kas Daerah (Kasda) pada akhir hari atau periode tertentu secara otomatis (e-Resi terbit seketika).
+
+---
+
+## 2. Analisis Regulasi: Apakah Menyalahi Perundang-Undangan?
+
+Secara prinsip dasar perpajakan, skenario ini **TIDAK menyalahi undang-undang, bahkan sangat sejalan** dengan semangat UU No. 1 Tahun 2022 (UU HKPD) dan Perpres No. 95 Tahun 2018 tentang SPBE (Sistem Pemerintahan Berbasis Elektronik). Namun, ada batasan hukum yang wajib dijaga ketat:
+
+### Yang LEGAL dan Mendukung Undang-Undang:
+
+* **Asas Titipan (Fidusia Pajak):** Pemilik usaha di sini bertindak sebagai **Pemungut Pajak** (*Withholding Tax*). Uang pajak yang dibayar konsumen pada hakikatnya bukan milik pengusaha, melainkan milik daerah. Menarik uang tersebut secara otomatis justru mempercepat penyerahan hak negara.
+* **Elektronifikasi Transaksi Pemda (ETPD):** Satgas Nasional ETPD sangat mendorong inovasi digital yang mempercepat integrasi sistem keuangan daerah dengan bank persepsi untuk mencegah kebocoran anggaran (*leakage*).
+
+### Yang Berpotensi Melanggar (Jika Tidak Diantisipasi):
+
+* **Hak Privasi Perbankan (UU Perbankan):** Bank tidak boleh memotong atau memindahkan dana dari rekening nasabah tanpa persetujuan tertulis. Jika M-PAD melakukan AFT tanpa dasar, ini menyalahi aturan kerahasiaan bank.
+* **Solusi Hukum:** Harus ada **Surat Kuasa Debet Rekening / Perjanjian Kerja Sama (PKS)** tertulis bertandatangan elektronik antara Pemilik Usaha, Pemda (Bapenda), dan Bank BPD saat pendaftaran akun M-PAD. Pengusaha secara sadar memberikan kuasa kepada sistem untuk melakukan AFT atas komponen pajak.
+
+---
+
+## 3. Risiko Atas Skenario Ini & Mitigasinya
+
+Meskipun sistem ini efisien karena memangkas biaya pengadaan alat *Tapping Box*, terdapat risiko operasional dan teknis yang tinggi:
+
+### A. Risiko Likuiditas dan *Gagal Debet* (Timing Risk)
+
+* **Risiko:** Jika jeda waktu antara masuknya uang konsumen ke rekening pemilik usaha dengan eksekusi AFT terlalu lama, ada risiko uang tersebut langsung digunakan pemilik usaha untuk operasional lain (misal membayar *supplier*), sehingga saat sistem melakukan AFT, saldo di rekening pengusaha sudah tidak mencukupi (gagal debet).
+* **Mitigasi:** Eksekusi AFT harus bersifat *real-time* atau *near-instant* (hitungan detik setelah dana konsumen masuk). Opsi lain adalah menggunakan mekanisme split-payment langsung di tingkat *Payment Gateway* (saat QRIS dipindai, 90% otomatis pecah ke rekening merchant, 10% otomatis pecah ke rekening penampung pajak).
+
+### B. Risiko Resistensi Wajib Pajak (Kepatuhan Mandiri)
+
+* **Risiko:** Karena "Kalkulator Bisnis" bersifat aplikasi tempat *input* manual, pemilik usaha bisa saja mengakali sistem dengan tidak memasukkan transaksi konsumen ke kalkulator tersebut (transaksi bawah meja). Berbeda dengan *Tapping Box* yang menangkap data langsung dari mesin kasir (POS).
+* **Mitigasi:** Kalkulator Bisnis di M-PAD harus diintegrasikan lewat API dengan sistem POS/Kasir digital yang digunakan merchant (misal Moka, Majoo, dll.), atau Pemda tetap menjalankan **Uji Petik Digital** secara berkala (inspeksi mendadak mencocokkan jumlah pengunjung dengan transaksi yang di-input).
+
+### C. Risiko Beban Biaya Transaksi (Biaya H2H/AFT)
+
+* **Risiko:** Setiap transaksi *bridging/AFT* antar bank sering kali memicu biaya administrasi (skema BI-FAST atau kliring). Jika nilai transaksi pajak kecil (misal pajak bakso Rp2.000) namun biaya AFT-nya Rp2.500, maka sistem akan merugikan keuangan daerah atau wajib pajak.
+* **Mitigasi:** Pemda harus membuat Perjanjian Kerja Sama khusus dengan Bank BPD (Bank Sultra) agar seluruh transaksi AFT dari rekening merchant ke rekening penampung pajak dikenakan **biaya Rp0,- (bebas biaya administrasi)** sebagai bentuk dukungan program ETPD.
+
+---
+
+### Kesimpulan Cetak Biru untuk Sultra Connect
+
+Skenario **Kalkulator Bisnis + AFT** ini sangat layak diterapkan dan akan menjadi inovasi pionir. Skema ini sangat cocok ditarik ke skala **Sultra Connect**, karena menghemat miliaran rupiah APBD yang biasanya habis untuk membeli alat fisik *Tapping Box* untuk ribuan merchant di 17 kabupaten/kota. Kunci utamanya berada pada **Aspek Legal (Surat Kuasa Debet)** dan **Kesiapan API Bank BPD** untuk melakukan eksekusi *Split-Payment/AFT* secara instan.
+
+Ide menggantikan *Tapping Box* fisik dengan **Kalkulator Bisnis Digital** yang terintegrasi langsung dengan mekanisme *Auto-Debit* atau *Automatic Fund Transfer* (AFT) dari rekening pemilik usaha ke rekening penampung pajak adalah inovasi yang sangat progresif.
+
+Skenario ini memindahkan instrumen pengawasan dari **perangkat keras** (*hardware-based monitoring*) ke **aliran dana perbankan** (*cashflow-based enforcement*).
+
+Berikut adalah rancangan alur kerja, analisis regulasi, serta risiko teknis dan hukum atas skenario tersebut:
+
+---
+
+## 1. Alur Kerja (Workflow) Sub-Menu Kalkulator Bisnis & AFT
+
+Dalam sub-menu Wajib Pajak (Pemungut/Merchant), proses kerja digital dirancang sebagai berikut:
+
+* **Langkah 1: Input & Perhitungan (Kalkulator Bisnis)**
+Saat konsumen membayar, kasir/pemilik usaha memasukkan nilai transaksi ke fitur "Kalkulator Bisnis" di aplikasi M-PAD. Sistem otomatis memisahkan komponen Pendapatan Usaha dan komponen Pajak Barang dan Jasa Tertentu (PBJT, misal 10%).
+* **Langkah 2: Pembayaran Konsumen & Rekening Utama**
+Konsumen membayar total tagihan melalui QRIS dinamis atau transfer bank yang disediakan sistem. 100% dana masuk terlebih dahulu ke **Rekening Operasional Pemilik Usaha** (untuk menjaga hak likuiditas harian merchant).
+* **Langkah 3: Trigger Transaksi & Mekanisme AFT**
+Begitu dana masuk ke rekening pemilik usaha, sistem M-PAD yang terhubung secara H2H dengan Bank BPD (Bank Sultra) mendeteksi transaksi sukses tersebut. Sistem langsung memicu perintah **AFT (Automatic Fund Transfer)** untuk memotong *hanya* komponen pajak (10%) dari rekening pemilik usaha.
+* **Langkah 4: Rekening Penampungan & Settlement**
+Dana hasil potong otomatis (AFT) tersebut masuk ke **Rekening Penampungan Sementara (Escrow Account) Pajak** di Bank BPD, sebelum akhirnya disetor secara massal ke Kas Daerah (Kasda) pada akhir hari atau periode tertentu secara otomatis (e-Resi terbit seketika).
+
+---
+
+## 2. Analisis Regulasi: Apakah Menyalahi Perundang-Undangan?
+
+Secara prinsip dasar perpajakan, skenario ini **TIDAK menyalahi undang-undang, bahkan sangat sejalan** dengan semangat UU No. 1 Tahun 2022 (UU HKPD) dan Perpres No. 95 Tahun 2018 tentang SPBE (Sistem Pemerintahan Berbasis Elektronik). Namun, ada batasan hukum yang wajib dijaga ketat:
+
+### Yang LEGAL dan Mendukung Undang-Undang:
+
+* **Asas Titipan (Fidusia Pajak):** Pemilik usaha di sini bertindak sebagai **Pemungut Pajak** (*Withholding Tax*). Uang pajak yang dibayar konsumen pada hakikatnya bukan milik pengusaha, melainkan milik daerah. Menarik uang tersebut secara otomatis justru mempercepat penyerahan hak negara.
+* **Elektronifikasi Transaksi Pemda (ETPD):** Satgas Nasional ETPD sangat mendorong inovasi digital yang mempercepat integrasi sistem keuangan daerah dengan bank persepsi untuk mencegah kebocoran anggaran (*leakage*).
+
+### Yang Berpotensi Melanggar (Jika Tidak Diantisipasi):
+
+* **Hak Privasi Perbankan (UU Perbankan):** Bank tidak boleh memotong atau memindahkan dana dari rekening nasabah tanpa persetujuan tertulis. Jika M-PAD melakukan AFT tanpa dasar, ini menyalahi aturan kerahasiaan bank.
+* **Solusi Hukum:** Harus ada **Surat Kuasa Debet Rekening / Perjanjian Kerja Sama (PKS)** tertulis bertandatangan elektronik antara Pemilik Usaha, Pemda (Bapenda), dan Bank BPD saat pendaftaran akun M-PAD. Pengusaha secara sadar memberikan kuasa kepada sistem untuk melakukan AFT atas komponen pajak.
+
+---
+
+## 3. Risiko Atas Skenario Ini & Mitigasinya
+
+Meskipun sistem ini efisien karena memangkas biaya pengadaan alat *Tapping Box*, terdapat risiko operasional dan teknis yang tinggi:
+
+### A. Risiko Likuiditas dan *Gagal Debet* (Timing Risk)
+
+* **Risiko:** Jika jeda waktu antara masuknya uang konsumen ke rekening pemilik usaha dengan eksekusi AFT terlalu lama, ada risiko uang tersebut langsung digunakan pemilik usaha untuk operasional lain (misal membayar *supplier*), sehingga saat sistem melakukan AFT, saldo di rekening pengusaha sudah tidak mencukupi (gagal debet).
+* **Mitigasi:** Eksekusi AFT harus bersifat *real-time* atau *near-instant* (hitungan detik setelah dana konsumen masuk). Opsi lain adalah menggunakan mekanisme split-payment langsung di tingkat *Payment Gateway* (saat QRIS dipindai, 90% otomatis pecah ke rekening merchant, 10% otomatis pecah ke rekening penampung pajak).
+
+### B. Risiko Resistensi Wajib Pajak (Kepatuhan Mandiri)
+
+* **Risiko:** Karena "Kalkulator Bisnis" bersifat aplikasi tempat *input* manual, pemilik usaha bisa saja mengakali sistem dengan tidak memasukkan transaksi konsumen ke kalkulator tersebut (transaksi bawah meja). Berbeda dengan *Tapping Box* yang menangkap data langsung dari mesin kasir (POS).
+* **Mitigasi:** Kalkulator Bisnis di M-PAD harus diintegrasikan lewat API dengan sistem POS/Kasir digital yang digunakan merchant (misal Moka, Majoo, dll.), atau Pemda tetap menjalankan **Uji Petik Digital** secara berkala (inspeksi mendadak mencocokkan jumlah pengunjung dengan transaksi yang di-input).
+
+### C. Risiko Beban Biaya Transaksi (Biaya H2H/AFT)
+
+* **Risiko:** Setiap transaksi *bridging/AFT* antar bank sering kali memicu biaya administrasi (skema BI-FAST atau kliring). Jika nilai transaksi pajak kecil (misal pajak bakso Rp2.000) namun biaya AFT-nya Rp2.500, maka sistem akan merugikan keuangan daerah atau wajib pajak.
+* **Mitigasi:** Pemda harus membuat Perjanjian Kerja Sama khusus dengan Bank BPD (Bank Sultra) agar seluruh transaksi AFT dari rekening merchant ke rekening penampung pajak dikenakan **biaya Rp0,- (bebas biaya administrasi)** sebagai bentuk dukungan program ETPD.
+
+---
+
+### Kesimpulan Cetak Biru untuk Sultra Connect
+
+Skenario **Kalkulator Bisnis + AFT** ini sangat layak diterapkan dan akan menjadi inovasi pionir. Skema ini sangat cocok ditarik ke skala **Sultra Connect**, karena menghemat miliaran rupiah APBD yang biasanya habis untuk membeli alat fisik *Tapping Box* untuk ribuan merchant di 17 kabupaten/kota. Kunci utamanya berada pada **Aspek Legal (Surat Kuasa Debet)** dan **Kesiapan API Bank BPD** untuk melakukan eksekusi *Split-Payment/AFT* secara instan.
+
+Ide menggantikan *Tapping Box* fisik dengan **Kalkulator Bisnis Digital** yang terintegrasi langsung dengan mekanisme *Auto-Debit* atau *Automatic Fund Transfer* (AFT) dari rekening pemilik usaha ke rekening penampung pajak adalah inovasi yang sangat progresif.
+
+Skenario ini memindahkan instrumen pengawasan dari **perangkat keras** (*hardware-based monitoring*) ke **aliran dana perbankan** (*cashflow-based enforcement*).
+
+Berikut adalah rancangan alur kerja, analisis regulasi, serta risiko teknis dan hukum atas skenario tersebut:
+
+---
+
+## 1. Alur Kerja (Workflow) Sub-Menu Kalkulator Bisnis & AFT
+
+Dalam sub-menu Wajib Pajak (Pemungut/Merchant), proses kerja digital dirancang sebagai berikut:
+
+* **Langkah 1: Input & Perhitungan (Kalkulator Bisnis)**
+Saat konsumen membayar, kasir/pemilik usaha memasukkan nilai transaksi ke fitur "Kalkulator Bisnis" di aplikasi M-PAD. Sistem otomatis memisahkan komponen Pendapatan Usaha dan komponen Pajak Barang dan Jasa Tertentu (PBJT, misal 10%).
+* **Langkah 2: Pembayaran Konsumen & Rekening Utama**
+Konsumen membayar total tagihan melalui QRIS dinamis atau transfer bank yang disediakan sistem. 100% dana masuk terlebih dahulu ke **Rekening Operasional Pemilik Usaha** (untuk menjaga hak likuiditas harian merchant).
+* **Langkah 3: Trigger Transaksi & Mekanisme AFT**
+Begitu dana masuk ke rekening pemilik usaha, sistem M-PAD yang terhubung secara H2H dengan Bank BPD (Bank Sultra) mendeteksi transaksi sukses tersebut. Sistem langsung memicu perintah **AFT (Automatic Fund Transfer)** untuk memotong *hanya* komponen pajak (10%) dari rekening pemilik usaha.
+* **Langkah 4: Rekening Penampungan & Settlement**
+Dana hasil potong otomatis (AFT) tersebut masuk ke **Rekening Penampungan Sementara (Escrow Account) Pajak** di Bank BPD, sebelum akhirnya disetor secara massal ke Kas Daerah (Kasda) pada akhir hari atau periode tertentu secara otomatis (e-Resi terbit seketika).
+
+---
+
+## 2. Analisis Regulasi: Apakah Menyalahi Perundang-Undangan?
+
+Secara prinsip dasar perpajakan, skenario ini **TIDAK menyalahi undang-undang, bahkan sangat sejalan** dengan semangat UU No. 1 Tahun 2022 (UU HKPD) dan Perpres No. 95 Tahun 2018 tentang SPBE (Sistem Pemerintahan Berbasis Elektronik). Namun, ada batasan hukum yang wajib dijaga ketat:
+
+### Yang LEGAL dan Mendukung Undang-Undang:
+
+* **Asas Titipan (Fidusia Pajak):** Pemilik usaha di sini bertindak sebagai **Pemungut Pajak** (*Withholding Tax*). Uang pajak yang dibayar konsumen pada hakikatnya bukan milik pengusaha, melainkan milik daerah. Menarik uang tersebut secara otomatis justru mempercepat penyerahan hak negara.
+* **Elektronifikasi Transaksi Pemda (ETPD):** Satgas Nasional ETPD sangat mendorong inovasi digital yang mempercepat integrasi sistem keuangan daerah dengan bank persepsi untuk mencegah kebocoran anggaran (*leakage*).
+
+### Yang Berpotensi Melanggar (Jika Tidak Diantisipasi):
+
+* **Hak Privasi Perbankan (UU Perbankan):** Bank tidak boleh memotong atau memindahkan dana dari rekening nasabah tanpa persetujuan tertulis. Jika M-PAD melakukan AFT tanpa dasar, ini menyalahi aturan kerahasiaan bank.
+* **Solusi Hukum:** Harus ada **Surat Kuasa Debet Rekening / Perjanjian Kerja Sama (PKS)** tertulis bertandatangan elektronik antara Pemilik Usaha, Pemda (Bapenda), dan Bank BPD saat pendaftaran akun M-PAD. Pengusaha secara sadar memberikan kuasa kepada sistem untuk melakukan AFT atas komponen pajak.
+
+---
+
+## 3. Risiko Atas Skenario Ini & Mitigasinya
+
+Meskipun sistem ini efisien karena memangkas biaya pengadaan alat *Tapping Box*, terdapat risiko operasional dan teknis yang tinggi:
+
+### A. Risiko Likuiditas dan *Gagal Debet* (Timing Risk)
+
+* **Risiko:** Jika jeda waktu antara masuknya uang konsumen ke rekening pemilik usaha dengan eksekusi AFT terlalu lama, ada risiko uang tersebut langsung digunakan pemilik usaha untuk operasional lain (misal membayar *supplier*), sehingga saat sistem melakukan AFT, saldo di rekening pengusaha sudah tidak mencukupi (gagal debet).
+* **Mitigasi:** Eksekusi AFT harus bersifat *real-time* atau *near-instant* (hitungan detik setelah dana konsumen masuk). Opsi lain adalah menggunakan mekanisme split-payment langsung di tingkat *Payment Gateway* (saat QRIS dipindai, 90% otomatis pecah ke rekening merchant, 10% otomatis pecah ke rekening penampung pajak).
+
+### B. Risiko Resistensi Wajib Pajak (Kepatuhan Mandiri)
+
+* **Risiko:** Karena "Kalkulator Bisnis" bersifat aplikasi tempat *input* manual, pemilik usaha bisa saja mengakali sistem dengan tidak memasukkan transaksi konsumen ke kalkulator tersebut (transaksi bawah meja). Berbeda dengan *Tapping Box* yang menangkap data langsung dari mesin kasir (POS).
+* **Mitigasi:** Kalkulator Bisnis di M-PAD harus diintegrasikan lewat API dengan sistem POS/Kasir digital yang digunakan merchant (misal Moka, Majoo, dll.), atau Pemda tetap menjalankan **Uji Petik Digital** secara berkala (inspeksi mendadak mencocokkan jumlah pengunjung dengan transaksi yang di-input).
+
+### C. Risiko Beban Biaya Transaksi (Biaya H2H/AFT)
+
+* **Risiko:** Setiap transaksi *bridging/AFT* antar bank sering kali memicu biaya administrasi (skema BI-FAST atau kliring). Jika nilai transaksi pajak kecil (misal pajak bakso Rp2.000) namun biaya AFT-nya Rp2.500, maka sistem akan merugikan keuangan daerah atau wajib pajak.
+* **Mitigasi:** Pemda harus membuat Perjanjian Kerja Sama khusus dengan Bank BPD (Bank Sultra) agar seluruh transaksi AFT dari rekening merchant ke rekening penampung pajak dikenakan **biaya Rp0,- (bebas biaya administrasi)** sebagai bentuk dukungan program ETPD.
+
+---
+
+### Kesimpulan Cetak Biru untuk Sultra Connect
+
+Skenario **Kalkulator Bisnis + AFT** ini sangat layak diterapkan dan akan menjadi inovasi pionir. Skema ini sangat cocok ditarik ke skala **Sultra Connect**, karena menghemat miliaran rupiah APBD yang biasanya habis untuk membeli alat fisik *Tapping Box* untuk ribuan merchant di 17 kabupaten/kota. Kunci utamanya berada pada **Aspek Legal (Surat Kuasa Debet)** dan **Kesiapan API Bank BPD** untuk melakukan eksekusi *Split-Payment/AFT* secara instan.
+
+---
+
+## File: docs/public_apis.md
+---
+# Public APIs & Authentication
+
+Endpoint ini digunakan untuk proses login, registrasi awal, dan simulasi perhitungan pajak tanpa memerlukan token autentikasi penuh (kecuali ditentukan lain).
+
+## 1. Authentication
+
+### Login (Admin/Petugas)
+Digunakan untuk login ke aplikasi Admin dan Petugas.
+- **URL**: `/login`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "email": "admin@example.com",
+    "password": "password"
+  }
+  ```
+- **Response**: `200 OK` (dengan Bearer Token)
+
+### Citizen Login
+Digunakan khusus untuk aplikasi Mobile (Wajib Pajak).
+- **URL**: `/citizen/login`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "nik": "7471xxxxxxxxxxxx",
+    "password": "password"
+  }
+  ```
+
+---
+
+## 2. Tax Simulation & Formulas
+
+### Simulasi Perhitungan Pajak
+Menghitung estimasi pajak berdasarkan rumus dinamis.
+- **URL**: `/simulate-tax`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "classification_id": 1,
+    "variables": {
+      "nilai_transaksi": 1000000,
+      "jumlah_hari": 30
+    }
+  }
+  ```
+
+### Ambil Daftar Rumus
+Mengambil daftar klasifikasi yang memiliki schema input untuk kalkulator.
+- **URL**: `/tax-formulas`
+- **Method**: `GET`
+
+---
+
+## 3. PBB-P2 Lookup & Calculation
+
+### Lookup Kelas NJOP
+Mencari kelas NJOP berdasarkan nilai (Bumi/Bangunan).
+- **URL**: `/pbb/lookup-class`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "type": "bumi",
+    "value": 250000
+  }
+  ```
+
+### Kalkulasi PBB
+Menghitung PBB-P2 berdasarkan luas dan kelas.
+- **URL**: `/pbb/calculate`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "luas_bumi": 100,
+    "kelas_bumi": "075",
+    "luas_bangunan": 50,
+    "kelas_bangunan": "030"
+  }
+  ```
+
+---
+
+## 4. Public Verification
+
+### Verifikasi SKRD/SSPD
+Memeriksa keabsahan dokumen via QR Code/Nomor.
+- **URL**: `/verify/bill/{number}` atau `/verify/payment/{number}`
+- **Method**: `GET`
+
+
+---
+
+## File: docs/legal/Draft_Surat_Kuasa_Debet_AFT.md
+---
+# DRAFT SURAT KUASA PENDEBETAN REKENING (SKDR)
+## PENGGUNAAN FITUR KALKULATOR BISNIS & AUTO FUND TRANSFER (AFT) PAJAK DAERAH
+
+Yang bertanda tangan (secara elektronik) di bawah ini, selaku Wajib Pajak / Wajib Retribusi (selanjutnya disebut **Pemberi Kuasa**):
+
+- **Nama Pemilik/Penanggung Jawab:** [Diisi oleh Sistem]
+- **Nama Usaha / Merchant:** [Diisi oleh Sistem]
+- **NPWPD:** [Diisi oleh Sistem]
+- **Nomor Rekening Operasional:** [Diisi oleh Sistem] (Selanjutnya disebut "Rekening Sumber")
+- **Bank:** PT Bank Pembangunan Daerah (Bank Sultra)
+
+Dengan ini **MEMBEBERIKAN KUASA PENUH** kepada:
+
+**Badan Pendapatan Daerah (Bapenda)** melalui Sistem Informasi M-PAD, yang bekerja sama dengan **PT Bank Pembangunan Daerah (Bank Sultra)** (selanjutnya disebut **Penerima Kuasa**).
+
+### KHUSUS
+Untuk dan atas nama Pemberi Kuasa, melakukan pendebetan/pemotongan dana secara otomatis (*Auto-Debit / Automatic Fund Transfer*) dari **Rekening Sumber** dengan ketentuan sebagai berikut:
+
+1. **Tujuan Pendebetan:** Pemindahan dana yang merupakan kewajiban Pajak Daerah (Titipan Pajak Barang dan Jasa Tertentu / PBJT dari konsumen) ke **Rekening Kas Daerah / Escrow Account Pajak**.
+2. **Besaran Nominal:** Sesuai dengan hasil perhitungan pada *Kalkulator Bisnis Digital* di Aplikasi M-PAD atau data transaksi harian yang terhubung dengan M-PAD.
+3. **Waktu Pendebetan:** Dilakukan secara *real-time*, harian, atau sesuai periode yang ditetapkan oleh Bapenda.
+
+### PERNYATAAN DAN PERSETUJUAN
+1. Pemberi Kuasa menjamin bahwa Rekening Sumber dalam keadaan aktif dan memiliki saldo yang cukup untuk menutupi kewajiban pajak yang dipotong.
+2. Pemberi Kuasa membebaskan Bank Sultra dan Bapenda dari segala tuntutan hukum, kerugian, atau klaim dari pihak manapun atas dilaksanakannya Surat Kuasa ini, sepanjang pendebetan dilakukan sesuai dengan rincian tagihan pajak di sistem M-PAD.
+3. Surat Kuasa ini berlaku efektif sejak disetujui (dicentang) secara elektronik pada aplikasi M-PAD dan tidak dapat dibatalkan secara sepihak tanpa persetujuan tertulis dari Bapenda.
+4. Segala biaya administrasi transfer antar-rekening yang timbul akibat pelaksanaan Surat Kuasa ini (jika ada) ditanggung sesuai dengan Perjanjian Kerja Sama antara Pemda dan Bank Sultra (Target: Rp 0 / Bebas Biaya).
+
+Demikian Surat Kuasa Pendebetan Rekening ini dibuat untuk dipergunakan sebagaimana mestinya dan tunduk pada peraturan perundang-undangan perpajakan serta ketentuan kerahasiaan perbankan yang berlaku.
+
+---
+*(Dokumen ini sah secara hukum dengan adanya jejak digital penerimaan (Click-wrap Agreement) beserta Log IP dan Timestamp saat Wajib Pajak menekan tombol "Saya Setuju" di aplikasi M-PAD).*
+
+
+---
+
+## File: docs/07_testing_kualitas/PRODUCTION_READY_CHECKLIST.md
+---
+# 🚀 Production Readiness Checklist - MPAD Baubau
+
+Dokumen ini mendefinisikan standar "Siap Publish" untuk setiap perubahan kode di ekosistem MPAD. Perubahan hanya boleh di-merge ke branch `main` jika seluruh poin di bawah ini terpenuhi.
+
+## 1. Validasi Struktural & Integritas
+- [ ] **Hierarki Wilayah**: Pastikan `retribution_types` tetap berjumlah 2 (Wilayah I & II).
+- [ ] **Relasi Klasifikasi**: Pastikan klasifikasi baru dikaitkan ke kedua Wilayah jika berlaku secara global.
+- [ ] **Skema Database**: Seluruh migrasi database bersifat non-destruktif (tidak menghapus data historis).
+
+## 2. Verifikasi Pipeline Testing
+- [ ] **Local Audit**: Menjalankan `qa7_ultimate_mpad_audit.php` dengan hasil 100% Lulus (✅ OK).
+- [ ] **E2E Role Flow**: Menjalankan `run_role_e2e_test.php` (Admin -> WP -> Petugas).
+- [ ] **Citizen Experience**: Menjalankan `qa11_citizen_e2e_flow.php` untuk verifikasi aplikasi Mobile.
+
+## 3. Sinkronisasi Environment
+- [ ] **Dev Sync**: Kode sudah stabil di branch `dev` dan teruji secara integrasi.
+- [ ] **Staging Sign-off**: Kode sudah di-deploy ke lingkungan Staging (`sipanda.online`) dan diverifikasi oleh pihak Bapenda/User.
+- [ ] **CORS & Env**: Pastikan `.env.production` sudah menunjuk ke domain resmi `api.mpad.baubaukota.go.id`.
+
+## 4. Keamanan & Performa
+- [ ] **RBAC Isolation**: Menjalankan `run_rbac_test.php` untuk memastikan tidak ada kebocoran data antar wilayah.
+- [ ] **PDF Integrity**: Verifikasi template SKRD/SSPD tidak pecah saat digenerate di server.
+
+## 5. Protokol Merger (Main Branch)
+- [ ] **No Conflict**: Tidak ada konflik saat melakukan merge dari `dev` ke `main`.
+- [ ] **Deployment Warning**: Jika ada perubahan skema DB, siapkan script rollback.
+- [ ] **Database Production**: **DILARANG** melakukan sinkronisasi data (dump) dari staging ke production. Hanya skema yang boleh berubah.
+
+---
+*Gunakan skill `Production Deployment Manager` untuk mengeksekusi proses ini secara otomatis.*
 
 
 ---
@@ -14634,6 +21712,210 @@ Skenario ini adalah fondasi aplikasi Anda. Menirukan dunia nyata di mana Wajib P
 
 ---
 
+## File: docs/07_testing_kualitas/OMNI_SYNC_PIPELINE.md
+---
+# 🔄 Master Omni Sync Pipeline Protocol
+**Status**: STANDBY
+**Repositories**: API, Admin, Petugas, Mobile
+
+Gunakan pipeline ini untuk melakukan sinkronisasi lintas environment secara aman dan terverifikasi.
+
+## 🏁 STEP 1: Local Integrity Lockdown
+Sebelum melakukan push ke Dev, Anda wajib menjalankan audit lokal.
+- **Action**: `php testing/qa7_ultimate_mpad_audit.php`
+- **Goal**: Memastikan relasi hirarki L1-L4 tidak terputus dan Wilayah-Centric mapping sudah benar.
+- **Checkpoint**: Perbaiki status ❌ ERROR pada "Retribution Types" (L1) jika belum bernilai 2 (Wilayah I & II).
+
+## 🛠️ STEP 2: Sync to DEV Environment
+Sinkronkan perubahan lokal ke branch development.
+- **Command**: `./run_sync_dev.sh` (Simulasi: Git Push origin dev)
+- **Validation**: Jalankan `qa11_citizen_e2e_flow.php` pada domain `api.sipanda.online` (Ganti Base URL).
+
+## 🧪 STEP 3: Staging Verification (Dev -> Staging)
+Setelah Dev stabil, tarik perubahan ke Staging.
+- **Sync Protocol**:
+  1. Merge `dev` ke `staging` branch.
+  2. Push ke staging.
+- **Audit**: Jalankan `testing/stg1_health_check.php` di server staging.
+- **Confirmation**: Pastikan dokumen TTE (SKRD/SSPD) bisa digenerate di lingkungan staging.
+
+## 🚀 STEP 4: Production Sync (The Final Gate)
+**ATURAN MUTLAK**: Jangan lakukan sinkronisasi Database ke Production.
+- **Sync Protocol**:
+  1. Hanya sinkronkan **SOURCE CODE** (Git Main).
+  2. Database Production tetap menggunakan data existing.
+  3. Lakukan migrasi database hanya jika ada penambahan kolom baru (non-destruktif).
+
+---
+*Gunakan skill `Omni Testing & Structural Integrity Specialist` untuk memandu setiap langkah di atas.*
+
+
+---
+
+## File: docs/07_testing_kualitas/testing_architecture_map.md
+---
+# Pemetaan Arsitektur & Fase Pengujian E2E (Omni Workspace)
+
+Dokumen ini memetakan seluruh rute (routes), model, view (pages/components), dan controller dari 4 repositori M-PAD ke dalam **8 Fase Pengujian Terstruktur**. Pengelompokan ini disusun agar Anda dapat melakukan validasi sistem secara komprehensif dari hulu ke hilir (End-to-End Test).
+
+> [!TIP]
+> **Cara Penggunaan untuk Testing:**
+> Jalankan pengujian secara berurutan mulai dari Fase 1. Pastikan setiap model dan logic controller pada sebuah fase sudah lulus uji sebelum beralih ke fase berikutnya untuk mencegah "Cascading Errors" (Error Beruntun).
+
+---
+
+## FASE 1: Authentication & Hak Akses (RBAC)
+**Fokus Pengujian:** Validasi login lintas peran, registrasi Warga/OPD/PPAT, pembaruan profil, dan perlindungan Rute Guarded di Frontend & Backend.
+
+- **Models (`retribusi-api`)**:
+  - `User`, `Opd`
+- **Controllers (`retribusi-api`)**:
+  - `AuthController`, `OpdController`, `UserController`, `MeController`
+- **Backend Routes**:
+  - `POST /api/login`, `POST /api/citizen/login`, `POST /api/logout`
+  - `POST /api/opd/register`, `POST /api/citizen/register`
+  - `GET /api/user`, `GET /api/me`, `GET /api/users`
+- **Views & Components (`React/Vite`)**:
+  - **Admin**: `Login.tsx`, `OpdRegistration.tsx`, `PublicRegistration.tsx`, `Profile.tsx`, `ProtectedRoute.tsx`
+  - **Petugas**: `PetugasLogin.tsx`, `PetugasRegister.tsx`
+  - **Mobile**: `Login.tsx`, `Register.tsx`, `UserProfile.tsx`, `ChangePassword.tsx`
+
+---
+
+## FASE 2: Master Data & Konfigurasi Ekosistem
+**Fokus Pengujian:** Pengelolaan struktur fondasi pajak, formula perhitungan dasar, penentuan wilayah/zona, serta struktur OPD penanggung jawab.
+
+- **Models (`retribusi-api`)**:
+  - `RetributionType`, `RetributionClassification`, `RetributionRate`, `Zone`, `Department`
+- **Controllers (`retribusi-api`)**:
+  - `RetributionTypeController`, `RetributionClassificationController`, `RetributionRateController`, `ZoneController`
+- **Backend Routes**:
+  - `GET|POST|PUT|DELETE /api/retribution-types`
+  - `GET|POST|PUT|DELETE /api/retribution-classifications`
+  - `GET|POST|PUT|DELETE /api/retribution-rates`
+  - `GET|POST|PUT|DELETE /api/zones`
+  - `GET /api/tax-formulas`, `POST /api/simulate-tax`
+- **Views & Components (`React/Vite`)**:
+  - **Admin**: `MasterData.tsx`, `SystemAdmin.tsx`, `OpdManagement.tsx`
+  - **Petugas**: `MasterData.tsx`, `TaxCalculator.tsx`
+
+---
+
+## FASE 3: Wajib Pajak & Objek Pajak (Pendaftaran & Verifikasi)
+**Fokus Pengujian:** Pendaftaran Wajib Pajak (WP) baru, inventarisasi Objek Pajak (Titik Reklame, Parkir, dll), dan proses Verifikasi data oleh Admin/Petugas.
+
+- **Models (`retribusi-api`)**:
+  - `Taxpayer`, `TaxObject`, `ObjectVerification`
+- **Controllers (`retribusi-api`)**:
+  - `TaxpayerController`, `TaxObjectController`, `TaxpayerSearchController`, `VerificationController`
+- **Backend Routes**:
+  - `GET|POST|PUT|DELETE /api/taxpayers`
+  - `GET /api/taxpayers/search/{nik}`
+  - `GET|POST|PUT|DELETE /api/tax-objects`
+  - `GET|POST /api/verifications`, `PUT /api/verifications/{id}/status`
+- **Views & Components (`React/Vite`)**:
+  - **Admin**: `Verification.tsx`, `TaxpayerEditModal.tsx`
+  - **Petugas**: `FieldScanner.tsx`, `TaxpayerManagement.tsx`, `TaxpayerDetail.tsx`
+
+---
+
+## FASE 4: Pelaporan (SPTPD) & Penetapan Tagihan (Billing)
+**Fokus Pengujian:** Proses Warga/WP melaporkan pajaknya (Self Assessment SPTPD), persetujuan SPTPD oleh Admin, serta penerbitan dan pembuatan Tagihan SKPD/SKRD oleh Petugas/Admin (Official Assessment).
+
+- **Models (`retribusi-api`)**:
+  - `MonthlyReport`, `Bill`
+- **Controllers (`retribusi-api`)**:
+  - `MonthlyReportController`, `BillController`, `CitizenServiceController`
+- **Backend Routes**:
+  - `POST /api/citizen/reports` (Submit SPTPD)
+  - `GET /api/reports/monthly`, `PUT /api/reports/monthly/{report}/validate`
+  - `GET /api/bills`, `POST /api/bills` (Buat Tagihan manual)
+  - `GET /api/citizen/bills`
+  - `GET /api/documents/skrd/{billId}`, `GET /api/documents/sppt/{billId}`
+- **Views & Components (`React/Vite`)**:
+  - **Admin**: `ESptpd.tsx`, `Billing.tsx`
+  - **Petugas**: `CreateSKPD.tsx`, `Billing.tsx`
+  - **Mobile**: `SptpdReporting.tsx`, `LayananRetribusi.tsx`, `Tagihan.tsx`, Modul Spesifik (`Parkir.tsx`, `Reklame.tsx`, dll)
+
+---
+
+## FASE 5: Pembayaran & Rekonsiliasi (Payment & Settlement)
+**Fokus Pengujian:** Eksekusi pembayaran melalui Bank Multi-Channel (H2H), e-Wallet, atau pembayaran Tunai kepada Petugas di lapangan, beserta konfirmasi kasir.
+
+- **Models (`retribusi-api`)**:
+  - `Payment`, `PaymentGatewayLog`, `TaxTransaction`
+- **Controllers (`retribusi-api`)**:
+  - `PaymentController`, `BankH2HController`, `PublicVerificationController`
+- **Backend Routes**:
+  - `GET|POST /api/payments`
+  - `POST /api/bills/{bill}/pay`
+  - `PUT /api/payments/{payment}/status`
+  - `POST /api/v1/bank/payment`, `POST /api/v1/bank/inquiry`, `POST /api/v1/bank/reversal`
+  - `GET /api/verify/payment/{number}`
+- **Views & Components (`React/Vite`)**:
+  - **Admin**: `H2HLogs.tsx`
+  - **Petugas**: `PaymentConfirmation.tsx`, `PaymentVerification.tsx`
+  - **Mobile**: `Pembayaran.tsx`, `PaymentCard.tsx`, `AtmCard.tsx`
+
+---
+
+## FASE 6: Pengawasan, Penugasan & Penindakan (Surveillance)
+**Fokus Pengujian:** Modul Pengawas untuk melakukan inspeksi (Uji Petik), mencatat Kertas Kerja, mendeteksi anomali realisasi, menetapkan denda (SKPDKB), dan memberikan tugas Geospasial ke Petugas di lapangan.
+
+- **Models (`retribusi-api`)**:
+  - `SpotCheck`, `SpotCheckItem`, `EnforcementNotice`, `AuditLog`, `PetugasTask`, `Complaint`, `PenaltyWaiver`
+- **Controllers (`retribusi-api`)**:
+  - `SpotCheckController`, `SurveillanceController`, `EnforcementNoticeController`, `PenindakanController`, `AuditLogController`, `PenaltyWaiverController`
+- **Backend Routes**:
+  - `GET|POST /api/spot-checks`, `PATCH /api/spot-checks/{id}/status`
+  - `GET /api/pengawas/anomalies`, `GET /api/pengawas/petugas-locations`
+  - `POST /api/pengawas/enforcements`, `POST /api/pengawas/penindakan/issue-skpdkb`
+  - `GET|POST /api/petugas-tasks`, `PUT /api/petugas-tasks/{id}`
+  - `GET|POST /api/amnesty` (Penghapusan Denda)
+- **Views & Components (`React/Vite`)**:
+  - **Admin**: `SpotCheckList.tsx`, `SpotCheckForm.tsx`, `PengawasDashboard.tsx`, `Enforcement.tsx`, `PengawasMaps.tsx`, `Amnesty.tsx`, `AuditLogs.tsx`, `FieldForce.tsx`
+  - **Petugas**: `FieldInspection.tsx`, `DaftarTugas.tsx`
+  - **Mobile**: `Pengaduan.tsx`
+
+---
+
+## FASE 7: PBB, BPN H2H, BPHTB & Integrasi TTE Dokumen
+**Fokus Pengujian:** Tarik data PBB dari Server Bapenda, sinkronisasi NOP, Pelayanan Notaris (BPHTB), dan Pembuatan serta Pemindaian (Scan QR) Tanda Tangan Elektronik dokumen SKPD/SKRD.
+
+- **Models (`retribusi-api`)**:
+  - `PbbNopApplication`, `TaxpayerPbbObject`, `TransactionPbb`, `BpnH2hMapping`, `BphtbSubmission`, `SignedDocument`
+- **Controllers (`retribusi-api`)**:
+  - `PbbBapendaController`, `PbbClassificationController`, `EregistryController`, `DocumentController`
+- **Backend Routes**:
+  - `POST /api/pbb/bapenda/inquiry`, `POST /api/pbb/bapenda/pay`, `POST /api/pbb/bapenda/link-nop`
+  - `POST /api/tte/sign`, `GET /api/tte/verify/{number}`, `GET /api/tte/documents`
+  - `GET /api/documents/spp/{noticeId}`, `GET /api/documents/skpdkbt/{billId}`
+- **Views & Components (`React/Vite`)**:
+  - **Admin**: `PbbManagement.tsx`, `ERegistry.tsx`
+  - **Petugas**: `PbbBapenda.tsx`
+  - **Mobile**: `PbbTagihan.tsx`, `PbbCalculator.tsx`
+
+---
+
+## FASE 8: Analytics, Dashboard & Pelaporan BPK/SIPD
+**Fokus Pengujian:** Pengecekan kalkulasi data agregrasi pendapatan bulanan, output PDF laporan, dan Peta Heatmap Potensi.
+
+- **Models (`retribusi-api`)**:
+  - `TaxEducation`
+- **Controllers (`retribusi-api`)**:
+  - `DashboardController`, `AnalyticsController`, `ReportController`, `DocumentationController`
+- **Backend Routes**:
+  - `GET /api/dashboard/stats`, `GET /api/dashboard/revenue-trend`
+  - `GET /api/analytics/realization`, `GET /api/analytics/heatmap`
+  - `GET /api/reports/summary`, `GET /api/reports/bpk`, `GET /api/reports/sipd`
+  - `GET /api/reports/petugas-performance`
+- **Views & Components (`React/Vite`)**:
+  - **Admin**: `Dashboard.tsx`, `Reporting.tsx`, `ObjectAchievement.tsx`, `ClassificationAchievement.tsx`, `SupervisorMap.tsx`
+  - **Petugas**: `Dashboard.tsx`, `Reporting.tsx`, `PetaLapangan.tsx`
+
+
+---
+
 ## File: docs/07_testing_kualitas/INVOICE_TEST_SUITE.md
 ---
 # M-PAD Invoice Test Suite
@@ -14695,6 +21977,75 @@ Dokumen ini berisi daftar skenario pengujian untuk memvalidasi integritas sistem
 
 ---
 > *Skema ini dirancang untuk memastikan nol kebocoran pendapatan daerah melalui validasi sistem yang ketat.*
+
+
+---
+
+## File: docs/07-status-dokumen-resmi.md
+---
+# 📊 Laporan Status Implementasi Dokumen BAPENDA
+
+Berdasarkan audit teknis terhadap sistem **M-PAD**, berikut adalah rincian status implementasi dokumen resmi yang terbagi dalam 4 tahapan pemungutan PDRD dan klasifikasi pajak.
+
+## 🏛️ 4 Tahapan Pemungutan & Status Dokumen
+
+Secara keseluruhan, sistem telah memiliki **logika data (JSON)** untuk 21 jenis dokumen, namun baru **4 dokumen utama** yang sudah memiliki template PDF siap cetak.
+
+### 🟢 Tahap 1: Pendaftaran (Registration)
+*Status: Logika Ready | Template PDF: Belum Lengkap*
+- [x] **NPWPD**: Tergenerasi otomatis saat registrasi Wajib Pajak.
+- [x] **SKT (Surat Keterangan Terdaftar)**: Logika backend `generateSKT()` sudah siap, namun template PDF belum tersedia.
+- [x] **SPOPD**: Terintegrasi via `TaxpayerController`.
+
+### 🟢 Tahap 2: Pendataan (Data Collection)
+*Status: Logika Ready | Template PDF: Belum Lengkap*
+- [x] **LKOK (Lembar Kerja Objek Khusus)**: Logika backend `generateLKOK()` sudah siap untuk objek komersil.
+- [x] **Peta ZNT/NIR**: Tersedia via `ZoneController`.
+- [ ] **SPOP/LSPOP (PBB)**: Masih berstatus *Partial* (sinkronisasi dari sistem lama).
+
+### 🔵 Tahap 3: Penetapan (Assessment/Billing)
+*Status: **Sangat Baik** | Template PDF: Ready (Utama)*
+- [x] **SKRD (Surat Ketetapan Retribusi Daerah)**: **Sudah Jalan** (Template PDF Tersedia).
+- [x] **SPPT (Surat Pemberitahuan Pajak Terutang)**: **Sudah Jalan** (Khusus PBB, Template PDF Tersedia).
+- [x] **SKPDKBT / SKPDN**: Logika sudah siap (Kurang Bayar Tambahan & Nihil), template PDF belum ada.
+- [x] **SK Penghapusan Denda**: Logika sudah siap via modul Amnesty/Waiver.
+
+### 🔴 Tahap 4: Penagihan (Collection/Enforcement)
+*Status: Terimplementasi Sebagian | Template PDF: Ready (Utama)*
+- [x] **SSPD (Surat Setoran Pajak Daerah)**: **Sudah Jalan** (Template PDF Tersedia).
+- [x] **SPP (Surat Perintah Pemeriksaan)**: **Sudah Jalan** (Template PDF Tersedia).
+- [x] **STRD / SSRD**: Logika siap (Tagihan Retribusi), namun template PDF belum ada.
+- [x] **SPMP (Surat Paksa/Penyitaan)**: Logika penindakan sudah ada di `EnforcementNoticeController`.
+
+---
+
+## 📂 Dokumen Berdasarkan Klasifikasi Pajak
+
+| Klasifikasi | Dokumen Utama | Status Mekanisme |
+| :--- | :--- | :--- |
+| **PBB-P2** | SPPT, SSPD | **Full (PDF Ready)** - Menggunakan `PbbCalculationService`. |
+| **Retribusi** | SKRD, SSRD | **Partial** - Perhitungan sudah jalan, SSRD masih JSON. |
+| **Pajak (PBJT)** | SKPD, SSPD | **Partial** - Menggunakan template umum SKRD/SSPD. |
+
+## 🛠️ Ringkasan Temuan (Sudah vs Belum)
+
+> [!TIP]
+> **Sudah Jalan (Full PDF):**
+> 1. **SKRD** (Penetapan Retribusi)
+> 2. **SPPT** (Penetapan PBB)
+> 3. **SSPD** (Bukti Bayar Pajak)
+> 4. **SPP** (Surat Tugas Pemeriksaan)
+
+> [!WARNING]
+> **Sudah Ada Logika (JSON Only - Perlu Template PDF):**
+> 1. **SKT** (Pendaftaran)
+> 2. **LKOK** (Pendataan/Potensi)
+> 3. **SSRD / STRD** (Penagihan Retribusi)
+> 4. **SKPDKBT / SKPDN** (Penetapan Audit)
+> 5. **SPMP** (Surat Paksa/Penyitaan)
+
+---
+*Laporan ini dihasilkan secara otomatis berdasarkan analisis kode pada 15 Maret 2026 dan diamankan dalam dokumentasi resmi proyek.*
 
 
 ---

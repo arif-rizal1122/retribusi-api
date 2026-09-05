@@ -100,17 +100,20 @@ class BhumiService
         }
 
         $payload = [
-            'event'         => 'bphtb.lunas',
-            'billing_code'  => $submission->billing_code,
-            'ntpd'          => $submission->ntpd,
-            'nop'           => $submission->nop,
-            'nib'           => $submission->nib,
-            'nama_wp'       => $submission->nama_wp,
-            'nik_wp'        => $submission->nik_wp,
-            'amount'        => (float) ($submission->bill?->amount ?? 0),
-            'paid_at'       => $submission->paid_at?->toIso8601String(),
-            'status'        => 'lunas',
-            'waktu_push'    => now()->toIso8601String(),
+            'event'          => 'bphtb.lunas',
+            'billing_code'   => $submission->billing_code,
+            'ntpd'           => $submission->ntpd,
+            'sspd_number'    => $submission->sspd_number,
+            'sspd_issued_at' => $submission->sspd_issued_at?->toIso8601String(),
+            'sspd_qr_hash'   => $submission->sspd_qr_hash,
+            'nop'            => $submission->nop,
+            'nib'            => $submission->nib,
+            'nama_wp'        => $submission->nama_wp,
+            'nik_wp'         => $submission->nik_wp,
+            'amount'         => (float) ($submission->bill?->amount ?? 0),
+            'paid_at'        => $submission->paid_at?->toIso8601String(),
+            'status'         => 'lunas',
+            'waktu_push'     => now()->toIso8601String(),
         ];
 
         try {

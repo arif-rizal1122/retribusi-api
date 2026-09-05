@@ -83,4 +83,16 @@ class RetributionClassification extends Model
     {
         return $this->hasMany(TaxObject::class);
     }
+
+    /**
+     * Scope a query to only include active classifications.
+     * Defensively checks column existence for backward compatibility before migrations run.
+     */
+    public function scopeActive($query)
+    {
+        if (\Illuminate\Support\Facades\Schema::hasColumn('retribution_classifications', 'is_active')) {
+            return $query->where('is_active', true);
+        }
+        return $query;
+    }
 }
