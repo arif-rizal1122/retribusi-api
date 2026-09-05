@@ -351,12 +351,17 @@ class H2HBphtbController extends Controller
             ], 422);
         }
 
+        $verifiedNotes = $request->notes;
+        if ($submission->status_flag === 'UNDER_ZNT_FLAG' && $request->boolean('override_znt')) {
+            $verifiedNotes = ($verifiedNotes ? $verifiedNotes . ' | ' : '') . '[SUPERVISOR OVERRIDE: Disetujui khusus dengan dasar dokumen pembuktian sah]';
+        }
+
         $submission->update([
             'nop' => $nop,
             'status' => 'verified',
             'verified_at' => now(),
             'verified_by' => $user?->id,
-            'verified_notes' => $request->notes,
+            'verified_notes' => $verifiedNotes,
         ]);
 
         // Tautkan NOP ke mapping NIB (jika belum ada mapping, buatkan)

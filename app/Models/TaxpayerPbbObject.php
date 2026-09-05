@@ -12,6 +12,10 @@ class TaxpayerPbbObject extends Model
     protected $fillable = [
         'taxpayer_id',
         'nop',
+        'nib_code',
+        'znt_zone_code',
+        'nir_value',
+        'polygon_geom',
         'name_on_sppt',
         'address_on_sppt',
         'kelurahan',
@@ -22,6 +26,7 @@ class TaxpayerPbbObject extends Model
 
     protected $casts = [
         'is_verified' => 'boolean',
+        'nir_value' => 'decimal:2',
     ];
 
     public function taxpayer(): BelongsTo

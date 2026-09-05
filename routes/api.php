@@ -370,6 +370,14 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/tax-gap', [\App\Http\Controllers\PetaPajakController::class, 'taxGap']);
         });
 
+        // H2H NIB-NOP Mapping (Sinkronisasi BHUMI BPN)
+        Route::prefix('h2h/nib-nop')->group(function () {
+            Route::get('/mappings', [\App\Http\Controllers\NibNopMappingController::class, 'index']);
+            Route::post('/mappings', [\App\Http\Controllers\NibNopMappingController::class, 'store']);
+            Route::post('/mappings/{id}/sync', [\App\Http\Controllers\NibNopMappingController::class, 'syncOne']);
+            Route::get('/stats', [\App\Http\Controllers\NibNopMappingController::class, 'stats']);
+        });
+
         // Notaris / PPAT Approval
         Route::prefix('notaris-approvals')->group(function () {
             Route::get('/', [\App\Http\Controllers\NotarisApprovalController::class, 'index']);
@@ -582,7 +590,12 @@ Route::prefix('h2h/bpn')->group(function () {
     Route::post('/check-pbb', [\App\Http\Controllers\H2HBpnController::class, 'checkPbb']);
     Route::post('/verify-payment', [\App\Http\Controllers\H2HBpnController::class, 'verifyPayment']);
     Route::post('/splp/update', [\App\Http\Controllers\H2HBpnController::class, 'updateSplp']);
+    Route::post('/spatial/reverse-lookup', [\App\Http\Controllers\H2HBpnController::class, 'spatialReverseLookup']);
+    Route::post('/spatial/sync', [\App\Http\Controllers\H2HBpnController::class, 'syncSpatial']);
 });
+
+// Endpoint reverse lookup spasial untuk mobile warga dan admin web
+Route::post('/h2h/bhumi/reverse-lookup', [\App\Http\Controllers\H2HBpnController::class, 'spatialReverseLookup']);
 
 // ------------------------------------------------------------------------
 // BANK H2H GATEWAY (Restricted by BankSecurityCheck middleware)

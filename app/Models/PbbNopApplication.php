@@ -9,6 +9,11 @@ class PbbNopApplication extends Model
     protected $fillable = [
         'user_id',
         'nik',
+        'nib',
+        'znt_applied',
+        'nir_applied',
+        'polygon_coordinates',
+        'is_bpn_verified',
         'name',
         'address',
         'latitude',
@@ -30,6 +35,9 @@ class PbbNopApplication extends Model
 
     protected $casts = [
         'metadata' => 'array',
+        'polygon_coordinates' => 'array',
+        'is_bpn_verified' => 'boolean',
+        'nir_applied' => 'decimal:2',
     ];
 
     public function user()

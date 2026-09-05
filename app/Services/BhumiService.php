@@ -145,4 +145,152 @@ class BhumiService
             return ['available' => true, 'pushed' => false, 'reason' => 'error:' . $e->getMessage()];
         }
     }
+
+    /**
+     * Reverse spatial lookup: menarik data NIB, NOP, ZNT, dan luas legal
+     * berdasarkan koordinat GIS / poligon dari MapPicker.
+     */
+    public function reverseLookupSpatial(float $lat, float $lng, ?array $polygonCoordinates = null): array
+    {
+        if (! $this->available()) {
+            H2hConnectorLog::record(
+                'bhumi',
+                'not_configured',
+                '/api/spatial/reverse-lookup',
+                'BHUMI reverse lookup belum dikonfigurasi (menunggu PKS)'
+            );
+
+            return [
+                'available'          => false,
+                'is_matched'         => false,
+                'nib'                => null,
+                'nop_bpn'            => null,
+                'zona_znt'           => null,
+                'nir_value'          => null,
+                'legal_land_area'    => null,
+                'verification_badge' => 'UNVERIFIED_NON_SERTIPIKAT',
+                'reason'             => 'not_configured',
+                'message'            => 'Layanan H2H BHUMI BPN belum aktif. Formulir dialihkan ke pendaftaran mandiri.',
+            ];
+        }
+
+        $startTime = microtime(true);
+
+        try {
+            $response = Http::asJson()->timeout(15)
+                ->withToken($this->token)
+                ->post(rtrim($this->baseUrl, '/') . '/api/spatial/reverse-lookup', [
+                    'latitude'            => $lat,
+                    'longitude'           => $lng,
+                    'polygon_coordinates' => $polygonCoordinates,
+                ]);
+
+            $elapsedMs = (microtime(true) - $startTime) * 1000;
+            if ($elapsedMs > 5000) {
+                H2hConnectorLog::record('bhumi', 'latency_warning', '/api/spatial/reverse-lookup', "Response time {$elapsedMs}ms > 5000ms");
+            }
+
+            $data = $response->json() ?? [];
+
+            if ($response->failed()) {
+                H2hConnectorLog::record('bhumi', 'failed', '/api/spatial/reverse-lookup', 'HTTP ' . $response->status(), [
+                    'lat' => $lat,
+                    'lng' => $lng,
+                ]);
+
+                return [
+                    'available'          => true,
+                    'is_matched'         => false,
+                    'nib'                => null,
+                    'verification_badge' => 'UNVERIFIED_NON_SERTIPIKAT',
+                    'reason'             => 'error:http_' . $response->status(),
+                ];
+            }
+
+            return [
+                'available'          => true,
+                'is_matched'         => (bool) ($data['is_matched'] ?? false),
+                'nib'                => $data['nib'] ?? null,
+                'nop_bpn'            => $data['nop_bpn'] ?? null,
+                'zona_znt'           => $data['zona_znt'] ?? null,
+                'nir_value'          => isset($data['nir_value']) ? (float) $data['nir_value'] : null,
+                'legal_land_area'    => isset($data['legal_land_area']) ? (float) $data['legal_land_area'] : null,
+                'verification_badge' => ! empty($data['nib']) ? 'VERIFIED_BPN_BHUMI' : 'UNVERIFIED_NON_SERTIPIKAT',
+                'official_polygon'   => $data['official_polygon'] ?? null,
+                'reason'             => 'ok',
+            ];
+
+        } catch (\Exception $e) {
+            H2hConnectorLog::record('bhumi', 'failed', '/api/spatial/reverse-lookup', $e->getMessage(), [
+                'lat' => $lat,
+                'lng' => $lng,
+            ]);
+
+            return [
+                'available'          => true,
+                'is_matched'         => false,
+                'nib'                => null,
+                'verification_badge' => 'UNVERIFIED_NON_SERTIPIKAT',
+                'reason'             => 'error:' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Query aset/bidang tanah berdasarkan NIK Wajib Pajak ke BHUMI/KKP BPN.
+     */
+    public function lookupNibByNik(string $nik): array
+    {
+        if (! $this->available()) {
+            return ['available' => false, 'parcels' => [], 'reason' => 'not_configured'];
+        }
+
+        try {
+            $response = Http::asJson()->timeout(15)
+                ->withToken($this->token)
+                ->post(rtrim($this->baseUrl, '/') . '/api/taxpayer/parcels-by-nik', [
+                    'nik' => $nik,
+                ]);
+
+            if ($response->failed()) {
+                return ['available' => true, 'parcels' => [], 'reason' => 'error:http_' . $response->status()];
+            }
+
+            return [
+                'available' => true,
+                'parcels'   => $response->json('parcels') ?? [],
+                'reason'    => 'ok',
+            ];
+        } catch (\Exception $e) {
+            return ['available' => true, 'parcels' => [], 'reason' => 'error:' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Ambil data polygon resmi BPN berdasarkan NIB atau NOP.
+     */
+    public function fetchPolygon(string $nibOrNop): array
+    {
+        if (! $this->available()) {
+            return ['available' => false, 'polygon' => null, 'reason' => 'not_configured'];
+        }
+
+        try {
+            $response = Http::asJson()->timeout(15)
+                ->withToken($this->token)
+                ->get(rtrim($this->baseUrl, '/') . '/api/spatial/polygon/' . urlencode($nibOrNop));
+
+            if ($response->failed()) {
+                return ['available' => true, 'polygon' => null, 'reason' => 'error:http_' . $response->status()];
+            }
+
+            return [
+                'available' => true,
+                'polygon'   => $response->json('polygon') ?? null,
+                'reason'    => 'ok',
+            ];
+        } catch (\Exception $e) {
+            return ['available' => true, 'polygon' => null, 'reason' => 'error:' . $e->getMessage()];
+        }
+    }
 }

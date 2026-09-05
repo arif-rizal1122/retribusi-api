@@ -36,8 +36,24 @@ class NikLookupController extends Controller
 
         $result = $dukcapil->validate($nik);
 
-        // PKS belum aktif / belum dikonfigurasi → manual fallback (BUKAN error)
+        // PKS belum aktif / belum dikonfigurasi → cek data lokal M-PAD dulu, lalu manual fallback
         if (($result['available'] ?? false) === false) {
+            $localTaxpayer = \App\Models\Taxpayer::where('nik', $nik)->first();
+            if ($localTaxpayer) {
+                return response()->json([
+                    'available' => false,
+                    'valid'     => true,
+                    'reason'    => 'cached_local',
+                    'message'   => 'Data Wajib Pajak ditemukan di database M-PAD lokal.',
+                    'data'      => [
+                        'nik'     => $nik,
+                        'nama'    => $localTaxpayer->name,
+                        'alamat'  => $localTaxpayer->address,
+                        'source'  => 'local_database',
+                    ],
+                ]);
+            }
+
             return response()->json([
                 'available' => false,
                 'valid'     => null,

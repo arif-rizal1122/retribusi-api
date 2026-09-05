@@ -266,4 +266,86 @@ class H2HBpnController extends Controller
             ],
         ]);
     }
+
+    /**
+     * POST /api/h2h/bhumi/reverse-lookup
+     * atau POST /api/h2h/bpn/spatial/reverse-lookup
+     *
+     * Reverse lookup koordinat polygon ke layer BPN BHUMI.
+     * Mengembalikan NIB, ZNT, luas legal, atau fallback jika tidak terpetakan.
+     */
+    public function spatialReverseLookup(Request $request, \App\Services\BhumiService $bhumiService)
+    {
+        $request->validate([
+            'latitude'            => 'required|numeric',
+            'longitude'           => 'required|numeric',
+            'polygon_coordinates' => 'nullable|array',
+        ]);
+
+        $result = $bhumiService->reverseLookupSpatial(
+            (float) $request->latitude,
+            (float) $request->longitude,
+            $request->polygon_coordinates
+        );
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $result,
+        ]);
+    }
+
+    /**
+     * POST /api/h2h/bpn/spatial/sync
+     *
+     * Inbound webhook dari ATR/BPN BHUMI untuk update spasial / ZNT / NIB.
+     * Dilindungi header X-H2H-Key.
+     */
+    public function syncSpatial(Request $request)
+    {
+        $expectedKey = config('services.bpn.h2h_key', '');
+        $providedKey = (string) $request->header('X-H2H-Key', '');
+
+        if ($expectedKey !== '' && ! hash_equals($expectedKey, $providedKey)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Unauthorized: X-H2H-Key tidak valid.',
+            ], 401);
+        }
+
+        $request->validate([
+            'nib'                 => 'required|string',
+            'nop'                 => 'nullable|string',
+            'znt_zone_code'       => 'nullable|string|max:10',
+            'nir_value'           => 'nullable|numeric',
+            'legal_land_area'     => 'nullable|numeric',
+            'polygon_coordinates' => 'nullable|array',
+        ]);
+
+        // Simpan / update ke NibNopMapping
+        $mapping = \App\Models\NibNopMapping::updateOrCreate(
+            ['nib' => $request->nib],
+            [
+                'nop'            => $request->nop,
+                'znt'            => $request->znt_zone_code,
+                'land_area_m2'   => $request->legal_land_area,
+                'match_status'   => $request->nop ? 'matched' : 'pending',
+                'source'         => 'bhumi',
+                'last_synced_at' => now(),
+            ]
+        );
+
+        \App\Models\H2hConnectorLog::record(
+            'bpn',
+            'ok',
+            '/api/h2h/bpn/spatial/sync',
+            'Data spasial BPN disinkronisasikan',
+            ['nib' => $request->nib, 'nop' => $request->nop]
+        );
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Sinkronisasi spasial BPN berhasil disimpan.',
+            'data'    => $mapping,
+        ]);
+    }
 }
