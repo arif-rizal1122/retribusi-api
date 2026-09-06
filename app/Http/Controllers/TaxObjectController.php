@@ -225,7 +225,83 @@ class TaxObjectController extends Controller
             'verified_at' => $dv?->verified_at,
         ];
 
+        // Validasi Silang BAPENDA ↔ DPMPTSP (khusus reklame & perizinan berusaha)
+        $metadata = $taxObject->metadata ?? [];
+        $isReklame = str_contains(strtolower(($taxObject->retributionType?->name ?? '') . ' ' . ($taxObject->classification?->name ?? '')), 'reklame');
+        $sifatPemasangan = strtolower($metadata['sifat_pemasangan'] ?? 'permanen');
+        $imbNumber = $metadata['nomor_imb_pbg'] ?? $metadata['nomor_izin'] ?? null;
+        $dpmptspStatus = $metadata['dpmptsp_status'] ?? ($imbNumber ? 'unverified' : 'missing');
+
+        $data['dpmptsp_cross_validation'] = [
+            'is_reklame' => $isReklame,
+            'sifat_pemasangan' => $sifatPemasangan,
+            'requires_imb' => $isReklame && ($sifatPemasangan === 'permanen'),
+            'nomor_imb_pbg' => $imbNumber,
+            'nib' => $taxObject->taxpayer?->nib ?? ($metadata['nib'] ?? null),
+            'status' => $dpmptspStatus,
+            'badge' => match ($dpmptspStatus) {
+                'verified' => 'approved',
+                'invalid' => 'rejected',
+                'bypassed_service_not_configured', 'unverified_service_unavailable', 'unverified_service_error' => 'warning',
+                default => empty($imbNumber) ? 'missing' : 'pending',
+            },
+            'label' => match ($dpmptspStatus) {
+                'verified' => 'Terverifikasi IMB/PBG DPMPTSP',
+                'invalid' => 'Izin Tidak Ditemukan / Tidak Aktif di DPMPTSP',
+                'bypassed_service_not_configured', 'unverified_service_unavailable', 'unverified_service_error' => 'DPMPTSP Offline (Mode Fail-Open)',
+                default => empty($imbNumber) ? 'Belum Memiliki IMB/PBG Reklame' : 'Menunggu Sinkronisasi DPMPTSP',
+            },
+            'audit_status' => $taxObject->audit_status ?? 'pending',
+            'details' => $metadata['dpmptsp_validation'] ?? null,
+        ];
+
         return response()->json($data);
+    }
+
+    /**
+     * Cross-validation of tax object (specifically Reklame) against DPMPTSP (IMB/PBG & NIB).
+     */
+    public function validateDpmptsp(Request $request, TaxObject $taxObject)
+    {
+        $taxObject->loadMissing(['retributionType', 'classification', 'taxpayer']);
+        $metadata = $taxObject->metadata ?? [];
+
+        $imbNumber = $request->input('nomor_imb_pbg', $metadata['nomor_imb_pbg'] ?? $metadata['nomor_izin'] ?? null);
+        $nib = $request->input('nib', $taxObject->taxpayer?->nib ?? ($metadata['nib'] ?? null));
+
+        $dpmptspService = app(\App\Services\DpmptspValidationService::class);
+        $validation = $dpmptspService->validateImbPbg($imbNumber, $nib);
+
+        $metadata['nomor_imb_pbg'] = $imbNumber;
+        if ($nib) {
+            $metadata['nib'] = $nib;
+        }
+        $metadata['dpmptsp_validation'] = $validation;
+        $metadata['dpmptsp_status'] = $validation['status'];
+        $metadata['dpmptsp_validated_at'] = now()->toISOString();
+
+        $newAuditStatus = $taxObject->audit_status;
+        if (!$validation['is_valid'] && ($metadata['sifat_pemasangan'] ?? 'permanen') === 'permanen') {
+            $newAuditStatus = 'under_review';
+        } elseif ($validation['is_valid'] && $newAuditStatus === 'under_review') {
+            $newAuditStatus = 'pending';
+        }
+
+        $taxObject->update([
+            'metadata' => $metadata,
+            'audit_status' => $newAuditStatus,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $validation['message'],
+            'data' => [
+                'validation' => $validation,
+                'audit_status' => $newAuditStatus,
+                'metadata' => $metadata,
+                'tax_object' => $taxObject->fresh(['retributionType', 'classification', 'taxpayer']),
+            ]
+        ]);
     }
 
     /**
