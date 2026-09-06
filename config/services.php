@@ -84,4 +84,13 @@ return [
         'h2h_key' => env('BPN_H2H_KEY', ''),
     ],
 
+    'bapenda' => [
+        'penagihan_wa' => env('BAPENDA_PENAGIHAN_WA', '6281234567890'),
+        'dpmptsp' => [
+            'base_url' => env('DPMPTSP_API_BASE_URL', ''),
+            'api_key' => env('DPMPTSP_API_KEY', ''),
+            'enabled' => env('DPMPTSP_VALIDATION_ENABLED', false),
+        ],
+    ],
+
 ];

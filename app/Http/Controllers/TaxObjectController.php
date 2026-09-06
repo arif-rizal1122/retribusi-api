@@ -7,8 +7,10 @@ use App\Models\TaxObject;
 use App\Models\User;
 use App\Models\Verification;
 use App\Services\RequirementFileService;
+use App\Rules\ReklameProximityRule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -127,10 +129,40 @@ class TaxObjectController extends Controller
             ->where('opd_id', $user->opd_id)
             ->firstOrFail();
 
+        // Reklame Geofencing validation: prevent duplicate/overlapping reklame points (< 3m)
+        $isReklame = str_contains(strtolower($type->name . ' ' . $type->category), 'reklame');
+        if ($isReklame && $request->filled('latitude') && $request->filled('longitude')) {
+            $proximityRule = new ReklameProximityRule(
+                (float) $request->latitude,
+                (float) $request->longitude
+            );
+            $validator = Validator::make(
+                ['latitude' => $request->latitude],
+                ['latitude' => [$proximityRule]]
+            );
+            if ($validator->fails()) {
+                throw new ValidationException($validator);
+            }
+        }
+
         // Ensure taxpayer belongs to OPD
         $taxpayer = \App\Models\Taxpayer::where('id', $request->taxpayer_id)
             ->where('opd_id', $user->opd_id)
             ->firstOrFail();
+
+        $auditStatus = 'pending';
+        if ($isReklame && strtolower($metadata['sifat_pemasangan'] ?? '') === 'permanen') {
+            $dpmptspService = app(\App\Services\DpmptspValidationService::class);
+            $imbPbgNumber = $metadata['nomor_imb_pbg'] ?? $metadata['nomor_izin'] ?? null;
+            $validation = $dpmptspService->validateImbPbg($imbPbgNumber, $taxpayer->nib ?? null);
+
+            $metadata['dpmptsp_validation'] = $validation;
+            $metadata['dpmptsp_status'] = $validation['status'];
+
+            if (!$validation['is_valid']) {
+                $auditStatus = 'under_review';
+            }
+        }
 
         $taxObject = TaxObject::create([
             'opd_id' => $user->opd_id,
@@ -145,6 +177,7 @@ class TaxObjectController extends Controller
             'longitude' => $request->longitude,
             'nop' => $request->nop,
             'status' => 'pending',
+            'audit_status' => $auditStatus,
             'is_active' => true,
             'metadata' => $metadata ?: [],
         ]);

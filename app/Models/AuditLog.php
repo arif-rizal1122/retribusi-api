@@ -7,6 +7,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuditLog extends Model
 {
+    protected static function booted(): void
+    {
+        static::deleting(function ($model) {
+            throw new \RuntimeException('Audit logs are immutable and cannot be deleted.');
+        });
+
+        static::updating(function ($model) {
+            throw new \RuntimeException('Audit logs are immutable and cannot be updated.');
+        });
+    }
+
     protected $fillable = [
         'user_id',
         'action',

@@ -51,6 +51,27 @@ class BillCreationService
                 'variables' => $variables,
             ];
 
+        if ($this->isReklameObject($taxObject) && (float) $calculation['amount'] <= 0) {
+            $taxObject->update(['audit_status' => 'under_review']);
+
+            // Attempt fallback calculation with minimal standard reklame variables (luas >= 1m, sisi >= 1)
+            $fallbackVars = array_merge($variables, [
+                'luas' => max(1.0, (float) ($taxObject->metadata['luas'] ?? 1.0)),
+                'sisi' => max(1, (int) ($taxObject->metadata['sisi'] ?? 1)),
+            ]);
+            $recalculated = $this->taxCalculationService->calculateForObject($taxObject, $fallbackVars);
+
+            if ((float) $recalculated['amount'] <= 0) {
+                throw ValidationException::withMessages([
+                    'reklame' => 'Kalkulasi pajak reklame menghasilkan nilai Rp 0 atau negatif. Objek ditandai under_review untuk audit teknis.',
+                ]);
+            }
+
+            $calculation = $recalculated;
+            $metadata['billing_flag'] = 'fallback_applied';
+            $metadata['fallback_reason'] = 'Kalkulasi awal bernilai 0, diterapkan fallback tarif minimal Perwali 11/2025';
+        }
+
         $resolvedDueDate = $dueDate
             ? ($dueDate instanceof Carbon ? $dueDate : Carbon::parse($dueDate))
             : $periodInfo['due_date'];
@@ -87,5 +108,20 @@ class BillCreationService
             ->where('period', $period)
             ->whereIn('status', ['pending', 'overdue', 'unpaid', 'lunas', 'paid'])
             ->first();
+    }
+
+    private function isReklameObject(TaxObject $taxObject): bool
+    {
+        $type = $taxObject->retributionType;
+        $classification = $taxObject->classification;
+
+        $haystack = strtolower(implode(' ', [
+            $type->name ?? '',
+            $type->category ?? '',
+            $classification->name ?? '',
+            $classification->code ?? '',
+        ]));
+
+        return str_contains($haystack, 'reklame');
     }
 }
