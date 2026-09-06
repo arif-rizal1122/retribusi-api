@@ -31,7 +31,6 @@ class PtspDashboardController extends Controller
         192, 193, 194, 195, // PBJT-FOOD, PBJT-HTL, PBJT-HBR, PBJT-HBR-SP
         197, // AIR-TANAH
         203, 204, 206, 207, 208, 209, 210, 211, // JU-TKU, JU-PEL, JU-VILA, JU-RPH, JU-PELAB, JU-REK, JU-PROD, JU-ASET
-        201, // RET-KES
         186, 187, // PBB-P2, BPHTB (data pendukung)
     ];
 
