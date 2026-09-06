@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\MonthlyReport;
 use App\Models\TaxObject;
+use App\Models\SpotCheck;
+use App\Models\PetugasTask;
 use App\Services\CloudinaryService;
 use App\Services\BillCreationService;
 use App\Services\TaxCalculationService;
+use App\Services\SpotCheckService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -15,16 +18,19 @@ class MonthlyReportController extends Controller
     protected $cloudinary;
     protected $billCreationService;
     protected $taxCalculationService;
+    protected $spotCheckService;
 
     public function __construct(
         CloudinaryService $cloudinary,
         BillCreationService $billCreationService,
-        TaxCalculationService $taxCalculationService
+        TaxCalculationService $taxCalculationService,
+        SpotCheckService $spotCheckService
     )
     {
         $this->cloudinary = $cloudinary;
         $this->billCreationService = $billCreationService;
         $this->taxCalculationService = $taxCalculationService;
+        $this->spotCheckService = $spotCheckService;
     }
 
     /**
@@ -117,32 +123,157 @@ class MonthlyReportController extends Controller
     }
 
     /**
-     * List reports for citizens (own) or admins (filtered)
+     * List reports for citizens (own) or admins (filtered with Anomaly Detection metrics)
      */
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = MonthlyReport::with(['taxObject', 'taxpayer']);
+        $query = MonthlyReport::with(['taxObject.classification', 'taxObject.retributionType', 'taxpayer', 'validator']);
 
         if ($user->role === 'citizen') {
             $query->where('taxpayer_id', $user->id);
         } elseif (!$user->isSuperAdmin()) {
-            $query->whereHas('taxObject', function ($q) use ($user) {
-                $q->where('opd_id', $user->opd_id);
-            });
+            if ($user->opd_id) {
+                $query->whereHas('taxObject', function ($q) use ($user) {
+                    $q->where('opd_id', $user->opd_id);
+                });
+            }
         }
 
-        if ($request->has('status')) {
+        // Status filter
+        if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
+        // Period filter
+        if ($request->filled('period')) {
+            $query->where('period', 'like', $request->period . '%');
+        }
+
+        // Search by taxpayer or tax object
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('taxpayer', function ($sub) use ($search) {
+                    $sub->where('name', 'like', "%{$search}%")
+                        ->orWhere('npwpd', 'like', "%{$search}%");
+                })->orWhereHas('taxObject', function ($sub) use ($search) {
+                    $sub->where('name', 'like', "%{$search}%")
+                        ->orWhere('nop', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // Classification filter
+        if ($request->filled('classification_id')) {
+            $query->whereHas('taxObject', function ($q) use ($request) {
+                $q->where('retribution_classification_id', $request->classification_id);
+            });
+        }
+
         $reports = $query->latest()->paginate($request->get('per_page', 15));
+
+        // Enrich items with Red Channel Anomaly Detection if viewed by admin/staff
+        if ($user->role !== 'citizen') {
+            $reports->getCollection()->transform(function ($report) {
+                // 1. Calculate historical average of turnover for the same tax object
+                $histAvg = MonthlyReport::where('tax_object_id', $report->tax_object_id)
+                    ->where('id', '!=', $report->id)
+                    ->whereIn('status', ['approved', 'pending'])
+                    ->avg('turnover_amount') ?? 0;
+
+                $varianceHistoryPct = 0;
+                if ($histAvg > 0) {
+                    $varianceHistoryPct = round((($report->turnover_amount - $histAvg) / $histAvg) * 100, 1);
+                }
+
+                // 2. Cross-check against Spot Check observation estimate if available
+                $spotCheckEstimate = null;
+                $varianceSpotCheckPct = null;
+                try {
+                    $spotData = $this->spotCheckService->calculateEstimatedMonthlyRevenue($report->tax_object_id);
+                    if (!empty($spotData['estimated_monthly_turnover']) && $spotData['estimated_monthly_turnover'] > 0) {
+                        $spotCheckEstimate = (float) $spotData['estimated_monthly_turnover'];
+                        $varianceSpotCheckPct = round((($report->turnover_amount - $spotCheckEstimate) / $spotCheckEstimate) * 100, 1);
+                    }
+                } catch (\Throwable $e) {}
+
+                // 3. Determine Risk Level
+                // Red Channel (High Risk): Reported omzet dropped > 40% from historical avg or > 40% below spot check projection
+                $riskLevel = 'low';
+                $reasons = [];
+
+                if ($histAvg > 0 && $varianceHistoryPct <= -40) {
+                    $riskLevel = 'high';
+                    $reasons[] = "Penurunan omzet drastis {$varianceHistoryPct}% dibandingkan rata-rata riwayat";
+                } elseif ($histAvg > 0 && $varianceHistoryPct <= -25) {
+                    $riskLevel = 'medium';
+                    $reasons[] = "Penurunan omzet moderat {$varianceHistoryPct}%";
+                }
+
+                if ($spotCheckEstimate !== null && $varianceSpotCheckPct !== null && $varianceSpotCheckPct <= -35) {
+                    $riskLevel = 'high';
+                    $reasons[] = "Omzet dilaporkan {$varianceSpotCheckPct}% di bawah estimasi uji petik lapangan";
+                }
+
+                if ($report->status === 'red_channel') {
+                    $riskLevel = 'high';
+                }
+
+                $report->historical_avg = round($histAvg, 0);
+                $report->variance_history_pct = $varianceHistoryPct;
+                $report->spot_check_estimate = $spotCheckEstimate;
+                $report->variance_spotcheck_pct = $varianceSpotCheckPct;
+                $report->risk_level = $riskLevel;
+                $report->anomaly_reasons = $reasons;
+
+                return $report;
+            });
+        }
 
         return response()->json($reports);
     }
 
     /**
-     * Validate report (Admin/OPD/Petugas)
+     * Get aggregate statistics for Bapenda Revenue Control dashboard
+     */
+    public function stats(Request $request)
+    {
+        $user = $request->user();
+        if ($user->role === 'citizen') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $query = MonthlyReport::query();
+        if (!$user->isSuperAdmin() && $user->opd_id) {
+            $query->whereHas('taxObject', function ($q) use ($user) {
+                $q->where('opd_id', $user->opd_id);
+            });
+        }
+
+        $totalReports = (clone $query)->count();
+        $pendingCount = (clone $query)->where('status', 'pending')->count();
+        $approvedCount = (clone $query)->where('status', 'approved')->count();
+        $rejectedCount = (clone $query)->where('status', 'rejected')->count();
+        $redChannelCount = (clone $query)->where('status', 'red_channel')->count();
+
+        $totalTurnover = (clone $query)->whereIn('status', ['approved', 'pending'])->sum('turnover_amount');
+        $totalTaxPotential = (clone $query)->whereIn('status', ['approved', 'pending'])->sum('tax_amount');
+
+        return response()->json([
+            'total_reports' => $totalReports,
+            'pending_count' => $pendingCount,
+            'approved_count' => $approvedCount,
+            'rejected_count' => $rejectedCount,
+            'red_channel_count' => $redChannelCount,
+            'total_turnover' => (float) $totalTurnover,
+            'total_tax_potential' => (float) $totalTaxPotential,
+        ]);
+    }
+
+    /**
+     * Validate report (Admin/Bapenda Verifikator)
+     * Supports: approved, rejected, red_channel
      */
     public function validateReport(Request $request, MonthlyReport $report)
     {
@@ -154,7 +285,7 @@ class MonthlyReportController extends Controller
             }
 
             $request->validate([
-                'status' => 'required|in:approved,rejected',
+                'status' => 'required|in:approved,rejected,red_channel',
                 'notes' => 'nullable|string',
             ]);
 
@@ -164,6 +295,14 @@ class MonthlyReportController extends Controller
                 'validated_at' => Carbon::now(),
                 'validated_by' => $user->id,
             ]);
+
+            // If marked as red_channel, flag and alert
+            if ($request->status === 'red_channel') {
+                return response()->json([
+                    'message' => 'Laporan ditandai sebagai RED CHANNEL (Indikasi Anomali / Potensi Fraud). Disarankan untuk menugaskan Uji Petik.',
+                    'data' => $report
+                ]);
+            }
 
             // If approved, automatically create a bill
             if ($request->status === 'approved') {
@@ -217,5 +356,44 @@ class MonthlyReportController extends Controller
                 'line' => $e->getLine()
             ], 500);
         }
+    }
+
+    /**
+     * Request Spot Check Task from an anomalous SPTPD report
+     */
+    public function requestSpotCheck(Request $request, MonthlyReport $report)
+    {
+        $user = $request->user();
+        if ($user->role === 'citizen') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'inspector_id' => 'required|exists:users,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'remarks' => 'nullable|string',
+        ]);
+
+        $spotCheck = SpotCheck::create([
+            'taxpayer_id' => $report->taxpayer_id,
+            'tax_object_id' => $report->tax_object_id,
+            'inspector_id' => $request->inspector_id,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'supervisor_id' => $user->id,
+            'status' => 'draft',
+            'remarks' => "Rujukan Uji Petik dari E-SPTPD Periode {$report->period}. " . ($request->remarks ?? ''),
+        ]);
+
+        // Also update report notes
+        $report->update([
+            'notes' => ($report->notes ? $report->notes . ' | ' : '') . "Dirujuk ke Uji Petik #{$spotCheck->id}"
+        ]);
+
+        return response()->json([
+            'message' => 'Surat tugas Uji Petik berhasil diterbitkan untuk objek pajak terkait.',
+            'spot_check' => $spotCheck
+        ], 201);
     }
 }

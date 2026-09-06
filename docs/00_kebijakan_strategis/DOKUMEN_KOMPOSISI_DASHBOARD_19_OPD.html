@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Buku Induk Komposisi Dashboard 19 OPD Kota Baubau - M-PAD</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm 14mm 14mm;
+    @bottom-right {
+      content: counter(page);
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #0f172a;
+    background: #ffffff;
+    font-size: 9pt;
+    line-height: 1.45;
+  }
+
+  /* Page Break Utilities */
+  .page-break {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .avoid-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Cover Page */
+  .cover {
+    min-height: 94vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 30px 20px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%);
+    border-radius: 20px;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -80px;
+    right: -80px;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.2) 0%, rgba(255,255,255,0) 70%);
+  }
+
+  .cover-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    padding-bottom: 20px;
+  }
+
+  .cover-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 8.5pt;
+    font-weight: 700;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .cover-title-box {
+    margin: 40px 0;
+  }
+
+  .cover-title {
+    font-size: 26pt;
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+    background: linear-gradient(to right, #ffffff, #93c5fd, #38bdf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .cover-subtitle {
+    font-size: 13pt;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin-top: 12px;
+    line-height: 1.35;
+  }
+
+  .cover-desc {
+    font-size: 9.5pt;
+    color: #94a3b8;
+    margin-top: 14px;
+    max-width: 580px;
+    line-height: 1.5;
+  }
+
+  .cover-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 30px;
+  }
+
+  .cover-stat-card {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .cover-stat-val {
+    font-size: 18pt;
+    font-weight: 900;
+    color: #38bdf8;
+  }
+
+  .cover-stat-lbl {
+    font-size: 7.5pt;
+    font-weight: 600;
+    color: #cbd5e1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+
+  .cover-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8pt;
+    color: #94a3b8;
+  }
+
+  /* Document Typography */
+  h2 {
+    font-size: 14pt;
+    font-weight: 800;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 2px solid #0284c7;
+    padding-bottom: 6px;
+    margin-top: 22px;
+    margin-bottom: 12px;
+  }
+
+  h3 {
+    font-size: 11pt;
+    font-weight: 800;
+    color: #0369a1;
+    margin-top: 14px;
+    margin-bottom: 6px;
+  }
+
+  p {
+    margin-bottom: 8px;
+    color: #334155;
+  }
+
+  /* Cards & Boxes */
+  .callout-box {
+    background: #f0f9ff;
+    border-left: 4px solid #0284c7;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 8.5pt;
+    color: #0c4a6e;
+  }
+
+  .alert-box {
+    background: #fff1f2;
+    border-left: 4px solid #e11d48;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 8.5pt;
+    color: #881337;
+  }
+
+  /* SVG Chart Container */
+  .chart-container {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px;
+    margin: 16px 0;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);
+  }
+
+  .chart-title {
+    font-size: 10pt;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .chart-subtitle {
+    font-size: 7.5pt;
+    color: #64748b;
+    margin-bottom: 12px;
+  }
+
+  /* OPD Detail Card */
+  .opd-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  }
+
+  .opd-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+  }
+
+  .opd-name {
+    font-size: 11pt;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .opd-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5pt;
+    font-weight: 700;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 6px;
+    color: #475569;
+  }
+
+  .opd-email {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5pt;
+    color: #0284c7;
+    margin-top: 2px;
+  }
+
+  .opd-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .opd-block-title {
+    font-size: 8pt;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    margin-bottom: 4px;
+  }
+
+  .opd-block-content {
+    font-size: 8.5pt;
+    color: #1e293b;
+    line-height: 1.4;
+  }
+
+  .badge-revenue {
+    display: inline-block;
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 7.5pt;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .feature-list {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .feature-list li {
+    position: relative;
+    padding-left: 14px;
+    margin-bottom: 3px;
+    font-size: 8pt;
+    color: #334155;
+  }
+
+  .feature-list li::before {
+    content: '▪';
+    position: absolute;
+    left: 0;
+    color: #0284c7;
+    font-size: 10pt;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 8pt;
+  }
+
+  th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 7pt;
+    letter-spacing: 0.5px;
+    border: 1px solid #e2e8f0;
+    padding: 8px 10px;
+    text-align: left;
+  }
+
+  td {
+    border: 1px solid #e2e8f0;
+    padding: 7px 10px;
+    color: #1e293b;
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td {
+    background: #fbfcfe;
+  }
+
+  .klaster-header {
+    background: linear-gradient(90deg, #1e293b, #0f172a);
+    color: #ffffff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin: 18px 0 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .klaster-title {
+    font-size: 10.5pt;
+    font-weight: 800;
+    color: #ffffff;
+  }
+
+  .klaster-desc {
+    font-size: 7.5pt;
+    color: #94a3b8;
+  }
+</style>
+</head>
+<body>
+
+  <!-- ================= COVER PAGE ================= -->
+  <div class="cover page-break">
+    <div class="cover-header">
+      <div style="font-weight: 800; font-size: 10pt; letter-spacing: 1px; color: #cbd5e1;">
+        PEMERINTAH KOTA BAUBAU • BAPENDA
+      </div>
+      <div class="cover-badge">Dokumen Strategis 2026</div>
+    </div>
+
+    <div class="cover-title-box">
+      <div class="cover-title">BUKU INDUK KOMPOSISI DASHBOARD 19 OPD</div>
+      <div class="cover-subtitle">
+        Arsitektur Multi-Tenant, Pemisahan Tupoksi (Segregation of Duties), dan Interkoneksi Kontrol Fiskal Pendapatan Asli Daerah (PAD)
+      </div>
+      <div class="cover-desc">
+        Rujukan resmi pemetaan peran digital 19 Organisasi Perangkat Daerah (OPD) dalam ekosistem M-PAD Kota Baubau. Menegaskan pemisahan tegas antara otoritas kontrol kasda (Bapenda) dengan pembina sektoral dan operasional teknis lapangan.
+      </div>
+    </div>
+
+    <div>
+      <div class="cover-stats-grid">
+        <div class="cover-stat-card">
+          <div class="cover-stat-val">19</div>
+          <div class="cover-stat-lbl">Akun Admin OPD</div>
+        </div>
+        <div class="cover-stat-card">
+          <div class="cover-stat-val">6</div>
+          <div class="cover-stat-lbl">Klaster Fungsional</div>
+        </div>
+        <div class="cover-stat-card">
+          <div class="cover-stat-val">100%</div>
+          <div class="cover-stat-lbl">Cashless Kasda H2H</div>
+        </div>
+        <div class="cover-stat-card">
+          <div class="cover-stat-val">SoD</div>
+          <div class="cover-stat-lbl">Zero-Leakage Governance</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cover-footer">
+      <div>Sistem Manajemen Informasi Pajak, Retribusi, dan Aset Daerah (M-PAD)</div>
+      <div>Kota Baubau • Tahun Anggaran 2026</div>
+    </div>
+  </div>
+
+  <!-- ================= SECTION 1: MASTER ARCHITECTURE SVG ================= -->
+  <div class="avoid-break">
+    <h2>1. Arsitektur Hub-and-Spoke: Segregation of Duties (SoD)</h2>
+    <p>
+      Sistem M-PAD menerapkan prinsip tata kelola <strong>Segregation of Duties (SoD)</strong>: Bapenda bertindak sebagai otoritas pengendali pendapatan tunggal yang mengontrol arus uang dan rekening kasda, sementara 18 OPD teknis lainnya bekerja murni pada domain kewenangan teknis, izin, sarana, dan pembinaan operasional mereka.
+    </p>
+
+    <div class="chart-container">
+      <div class="chart-title">
+        <span>DIAGRAM ALIR HUB-AND-SPOKE: INTEGRASI 19 OPD KOTA BAUBAU</span>
+        <span style="font-size: 7pt; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px;">Arsitektur M-PAD v4.0</span>
+      </div>
+      <div class="chart-subtitle">Pemisahan Aliran Data Teknis (Spoke) Menuju Pengendali Kas Daerah & Settlement Perbankan (Hub)</div>
+
+      <!-- SVG HIGH-END VECTOR DIAGRAM -->
+      <svg viewBox="0 0 740 380" width="100%" height="340" style="display: block; margin: 0 auto;">
+        <defs>
+          <linearGradient id="hubGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0f172a" />
+            <stop offset="50%" stop-color="#1e293b" />
+            <stop offset="100%" stop-color="#0369a1" />
+          </linearGradient>
+          <linearGradient id="opdGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0284c7" />
+            <stop offset="100%" stop-color="#0369a1" />
+          </linearGradient>
+          <linearGradient id="opdGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#059669" />
+            <stop offset="100%" stop-color="#047857" />
+          </linearGradient>
+          <linearGradient id="opdGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#d97706" />
+            <stop offset="100%" stop-color="#b45309" />
+          </linearGradient>
+          <linearGradient id="bankGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#4f46e5" />
+            <stop offset="100%" stop-color="#3730a3" />
+          </linearGradient>
+          <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.1" />
+          </filter>
+        </defs>
+
+        <!-- Connecting Lines -->
+        <path d="M 370 190 L 150 70" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4" />
+        <path d="M 370 190 L 590 70" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4" />
+        <path d="M 370 190 L 120 220" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4" />
+        <path d="M 370 190 L 620 220" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4" />
+        <path d="M 370 190 L 220 330" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4" />
+        <path d="M 370 190 L 520 330" stroke="#4f46e5" stroke-width="2.5" />
+
+        <!-- Data Flow Badges -->
+        <rect x="210" y="110" width="110" height="20" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+        <text x="265" y="124" fill="#475569" font-size="7.5" font-weight="700" text-anchor="middle">Data Teknis Ruas/Kios</text>
+
+        <rect x="420" y="110" width="120" height="20" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+        <text x="480" y="124" fill="#475569" font-size="7.5" font-weight="700" text-anchor="middle">NIB & Kapasitas Kamar</text>
+
+        <rect x="400" y="270" width="120" height="20" rx="4" fill="#e0e7ff" stroke="#a5b4fc" />
+        <text x="460" y="284" fill="#3730a3" font-size="7.5" font-weight="800" text-anchor="middle">AFT & Settlement Kasda</text>
+
+        <!-- CENTER HUB: BAPENDA -->
+        <g transform="translate(270, 120)" filter="url(#shadow)">
+          <rect width="200" height="140" rx="16" fill="url(#hubGrad)" />
+          <rect x="10" y="10" width="180" height="28" rx="8" fill="rgba(255,255,255,0.12)" />
+          <text x="100" y="28" fill="#38bdf8" font-size="10" font-weight="900" text-anchor="middle" letter-spacing="0.5">BAPENDA (HUB PUSAT)</text>
+          
+          <text x="100" y="56" fill="#ffffff" font-size="8.5" font-weight="800" text-anchor="middle">Pengendali Arus Kas & PAD</text>
+          <text x="100" y="74" fill="#cbd5e1" font-size="7" text-anchor="middle">• Review E-SPTPD & Red Channel</text>
+          <text x="100" y="88" fill="#cbd5e1" font-size="7" text-anchor="middle">• Penetapan SKPDKB & Denda</text>
+          <text x="100" y="102" fill="#cbd5e1" font-size="7" text-anchor="middle">• Peta Pajak Digital NIB-NOP</text>
+          <text x="100" y="116" fill="#cbd5e1" font-size="7" text-anchor="middle">• Surat Perintah Uji Petik</text>
+          <rect x="25" y="123" width="150" height="1" fill="rgba(255,255,255,0.2)" />
+        </g>
+
+        <!-- NODE 1: OPD PENGHASIL RETRIBUSI -->
+        <g transform="translate(30, 20)" filter="url(#shadow)">
+          <rect width="190" height="90" rx="12" fill="url(#opdGrad1)" />
+          <text x="95" y="20" fill="#ffffff" font-size="8.5" font-weight="800" text-anchor="middle">OPD PENGHASIL RETRIBUSI</text>
+          <text x="95" y="32" fill="#bae6fd" font-size="7" text-anchor="middle">Dishub, Disperindag, DLH, Perikanan, PUPR</text>
+          <rect x="15" y="40" width="160" height="42" rx="6" fill="rgba(255,255,255,0.15)" />
+          <text x="22" y="52" fill="#ffffff" font-size="6.8">• Operasional Kantong Parkir & Jukir</text>
+          <text x="22" y="63" fill="#ffffff" font-size="6.8">• Kios/Los Pasar & Tera Metrologi</text>
+          <text x="22" y="74" fill="#ffffff" font-size="6.8">• Volume Limbah Sampah Komersial</text>
+        </g>
+
+        <!-- NODE 2: OPD PEMBINA & PERIZINAN -->
+        <g transform="translate(520, 20)" filter="url(#shadow)">
+          <rect width="190" height="90" rx="12" fill="url(#opdGrad2)" />
+          <text x="95" y="20" fill="#ffffff" font-size="8.5" font-weight="800" text-anchor="middle">OPD PEMBINA & IZIN</text>
+          <text x="95" y="32" fill="#a7f3d0" font-size="7" text-anchor="middle">DPMPTSP, Pariwisata, Damkar, Kominfo</text>
+          <rect x="15" y="40" width="160" height="42" rx="6" fill="rgba(255,255,255,0.15)" />
+          <text x="22" y="52" fill="#ffffff" font-size="6.8">• Validasi NIB & KBLI Pelaku Usaha</text>
+          <text x="22" y="63" fill="#ffffff" font-size="6.8">• Standarisasi Kamar Hotel & Room KTV</text>
+          <text x="22" y="74" fill="#ffffff" font-size="6.8">• Verifikasi Damkar PBG & Menara BTS</text>
+        </g>
+
+        <!-- NODE 3: PENEGAKAN HUKUM & AUDIT -->
+        <g transform="translate(10, 190)" filter="url(#shadow)">
+          <rect width="180" height="75" rx="12" fill="#991b1b" />
+          <text x="90" y="20" fill="#ffffff" font-size="8.5" font-weight="800" text-anchor="middle">SATPOL PP & PENGAWAS</text>
+          <text x="90" y="32" fill="#fecaca" font-size="7" text-anchor="middle">Penegakan Perda & Ketertiban</text>
+          <text x="20" y="48" fill="#ffffff" font-size="6.8">• Eksekusi Penempelan Segel</text>
+          <text x="20" y="59" fill="#ffffff" font-size="6.8">• Pembongkaran Reklame Liar</text>
+          <text x="20" y="70" fill="#ffffff" font-size="6.8">• Pendampingan Uji Petik Lapangan</text>
+        </g>
+
+        <!-- NODE 4: DATA MAKRO & KESEJAHTERAAN -->
+        <g transform="translate(550, 190)" filter="url(#shadow)">
+          <rect width="180" height="75" rx="12" fill="#0284c7" />
+          <text x="90" y="20" fill="#ffffff" font-size="8.5" font-weight="800" text-anchor="middle">VALIDASI DATA MAKRO</text>
+          <text x="90" y="32" fill="#bae6fd" font-size="7" text-anchor="middle">Dukcapil, Dinsos, Kesbangpol, BPBD</text>
+          <text x="20" y="48" fill="#ffffff" font-size="6.8">• Interlock NIK Identitas WP Asli</text>
+          <text x="20" y="59" fill="#ffffff" font-size="6.8">• Verifikasi DTKS Keringanan PBB</text>
+          <text x="20" y="70" fill="#ffffff" font-size="6.8">• Peta Bencana & Tax Exemption Ormas</text>
+        </g>
+
+        <!-- NODE 5: PERENCANAAN & ASET -->
+        <g transform="translate(120, 295)" filter="url(#shadow)">
+          <rect width="200" height="75" rx="12" fill="url(#opdGrad3)" />
+          <text x="100" y="18" fill="#ffffff" font-size="8" font-weight="800" text-anchor="middle">PERENCANAAN & ASET PEMDA</text>
+          <text x="100" y="30" fill="#fde68a" font-size="7" text-anchor="middle">Bapperida, Setda Aset (BPKAD), Setwan</text>
+          <text x="18" y="45" fill="#ffffff" font-size="6.8">• Proyeksi Fiskal 3-5 Tahun (RPJMD)</text>
+          <text x="18" y="56" fill="#ffffff" font-size="6.8">• KIB Pemanfaatan Tanah & Ruko Sewa</text>
+          <text x="18" y="67" fill="#ffffff" font-size="6.8">• Pengawasan Akuntabilitas DPRD</text>
+        </g>
+
+        <!-- NODE 6: PERBANKAN / BANK SULTRA -->
+        <g transform="translate(420, 295)" filter="url(#shadow)">
+          <rect width="220" height="75" rx="12" fill="url(#bankGrad)" />
+          <text x="110" y="18" fill="#ffffff" font-size="8" font-weight="800" text-anchor="middle">PERBANKAN & REKENING KASDA</text>
+          <text x="110" y="30" fill="#c7d2fe" font-size="7" text-anchor="middle">Bank Sultra (BPD) & Kanal SNAP BI</text>
+          <text x="16" y="45" fill="#ffffff" font-size="6.8">• Host-to-Host Inquiry & Webhook Payment</text>
+          <text x="16" y="56" fill="#ffffff" font-size="6.8">• Split Payment / AFT Real-Time</text>
+          <text x="16" y="67" fill="#ffffff" font-size="6.8">• Kas Umum Daerah (Kasda) H+0 Terkunci</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ================= SECTION 2: SWIMLANE TRANSACTION CYCLE ================= -->
+  <div class="avoid-break page-break">
+    <h2>2. Siklus Alur Transaksi Digital: Hulu ke Hilir (End-to-End)</h2>
+    <p>
+      Menunjukkan posisi masing-masing aktor dari saat data objek didaftarkan, diverifikasi secara teknis oleh dinas terkait, dikalkulasi pajaknya oleh sistem, hingga pelunasan otomatis ke Kasda Bank Sultra.
+    </p>
+
+    <div class="chart-container">
+      <div class="chart-title">
+        <span>SWIMLANE SIKLUS TRANSAKSI M-PAD: PEMISAHAN PROFIL TEKNIS & KAS</span>
+      </div>
+      <div class="chart-subtitle">5 Tahap Eksekusi Nir-Sentuh (Cashless) Tanpa Celah Kebocoran</div>
+
+      <svg viewBox="0 0 740 210" width="100%" height="200">
+        <!-- Stage 1 -->
+        <g transform="translate(10, 20)">
+          <rect width="130" height="170" rx="10" fill="#f8fafc" stroke="#cbd5e1" />
+          <circle cx="65" cy="30" r="16" fill="#0284c7" />
+          <text x="65" y="35" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle">1</text>
+          <text x="65" y="65" fill="#0f172a" font-size="8.5" font-weight="800" text-anchor="middle">Wajib Pajak / Warga</text>
+          <text x="12" y="85" fill="#475569" font-size="7">• Pendaftaran Usaha</text>
+          <text x="12" y="100" fill="#475569" font-size="7">• Lapor E-SPTPD</text>
+          <text x="12" y="115" fill="#475569" font-size="7">• Kalkulator POS</text>
+          <text x="12" y="130" fill="#475569" font-size="7">• Permohonan Sewa</text>
+        </g>
+
+        <!-- Arrow 1->2 -->
+        <path d="M 140 105 L 155 105" stroke="#0284c7" stroke-width="2" marker-end="url(#arr)" />
+
+        <!-- Stage 2 -->
+        <g transform="translate(155, 20)">
+          <rect width="130" height="170" rx="10" fill="#ecfdf5" stroke="#a7f3d0" />
+          <circle cx="65" cy="30" r="16" fill="#059669" />
+          <text x="65" y="35" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle">2</text>
+          <text x="65" y="65" fill="#065f46" font-size="8.5" font-weight="800" text-anchor="middle">OPD Teknis Pembina</text>
+          <text x="12" y="85" fill="#047857" font-size="7">• Profil Kamar/KTV</text>
+          <text x="12" y="100" fill="#047857" font-size="7">• Validasi Ruas Parkir</text>
+          <text x="12" y="115" fill="#047857" font-size="7">• Cek Volume Sampah</text>
+          <text x="12" y="130" fill="#047857" font-size="7">• Rekomendasi Syarat</text>
+        </g>
+
+        <!-- Arrow 2->3 -->
+        <path d="M 285 105 L 300 105" stroke="#059669" stroke-width="2" />
+
+        <!-- Stage 3 -->
+        <g transform="translate(300, 20)">
+          <rect width="140" height="170" rx="10" fill="#eff6ff" stroke="#93c5fd" />
+          <circle cx="70" cy="30" r="16" fill="#1d4ed8" />
+          <text x="70" y="35" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle">3</text>
+          <text x="70" y="65" fill="#1e3a8a" font-size="8.5" font-weight="800" text-anchor="middle">Bapenda Engine</text>
+          <text x="12" y="85" fill="#1e40af" font-size="7">• Deteksi Red Channel</text>
+          <text x="12" y="100" fill="#1e40af" font-size="7">• Hitung Tarif Perda</text>
+          <text x="12" y="115" fill="#1e40af" font-size="7">• Terbit Kode Billing</text>
+          <text x="12" y="130" fill="#1e40af" font-size="7">• Surat Tugas Audit</text>
+        </g>
+
+        <!-- Arrow 3->4 -->
+        <path d="M 440 105 L 455 105" stroke="#1d4ed8" stroke-width="2" />
+
+        <!-- Stage 4 -->
+        <g transform="translate(455, 20)">
+          <rect width="130" height="170" rx="10" fill="#f5f3ff" stroke="#c4b5fd" />
+          <circle cx="65" cy="30" r="16" fill="#6d28d9" />
+          <text x="65" y="35" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle">4</text>
+          <text x="65" y="65" fill="#4c1d95" font-size="8.5" font-weight="800" text-anchor="middle">Bank Sultra H2H</text>
+          <text x="12" y="85" fill="#5b21b6" font-size="7">• QRIS / VA Dinamis</text>
+          <text x="12" y="100" fill="#5b21b6" font-size="7">• Split Payment (AFT)</text>
+          <text x="12" y="115" fill="#5b21b6" font-size="7">• 10% Potong Pajak</text>
+          <text x="12" y="130" fill="#5b21b6" font-size="7">• Webhook Callback</text>
+        </g>
+
+        <!-- Arrow 4->5 -->
+        <path d="M 585 105 L 600 105" stroke="#6d28d9" stroke-width="2" />
+
+        <!-- Stage 5 -->
+        <g transform="translate(600, 20)">
+          <rect width="130" height="170" rx="10" fill="#fdf2f8" stroke="#fbcfe8" />
+          <circle cx="65" cy="30" r="16" fill="#be185d" />
+          <text x="65" y="35" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle">5</text>
+          <text x="65" y="65" fill="#831843" font-size="8.5" font-weight="800" text-anchor="middle">Kas Daerah (Kasda)</text>
+          <text x="12" y="85" fill="#9d174d" font-size="7">• Real-time Settlement</text>
+          <text x="12" y="100" fill="#9d174d" font-size="7">• Terbit e-Resi NTPD</text>
+          <text x="12" y="115" fill="#9d174d" font-size="7">• SIPD Terintegrasi</text>
+          <text x="12" y="130" fill="#9d174d" font-size="7">• Zero Fraud / Leakage</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ================= SECTION 3: TABEL MATRIKS KETERHUBUNGAN ================= -->
+  <div class="avoid-break page-break">
+    <h2>3. Matriks Keterhubungan Data Teknis OPD vs Aliran Kas Bapenda</h2>
+    <p>
+      Tabel ini merinci bagaimana masukan data teknis dari masing-masing OPD bertindak sebagai validator dan pengunci (*interlock*) dalam proses penetapan dan rekonsiliasi kas Bapenda.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 15%;">OPD Terlibat</th>
+          <th style="width: 25%;">Data Teknis yang Dihasilkan OPD</th>
+          <th style="width: 28%;">Titik Sentuh Pendapatan Asli Daerah</th>
+          <th style="width: 32%;">Pengendali Akhir Kas (Bapenda & Bank Sultra)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Dishub</strong></td>
+          <td>Titik parkir, kuota jukir, barcode ruas jalan</td>
+          <td>Retribusi Parkir Tepi Jalan & Khusus</td>
+          <td>Rekonsiliasi setoran QRIS Jukir ke Kasda Bank Sultra</td>
+        </tr>
+        <tr>
+          <td><strong>Disperindag</strong></td>
+          <td>Nomor kios, blok pasar, status tera ulang</td>
+          <td>Retribusi Pelayanan Pasar & Sewa Kios</td>
+          <td>Rekapitulasi kas masuk harian pasar & audit piutang</td>
+        </tr>
+        <tr>
+          <td><strong>DLH</strong></td>
+          <td>Volume m³ limbah sampah hotel/resto</td>
+          <td>Retribusi Pelayanan Persampahan</td>
+          <td>Penerbitan SKRD sampah terintegrasi PBJT / PDAM</td>
+        </tr>
+        <tr>
+          <td><strong>Dinas Pariwisata</strong></td>
+          <td>Jumlah kamar, room KTV, meja bilyard, event</td>
+          <td>PBJT Hotel, Restoran, Hiburan Malam Khusus</td>
+          <td>Deteksi anomali omzet (Red Channel) vs kapasitas sarana</td>
+        </tr>
+        <tr>
+          <td><strong>DPMPTSP</strong></td>
+          <td>NIB baru, KBLI, lokasi reklame, berkas PBG</td>
+          <td>Pendaftaran Calon WP, Pajak Reklame, PBG</td>
+          <td>Penetapan SKPD Reklame & penetapan tarif PBG</td>
+        </tr>
+        <tr>
+          <td><strong>PUPR</strong></td>
+          <td>Jam sewa excavator (*hour-meter*), uji beton</td>
+          <td>Retribusi Sewa Alat Berat & Laboratorium</td>
+          <td>Penerbitan kode billing sewa alat berat Pemkot</td>
+        </tr>
+        <tr>
+          <td><strong>Dinas Perikanan</strong></td>
+          <td>Tonase lelang ikan harian, sewa cold storage</td>
+          <td>Retribusi TPI Wameo & Jasa Pelabuhan Ikan</td>
+          <td>Rekonsiliasi kasda lelang ikan TPI Wameo</td>
+        </tr>
+        <tr>
+          <td><strong>Dinas Perkim</strong></td>
+          <td>Unit rusunawa terhuni, tunggakan warga</td>
+          <td>Retribusi Sewa Hunian Rusunawa</td>
+          <td>Kunci kode bayar rusunawa & audit piutang sewa</td>
+        </tr>
+        <tr>
+          <td><strong>Dinas Damkar</strong></td>
+          <td>Sertifikat inspeksi APAR/hydrant gedung</td>
+          <td>Syarat Kelayakan Teknis Retribusi PBG</td>
+          <td>Validasi kelayakan sebelum penerbitan SKRD PBG</td>
+        </tr>
+        <tr>
+          <td><strong>Satpol PP</strong></td>
+          <td>Berita Acara Penyegelan / Penertiban Baliho</td>
+          <td>Pemulihan Piutang Pajak Daerah Macet</td>
+          <td>Pencabutan status tunggakan setelah setoran masuk kasda</td>
+        </tr>
+        <tr>
+          <td><strong>Setda Aset</strong></td>
+          <td>KIB tanah, gedung, ruko idle, kontrak KSP</td>
+          <td>Retribusi Pemanfaatan Aset Kekayaan Daerah</td>
+          <td>Penguncian settlement pembayaran sewa aset Pemda</td>
+        </tr>
+        <tr>
+          <td><strong>Disdukcapil</strong></td>
+          <td>Validasi NIK kependudukan & mutasi waris</td>
+          <td>Interlock Anti-Fraud Subjek Pajak PBB/BPHTB</td>
+          <td>Pembersihan data subjek pajak fiktif di database Bapenda</td>
+        </tr>
+        <tr>
+          <td><strong>Dinas Sosial</strong></td>
+          <td>Data Terpadu Kesejahteraan Sosial (DTKS)</td>
+          <td>Stimulus / Pembebasan PBB Warga Miskin</td>
+          <td>Penetapan potongan/stimulus pada buku ketetapan SPPT PBB</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ================= SECTION 4: KLASTERISASI 19 OPD LENGKAP ================= -->
+  <div class="page-break">
+    <h2>4. Bedah Rinci Komposisi Dashboard 19 Akun Admin OPD</h2>
+    <p>
+      Berikut adalah telaah mendalam per akun admin OPD, membedah komposisi antarmuka, fitur kunci, serta keterkaitannya dengan pendapatan daerah.
+    </p>
+
+    <!-- KLASTER 1 -->
+    <div class="klaster-header">
+      <div>
+        <div class="klaster-title">KLASTER I: OTORITAS PENGENDALI PENDAPATAN DAERAH</div>
+        <div class="klaster-desc">Pemegang wewenang penuh arus kas, rekonsiliasi kasda, dan penetapan ketetapan pajak</div>
+      </div>
+      <div style="font-size: 8pt; font-weight: 800; background: #0284c7; padding: 2px 10px; border-radius: 9999px;">1 OPD</div>
+    </div>
+
+    <!-- OPD 1 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">1. Badan Pendapatan Daerah (BAPENDA)</div>
+          <div class="opd-email">admin.bapenda@baubaukota.go.id • opd_id: 5</div>
+        </div>
+        <div class="opd-code">SUPER CONTROLLER</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan (PAD)</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">100% Pajak Daerah & Konsolidasi Kasda</span><br>
+            Mengontrol seluruh buku induk ketetapan (PBB-P2, BPHTB, Reklame, MBLB, Walet, PBJT Resto/Hotel/Hiburan/Parkir/PLN/Air Tanah), rekonsiliasi H2H Bank Sultra, dan audit piutang seluruh dinas.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi & Fitur Kunci Dashboard</div>
+          <ul class="feature-list">
+            <li><strong>Executive Fiscal Overview:</strong> Realisasi vs Target APBD, Collection Rate, Tren Bulanan.</li>
+            <li><strong>Review E-SPTPD & Red Channel:</strong> Deteksi omzet drop > 40%, tombol approval & rujukan uji petik.</li>
+            <li><strong>Peta Pajak GIS NIB-NOP:</strong> Visual spasial kepatuhan pajak per kelurahan/zona.</li>
+            <li><strong>H2H Bank Sultra Callback Monitor:</strong> Log transaksi perbankan & Split-Payment AFT.</li>
+            <li><strong>Penagihan & SKPDKB:</strong> Modul denda otomatis & penerbitan STPD.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- KLASTER 2 -->
+    <div class="klaster-header">
+      <div>
+        <div class="klaster-title">KLASTER II: OPD PENGHASIL RETRIBUSI LANGSUNG</div>
+        <div class="klaster-desc">Pelaksana operasional layanan sektoral yang menghasilkan retribusi jasa umum & jasa usaha</div>
+      </div>
+      <div style="font-size: 8pt; font-weight: 800; background: #059669; padding: 2px 10px; border-radius: 9999px;">6 OPD</div>
+    </div>
+
+    <!-- OPD 2 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">2. Dinas Perhubungan (DISHUB)</div>
+          <div class="opd-email">admin.dishub@baubaukota.go.id • opd_id: 2</div>
+        </div>
+        <div class="opd-code">PARKIR & TERMINAL</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Retribusi Parkir Tepi Jalan & Khusus</span><br>
+            Mengelola operasional parkir tepi jalan umum, tempat khusus parkir (Pelabuhan Murhum, Pantai Kamali, Wameo), terminal, dan pengujian KIR.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Fitur Dashboard (ParkirDishubDashboard.tsx)</div>
+          <ul class="feature-list">
+            <li><strong>Early Warning System (EWS) Parkir:</strong> Deteksi setoran jukir anjlok dari potensi jalan.</li>
+            <li><strong>Jukir Live Monitoring:</strong> Keaktifan juru parkir per shift dan transaksi QRIS Dinamis.</li>
+            <li><strong>Jukir Wallet:</strong> Saldo setoran dan monitoring perolehan bagi hasil jukir resmi.</li>
+            <li><strong>Manajemen Titik Parkir:</strong> Zonasi kuota kendaraan dan penetapan juru parkir.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPD 3 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">3. Dinas Perindustrian dan Perdagangan (DISPERINDAG)</div>
+          <div class="opd-email">admin.disperindag@baubaukota.go.id • opd_id: 3</div>
+        </div>
+        <div class="opd-code">PASAR & TERA UTTP</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Retribusi Pelayanan Pasar, Kios & Tera</span><br>
+            Karcis harian pedagang pelataran, sewa toko/kios/los Pasar Wameo dan Karya Nugraha, serta retribusi tera timbangan metrologi legal.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi & Fitur Kunci Dashboard</div>
+          <ul class="feature-list">
+            <li><strong>Matriks Okupansi Kios:</strong> Status toko pasar (Terisi Lunas, Masa Tenggang, Menunggak).</li>
+            <li><strong>Rekap Karcis Harian:</strong> Monitoring setoran petugas pasar berbasis mobile app.</li>
+            <li><strong>Jadwal Tera Ulang Spasial:</strong> Kalender tera SPBU, pasar, dan toko emas.</li>
+            <li><strong>Pengawasan Depot Air Isi Ulang:</strong> Validasi izin usaha dasar penarikan pajak air tanah.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPD 4 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">4. Dinas Lingkungan Hidup (DLH)</div>
+          <div class="opd-email">admin.dlh@baubaukota.go.id • opd_id: 4</div>
+        </div>
+        <div class="opd-code">KEBERSIHAN & SAMPAH</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Retribusi Kebersihan & Sedot Tinja</span><br>
+            Iuran sampah rumah tangga, retribusi sampah komersial (hotel, resto, mall) berdasar volume m³, serta retribusi instalasi pengolahan tinja (IPLT).
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi & Fitur Kunci Dashboard</div>
+          <ul class="feature-list">
+            <li><strong>Volume Tracking Sampah Komersial:</strong> Input volume m³ limbah hotel/resto.</li>
+            <li><strong>Billing Retribusi Terintegrasi:</strong> Bridging tagihan ke PBJT atau PDAM.</li>
+            <li><strong>Monitoring Rute Truk Sampah:</strong> Tracking pengangkutan sampah per zona.</li>
+            <li><strong>Daftar Kepatuhan Iuran:</strong> Identifikasi objek usaha yang menunggak retribusi kebersihan.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPD 5 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">5. Dinas Perikanan</div>
+          <div class="opd-email">admin.dinas_perikanan@baubaukota.go.id • opd_id: 10</div>
+        </div>
+        <div class="opd-code">TPI & SARANA MARITIM</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Retribusi TPI Wameo & Cold Storage</span><br>
+            Persentase nilai lelang hasil laut di Tempat Pelelangan Ikan (TPI Wameo), retribusi tambatan kapal nelayan, dan sewa pabrik es/cold storage.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi & Fitur Kunci Dashboard</div>
+          <ul class="feature-list">
+            <li><strong>Volume Lelang Ikan Harian:</strong> Tonase ikan masuk dan hitungan retribusi lelang (2%-5%).</li>
+            <li><strong>Okupansi Tambatan Perahu:</strong> Data kapal nelayan yang bersandar di dermaga pemda.</li>
+            <li><strong>Kontrak Sewa Sarana Pendingin:</strong> Masa aktif kontrak sewa cold storage asosiasi ikan.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPD 6 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">6. Dinas Pekerjaan Umum dan Penataan Ruang (PUPR)</div>
+          <div class="opd-email">admin.pupr@baubaukota.go.id • opd_id: 9</div>
+        </div>
+        <div class="opd-code">ALAT BERAT & LAB</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Sewa Alat Berat & Retribusi Lab Konstruksi</span><br>
+            Sewa excavator/roller/dump truck pemda untuk kontraktor proyek, retribusi uji mutu tekan beton/aspal, dan koordinasi Pajak Air Tanah.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi & Fitur Kunci Dashboard</div>
+          <ul class="feature-list">
+            <li><strong>Kalender Booking Alat Berat:</strong> Jadwal sewa unit dan durasi jam kerja (*hour-meter*).</li>
+            <li><strong>Uji Mutu Laboratorium Konstruksi:</strong> Penerbitan draf SKRD laboratorium beton/aspal.</li>
+            <li><strong>Pemetaan Debit Air Baku:</strong> Verifikasi debit sumur komersial untuk Pajak Air Tanah.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPD 7 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">7. Dinas Perumahan, Kawasan Permukiman dan Pertanahan (PERKIM)</div>
+          <div class="opd-email">admin.perkim@baubaukota.go.id • opd_id: 11</div>
+        </div>
+        <div class="opd-code">RUSUNAWA & TANAH PEMKOT</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Retribusi Sewa Unit Rusunawa</span><br>
+            Penyewaan unit hunian rumah susun sederhana sewa bagi warga MBR serta pemanfaatan tanah pemda untuk kawasan permukiman.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi & Fitur Kunci Dashboard</div>
+          <ul class="feature-list">
+            <li><strong>Denah Okupansi Rusunawa:</strong> Visual kamar terhuni, kosong, dan status lunas sewa.</li>
+            <li><strong>Manajemen Kontrak Penghuni:</strong> Verifikasi data warga penghuni dan jatuh tempo sewa.</li>
+            <li><strong>Riwayat Piutang Sewa:</strong> Pemantauan kepatuhan setoran sewa bulanan warga.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- KLASTER 3 -->
+    <div class="klaster-header page-break">
+      <div>
+        <div class="klaster-title">KLASTER III: OPD PERIZINAN, PEMBINAAN TEKNIS & REGULASI</div>
+        <div class="klaster-desc">Penyedia data hulu izin, profiling teknis sarana objek usaha, dan sertifikasi kelayakan</div>
+      </div>
+      <div style="font-size: 8pt; font-weight: 800; background: #0284c7; padding: 2px 10px; border-radius: 9999px;">4 OPD</div>
+    </div>
+
+    <!-- OPD 8 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">8. DPMPTSP (Perizinan Satu Pintu)</div>
+          <div class="opd-email">admin.dpmptsp@baubaukota.go.id • opd_id: 7</div>
+        </div>
+        <div class="opd-code">INTERLOCK NIB & PBG</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Hulu Pajak (NIB), Retribusi PBG & Reklame</span><br>
+            Bridging izin berusaha OSS-RBA ke basis WP M-PAD, verifikasi kelayakan tata ruang titik reklame, dan berkas teknis Persetujuan Bangunan Gedung (PBG).
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Fitur Dashboard (PtspDashboard.tsx)</div>
+          <ul class="feature-list">
+            <li><strong>NIB Matching & Conflict Monitor:</strong> Status NIB (Matched, Pending, Conflict).</li>
+            <li><strong>Calon Wajib Pajak Pipeline:</strong> Usaha baru di OSS yang belum ber-NPWPD.</li>
+            <li><strong>Tracking Izin Reklame:</strong> Kelayakan titik baliho/billboard berdasar tata ruang kota.</li>
+            <li><strong>Verifikasi Dokumen PBG:</strong> Penerbitan rekomendasi izin sebelum billing SKRD Bapenda.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPD 9 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">9. Dinas Pariwisata dan Kebudayaan</div>
+          <div class="opd-email">admin.pariwisata@baubaukota.go.id • opd_id: 16</div>
+        </div>
+        <div class="opd-code">PROFILING HOTEL & HIBURAN</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Dasar Potensi PBJT Hotel, Resto, Hiburan & Wisata</span><br>
+            Menyediakan data kapasitas kamar, room KTV, meja bilyard, dan sertifikasi CHSE yang menjadi tolok ukur uji anomali omzet (Red Channel) Bapenda.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Fitur Dashboard (PariwisataDashboard.tsx)</div>
+          <ul class="feature-list">
+            <li><strong>Direktori Hotel & Akomodasi:</strong> Data kelas hotel, jumlah kamar, status CHSE.</li>
+            <li><strong>Direktori Tempat Hiburan:</strong> Kapasitas room karaoke, meja bilyard, lounge.</li>
+            <li><strong>Kalender Event Kota:</strong> Jadwal festival budaya pemantik keramaian ekonomi.</li>
+            <li><strong>Banner Integritas Tupoksi:</strong> Penegasan wewenang pembinaan tanpa kelola kasda.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPD 10 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">10. Dinas Pemadam Kebakaran dan Penyelamatan (DAMKAR)</div>
+          <div class="opd-email">admin.damkar@baubaukota.go.id • opd_id: 13</div>
+        </div>
+        <div class="opd-code">VERIFIKATOR PROTEKSI PBG</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Syarat Mutlak Retribusi PBG & SLF Gedung</span><br>
+            Verifikasi teknis proteksi kebakaran gedung (UU 28/2002, PP 16/2021). Damkar adalah verifikator teknis, bukan pemungut retribusi kasda.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi & Fitur Kunci Dashboard</div>
+          <ul class="feature-list">
+            <li><strong>Verifikasi Proteksi Kebakaran (tb_verifikasi_damkar):</strong> Antrean cek gedung.</li>
+            <li><strong>Rekomendasi SLF Kebakaran:</strong> Pengesahan instalasi sprinkler & APAR gedung komersial.</li>
+            <li><strong>Inspeksi Hydrant Berkala:</strong> Audit keamanan gedung hotel, mall, dan tempat hiburan.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPD 11 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">11. Dinas Komunikasi dan Informatika (DISKOMINFO)</div>
+          <div class="opd-email">admin.diskominfo@baubaukota.go.id • opd_id: 6</div>
+        </div>
+        <div class="opd-code">MENARA BTS & SPBE</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Retribusi Pengendalian Menara Telekomunikasi</span><br>
+            Pengawasan teknis zonasi dan ketinggian menara seluler (BTS) provider, serta penjamin infrastruktur jaringan & keamanan siber (CSIRT) M-PAD.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi & Fitur Kunci Dashboard</div>
+          <ul class="feature-list">
+            <li><strong>Peta GIS Menara Seluler (BTS):</strong> Sebaran menara per provider seluler.</li>
+            <li><strong>Audit Kepatuhan Menara:</strong> Checklist teknis dasar penerbitan SKRD menara tahunan.</li>
+            <li><strong>System Health & Network Monitor:</strong> Uptime server API dan latency webhook bank.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- KLASTER 4 -->
+    <div class="klaster-header">
+      <div>
+        <div class="klaster-title">KLASTER IV: OPD PENEGAKAN HUKUM & PENGAWASAN LAPANGAN</div>
+        <div class="klaster-desc">Penegak Perda fisik, eksekutor penertiban, dan pemulih piutang pajak macet</div>
+      </div>
+      <div style="font-size: 8pt; font-weight: 800; background: #991b1b; padding: 2px 10px; border-radius: 9999px;">1 OPD</div>
+    </div>
+
+    <!-- OPD 12 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">12. Satuan Polisi Pamong Praja (SATPOL PP)</div>
+          <div class="opd-email">admin.satpol_pp@baubaukota.go.id • opd_id: 14</div>
+        </div>
+        <div class="opd-code">PENEGAKAN PERDA & PENERTIBAN</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Pemulihan Piutang Pajak Daerah Macet</span><br>
+            Eksekusi penyegelan usaha yang menunggak pajak setelah SP3 dari Bapenda, pembongkaran baliho/reklame liar tanpa izin, dan pendampingan audit uji petik.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Fitur Dashboard (Enforcement.tsx)</div>
+          <ul class="feature-list">
+            <li><strong>Feed Surat Tugas Penertiban:</strong> Rujukan tindakan fisik dari Bapenda/OPD teknis.</li>
+            <li><strong>Upload Bukti Segel GPS:</strong> Dokumentasi stiker peringatan objek penunggak pajak.</li>
+            <li><strong>Monitoring Reklame Liar:</strong> Tracking penertiban media promosi tak berizin.</li>
+            <li><strong>Pendampingan Uji Petik:</strong> Pengamanan audit lapangan di hiburan malam rawan gesekan.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- KLASTER 5 -->
+    <div class="klaster-header page-break">
+      <div>
+        <div class="klaster-title">KLASTER V: OPD VALIDASI IDENTITAS & INTEGRASI DATA MAKRO</div>
+        <div class="klaster-desc">Penyedia basis data kependudukan, kesejahteraan sosial, dan tanggap darurat bencana</div>
+      </div>
+      <div style="font-size: 8pt; font-weight: 800; background: #0284c7; padding: 2px 10px; border-radius: 9999px;">4 OPD</div>
+    </div>
+
+    <!-- OPD 13 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">13. Dinas Kependudukan dan Pencatatan Sipil (DUKCAPIL)</div>
+          <div class="opd-email">admin.dukcapil@baubaukota.go.id • opd_id: 12</div>
+        </div>
+        <div class="opd-code">INTERLOCK NIK ANTI-FRAUD</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Interlock NIK Subjek Pajak PBB / BPHTB</span><br>
+            Memvalidasi keabsahan identitas warga pendaftar mandiri, verifikasi status kematian untuk mutasi SPPT PBB-P2 ke ahli waris sah, dan eliminasi data fiktif.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi & Fitur Kunci Dashboard</div>
+          <ul class="feature-list">
+            <li><strong>NIK Query Monitor:</strong> Tracking volume verifikasi identitas pemohon sistem M-PAD.</li>
+            <li><strong>Sinkronisasi Kematian:</strong> Notifikasi data warga meninggal untuk mutasi waris PBB.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPD 14 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">14. Dinas Sosial dan Tenaga Kerja</div>
+          <div class="opd-email">admin.dinas_sosial@baubaukota.go.id • opd_id: 15</div>
+        </div>
+        <div class="opd-code">DTKS KERINGANAN & R-PTKA</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Validasi Bebas PBB Warga Miskin & DKP-TKA</span><br>
+            Verifikasi desil DTKS untuk pemohon pengurangan pokok PBB-P2 warga miskin ekstrem serta penghitungan Retribusi Penggunaan Tenaga Kerja Asing (R-PTKA).
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi & Fitur Kunci Dashboard</div>
+          <ul class="feature-list">
+            <li><strong>Pengecekan DTKS:</strong> Verifikasi kemiskinan pemohon stimulus/amnesty pajak.</li>
+            <li><strong>Izin TKA (DKP-TKA):</strong> Tagihan kompensasi TKA USD 100/bulan/orang pada perusahaan.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPD 15 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">15. Badan Kesatuan Bangsa dan Politik (KESBANGPOL)</div>
+          <div class="opd-email">admin.kesbangpol@baubaukota.go.id • opd_id: 17</div>
+        </div>
+        <div class="opd-code">LEGALITAS NIRLABA</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Verifikasi Bebas Pajak (Tax Exemption)</span><br>
+            Mengesahkan status badan hukum yayasan/ormas nirlaba yang memohon pembebasan Pajak Hiburan atau PBB tempat ibadah dan panti asuhan sosial.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi & Fitur Kunci Dashboard</div>
+          <ul class="feature-list">
+            <li><strong>Database Ormas Terdaftar:</strong> Pengecekan keabsahan status lembaga nirlaba.</li>
+            <li><strong>Rekomendasi Bebas Pajak:</strong> Validasi acara amal murni tanpa keuntungan komersial.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPD 16 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">16. Badan Penanggulangan Bencana Daerah (BPBD)</div>
+          <div class="opd-email">admin.bpbd@baubaukota.go.id • opd_id: 18</div>
+        </div>
+        <div class="opd-code">TANGGAP DARURAT FISKAL</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Keringanan Pajak Masa Tanggap Darurat</span><br>
+            Penetapan wilayah bencana (banjir, abrasi pantai, tanah longsor) sebagai dasar hukum penundaan jatuh tempo atau penghapusan sanksi PBB-P2 warga korban bencana.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi & Fitur Kunci Dashboard</div>
+          <ul class="feature-list">
+            <li><strong>GIS Rawan Bencana vs NJOP:</strong> Overlay peta rawan bencana untuk kajian nilai jual objek.</li>
+            <li><strong>Log Objek Terdampak Bencana:</strong> Input bidang tanah rusak dasar keringanan PBB.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- KLASTER 6 -->
+    <div class="klaster-header">
+      <div>
+        <div class="klaster-title">KLASTER VI: PERENCANAAN MAKRO, ASET DAERAH & PENGAWAS KEBIJAKAN</div>
+        <div class="klaster-desc">Perencana fiskal jangka menengah, pengelola kekayaan daerah, dan pengawas legislatif</div>
+      </div>
+      <div style="font-size: 8pt; font-weight: 800; background: #d97706; padding: 2px 10px; border-radius: 9999px;">3 OPD</div>
+    </div>
+
+    <!-- OPD 17 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">17. Badan Perencanaan Pembangunan dan Riset Daerah (BAPPERIDA)</div>
+          <div class="opd-email">admin.bapperida@baubaukota.go.id • opd_id: 8</div>
+        </div>
+        <div class="opd-code">PROYEKSI MAKRO 3-5 TAHUN</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Perencanaan Target PAD dalam RPJMD & APBD</span><br>
+            Menyelaraskan target penerimaan fiskal daerah dengan tren riil kapasitas PAD M-PAD, analisis elastisitas pendapatan sektoral, dan rasio kemandirian keuangan daerah.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi Dashboard Eksekutif</div>
+          <ul class="feature-list">
+            <li><strong>Proyeksi Fiskal 3-5 Tahun:</strong> Model regresi tren penerimaan berbasis riwayat riil.</li>
+            <li><strong>Rasio Kemandirian Keuangan:</strong> Kontribusi PAD terhadap total belanja APBD Baubau.</li>
+            <li><strong>Simulasi Penyesuaian Tarif:</strong> Analisis dampak tarif Perda terhadap iklim usaha.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPD 18 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">18. Sekretariat Daerah Kota Baubau (SETDA) — Bagian Aset / BPKAD</div>
+          <div class="opd-email">admin.setda@baubaukota.go.id • opd_id: 19</div>
+        </div>
+        <div class="opd-code">MANAJEMEN KEKAYAAN DAERAH</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Retribusi Pemanfaatan Barang Milik Daerah (BMD)</span><br>
+            Penyewaan tanah kosong pemda, gedung aula/pertemuan serbaguna, ruko komersial pemkot, dan kerja sama pemanfaatan (KSP/BGS/BSG) dengan investor swasta.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Fitur Dashboard (AssetRentalsManagement.tsx)</div>
+          <ul class="feature-list">
+            <li><strong>KIB Tanah & Gedung Idle:</strong> Daftar aset kekayaan daerah siap disewakan.</li>
+            <li><strong>Monitoring Kontrak Sewa:</strong> Notifikasi jatuh tempo sewa pihak ketiga dan nilai sewa.</li>
+            <li><strong>Peta Koordinat Aset Pemda:</strong> Sebaran spasial dan legalitas sertipikat tanah daerah.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPD 19 -->
+    <div class="opd-card avoid-break">
+      <div class="opd-header">
+        <div>
+          <div class="opd-name">19. Sekretariat DPRD Kota Baubau (SETWAN)</div>
+          <div class="opd-email">admin.setwan@baubaukota.go.id • opd_id: 20</div>
+        </div>
+        <div class="opd-code">PENGAWASAN LEGISLATIF</div>
+      </div>
+      <div class="opd-grid">
+        <div>
+          <div class="opd-block-title">Keterkaitan dengan Pendapatan</div>
+          <div class="opd-block-content">
+            <span class="badge-revenue">Pengawasan Akuntabilitas Realisasi PAD</span><br>
+            Menyajikan data agregat transparansi penerimaan pendapatan daerah kepada Komisi II DPRD Kota Baubau untuk keperluan Rapat Dengar Pendapat (RDP) dan evaluasi APBD.
+          </div>
+        </div>
+        <div>
+          <div class="opd-block-title">Komposisi Dashboard Legislatif (Read-Only)</div>
+          <ul class="feature-list">
+            <li><strong>Realisasi per Akun Rekening SIPD:</strong> Capaian target mata anggaran pendapatan.</li>
+            <li><strong>Laporan Kepatuhan ETPD & Piutang:</strong> Data BPK-ready tanpa akses ke data pribadi warga.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALLOUT PENUTUP -->
+    <div class="callout-box avoid-break" style="margin-top: 20px;">
+      <div style="font-weight: 800; font-size: 9pt; margin-bottom: 4px;">PENEGASAN INTEGRITAS EKOSISTEM M-PAD:</div>
+      Seluruh 19 akun admin OPD beroperasi secara sinergis dalam arsitektur multi-tenant terisolasi. OPD teknis memegang kendali atas data fisik, kuota, sarana, dan pembinaan di lapangan, sedangkan Bapenda memegang kendali atas ketetapan nominal, penerbitan billing QRIS/VA Bank Sultra, dan audit kas daerah. Integrasi ini menghasilkan tata kelola pendapatan daerah yang transparan, akuntabel, dan bebas kebocoran kas (zero-leakage).
+    </div>
+
+    <!-- SIGNATURE BOX -->
+    <div class="avoid-break" style="margin-top: 30px; display: flex; justify-content: flex-end;">
+      <div style="text-align: center; width: 220px; font-size: 8pt;">
+        <div>Ditetapkan di Baubau, 2026</div>
+        <div style="font-weight: 800; margin-top: 2px;">BADAN PENDAPATAN DAERAH<br>KOTA BAUBAU</div>
+        <div style="height: 50px;"></div>
+        <div style="font-weight: 800; text-decoration: underline;">TIM ARSITEKTUR M-PAD</div>
+        <div style="color: #64748b; font-size: 7.5pt;">Visi Baubau 4.0 Digital Transformation</div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

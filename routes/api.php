@@ -491,8 +491,10 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/summary', [ReportController::class, 'getSummary']);
             Route::get('/recent', [ReportController::class, 'getRecent']);
             Route::get('/petugas-performance', [ReportController::class, 'getPetugasPerformance']);
+            Route::get('/monthly/stats', [\App\Http\Controllers\MonthlyReportController::class, 'stats']);
             Route::get('/monthly', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
             Route::put('/monthly/{report}/validate', [\App\Http\Controllers\MonthlyReportController::class, 'validateReport']);
+            Route::post('/monthly/{report}/spot-check', [\App\Http\Controllers\MonthlyReportController::class, 'requestSpotCheck']);
             Route::get('/bpk', [ReportController::class, 'getMonthlyReport']);
             Route::get('/sipd', [ReportController::class, 'getSipdReport']);
         });
