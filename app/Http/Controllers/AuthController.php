@@ -63,6 +63,7 @@ class AuthController extends Controller
             'user' => $user->load('opd'),
             'token' => $token,
             'token_type' => 'Bearer',
+            'access' => \App\Support\OpdAccess::for($user),
         ]);
     }
 
@@ -87,7 +88,8 @@ class AuthController extends Controller
         \App\Support\RoleResolver::enrich($user);
 
         return response()->json([
-            'user' => $user->load('opd')
+            'user' => $user->load('opd'),
+            'access' => \App\Support\OpdAccess::for($user),
         ]);
     }
 
