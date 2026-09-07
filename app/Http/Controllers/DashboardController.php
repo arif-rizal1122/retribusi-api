@@ -24,6 +24,11 @@ class DashboardController extends Controller
         }
         $opdId = !$user->isSuperAdmin() ? $user->opd_id : null;
 
+        $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date'],
+        ]);
+
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
 
@@ -237,6 +242,11 @@ class DashboardController extends Controller
             return response()->json(['message' => 'Unauthorized Access'], 403);
         }
         $opdId = !$user->isSuperAdmin() ? $user->opd_id : null;
+
+        $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date'],
+        ]);
 
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
