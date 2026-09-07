@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\H2h;
 
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 use App\Jobs\ExecuteAutoDebitAFT;
 use App\Models\AutoDeductLog;
 use App\Models\Bill;
@@ -98,7 +99,24 @@ class BpdWebhookController extends Controller
             $bill = null;
             $taxpayerId = null;
 
-            if ($customerNo) {
+            $externalId = (string) $request->header('x-external-id', '');
+            $matchedBy = null;
+
+            // Prioritas 1: x-external-id memuat bill id (format: <YYYYMMDD><0..><bill_id>)
+            if (preg_match('/(\d+)$/', $externalId, $mExt) && (int) $mExt[1] > 0) {
+                $candidate = Bill::where('id', (int) $mExt[1])
+                    ->where('status', 'pending')
+                    ->first();
+                if ($candidate) {
+                    $bill = $candidate;
+                    $taxObject = $bill->taxObject;
+                    $taxpayerId = $bill->taxpayer_id;
+                    $matchedBy = 'x-external-id';
+                }
+            }
+
+            // Prioritas 2: NOP → taxpayer → bill pending senilai transaksi (hindari settle salah bill)
+            if (! $bill && $customerNo) {
                 // NOP 18 digit → taxpayer_nops.nop → taxpayer_id → bill pending
                 $nopRow = DB::table('taxpayer_nops')->where('nop', $customerNo)->first()
                     ?? DB::table('taxpayer_nops')->where('nop', ltrim((string) $customerNo, '0'))->first();
@@ -106,12 +124,26 @@ class BpdWebhookController extends Controller
                     $taxpayerId = $nopRow->taxpayer_id;
                     $bill = Bill::where('taxpayer_id', $taxpayerId)
                         ->where('status', 'pending')
+                        ->whereRaw('ABS(CAST(amount AS DECIMAL(12,2)) - ?) < 0.01', [(float) $transactionAmount])
                         ->orderByDesc('id')
                         ->first();
                     if ($bill) {
                         $taxObject = $bill->taxObject;
+                        $matchedBy = 'nop+amount';
                     }
                 }
+            }
+
+            // Pengaman: nominal harus sama persis — jangan settle parsial/salah bill
+            if ($bill && abs((float) $bill->amount - (float) $transactionAmount) >= 0.01) {
+                Log::warning('BankSultra VA callback amount mismatch (skip settle)', [
+                    'virtualAccountNo' => $accountNo,
+                    'billId' => $bill->id,
+                    'billNumber' => $bill->bill_number,
+                    'billAmount' => $bill->amount,
+                    'paidAmount' => $transactionAmount,
+                ]);
+                $bill = null;
             }
 
             Log::info('BankSultra VA callback mapping', [
@@ -121,6 +153,7 @@ class BpdWebhookController extends Controller
                 'billId' => $bill?->id,
                 'billNumber' => $bill?->bill_number,
                 'amount' => $transactionAmount,
+                'matchedBy' => $matchedBy,
                 'matched' => $bill ? true : false,
             ]);
 
