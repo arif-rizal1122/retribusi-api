@@ -103,8 +103,11 @@ class BpdWebhookController extends Controller
             $matchedBy = null;
 
             // Prioritas 1: x-external-id memuat bill id (format: <YYYYMMDD><0..><bill_id>)
-            if (preg_match('/(\d+)$/', $externalId, $mExt) && (int) $mExt[1] > 0) {
-                $candidate = Bill::where('id', (int) $mExt[1])
+            // Ambil 12 digit TERAKHIR (createVA: date('Ymd') . str_pad(bill_id, 12, '0', STR_PAD_LEFT))
+            // Regex greedy (\d+)$ menangkap SEMUA digit -> overflow (int) -> bill tak ketemu (bug 7 Sep)
+            $extTail = substr($externalId, -12);
+            if (ctype_digit($extTail) && (int) $extTail > 0) {
+                $candidate = Bill::where('id', (int) $extTail)
                     ->where('status', 'pending')
                     ->first();
                 if ($candidate) {
