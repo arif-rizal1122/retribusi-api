@@ -260,7 +260,7 @@ class DashboardController extends Controller
             $end = Carbon::parse($endDate)->endOfDay();
         }
 
-        $diffInDays = $start->diffInDays($end) + 1;
+        $diffInDays = (int) $start->diffInDays($end) + 1;
 
         // Dynamic grouping: If range <= 31 days, group by day; otherwise group by month
         if ($diffInDays <= 31) {
@@ -291,31 +291,29 @@ class DashboardController extends Controller
         } else {
             // Monthly grouping for longer ranges (yearly view)
             $trend = Payment::select(
-                DB::raw('YEAR(paid_at) as year'),
-                DB::raw('MONTH(paid_at) as month_num'),
-                DB::raw('MONTHNAME(paid_at) as month_name'),
+                DB::raw("SUBSTR(DATE(paid_at), 1, 7) as month_key"),
                 DB::raw('SUM(amount) as amount')
             )
-            ->when($opdId, function ($q) use ($opdId) {
-                $q->whereExists(function ($sub) use ($opdId) {
-                    $sub->select(DB::raw(1))
-                        ->from('bills')
-                        ->whereColumn('bills.id', 'payments.bill_id')
-                        ->where('bills.opd_id', $opdId);
+                ->when($opdId, function ($q) use ($opdId) {
+                    $q->whereExists(function ($sub) use ($opdId) {
+                        $sub->select(DB::raw(1))
+                            ->from('bills')
+                            ->whereColumn('bills.id', 'payments.bill_id')
+                            ->where('bills.opd_id', $opdId);
+                    });
+                })
+                ->whereBetween('paid_at', [$start, $end])
+                ->groupBy('month_key')
+                ->orderBy('month_key', 'asc')
+                ->limit(12)
+                ->get()
+                ->map(function ($item) {
+                    $date = Carbon::parse($item->month_key . '-01');
+                    return [
+                        'month' => $date->format('F'), // e.g., "January"
+                        'amount' => $item->amount,
+                    ];
                 });
-            })
-            ->whereBetween('paid_at', [$start, $end])
-            ->groupBy('year', 'month_num', 'month_name')
-            ->orderBy('year', 'asc')
-            ->orderBy('month_num', 'asc')
-            ->limit(12)
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'month' => $item->month_name,
-                    'amount' => $item->amount,
-                ];
-            });
         }
 
         return response()->json($trend);
