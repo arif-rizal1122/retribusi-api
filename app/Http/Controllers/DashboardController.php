@@ -374,6 +374,7 @@ class DashboardController extends Controller
                     ->whereNotIn('status', ['paid', 'lunas'])
                     ->limit(1),
             ])
+            ->where('status', 'active')
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
