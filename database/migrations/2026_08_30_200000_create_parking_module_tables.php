@@ -41,7 +41,7 @@ return new class extends Migration
             $table->unsignedBigInteger('parking_location_id');
             $table->unsignedBigInteger('jukir_user_id')->comment('FK users — petugas jukir yang mencatat');
             $table->date('shift_date')->comment('Tanggal shift');
-            $table->enum('vehicle_type', ['r2', 'r4'])->comment('r2=roda 2, r4=roda 4');
+            $table->string('vehicle_type', 30)->default('r2')->comment('r2, r4, truk_bus, inap_truk, proxy_gt_1..4');
             $table->string('plate_hint', 10)->nullable()->comment('3-4 karakter akhir plat (opsional)');
             $table->decimal('amount', 12, 2)->comment('Nominal retribusi yang dibayar');
             $table->enum('payment_method', ['cash', 'qris'])->default('cash');

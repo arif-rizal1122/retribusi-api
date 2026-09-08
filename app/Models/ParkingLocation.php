@@ -69,6 +69,15 @@ class ParkingLocation extends Model
 
     public function rateFor(string $vehicleType): float
     {
-        return $vehicleType === 'r4' ? (float) $this->rate_r4 : (float) $this->rate_r2;
+        return match ($vehicleType) {
+            'r4' => (float) ($this->rate_r4 ?? 3000),
+            'truk_bus' => 5000.0,
+            'inap_truk' => 25000.0,
+            'proxy_gt_1' => 1000.0,
+            'proxy_gt_2' => 3000.0,
+            'proxy_gt_3' => 5000.0,
+            'proxy_gt_4' => 10000.0,
+            default => (float) ($this->rate_r2 ?? 2000),
+        };
     }
 }

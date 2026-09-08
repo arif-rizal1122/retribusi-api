@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class ParkingController extends Controller
 {
@@ -41,7 +42,7 @@ class ParkingController extends Controller
     {
         $validated = $request->validate([
             'parking_location_id' => 'required|exists:parking_locations,id',
-            'vehicle_type' => 'required|in:r2,r4',
+            'vehicle_type' => 'required|in:r2,r4,truk_bus,inap_truk,proxy_gt_1,proxy_gt_2,proxy_gt_3,proxy_gt_4',
             'payment_method' => 'required|in:cash,qris',
             'plate_hint' => 'nullable|string|max:10',
             'qris_reference' => 'nullable|string|max:20',
@@ -410,7 +411,7 @@ class ParkingController extends Controller
     {
         $validated = $request->validate([
             'parking_location_id' => 'required|exists:parking_locations,id',
-            'vehicle_type' => 'required|in:r2,r4',
+            'vehicle_type' => 'required|in:r2,r4,truk_bus,inap_truk,proxy_gt_1,proxy_gt_2,proxy_gt_3,proxy_gt_4',
             'plate_hint' => 'nullable|string|max:10',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
@@ -460,10 +461,23 @@ class ParkingController extends Controller
         $session = DB::transaction(function () use ($validated, $user, $location, $amount, $rkudShare, $jukirShare, $today, $wallet, $receiptToken, $newDeposit, $currentDeposit) {
             // A. Potong Saldo Deposit di DB jika tabel tersedia
             if (DB::getSchemaBuilder()->hasTable('jukir_profiles')) {
-                DB::table('jukir_profiles')->where('user_id', $user->id)->update([
-                    'deposit_balance' => $newDeposit,
-                    'updated_at' => now(),
-                ]);
+                $exists = DB::table('jukir_profiles')->where('user_id', $user->id)->exists();
+                if ($exists) {
+                    DB::table('jukir_profiles')->where('user_id', $user->id)->update([
+                        'deposit_balance' => $newDeposit,
+                        'updated_at' => now(),
+                    ]);
+                } else {
+                    DB::table('jukir_profiles')->insert([
+                        'user_id' => $user->id,
+                        'surat_tugas_no' => 'ST.DISHUB/PKR/2026/' . str_pad($user->id, 4, '0', STR_PAD_LEFT),
+                        'surat_tugas_expired_at' => now()->addMonths(6),
+                        'deposit_balance' => $newDeposit,
+                        'status' => 'active',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
 
                 if (DB::getSchemaBuilder()->hasTable('jukir_deposit_transactions')) {
                     DB::table('jukir_deposit_transactions')->insert([
@@ -538,6 +552,18 @@ class ParkingController extends Controller
             return $session;
         });
 
+        $vehicleLabels = [
+            'r2' => 'R2 (MOTOR)',
+            'r4' => 'R4 (MOBIL)',
+            'truk_bus' => 'TRUK / BUS',
+            'inap_truk' => 'PENITIPAN INAP TRUK/BUS',
+            'proxy_gt_1' => 'KAPAL GOL I (< 5 GT)',
+            'proxy_gt_2' => 'KAPAL GOL II (5 - 10 GT)',
+            'proxy_gt_3' => 'KAPAL GOL III (11 - 20 GT)',
+            'proxy_gt_4' => 'KAPAL GOL IV (> 20 GT)',
+        ];
+        $vehicleLabel = $vehicleLabels[$validated['vehicle_type']] ?? strtoupper($validated['vehicle_type']);
+
         // Format Payload ESC/POS Struk Thermal Mini Bluetooth (58mm)
         $thermalPayload = [
             'header' => 'PEMERINTAH KOTA BAUBAU',
@@ -545,13 +571,17 @@ class ParkingController extends Controller
             'location_name' => $location->name,
             'receipt_no' => $receiptToken,
             'datetime' => now()->format('d/m/Y H:i:s'),
-            'vehicle_type' => strtoupper($validated['vehicle_type']) . ($validated['vehicle_type'] === 'r2' ? ' (MOTOR)' : ' (MOBIL)'),
+            'vehicle_type' => $vehicleLabel,
             'plate_hint' => $validated['plate_hint'] ? strtoupper($validated['plate_hint']) : '-',
             'amount_total' => $amount,
             'qr_verification_url' => 'https://mpad.baubaukota.go.id/p/cek?token=' . $receiptToken,
             'footer_notice' => 'MINTA STRUK RESMI M-PAD. TANPA STRUK = PARKIR GRATIS!',
             'reward_notice' => 'Scan QR struk ini di aplikasi M-PAD Warga untuk dapat Poin Sadar Pajak & Tiket Undian Berhadiah.',
         ];
+
+        if (str_starts_with($validated['vehicle_type'], 'proxy_gt')) {
+            $thermalPayload['legal_notice'] = 'Retribusi Tambat Labuh Pemkot Baubau (Perda 1/2024). Bukan bukti kelaikan laut / SPB KSOP.';
+        }
 
         return response()->json([
             'status' => 'success',
@@ -882,6 +912,237 @@ class ParkingController extends Controller
                 'verified_at' => now()->toDateTimeString(),
             ]
         ]);
+    }
+
+    /**
+     * GET /api/parking/harbor/proxy-gt-rates
+     * Matriks Tarif Proxy GT Tambat Labuh Kapal Rakyat (Perda 1/2024 Pasal 91 & SOP 05 Dishub).
+     */
+    public function proxyGtRates(): JsonResponse
+    {
+        $rates = [
+            [
+                'code' => 'proxy_gt_1',
+                'name' => 'Golongan I (Perahu Motor Kecil / Katinting)',
+                'gt_range' => '< 5 GT',
+                'rate' => 1000,
+                'unit' => 'per hari',
+                'description' => 'Perahu nelayan tradisional dayung / katinting motor tempel kecil.',
+            ],
+            [
+                'code' => 'proxy_gt_2',
+                'name' => 'Golongan II (Speedboat Penumpang Tradisional)',
+                'gt_range' => '5 - 10 GT',
+                'rate' => 3000,
+                'unit' => 'per hari',
+                'description' => 'Speedboat komersial penumpang antarpulau / rute pendek.',
+            ],
+            [
+                'code' => 'proxy_gt_3',
+                'name' => 'Golongan III (Kapal Kayu / KLM Sedang)',
+                'gt_range' => '11 - 20 GT',
+                'rate' => 5000,
+                'unit' => 'per hari',
+                'description' => 'Kapal Layar Motor / kapal kayu muatan barang dan sembako.',
+            ],
+            [
+                'code' => 'proxy_gt_4',
+                'name' => 'Golongan IV (Kapal Layar Motor / KM Besar)',
+                'gt_range' => '> 20 GT',
+                'rate' => 10000,
+                'unit' => 'per hari',
+                'description' => 'Kapal motor ukuran besar pengangkut komoditas antarprovinsi.',
+            ],
+        ];
+
+        return response()->json([
+            'status' => 'success',
+            'legal_basis' => 'Perda Kota Baubau No. 1 Tahun 2024 Pasal 91 & SOP 05 Layanan Pendapatan Dishub M-PAD V5',
+            'disclaimer' => 'Retribusi Tambat Labuh Pemkot Baubau terbatas pada pemanfaatan dermaga daerah. Dilarang mengintervensi kelaikan laut, sertifikasi keselamatan, dan SPB KSOP.',
+            'data' => $rates,
+        ]);
+    }
+
+    /**
+     * GET /api/parking/kios-jembatan-batu
+     * Daftar 15 Kios Kawasan Terpadu Jembatan Batu & Status Billing Bulanan (Perda 1/2024 Pasal 84).
+     */
+    public function kiosJembatanBatu(Request $request): JsonResponse
+    {
+        $period = $request->input('period', now()->format('Y-m'));
+        $dishubOpdId = DB::table('opds')->where('code', 'DISHUB')->value('id') ?? 1;
+
+        $kiosTenants = [
+            1 => 'Kios Berkah Laut (La Ode Hamdan)',
+            2 => 'Kios Bahari Jaya (Wa Ode Farida)',
+            3 => 'Warung Kopi Dermaga (H. Ruslan)',
+            4 => 'Kios Nelayan Mandiri (Amirudin)',
+            5 => 'Toko Alat Tangkap Ikan (Samsul Bahri)',
+            6 => 'Kios Sembako Pesisir (Wa Ode Murni)',
+            7 => 'Depot Air Minum Pelabuhan (Faisal)',
+            8 => 'Kios Buah & Kudapan (Nurlela)',
+            9 => 'Warung Makan Ibu Sitti (Sitti Rahmah)',
+            10 => 'Kios Pulsa & Tiket Speed (Rizal)',
+            11 => 'Bengkel Mesin Tempel (La Harun)',
+            12 => 'Kios Es Balok Nelayan (Mansur)',
+            13 => 'Toko Perlengkapan Kapal (Basri)',
+            14 => 'Kios Hasil Bumi Antarpulau (Ilyas)',
+            15 => 'Kios Logistik Jembatan Batu (Arfan)',
+        ];
+
+        $existingBills = Bill::where('opd_id', $dishubOpdId)
+            ->where('period', $period)
+            ->whereNotNull('metadata->kios_number')
+            ->get()
+            ->keyBy(fn($b) => $b->metadata['kios_number'] ?? 0);
+
+        $kiosList = [];
+        $totalPaid = 0;
+        $totalPending = 0;
+
+        for ($i = 1; $i <= 15; $i++) {
+            $bill = $existingBills->get($i);
+            $status = $bill ? $bill->status : 'unbilled';
+
+            if ($status === 'paid') {
+                $totalPaid += 120000;
+            } else {
+                $totalPending += 120000;
+            }
+
+            $kiosList[] = [
+                'kios_number' => $i,
+                'kios_code' => 'KIO-JB-' . str_pad($i, 2, '0', STR_PAD_LEFT),
+                'tenant_name' => $kiosTenants[$i] ?? "Tenant Kios #{$i}",
+                'monthly_rate' => 120000,
+                'period' => $period,
+                'bill_status' => $status,
+                'bill_number' => $bill?->bill_number,
+                'due_date' => $bill?->due_date?->toDateString(),
+            ];
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'location' => 'Kawasan Terpadu Pelabuhan Jembatan Batu',
+                'period' => $period,
+                'total_kios' => 15,
+                'monthly_rate_per_kios' => 120000,
+                'total_monthly_potential' => 1800000,
+                'total_paid' => $totalPaid,
+                'total_pending' => $totalPending,
+                'kios_list' => $kiosList,
+            ]
+        ]);
+    }
+
+    /**
+     * POST /api/parking/kios-jembatan-batu/generate-bills
+     * Auto-billing bulanan (e-SKRD) 15 Kios Jembatan Batu (Rp 120.000 / tenant / bulan).
+     */
+    public function generateKiosBills(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'period' => 'nullable|string|regex:/^\d{4}-\d{2}$/',
+        ]);
+
+        $period = $validated['period'] ?? now()->format('Y-m');
+        $user = $request->user();
+        $dishubOpdId = DB::table('opds')->where('code', 'DISHUB')->value('id') ?? 1;
+
+        $retributionTypeId = DB::table('retribution_types')
+            ->where('opd_id', $dishubOpdId)
+            ->value('id') ?? 1;
+
+        $kiosTenants = [
+            1 => ['name' => 'La Ode Hamdan', 'nik' => '7472011001850001', 'business' => 'Kios Berkah Laut'],
+            2 => ['name' => 'Wa Ode Farida', 'nik' => '7472012002880002', 'business' => 'Kios Bahari Jaya'],
+            3 => ['name' => 'H. Ruslan', 'nik' => '7472013003750003', 'business' => 'Warung Kopi Dermaga'],
+            4 => ['name' => 'Amirudin', 'nik' => '7472014004820004', 'business' => 'Kios Nelayan Mandiri'],
+            5 => ['name' => 'Samsul Bahri', 'nik' => '7472015005900005', 'business' => 'Toko Alat Tangkap Ikan'],
+            6 => ['name' => 'Wa Ode Murni', 'nik' => '7472016006870006', 'business' => 'Kios Sembako Pesisir'],
+            7 => ['name' => 'Faisal', 'nik' => '7472017007930007', 'business' => 'Depot Air Minum Pelabuhan'],
+            8 => ['name' => 'Nurlela', 'nik' => '7472018008890008', 'business' => 'Kios Buah & Kudapan'],
+            9 => ['name' => 'Sitti Rahmah', 'nik' => '7472019009840009', 'business' => 'Warung Makan Ibu Sitti'],
+            10 => ['name' => 'Rizal', 'nik' => '7472011010910010', 'business' => 'Kios Pulsa & Tiket Speed'],
+            11 => ['name' => 'La Harun', 'nik' => '7472011111790011', 'business' => 'Bengkel Mesin Tempel'],
+            12 => ['name' => 'Mansur', 'nik' => '7472011212860012', 'business' => 'Kios Es Balok Nelayan'],
+            13 => ['name' => 'Basri', 'nik' => '7472011313830013', 'business' => 'Toko Perlengkapan Kapal'],
+            14 => ['name' => 'Ilyas', 'nik' => '7472011414920014', 'business' => 'Kios Hasil Bumi Antarpulau'],
+            15 => ['name' => 'Arfan', 'nik' => '7472011515940015', 'business' => 'Kios Logistik Jembatan Batu'],
+        ];
+
+        $generated = 0;
+        $skipped = 0;
+        $createdBills = [];
+
+        DB::transaction(function () use ($kiosTenants, $dishubOpdId, $retributionTypeId, $period, $user, &$generated, &$skipped, &$createdBills) {
+            foreach ($kiosTenants as $kiosNo => $tenantData) {
+                // Cek apakah tagihan periode ini sudah ada
+                $existing = Bill::where('opd_id', $dishubOpdId)
+                    ->where('period', $period)
+                    ->where('metadata->kios_number', $kiosNo)
+                    ->first();
+
+                if ($existing) {
+                    $skipped++;
+                    continue;
+                }
+
+                $taxpayer = \App\Models\Taxpayer::withoutGlobalScopes()->firstOrCreate(
+                    [
+                        'opd_id' => $dishubOpdId,
+                        'nik' => $tenantData['nik'],
+                    ],
+                    [
+                        'name' => $tenantData['name'] . ' (' . $tenantData['business'] . ')',
+                        'address' => 'Kompleks Kios Jembatan Batu, Kel. Wale, Kota Baubau',
+                        'is_active' => true,
+                    ]
+                );
+
+                $billNumber = 'SKRD-JB-' . str_replace('-', '', $period) . '-' . str_pad($kiosNo, 2, '0', STR_PAD_LEFT);
+
+                $bill = Bill::create([
+                    'user_id' => $user?->id,
+                    'taxpayer_id' => $taxpayer->id,
+                    'opd_id' => $dishubOpdId,
+                    'retribution_type_id' => $retributionTypeId,
+                    'bill_number' => $billNumber,
+                    'amount' => 120000.00,
+                    'status' => 'pending',
+                    'period' => $period,
+                    'period_start' => $period . '-01',
+                    'period_end' => Carbon::parse($period . '-01')->endOfMonth()->toDateString(),
+                    'due_date' => Carbon::parse($period . '-01')->addDays(20)->toDateString(),
+                    'metadata' => [
+                        'source' => 'dishub_kios_recurring',
+                        'kios_number' => $kiosNo,
+                        'kios_code' => 'KIO-JB-' . str_pad($kiosNo, 2, '0', STR_PAD_LEFT),
+                        'business_name' => $tenantData['business'],
+                        'legal_basis' => 'Perda Baubau No. 1/2024 Pasal 84 ayat (1) huruf i',
+                        'location' => 'Kawasan Terpadu Jembatan Batu',
+                    ],
+                ]);
+
+                $createdBills[] = $bill;
+                $generated++;
+            }
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Auto-billing 15 Kios Jembatan Batu berhasil diproses. {$generated} diterbitkan, {$skipped} sudah ada sebelumnya.",
+            'data' => [
+                'period' => $period,
+                'generated_count' => $generated,
+                'skipped_count' => $skipped,
+                'rate_per_kios' => 120000,
+                'total_billed_amount' => $generated * 120000,
+                'created_bills' => $createdBills,
+            ]
+        ], 201);
     }
 }
 

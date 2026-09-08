@@ -221,6 +221,11 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/admin/gis-heatmap', [\App\Http\Controllers\ParkingController::class, 'gisHeatmap']);
         Route::get('/admin/anomalies', [\App\Http\Controllers\ParkingController::class, 'anomalies']);
         Route::post('/citizen/claim-receipt', [\App\Http\Controllers\ParkingController::class, 'claimReceipt']);
+
+        // Kawasan Terpadu Jembatan Batu & Proxy GT Kepelabuhanan (Perda 1/2024)
+        Route::get('/kios-jembatan-batu', [\App\Http\Controllers\ParkingController::class, 'kiosJembatanBatu']);
+        Route::post('/kios-jembatan-batu/generate-bills', [\App\Http\Controllers\ParkingController::class, 'generateKiosBills']);
+        Route::get('/harbor/proxy-gt-rates', [\App\Http\Controllers\ParkingController::class, 'proxyGtRates']);
     });
     
     // Citizen Service Registration (Shared, but usually for citizens)

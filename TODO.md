@@ -45,7 +45,15 @@ Terakhir diperbarui: 2026-08-03
 - [x] **AFT-API-006** Tambahkan endpoint/status history AFT yang aman untuk mobile: expose status warga (`pending`, `processing`, `success`, `failed`, `cancelled`) tanpa credential, raw bank payload, rekening penuh, signature, atau internal audit fields; sertakan `can_retry/can_cancel` hanya jika API benar-benar mendukungnya.
 - [x] **AFT-API-007** Tambahkan regression test AFT Bank Sultra tanpa credential nyata: readiness gate default-off, merchant ownership, SKDR required, payload Direct Debit/BI-FAST sesuai kontrak terpilih, signature/header builder, responseCode parser, `202` pending, success, failure, timeout, idempotency, dan audit masking. Pastikan test BRIVA SNAP tetap berjalan tanpa perubahan kontrak.
 
+## Digitalisasi Pendapatan Dishub & Milestone M32
+
+- [x] **DISHUB-M32-001** Implementasikan skema Quadruple-Lock: top-up kuota deposit, transaksi tunai `prepaid-cash` dengan auto-deduct 70% RKUD : 30% Jukir, thermal print payload 58mm dengan watermark anti-pungli.
+- [x] **DISHUB-M32-002** Implementasikan modul Proxy GT (Golongan I-IV) untuk estimasi tonase kapal rakyat tanpa intervensi yurisdiksi KSOP (Perda 1/2024 Pasal 91 & SOP 05 Dishub).
+- [x] **DISHUB-M32-003** Implementasikan recurring auto-billing (e-SKRD) 15 Kios Kawasan Jembatan Batu (Rp 120.000 / tenant / bulan, Perda 1/2024 Pasal 84) secara idempoten.
+- [x] **DISHUB-M32-004** Automated feature test suite `DishubQuadrupleLockAndJembatanBatuTest` lulus 100% (13 test cases, 85 assertions).
+
 ## Aturan Lanjutan
 
 - Setelah PAY-002 selesai, perbarui `../WORKBOARD.md`, lalu lanjutkan hanya jika pengguna menginstruksikan.
 - Endpoint atau perubahan schema baru wajib menambahkan/menyesuaikan test yang relevan.
+
