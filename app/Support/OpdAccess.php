@@ -24,9 +24,18 @@ class OpdAccess
             return null;
         }
 
-        $codes = RetributionClassification::where('opd_id', $user->opd_id)
-            ->where('is_active', 1)
-            ->orderBy('code')
+        $query = RetributionClassification::where(function ($q) use ($user) {
+            $q->where('opd_id', $user->opd_id)
+              ->orWhereHas('retributionType', function ($tq) use ($user) {
+                  $tq->where('opd_id', $user->opd_id);
+              });
+        });
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('retribution_classifications', 'is_active')) {
+            $query->where('is_active', 1);
+        }
+
+        $codes = $query->orderBy('code')
             ->pluck('code')
             ->values()
             ->all();
