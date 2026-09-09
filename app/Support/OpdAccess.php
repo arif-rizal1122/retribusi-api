@@ -53,8 +53,9 @@ class OpdAccess
                 'pbb'      => in_array('PBB-P2', $codes, true),
                 'bphtb'    => in_array('BPHTB', $codes, true),
                 'aset'     => (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'JU-ASET') || $startsWith($c, 'AS-') || $c === 'JU-PROD'),
-                'ptsp'     => (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'PZ-')),
-                'rekreasi' => in_array('JU-REK', $codes, true),
+                'ptsp'      => (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'PZ-')),
+                'rekreasi'  => in_array('JU-REK', $codes, true),
+                'perikanan' => in_array('JU-PEL', $codes, true) || (int) $user->opd_id === 12,
             ],
         ];
     }

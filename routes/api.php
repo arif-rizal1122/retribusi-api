@@ -659,6 +659,22 @@ Route::post('/auto-deduct/webhook', [\App\Http\Controllers\AutoDeductWebhookCont
     ->middleware('auto_deduct_access:webhook');
 
 // ------------------------------------------------------------------------
+// MODUL TEMPAT PELELANGAN IKAN (TPI) & DINAS PERIKANAN (Perda 1/2024)
+// Rujukan: 01_Dokumen_Arsitektur_Teknis_dan_Roadmap_TPI_MPAD.pdf & Dokumen (172/173)
+// ------------------------------------------------------------------------
+Route::get('/tpi/verify/{ntpd}', [\App\Http\Controllers\Api\TpiTransactionController::class, 'verifyPublic']);
+
+Route::middleware('auth:sanctum')->prefix('tpi')->group(function () {
+    Route::get('/transactions', [\App\Http\Controllers\Api\TpiTransactionController::class, 'index']);
+    Route::post('/transactions', [\App\Http\Controllers\Api\TpiTransactionController::class, 'store']);
+    Route::get('/transactions/{id}', [\App\Http\Controllers\Api\TpiTransactionController::class, 'show']);
+    Route::post('/transactions/{id}/settle', [\App\Http\Controllers\Api\TpiTransactionController::class, 'settlePayment']);
+    Route::get('/daily-summary', [\App\Http\Controllers\Api\TpiTransactionController::class, 'dailySummary']);
+    Route::get('/cross-pbjt-stats', [\App\Http\Controllers\Api\TpiTransactionController::class, 'crossPbjtStats']);
+});
+
+// ------------------------------------------------------------------------
 // DEPLOY HOOK (Staging only - protected by X-Deploy-Secret header)
 // ------------------------------------------------------------------------
 Route::post('/admin/deploy-hook', [\App\Http\Controllers\Admin\DeployHookController::class, 'handle']);
+

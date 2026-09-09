@@ -87,37 +87,41 @@ class TpiWameoSeeder extends Seeder
             ];
         }
 
-        // 3. Update form_schema
+        // 3. Update form_schema: Citizen-Centric untuk pendaftaran Unit Objek (Kapal / Usaha Perikanan)
+        // Parameter operasional harian kasir lelang (timbangan, keranjang, pas masuk, meja sortir, dsb)
+        // dikelola via modul kasir retribusi-petugas (TPI Cashier), BUKAN diisi warga saat pendaftaran objek.
         $newSchema = [
             [
-                'key' => 'nama_pengguna',
+                'key' => 'nomor_kusuka',
                 'type' => 'text',
-                'label' => 'Nama Pemohon / Pengguna Jasa',
-                'required' => true
+                'label' => 'Nomor KUSUKA / Pas Kecil Kapal',
+                'required' => false,
+                'placeholder' => 'Contoh: KUSUKA-747201-XXXX atau No. Pas Kecil'
             ],
             [
-                'key' => 'jenis_layanan',
+                'key' => 'ukuran_gt',
+                'type' => 'number',
+                'label' => 'Kapasitas Kapal (Gross Tonnage / GT)',
+                'required' => false,
+                'placeholder' => 'Contoh: 5'
+            ],
+            [
+                'key' => 'jenis_usaha',
                 'type' => 'select',
-                'label' => 'Jenis Fasilitas / Layanan',
+                'label' => 'Jenis Kegiatan / Armada Perikanan',
                 'required' => true,
-                'options' => $options
-            ],
-            [
-                'key' => 'kuantitas',
-                'type' => 'number',
-                'label' => 'Kuantitas (Sesuai Satuan Volume/Berat/Area)',
-                'required' => true
-            ],
-            [
-                'key' => 'durasi',
-                'type' => 'number',
-                'label' => 'Durasi (Jam/Hari/Bulan) - Kosongkan jika tidak berlaku',
-                'required' => false
+                'options' => [
+                    ['value' => 'kapal_penangkap', 'label' => 'Kapal Penangkap Ikan'],
+                    ['value' => 'kapal_pengangkut', 'label' => 'Kapal Pengangkut Ikan'],
+                    ['value' => 'pedagang_pengepul', 'label' => 'Pedagang Ikan / Pengepul'],
+                    ['value' => 'pengolahan_maritim', 'label' => 'Pengolahan Ikan / Kios Maritim'],
+                    ['value' => 'armada_lain', 'label' => 'Armada Angkut / Jasa Maritim Lainnya'],
+                ]
             ]
         ];
 
         $classification->form_schema = $newSchema;
-        $classification->calculation_formula = 'kuantitas * rate_amount * (durasi > 0 ? durasi : 1)';
+        $classification->calculation_formula = null;
         $classification->save();
 
         $this->command->info('Successfully updated TPI (Tempat Pelelangan Ikan) with Perda 1/2024 rates!');
