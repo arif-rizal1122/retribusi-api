@@ -9,6 +9,7 @@ use App\Models\ParkingSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
@@ -20,11 +21,15 @@ class ParkingController extends Controller
      */
     public function locations(Request $request): JsonResponse
     {
+        if (!Schema::hasTable('parking_locations')) {
+            return response()->json(['data' => []]);
+        }
+
         $query = ParkingLocation::active()->with('opd:id,name', 'classification:id,name,code');
 
         // Scope ke OPD user jika bukan super_admin
         $user = $request->user();
-        if ($user->role !== 'super_admin' && $user->opd_id) {
+        if ($user && $user->role !== 'super_admin' && $user->opd_id) {
             $query->forOpd($user->opd_id);
         }
 
@@ -138,6 +143,13 @@ class ParkingController extends Controller
      */
     public function shiftSummary(Request $request): JsonResponse
     {
+        if (!Schema::hasTable('jukir_wallets')) {
+            return response()->json([
+                'data' => null,
+                'message' => 'Tabel jukir_wallets belum dimigrasi.',
+            ]);
+        }
+
         $user = $request->user();
         $today = now()->toDateString();
 
@@ -150,12 +162,15 @@ class ParkingController extends Controller
             ]);
         }
 
-        $sessions = ParkingSession::forJukir($user->id)
-            ->whereDate('shift_date', $today)
-            ->completed()
-            ->with('parkingLocation:id,name,code')
-            ->orderByDesc('created_at')
-            ->get();
+        $sessions = collect();
+        if (Schema::hasTable('parking_sessions')) {
+            $sessions = ParkingSession::forJukir($user->id)
+                ->whereDate('shift_date', $today)
+                ->completed()
+                ->with('parkingLocation:id,name,code')
+                ->orderByDesc('created_at')
+                ->get();
+        }
 
         return response()->json([
             'data' => [
@@ -309,7 +324,15 @@ class ParkingController extends Controller
         $isExpired = now()->gt($stExpiredAt);
         $daysRemaining = (int)now()->diffInDays($stExpiredAt, false);
 
-        $wallet = JukirWallet::forUser($user->id)->whereDate('shift_date', $today)->first();
+        $wallet = null;
+        if (Schema::hasTable('jukir_wallets')) {
+            $wallet = JukirWallet::forUser($user->id)->whereDate('shift_date', $today)->first();
+        }
+
+        $assignedLocation = null;
+        if (Schema::hasTable('parking_locations')) {
+            $assignedLocation = ParkingLocation::find($wallet?->parking_location_id ?? 1);
+        }
 
         return response()->json([
             'status' => 'success',
@@ -325,7 +348,7 @@ class ParkingController extends Controller
                 'deposit_balance' => $depositBalance,
                 'split_rkud_percent' => 70.00,
                 'split_jukir_percent' => 30.00,
-                'assigned_location' => ParkingLocation::find($wallet?->parking_location_id ?? 1),
+                'assigned_location' => $assignedLocation,
                 'shift_status' => $wallet?->shift_status ?? 'closed',
             ]
         ]);
@@ -895,7 +918,10 @@ class ParkingController extends Controller
         $token = $validated['receipt_token'];
 
         // Cek sesi
-        $session = ParkingSession::where('receipt_token', $token)->first();
+        $session = null;
+        if (Schema::hasTable('parking_sessions')) {
+            $session = ParkingSession::where('receipt_token', $token)->first();
+        }
 
         // Poin reward & undian
         $pointsEarned = 10;
@@ -1049,11 +1075,24 @@ class ParkingController extends Controller
 
         $period = $validated['period'] ?? now()->format('Y-m');
         $user = $request->user();
-        $dishubOpdId = DB::table('opds')->where('code', 'DISHUB')->value('id') ?? 1;
+        $dishubOpdId = DB::table('opds')->where('code', 'DISHUB')->value('id') ?? 2;
 
-        $retributionTypeId = DB::table('retribution_types')
+        $retributionType = \App\Models\RetributionType::withoutGlobalScopes()
             ->where('opd_id', $dishubOpdId)
-            ->value('id') ?? 1;
+            ->first();
+
+        if (!$retributionType) {
+            $retributionType = \App\Models\RetributionType::withoutGlobalScopes()->create([
+                'opd_id' => $dishubOpdId,
+                'name' => 'Retribusi Pemanfaatan Kios Jembatan Batu',
+                'category' => 'Retribusi Jasa Usaha',
+                'billing_cycle' => 'monthly',
+                'base_amount' => 120000.00,
+                'is_active' => true,
+            ]);
+        }
+
+        $retributionTypeId = $retributionType->id;
 
         $kiosTenants = [
             1 => ['name' => 'La Ode Hamdan', 'nik' => '7472011001850001', 'business' => 'Kios Berkah Laut'],

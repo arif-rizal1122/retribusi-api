@@ -21,9 +21,18 @@ class TaxpayerController extends Controller
         $user = $request->user();
         $query = Taxpayer::with(['opd', 'retributionTypes', 'retributionClassifications', 'creator', 'taxObjects']);
 
-        // Admin OPD and Petugas only see their own OPD's taxpayers
+        // Admin OPD and Petugas see their own OPD's taxpayers, unassigned taxpayers, or taxpayers who have objects/retributions in their OPD
         if ($user && in_array($user->role, ['opd', 'petugas'])) {
-            $query->where('opd_id', $user->opd_id);
+            $query->where(function ($q) use ($user) {
+                $q->where('opd_id', $user->opd_id)
+                  ->orWhereNull('opd_id')
+                  ->orWhereHas('taxObjects', function ($to) use ($user) {
+                      $to->where('opd_id', $user->opd_id);
+                  })
+                  ->orWhereHas('retributionTypes', function ($rt) use ($user) {
+                      $rt->where('retribution_types.opd_id', $user->opd_id);
+                  });
+            });
 
             // If petugas, further filter by assigned retribution types and created_by
             if ($user->role === 'petugas') {
@@ -234,9 +243,33 @@ class TaxpayerController extends Controller
     {
         $user = $request->user();
 
-        // All non-super-admins (OPD, Petugas) can only view their own OPD's taxpayers
-        if (!$user->isSuperAdmin() && $taxpayer->opd_id !== $user->opd_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        // City-wide roles that have global read access to taxpayers
+        $isGlobalReader = $user->isSuperAdmin() 
+            || in_array($user->role, ['admin', 'kepala_bapenda', 'walikota', 'verifikator'])
+            || $user->isPengawas();
+
+        if (!$isGlobalReader) {
+            $hasAccess = false;
+
+            // 1. Same OPD or unassigned taxpayer (public / citizen registration)
+            if ($taxpayer->opd_id === null || (int)$taxpayer->opd_id === (int)$user->opd_id) {
+                $hasAccess = true;
+            }
+
+            // 2. Taxpayer owns tax objects administered by user's OPD
+            if (!$hasAccess && $user->opd_id) {
+                $hasAccess = $taxpayer->taxObjects()->where('opd_id', $user->opd_id)->exists()
+                    || $taxpayer->retributionTypes()->where('retribution_types.opd_id', $user->opd_id)->exists();
+            }
+
+            // 3. Petugas created this taxpayer
+            if (!$hasAccess && $user->role === 'petugas' && $taxpayer->created_by === $user->id) {
+                $hasAccess = true;
+            }
+
+            if (!$hasAccess) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
         }
 
         $relatedAssets = [];
@@ -281,9 +314,26 @@ class TaxpayerController extends Controller
         $user = $request->user();
         $cloudinary = app(\App\Services\CloudinaryService::class);
 
-        // All non-super-admins can only update their own OPD's taxpayers
-        if ($user->role !== 'super_admin' && $taxpayer->opd_id !== $user->opd_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        $isGlobalEditor = $user->isSuperAdmin() 
+            || in_array($user->role, ['admin', 'kepala_bapenda']);
+
+        if (!$isGlobalEditor) {
+            $hasAccess = false;
+
+            // 1. Same OPD or unassigned taxpayer (claiming / updating unassigned taxpayer)
+            if ($taxpayer->opd_id === null || (int)$taxpayer->opd_id === (int)$user->opd_id) {
+                $hasAccess = true;
+            }
+
+            // 2. Taxpayer owns tax objects administered by user's OPD
+            if (!$hasAccess && $user->opd_id) {
+                $hasAccess = $taxpayer->taxObjects()->where('opd_id', $user->opd_id)->exists()
+                    || $taxpayer->retributionTypes()->where('retribution_types.opd_id', $user->opd_id)->exists();
+            }
+
+            if (!$hasAccess) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
         }
 
         try {

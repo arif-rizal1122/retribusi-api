@@ -44,18 +44,26 @@ class OpdAccess
 
         $startsWith = static fn (string $c, string $prefix): bool => str_starts_with($c, $prefix);
 
+        $isDishubAset = in_array($user->role, ['admin_aset_dishub', 'dishub_aset'], true)
+            || in_array(($user->metadata['role_code'] ?? null), ['admin_aset_dishub', 'dishub_aset'], true)
+            || str_contains(strtolower($user->email ?? ''), 'aset.dishub');
+
+        $hasAset = (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'JU-ASET') || $startsWith($c, 'AS-') || $c === 'JU-PROD') || $isDishubAset;
+
         return [
             'opd_id' => (int) $user->opd_id,
-            'has_owned_service' => count($codes) > 0,
+            'has_owned_service' => count($codes) > 0 || $isDishubAset,
             'codes' => $codes,
             'has_sector_mapping' => $hasSectorMapping,
             'flags' => [
-                'pbb'      => in_array('PBB-P2', $codes, true),
-                'bphtb'    => in_array('BPHTB', $codes, true),
-                'aset'     => (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'JU-ASET') || $startsWith($c, 'AS-') || $c === 'JU-PROD'),
-                'ptsp'      => (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'PZ-')),
-                'rekreasi'  => in_array('JU-REK', $codes, true),
-                'perikanan' => in_array('JU-PEL', $codes, true) || (int) $user->opd_id === 12,
+                'pbb'         => in_array('PBB-P2', $codes, true),
+                'bphtb'       => in_array('BPHTB', $codes, true),
+                'aset'        => $hasAset,
+                'ptsp'        => (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'PZ-')),
+                'rekreasi'    => in_array('JU-REK', $codes, true),
+                'perikanan'   => in_array('JU-PEL', $codes, true) || (int) $user->opd_id === 12,
+                'dishub'      => (int) $user->opd_id === 2,
+                'dishub_aset' => $isDishubAset,
             ],
         ];
     }

@@ -274,7 +274,107 @@ Untuk menjamin prinsip **High Availability (99.9% uptime)** serta zero data loss
 
 ---
 
-## 13. Dokumen Rujukan Khusus Sektor & OPD
+## 13. Standar Penyusunan & Ergonomi Sidebar Admin Multi-OPD (Segregation of Duties)
 
+Sistem M-PAD Kota Baubau mengadopsi prinsip **Segregation of Duties (SoD)** dan antarmuka *Role-Tailored UX*. Admin OPD teknis bukanlah admin Bapenda; antarmuka setiap dinas disusun secara presisi mencerminkan layanan yang diampu berdasarkan Perda No. 1 Tahun 2024 tanpa kebocoran modul dinas lain.
+
+### A. Prinsip Dasar Penyusunan Sidebar OPD
+1. **Isolasi Mutlak Modul Fiskal (Zero-Leakage SoD)**:
+   - Modul perpajakan daerah Bapenda (PBB-P2, BPHTB, 9 Pajak PBJT, Pajak Reklame, SPTPD Mandiri, dan Rekonsiliasi Perbankan Makro) **dilarang keras** tampil di sidebar OPD teknis.
+   - OPD teknis hanya mengelola **Retribusi Jasa Umum, Jasa Usaha, dan Perizinan Tertentu** yang menjadi kewenangan fungsionalnya.
+2. **Kaidah Ergonomi & Redaksi Ringkas (Human-Centric Copywriting)**:
+   - Hindari label yang panjang, berulang, atau memuat akronim teknis di dalam tanda kurung `(...)` pada sidebar utama.
+   - *Contoh Perbaikan Redaksi:*
+     - `Peta Sebaran Parkir (GIS)` $\rightarrow$ **`Peta Parkir`**
+     - `Deteksi Kebocoran (EWS)` $\rightarrow$ **`Deteksi Kebocoran`**
+     - `Tarif Sandar (Proxy GT)` $\rightarrow$ **`Tarif Sandar Kapal`**
+     - `Verifikasi & Validasi Data` $\rightarrow$ **`Verifikasi Data`**
+     - `Laporan Realisasi PAD` $\rightarrow$ **`Laporan PAD`**
+     - `Master Data Retribusi` $\rightarrow$ **`Master Tarif`**
+3. **Struktur Arsitektur 6–7 Rumpun Standar**:
+   - `Utama`: Berisi Dashboard eksekutif spesifik dinas (bukan dashboard generic).
+   - `Rumpun Layanan Inti 1`: Layanan retribusi jasa umum utama dinas.
+   - `Rumpun Layanan Inti 2`: Pemanfaatan sarana/aset kekayaan daerah milik dinas.
+   - `Rumpun Layanan Pendukung/Khusus`: Unit pelaksana teknis (Dermaga, Balai Benih, Laboratorium, dsb.).
+   - `Pengawasan`: Modul uji petik lapangan, tim patroli/lapangan, dan deteksi anomali.
+   - `Data & Laporan`: Subjek retribusi dinas (wajib retribusi/pedagang/nelayan), ketetapan e-SKRD, verifikasi data, laporan realisasi, dan master tarif.
+   - `Bantuan`: Panduan SOP, unduh aplikasi mobile petugas, dan informasi aplikasi.
+
+---
+
+### B. Studi Kasus 1: Dinas Perhubungan (DISHUB Kota Baubau — OPD ID 2)
+*Dasar Regulasi: Perda No. 1/2024 Pasal 78 (TJU), Pasal 88 (TKP), Pasal 84 ayat (1) huruf i (Kios Jembatan Batu), & Pasal 91 (Jasa Kepelabuhanan).*
+
+| Rumpun Sidebar | Label Menu | Path URL | Penjelasan Fungsional & Keterkaitan Regulasi |
+| :--- | :--- | :--- | :--- |
+| **Utama** | **`Dashboard`** | `/dishub/dashboard` | Command center Dishub: Real-time Kasda 70%, Wallet Jukir 30%, okupansi dermaga. |
+| **Layanan Parkir** | **`Titik Parkir`** | `/tax-objects` | Inventarisasi ruas jalan TJU dan lokasi Tempat Khusus Parkir (TKP). |
+| | **`Juru Parkir`** | `/dishub/dashboard?tab=jukir` | Manajemen mitra jukir resmi, kuota deposit pre-paid, dan cetak kartu QR rompi. |
+| | **`Peta Parkir`** | `/dishub/dashboard?tab=gis` | WebGIS sebaran titik parkir dengan indikator warna status hijau/kuning/merah. |
+| | **`Bagi Hasil 70:30`** | `/dishub/dashboard?tab=split` | Monitoring split transaksi otomatis: 70% RKUD Kasda dan 30% Jasa Jukir. |
+| | **`Deteksi Kebocoran`** | `/dishub/dashboard?tab=ews` | Early Warning System (EWS) anomali titik nol (Kotamara, Wameo, dsb.). |
+| **Jembatan Batu** | **`Kios Pelabuhan`** | `/dishub/dashboard?tab=kios` | Recurring auto-billing e-SKRD 15 Kios Jembatan Batu (Rp 120.000 / unit / bulan). |
+| | **`Penitipan Inap`** | `/dishub/dashboard?tab=kios` | Retribusi pelataran penitipan inap kendaraan bermotor/truk (Rp 25.000/malam). |
+| **Kepelabuhanan** | **`Dermaga Sandar`** | `/dishub/dashboard?tab=pelabuhan` | Monitoring 4 dermaga sandar rakyat (Jembatan Batu, Wameo, Kamali, Bungi). |
+| | **`Tarif Sandar Kapal`** | `/dishub/dashboard?tab=proxy_gt` | Klasifikasi kapal tradisional via Proxy GT (Golongan I <5 GT s.d. IV >20 GT). |
+| **Pengawasan** | **`Uji Petik`** | `/spot-checks` | Jadwal dan pelaksanaan sidak lapangan Tim Satgas Wasdal (Dishub + Satpol PP). |
+| | **`Patroli Lapangan`** | `/tasks` | Penugasan bergerak dan tracking patroli petugas Dishub di lapangan. |
+| **Data & Laporan** | **`Wajib Retribusi`** | `/taxpayers` | Basis data penyewa kios, operator parkir, dan pemilik armada pelabuhan. |
+| | **`Ketetapan e-SKRD`** | `/billing` | Penerbitan dan pencatatan ketetapan SKRD retribusi perhubungan. |
+| | **`Verifikasi Data`** | `/verification` | Verifikasi dokumen pengajuan izin titik parkir atau sewa kios. |
+| | **`Laporan PAD`** | `/reporting` | Laporan realisasi penerimaan kasda sektor perhubungan. |
+| | **`Master Tarif`** | `/master-data` | Tabel tarif resmi Perda 1/2024 sektor perhubungan. |
+| **Bantuan** | **`Panduan SOP`** | `/user-guide` | SOP operasional jukir wallet, cetak thermal 58mm, dan penagihan dermaga. |
+| | **`Unduh Aplikasi`** | `/download` | Tautan instalasi APK mobile petugas lapangan Dishub. |
+| | **`Tentang`** | `/about` | Informasi arsitektur M-PAD V5 Kota Baubau. |
+
+---
+
+### C. Studi Kasus 2: Dinas Perikanan (DISKAN Kota Baubau — OPD ID 10 / 12)
+*Dasar Regulasi: Perda No. 1/2024 tentang Retribusi Pelelangan Ikan, Pemanfaatan Aset TPI, dan Balai Benih Ikan.*
+
+| Rumpun Sidebar | Label Menu | Path URL | Penjelasan Fungsional & Keterkaitan Regulasi |
+| :--- | :--- | :--- | :--- |
+| **Utama** | **`Dashboard`** | `/perikanan/dashboard` | Monitoring tonase lelang TPI Wameo, okupansi tambatan perahu, dan aset pendingin. |
+| **Layanan Pelelangan TPI** | **`Lelang Harian Ikan`** | `/perikanan/dashboard?tab=monitoring` | Pencatatan transaksi lelang hasil laut, volume ikan masuk, dan rincian retribusi lelang. |
+| | **`Kasir & Setoran Lelang`** | `/perikanan/dashboard?tab=reconciliation` | Rekonsiliasi setoran tunai kasir TPI dan settlement H2H RKUD Bank Sultra. |
+| | **`Armada & Objek Nelayan`** | `/tax-objects` | Basis data kapal nelayan, bobot GT perahu, dan status kepemilikan alat tangkap. |
+| **Sarana & Aset TPI** | **`Cold Storage & Kios Ikan`** | `/perikanan/dashboard?tab=assets` | Pengelolaan sewa fasilitas pendingin (Cold Storage/ABF), es balok, dan 10 kios ikan. |
+| **Balai Benih (BBI)** | **`Balai Benih Ikan (BBI)`** | `/perikanan/dashboard?tab=bbi` | Retribusi penyediaan dan penjualan bibit ikan air tawar/payau binaan dinas. |
+| **Pengawasan Perikanan** | **`Sinergi Restoran`** | `/perikanan/dashboard?tab=intelligence` | Uji silang (*cross-reference*) pasokan ikan TPI terhadap omzet restoran PBJT makanan. |
+| | **`Uji Petik TPI`** | `/spot-checks` | Uji petik timbangan dan volume transaksi lelang riil di dermaga TPI. |
+| | **`Petugas Lapangan`** | `/tasks` | Penugasan juru lelang, pengawas mutu, dan petugas kebersihan TPI. |
+| **Data & Laporan** | **`Wajib Retribusi Nelayan`** | `/taxpayers` | Data nelayan terdaftar, pengusaha kapal, dan pedagang ikan TPI. |
+| | **`Ketetapan e-SKRD`** | `/billing` | Penerbitan e-SKRD sewa cold storage, kios TPI, dan retribusi lelang. |
+| | **`Verifikasi Kapal & Dokumen`**| `/verification` | Verifikasi dokumen pas kecil, surat tanda lapor perikanan, dan kelaikan cold storage. |
+| | **`Laporan PAD TPI`** | `/reporting` | Laporan penerimaan PAD sektor kelautan dan perikanan. |
+| | **`Master Tarif Perda Perikanan`**| `/master-data` | Master tarif retribusi pelelangan, sewa sarana TPI, dan bibit BBI. |
+| **Bantuan** | **`Panduan SOP`** | `/user-guide` | SOP operasional pelelangan ikan dan pengelolaan aset pendingin. |
+| | **`Unduh Aplikasi`** | `/download` | Unduh aplikasi juru lelang dan pencatat hasil laut mobile. |
+| | **`Tentang`** | `/about` | Keterangan versi modul perikanan M-PAD. |
+
+---
+
+### D. Protokol Implementasi Frontend (`retribusi-admin`)
+Untuk memastikan penyusunan sidebar berjalan tanpa kebocoran:
+1. **Helper Deteksi Robust (`roleUtils.ts`)**:
+   Pengecekan tidak boleh hanya mengandalkan satu atribut string `user.role === 'opd'`, melainkan memeriksa kombinasi:
+   - `user.role_code` & `user.metadata.role_code`
+   - `user.opd.code` & `user.opd.name` (menggunakan `includes()`)
+   - `user.opd_id` & `user.access.opd_id`
+   - Pola alamat email instansi (`admin.dishub@...`, `admin.dinas_perikanan@...`).
+2. **Isolasi Menu Dedicated (`Layout.tsx`)**:
+   Susun percabangan menu dengan ternary operator terpisah (`isDishub ? [...] : isPerikanan ? [...] : isPariwisata ? [...] : ...`).
+3. **Proteksi Custom Labels (`filteredMenu`)**:
+   Pastikan mapper `filteredMenu` tidak menimpa (*override*) label yang sudah dirancang spesifik untuk Dishub atau Perikanan menjadi label generik.
+4. **Landing Redirection (`App.tsx`)**:
+   Setiap admin dinas otomatis diarahkan ke URL dashboard spesifiknya saat login (`/dishub/dashboard` untuk Dishub, `/perikanan/dashboard` untuk Dinas Perikanan).
+
+---
+
+## 14. Dokumen Rujukan Khusus Sektor & OPD
+
+- **Panduan Desain & Studi Kasus Sidebar Multi-OPD (Dishub & Diskan)**:
+  Lihat [sidebar_opd_case_studies.md](file:///Users/pondokit/Herd/retribusi-api/.agent/skills/service_performance_audit/references/sidebar_opd_case_studies.md) untuk panduan mendalam mengenai arsitektur 7 rumpun baku, kaidah copywriting ringkas, serta cuplikan kode implementasi frontend TypeScript.
 - **Dinas Perhubungan (Dishub / OPD ID 2)**:
   Lihat [dishub_opd2_blueprint.md](file:///Users/pondokit/Herd/retribusi-api/.agent/skills/service_performance_audit/references/dishub_opd2_blueprint.md) untuk analisis komprehensif implementasi M-PAD V5 mencakup EWS Parkir (Red Channel > 35%), Google Gemini Sparks Briefing Kepelabuhanan/Parkir, Hermes SRE antrean jukir, serta pengawalan Milestone 32 (M32) Leantime PMO.
