@@ -309,13 +309,40 @@ class AdminAssetController extends Controller
     public function items(Request $request)
     {
         $query = AssetItem::with('category:id,name,slug')->with('opd:id,name');
+
+        if ($request->filled('search')) {
+            $term = '%' . $request->input('search') . '%';
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', $term)
+                  ->orWhere('code', 'like', $term)
+                  ->orWhere('merk_type', 'like', $term)
+                  ->orWhere('spesifikasi', 'like', $term)
+                  ->orWhere('lokasi', 'like', $term);
+            });
+        }
+
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->input('category_id'));
         }
-        if ($request->filled('status')) {
+
+        if ($request->filled('category_slug')) {
+            $slug = $request->input('category_slug');
+            $query->whereHas('category', function ($q) use ($slug) {
+                $q->where('slug', $slug);
+            });
+        }
+
+        if ($request->filled('status') && $request->input('status') !== 'all') {
             $query->where('status_operasional', $request->input('status'));
         }
-        $items = $query->orderBy('name')->paginate($request->input('per_page', 20));
+
+        $perPage = $request->input('per_page', 50);
+        if ($perPage == -1 || $perPage === 'all') {
+            $items = $query->orderBy('category_id')->orderBy('name')->get();
+            return response()->json(['data' => $items]);
+        }
+
+        $items = $query->orderBy('category_id')->orderBy('name')->paginate((int)$perPage);
         return response()->json($items);
     }
 
@@ -346,7 +373,7 @@ class AdminAssetController extends Controller
         $item->update($request->only([
             'category_id', 'name', 'code', 'merk_type', 'spesifikasi', 'kondisi',
             'status_operasional', 'lokasi', 'pic', 'tarif_default', 'satuan_tarif',
-            'opd_id', 'is_active', 'is_demo',
+            'wajib_tronton', 'opd_id', 'is_active', 'is_demo',
         ]));
         return response()->json(['message' => 'Unit aset diperbarui.', 'data' => $item]);
     }

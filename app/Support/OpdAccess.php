@@ -48,11 +48,14 @@ class OpdAccess
             || in_array(($user->metadata['role_code'] ?? null), ['admin_aset_dishub', 'dishub_aset'], true)
             || str_contains(strtolower($user->email ?? ''), 'aset.dishub');
 
+        $isPupr = (int) $user->opd_id === 9 || str_contains(strtolower($user->email ?? ''), 'pupr');
+
         $isPuprAset = in_array($user->role, ['admin_aset_pupr', 'pupr_aset', 'admin_pupr_aset'], true)
             || in_array(($user->metadata['role_code'] ?? null), ['admin_aset_pupr', 'pupr_aset', 'admin_pupr_aset'], true)
-            || str_contains(strtolower($user->email ?? ''), 'aset.pupr');
+            || str_contains(strtolower($user->email ?? ''), 'aset.pupr')
+            || $isPupr;
 
-        $hasAset = (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'JU-ASET') || $startsWith($c, 'AS-') || $c === 'JU-PROD') || $isDishubAset || $isPuprAset;
+        $hasAset = (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'JU-ASET') || $startsWith($c, 'AS-') || $c === 'JU-PROD') || $isDishubAset || $isPuprAset || $isPupr;
 
         return [
             'opd_id' => (int) $user->opd_id,
