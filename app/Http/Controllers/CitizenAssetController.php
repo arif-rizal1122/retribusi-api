@@ -67,6 +67,10 @@ class CitizenAssetController extends Controller
                 'lokasi' => $i->lokasi,
                 'tarif' => (float) $i->tarif_default,
                 'satuan_tarif' => $i->satuan_tarif,
+                'image_url' => $i->image_url,
+                'pic' => $i->pic,
+                'wajib_tronton' => (bool) $i->wajib_tronton,
+                'metadata' => $i->metadata,
                 'is_demo' => $i->is_demo,
                 'category' => $i->category?->name,
             ]);
@@ -138,6 +142,14 @@ class CitizenAssetController extends Controller
             'include_tronton' => 'nullable|boolean',
             'jarak_tronton_km' => 'nullable|numeric|min:0',
             'biaya_tronton' => 'nullable|numeric|min:0',
+            // Simple Sedot Kakus Google Form fields per Perda 1/2024
+            'nama_konsumen' => 'nullable|string',
+            'jenis_bangunan' => 'nullable|string',
+            'jumlah_rit' => 'nullable|integer|min:1',
+            'kelurahan' => 'nullable|string',
+            'pelaksana_armada' => 'nullable|string',
+            'foto_lokasi' => 'nullable|string',
+            'bukti_pembayaran_manual' => 'nullable|string',
         ]);
 
         $user = $request->user();
@@ -224,14 +236,45 @@ class CitizenAssetController extends Controller
                 }
             }
 
-            $totalBiaya = ($days * $tarifPerSatuan) + $biayaTronton;
+            $isSedotKakus = str_starts_with($asset->code ?? '', 'SK-')
+                || str_contains(strtolower($asset->name ?? ''), 'tinja')
+                || str_contains(strtolower($asset->name ?? ''), 'kakus')
+                || str_contains(strtolower($satuanSewa), 'rit');
+
+            if ($isSedotKakus && !empty($validated['jumlah_rit'])) {
+                $rit = (int) $validated['jumlah_rit'];
+                $totalBiaya = $rit * $tarifPerSatuan;
+                $days = 1;
+                $satuanSewa = 'per rit';
+            } else {
+                $totalBiaya = ($days * $tarifPerSatuan) + $biayaTronton;
+            }
+
             $dp = (float) ($validated['dp'] ?? 0);
             $sisaPembayaran = max(0, $totalBiaya - $dp);
 
             $asetType = $this->jasaUsahaType();
             $asetClassification = $this->jasaUsahaClassification();
 
-            $rentalCode = 'AST-' . now()->format('Ym') . '-' . strtoupper(Str::random(5));
+            $prefix = $isSedotKakus ? 'KKS-' : 'AST-';
+            $rentalCode = $prefix . now()->format('Ym') . '-' . strtoupper(Str::random(5));
+
+            $metadata = [
+                'source' => 'citizen_submission',
+                'item_code' => $asset->code,
+                'is_wajib_tronton' => $isWajibTronton,
+            ];
+
+            if ($isSedotKakus) {
+                $metadata['is_sedot_kakus'] = true;
+                $metadata['nama_konsumen'] = $validated['nama_konsumen'] ?? ($user->name ?? 'Konsumen');
+                $metadata['jenis_bangunan'] = $validated['jenis_bangunan'] ?? 'Rumah Tinggal';
+                $metadata['jumlah_rit'] = (int) ($validated['jumlah_rit'] ?? 1);
+                $metadata['kelurahan'] = $validated['kelurahan'] ?? null;
+                $metadata['pelaksana_armada'] = $validated['pelaksana_armada'] ?? null;
+                $metadata['foto_lokasi'] = $validated['foto_lokasi'] ?? null;
+                $metadata['bukti_pembayaran_manual'] = $validated['bukti_pembayaran_manual'] ?? null;
+            }
 
             $rental = AssetRental::create([
                 'rental_code' => $rentalCode,
@@ -255,9 +298,9 @@ class CitizenAssetController extends Controller
                 'status' => 'Diajukan',
                 'lokasi_penggunaan' => $validated['lokasi_penggunaan'],
                 'koordinat' => $validated['koordinat'] ?? null,
-                'jenis_pekerjaan' => $validated['jenis_pekerjaan'] ?? null,
-                'luas_volume' => $validated['luas_volume'] ?? null,
-                'nama_proyek' => $validated['nama_proyek'] ?? null,
+                'jenis_pekerjaan' => $validated['jenis_pekerjaan'] ?? ($isSedotKakus ? 'Penyedotan Kakus / Tinja' : null),
+                'luas_volume' => $validated['luas_volume'] ?? ($isSedotKakus ? ($validated['jumlah_rit'] ?? 1) . ' Rit' : null),
+                'nama_proyek' => $validated['nama_proyek'] ?? ($isSedotKakus ? 'Layanan Sedot Kakus ' . ($validated['jenis_bangunan'] ?? '') : null),
                 'nomor_spk' => $validated['nomor_spk'] ?? null,
                 'penyelia' => $validated['penyelia'] ?? null,
                 'hp_penyelia' => $validated['hp_penyelia'] ?? null,
@@ -266,11 +309,7 @@ class CitizenAssetController extends Controller
                 'operator_sim' => $validated['operator_sim'] ?? null,
                 'dokumen' => $validated['dokumen'] ?? null,
                 'is_demo' => $asset->is_demo ?? false,
-                'metadata' => [
-                    'source' => 'citizen_submission',
-                    'item_code' => $asset->code,
-                    'is_wajib_tronton' => $isWajibTronton,
-                ],
+                'metadata' => $metadata,
             ]);
 
             return response()->json([

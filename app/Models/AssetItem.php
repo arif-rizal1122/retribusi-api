@@ -25,6 +25,7 @@ class AssetItem extends Model
         'buffer_default',
         'is_demo',
         'is_active',
+        'image_url',
         'metadata',
     ];
 

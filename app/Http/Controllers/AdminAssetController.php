@@ -361,6 +361,7 @@ class AdminAssetController extends Controller
             'tarif_default' => 'required|numeric|min:0',
             'satuan_tarif' => 'required|in:per jam,per hari,per km,per bulan,per tahun,per kegiatan',
             'opd_id' => 'nullable|exists:opds,id',
+            'image_url' => 'nullable|string|max:500',
         ]);
 
         $item = AssetItem::create(array_merge($validated, ['is_demo' => false, 'is_active' => true]));
@@ -373,7 +374,7 @@ class AdminAssetController extends Controller
         $item->update($request->only([
             'category_id', 'name', 'code', 'merk_type', 'spesifikasi', 'kondisi',
             'status_operasional', 'lokasi', 'pic', 'tarif_default', 'satuan_tarif',
-            'wajib_tronton', 'opd_id', 'is_active', 'is_demo',
+            'wajib_tronton', 'opd_id', 'is_active', 'is_demo', 'image_url',
         ]));
         return response()->json(['message' => 'Unit aset diperbarui.', 'data' => $item]);
     }
