@@ -384,6 +384,13 @@ class CitizenServiceController extends Controller
                 continue;
             }
 
+            // Identitas/KTP terpusat dari akun warga terdaftar (tidak perlu upload ulang)
+            if (preg_match('/(ktp|identitas|nik)/i', (string) $key) || preg_match('/(ktp|identitas)/i', (string) ($requirement['name'] ?? $requirement['label'] ?? ''))) {
+                if ($request->user()) {
+                    continue;
+                }
+            }
+
             $label = $requirement['label'] ?? $requirement['name'] ?? $key;
             $errors[$key] = "{$label} wajib diunggah.";
         }

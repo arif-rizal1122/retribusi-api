@@ -464,6 +464,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/stats', [DashboardController::class, 'getStats']);
             Route::get('/revenue-trend', [DashboardController::class, 'getRevenueTrend']);
             Route::get('/map-potentials', [DashboardController::class, 'getMapPotentials']);
+            Route::get('/potentials', [DashboardController::class, 'getMapPotentials']);
+            Route::get('/petugas-tasks', [\App\Http\Controllers\PetugasTaskController::class, 'index']);
         });
 
         // Dashboard Khusus Admin PTSP (DPMPTSP) — RBAC role admin_ptsp

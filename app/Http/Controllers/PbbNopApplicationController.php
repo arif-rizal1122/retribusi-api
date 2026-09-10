@@ -39,7 +39,9 @@ class PbbNopApplicationController extends Controller
             'longitude' => 'nullable|numeric|between:-180,180',
             'land_area' => 'required|numeric|min:1',
             'building_area' => 'nullable|numeric|min:1',
-            'ktp_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'ktp_file' => ($request->input('registered_for') === 'other')
+                ? 'required|file|mimes:pdf,jpg,jpeg,png|max:2048'
+                : 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'akte_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'imb_file' => 'nullable|required_with:building_area|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'registered_for' => 'sometimes|in:self,other',
@@ -73,7 +75,9 @@ class PbbNopApplicationController extends Controller
             ]);
         }
 
-        $ktpPath = $request->file('ktp_file')->store('pbb_applications/ktp', 'public');
+        $ktpPath = $request->hasFile('ktp_file')
+            ? $request->file('ktp_file')->store('pbb_applications/ktp', 'public')
+            : 'verified_via_account';
         $aktePath = $request->file('akte_file')->store('pbb_applications/akte', 'public');
         $imbPath = $request->hasFile('imb_file') ? $request->file('imb_file')->store('pbb_applications/imb', 'public') : null;
 

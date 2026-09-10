@@ -322,7 +322,7 @@ class CitizenAssetController extends Controller
                 ],
                 'dokumen_pendukung' => [
                     ['key' => 'surat_permohonan', 'label' => 'Surat Permohonan', 'type' => 'file', 'required' => true],
-                    ['key' => 'ktp', 'label' => 'KTP', 'type' => 'file', 'required' => true],
+                    ['key' => 'ktp', 'label' => 'KTP', 'type' => 'file', 'required' => false],
                     ['key' => 'npwp', 'label' => 'NPWP', 'type' => 'file', 'required' => false],
                 ],
             ],

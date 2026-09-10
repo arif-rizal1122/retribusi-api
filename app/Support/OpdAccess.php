@@ -48,11 +48,15 @@ class OpdAccess
             || in_array(($user->metadata['role_code'] ?? null), ['admin_aset_dishub', 'dishub_aset'], true)
             || str_contains(strtolower($user->email ?? ''), 'aset.dishub');
 
-        $hasAset = (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'JU-ASET') || $startsWith($c, 'AS-') || $c === 'JU-PROD') || $isDishubAset;
+        $isPuprAset = in_array($user->role, ['admin_aset_pupr', 'pupr_aset', 'admin_pupr_aset'], true)
+            || in_array(($user->metadata['role_code'] ?? null), ['admin_aset_pupr', 'pupr_aset', 'admin_pupr_aset'], true)
+            || str_contains(strtolower($user->email ?? ''), 'aset.pupr');
+
+        $hasAset = (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'JU-ASET') || $startsWith($c, 'AS-') || $c === 'JU-PROD') || $isDishubAset || $isPuprAset;
 
         return [
             'opd_id' => (int) $user->opd_id,
-            'has_owned_service' => count($codes) > 0 || $isDishubAset,
+            'has_owned_service' => count($codes) > 0 || $isDishubAset || $isPuprAset,
             'codes' => $codes,
             'has_sector_mapping' => $hasSectorMapping,
             'flags' => [
@@ -64,6 +68,8 @@ class OpdAccess
                 'perikanan'   => in_array('JU-PEL', $codes, true) || (int) $user->opd_id === 12,
                 'dishub'      => (int) $user->opd_id === 2,
                 'dishub_aset' => $isDishubAset,
+                'pupr'        => (int) $user->opd_id === 9,
+                'pupr_aset'   => $isPuprAset,
             ],
         ];
     }
