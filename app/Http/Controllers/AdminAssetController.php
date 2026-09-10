@@ -112,6 +112,10 @@ class AdminAssetController extends Controller
             'survey_lahan_luas' => 'required|boolean',
             'survey_kesimpulan' => 'nullable|string',
             'survey_foto_path' => 'nullable|string',
+            'survey_rekomendasi_tronton' => 'nullable|string',
+            'survey_penjebolan_akses' => 'nullable|boolean',
+            'survey_penjebolan_catatan' => 'nullable|string',
+            'survey_rekomendasi_alat' => 'nullable|string',
         ]);
 
         $rental = AssetRental::findOrFail($id);
@@ -124,6 +128,10 @@ class AdminAssetController extends Controller
             'survey_lahan_luas' => $validated['survey_lahan_luas'],
             'survey_kesimpulan' => $validated['survey_kesimpulan'] ?? null,
             'survey_foto_path' => $validated['survey_foto_path'] ?? null,
+            'survey_rekomendasi_tronton' => $validated['survey_rekomendasi_tronton'] ?? null,
+            'survey_penjebolan_akses' => (bool) ($validated['survey_penjebolan_akses'] ?? false),
+            'survey_penjebolan_catatan' => $validated['survey_penjebolan_catatan'] ?? null,
+            'survey_rekomendasi_alat' => $validated['survey_rekomendasi_alat'] ?? null,
             'surveyor_user_id' => auth()->id(),
             'survey_submitted_at' => now(),
         ]);

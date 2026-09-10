@@ -21,6 +21,7 @@ class AssetItem extends Model
         'pic',
         'tarif_default',
         'satuan_tarif',
+        'wajib_tronton',
         'buffer_default',
         'is_demo',
         'is_active',
@@ -29,6 +30,7 @@ class AssetItem extends Model
 
     protected $casts = [
         'tarif_default' => 'decimal:2',
+        'wajib_tronton' => 'boolean',
         'buffer_default' => 'integer',
         'is_demo' => 'boolean',
         'is_active' => 'boolean',

@@ -135,6 +135,9 @@ class CitizenAssetController extends Controller
             'operator_hp' => 'nullable|string',
             'operator_sim' => 'nullable|string',
             'dokumen' => 'nullable|array',
+            'include_tronton' => 'nullable|boolean',
+            'jarak_tronton_km' => 'nullable|numeric|min:0',
+            'biaya_tronton' => 'nullable|numeric|min:0',
         ]);
 
         $user = $request->user();
@@ -193,7 +196,35 @@ class CitizenAssetController extends Controller
                 ? (float) $validated['tarif_per_satuan']
                 : (float) $asset->tarif_default;
             $satuanSewa = $validated['satuan_sewa'] ?? ($asset->satuan_tarif ?? 'per hari');
-            $totalBiaya = $days * $tarifPerSatuan;
+
+            // Logika Tronton: Wajib untuk alat beroda rantai besi (Excavator/Bulldozer/Roller)
+            $isWajibTronton = (bool) ($asset->wajib_tronton ?? false);
+            $includeTronton = $isWajibTronton || (bool) ($validated['include_tronton'] ?? false);
+            $jarakKm = isset($validated['jarak_tronton_km']) ? (float) $validated['jarak_tronton_km'] : 10.0;
+            $biayaTronton = 0;
+
+            if ($includeTronton) {
+                if (isset($validated['biaya_tronton']) && (float) $validated['biaya_tronton'] > 0) {
+                    $biayaTronton = (float) $validated['biaya_tronton'];
+                } else {
+                    // Zonasi Tarif Perda 1/2024
+                    if ($jarakKm <= 20) {
+                        $biayaTronton = 450000;
+                    } elseif ($jarakKm <= 40) {
+                        $biayaTronton = 900000;
+                    } elseif ($jarakKm <= 60) {
+                        $biayaTronton = 1350000;
+                    } elseif ($jarakKm <= 80) {
+                        $biayaTronton = 1800000;
+                    } elseif ($jarakKm <= 100) {
+                        $biayaTronton = 2700000;
+                    } else {
+                        $biayaTronton = 2250000;
+                    }
+                }
+            }
+
+            $totalBiaya = ($days * $tarifPerSatuan) + $biayaTronton;
             $dp = (float) ($validated['dp'] ?? 0);
             $sisaPembayaran = max(0, $totalBiaya - $dp);
 
@@ -214,6 +245,9 @@ class CitizenAssetController extends Controller
                 'satuan_sewa' => $satuanSewa,
                 'buffer_hari' => $bufferHari,
                 'tarif_per_satuan' => $tarifPerSatuan,
+                'include_tronton' => $includeTronton,
+                'jarak_tronton_km' => $includeTronton ? $jarakKm : null,
+                'biaya_tronton' => $includeTronton ? $biayaTronton : null,
                 'total_biaya' => $totalBiaya,
                 'dp' => $dp,
                 'sisa_pembayaran' => $sisaPembayaran,
@@ -232,7 +266,11 @@ class CitizenAssetController extends Controller
                 'operator_sim' => $validated['operator_sim'] ?? null,
                 'dokumen' => $validated['dokumen'] ?? null,
                 'is_demo' => $asset->is_demo ?? false,
-                'metadata' => ['source' => 'citizen_submission', 'item_code' => $asset->code],
+                'metadata' => [
+                    'source' => 'citizen_submission',
+                    'item_code' => $asset->code,
+                    'is_wajib_tronton' => $isWajibTronton,
+                ],
             ]);
 
             return response()->json([

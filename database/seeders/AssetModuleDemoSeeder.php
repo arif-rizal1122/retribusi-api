@@ -55,24 +55,29 @@ class AssetModuleDemoSeeder extends Seeder
             ['cat' => 'tanah', 'name' => 'Lahan Pelabuhan - Kios/Petak', 'code' => 'LAHAN-PLB-03', 'tarif' => 120000, 'satuan' => 'per bulan', 'kondisi' => 'Terbatas', 'status' => 'Terbatas', 'lokasi' => 'Pelabuhan Baubau'],
             ['cat' => 'tanah', 'name' => 'Lahan Pelabuhan - Los', 'code' => 'LAHAN-PLB-04', 'tarif' => 75000, 'satuan' => 'per bulan', 'kondisi' => 'Baik', 'status' => 'Operasional', 'lokasi' => 'Pelabuhan Baubau'],
             // Alat Berat — PUPR (tarif PERDA 1/2024)
-            ['cat' => 'alat-berat', 'name' => 'Excavator Komatsu PC200-8M0', 'code' => 'AB-001', 'merk' => 'Komatsu PC200-8M0', 'spes' => '138 HP', 'tarif' => 330000, 'satuan' => 'per jam', 'kondisi' => 'Terbatas', 'status' => 'Terbatas', 'lokasi' => 'UPT PUPR Baubau'],
-            ['cat' => 'alat-berat', 'name' => 'Excavator + Breaker Komatsu PC200-8M0', 'code' => 'AB-002', 'merk' => 'Komatsu PC200-8M0 + JTHB 210', 'spes' => '138 HP', 'tarif' => 360000, 'satuan' => 'per jam', 'kondisi' => 'Terbatas', 'status' => 'Terbatas', 'lokasi' => 'UPT PUPR Baubau'],
-            ['cat' => 'alat-berat', 'name' => 'Wheel Loader Komatsu WA200-5', 'code' => 'AB-003', 'merk' => 'Komatsu WA200-5', 'spes' => '123 HP', 'tarif' => 250000, 'satuan' => 'per jam', 'kondisi' => 'Terbatas', 'status' => 'Terbatas', 'lokasi' => 'UPT PUPR Baubau'],
-            ['cat' => 'alat-berat', 'name' => 'Tandem Roller Bomag BW131AD-3', 'code' => 'AB-004', 'merk' => 'Bomag BW131AD-3', 'spes' => '28,4 HP / 4 Ton', 'tarif' => 170000, 'satuan' => 'per jam', 'kondisi' => 'Tidak Operasional', 'status' => 'Tidak Operasional', 'lokasi' => 'UPT PUPR Baubau'],
-            ['cat' => 'alat-berat', 'name' => 'Bulldozer Komatsu D31Ex', 'code' => 'AB-005', 'merk' => 'Komatsu D31Ex', 'spes' => '80 HP', 'tarif' => 300000, 'satuan' => 'per jam', 'kondisi' => 'Tidak Operasional', 'status' => 'Tidak Operasional', 'lokasi' => 'UPT PUPR Baubau'],
-            ['cat' => 'alat-berat', 'name' => 'Backhoe Loader Caterpillar CAT 416F2', 'code' => 'AB-006', 'merk' => 'Caterpillar CAT 416F2', 'spes' => '92 HP', 'tarif' => 250000, 'satuan' => 'per jam', 'kondisi' => 'Terbatas', 'status' => 'Terbatas', 'lokasi' => 'UPT PUPR Baubau'],
+            ['cat' => 'alat-berat', 'name' => 'Excavator Komatsu PC200-8M0', 'code' => 'AB-001', 'merk' => 'Komatsu PC200-8M0', 'spes' => '138 HP', 'tarif' => 330000, 'satuan' => 'per jam', 'kondisi' => 'Operasional', 'status' => 'Operasional', 'wajib_tronton' => true, 'lokasi' => 'UPT PUPR Baubau'],
+            ['cat' => 'alat-berat', 'name' => 'Excavator + Breaker Komatsu PC200-8M0', 'code' => 'AB-002', 'merk' => 'Komatsu PC200-8M0 + JTHB 210', 'spes' => '138 HP', 'tarif' => 360000, 'satuan' => 'per jam', 'kondisi' => 'Operasional', 'status' => 'Operasional', 'wajib_tronton' => true, 'lokasi' => 'UPT PUPR Baubau'],
+            ['cat' => 'alat-berat', 'name' => 'Wheel Loader Komatsu WA200-5', 'code' => 'AB-003', 'merk' => 'Komatsu WA200-5', 'spes' => '123 HP', 'tarif' => 250000, 'satuan' => 'per jam', 'kondisi' => 'Operasional', 'status' => 'Operasional', 'wajib_tronton' => false, 'lokasi' => 'UPT PUPR Baubau'],
+            ['cat' => 'alat-berat', 'name' => 'Tandem Roller Bomag BW131AD-3', 'code' => 'AB-004', 'merk' => 'Bomag BW131AD-3', 'spes' => '28,4 HP / 4 Ton', 'tarif' => 170000, 'satuan' => 'per jam', 'kondisi' => 'Operasional', 'status' => 'Operasional', 'wajib_tronton' => true, 'lokasi' => 'UPT PUPR Baubau'],
+            ['cat' => 'alat-berat', 'name' => 'Bulldozer Komatsu D31Ex', 'code' => 'AB-005', 'merk' => 'Komatsu D31Ex', 'spes' => '80 HP', 'tarif' => 300000, 'satuan' => 'per jam', 'kondisi' => 'Operasional', 'status' => 'Operasional', 'wajib_tronton' => true, 'lokasi' => 'UPT PUPR Baubau'],
+            ['cat' => 'alat-berat', 'name' => 'Backhoe Loader Caterpillar CAT 416F2', 'code' => 'AB-006', 'merk' => 'Caterpillar CAT 416F2', 'spes' => '92 HP', 'tarif' => 250000, 'satuan' => 'per jam', 'kondisi' => 'Operasional', 'status' => 'Operasional', 'wajib_tronton' => false, 'lokasi' => 'UPT PUPR Baubau'],
             // Kendaraan — Alat Angkut PUPR
-            ['cat' => 'kendaraan', 'name' => 'Dump Truck Toyota Dyna 110', 'code' => 'KN-001', 'merk' => 'Toyota Dyna 110', 'tarif' => 350000, 'satuan' => 'per hari', 'kondisi' => 'Baik', 'status' => 'Operasional', 'lokasi' => 'UPT PUPR Baubau'],
-            ['cat' => 'kendaraan', 'name' => 'Dump Truck Toyota Dyna 130', 'code' => 'KN-002', 'merk' => 'Toyota Dyna 130', 'tarif' => 400000, 'satuan' => 'per hari', 'kondisi' => 'Terbatas', 'status' => 'Terbatas', 'lokasi' => 'UPT PUPR Baubau'],
-            ['cat' => 'kendaraan', 'name' => 'Flat Deck Truck Toyota Dyna 110', 'code' => 'KN-003', 'merk' => 'Toyota Dyna 110', 'tarif' => 350000, 'satuan' => 'per hari', 'kondisi' => 'Terbatas', 'status' => 'Terbatas', 'lokasi' => 'UPT PUPR Baubau'],
-            ['cat' => 'kendaraan', 'name' => 'Self Loader Tronton (0-20 Km)', 'code' => 'KN-004', 'merk' => 'Tronton', 'spes' => '0-20 Km', 'tarif' => 450000, 'satuan' => 'per km', 'kondisi' => 'Baik', 'status' => 'Operasional', 'lokasi' => 'UPT PUPR Baubau'],
-            ['cat' => 'kendaraan', 'name' => 'Self Loader Tronton (80-100 Km)', 'code' => 'KN-005', 'merk' => 'Tronton', 'spes' => '80-100 Km', 'tarif' => 2700000, 'satuan' => 'per km', 'kondisi' => 'Baik', 'status' => 'Operasional', 'lokasi' => 'UPT PUPR Baubau'],
-            ['cat' => 'kendaraan', 'name' => 'Mobil Sedot Tinja', 'code' => 'KN-006', 'merk' => 'Sedot Tinja DT9062', 'tarif' => 350000, 'satuan' => 'per hari', 'kondisi' => 'Terbatas', 'status' => 'Terbatas', 'lokasi' => 'UPT PUPR Baubau'],
+            ['cat' => 'kendaraan', 'name' => 'Dump Truck Toyota Dyna 110', 'code' => 'KN-001', 'merk' => 'Toyota Dyna 110', 'tarif' => 350000, 'satuan' => 'per hari', 'kondisi' => 'Baik', 'status' => 'Operasional', 'wajib_tronton' => false, 'lokasi' => 'UPT PUPR Baubau'],
+            ['cat' => 'kendaraan', 'name' => 'Dump Truck Toyota Dyna 130', 'code' => 'KN-002', 'merk' => 'Toyota Dyna 130', 'tarif' => 400000, 'satuan' => 'per hari', 'kondisi' => 'Baik', 'status' => 'Operasional', 'wajib_tronton' => false, 'lokasi' => 'UPT PUPR Baubau'],
+            ['cat' => 'kendaraan', 'name' => 'Flat Deck Truck Toyota Dyna 110', 'code' => 'KN-003', 'merk' => 'Toyota Dyna 110', 'tarif' => 350000, 'satuan' => 'per hari', 'kondisi' => 'Baik', 'status' => 'Operasional', 'wajib_tronton' => false, 'lokasi' => 'UPT PUPR Baubau'],
+            ['cat' => 'kendaraan', 'name' => 'Self Loader Tronton (0-20 Km)', 'code' => 'KN-004', 'merk' => 'Tronton', 'spes' => '0-20 Km', 'tarif' => 450000, 'satuan' => 'per trip', 'kondisi' => 'Baik', 'status' => 'Operasional', 'wajib_tronton' => false, 'lokasi' => 'UPT PUPR Baubau'],
+            ['cat' => 'kendaraan', 'name' => 'Self Loader Tronton (80-100 Km)', 'code' => 'KN-005', 'merk' => 'Tronton', 'spes' => '80-100 Km', 'tarif' => 2700000, 'satuan' => 'per trip', 'kondisi' => 'Baik', 'status' => 'Operasional', 'wajib_tronton' => false, 'lokasi' => 'UPT PUPR Baubau'],
+            ['cat' => 'kendaraan', 'name' => 'Mobil Sedot Tinja (Armada DT 8038 G)', 'code' => 'KN-006', 'merk' => 'Sedot Tinja DT 8038 G', 'tarif' => 150000, 'satuan' => 'per rit', 'kondisi' => 'Baik', 'status' => 'Operasional', 'wajib_tronton' => false, 'lokasi' => 'UPT PUPR Baubau'],
         ];
 
         foreach ($items as $i) {
-            $exists = DB::table('asset_items')->where('code', $i['code'])->exists();
-            if ($exists) {
+            $existing = DB::table('asset_items')->where('code', $i['code'])->first();
+            if ($existing) {
+                DB::table('asset_items')->where('code', $i['code'])->update([
+                    'wajib_tronton' => $i['wajib_tronton'] ?? false,
+                    'tarif_default' => $i['tarif'],
+                    'satuan_tarif' => $i['satuan'],
+                ]);
                 continue;
             }
             DB::table('asset_items')->insert([
@@ -84,13 +89,15 @@ class AssetModuleDemoSeeder extends Seeder
                 'spesifikasi' => $i['spes'] ?? null,
                 'kondisi' => $i['kondisi'],
                 'status_operasional' => $i['status'],
+                'wajib_tronton' => $i['wajib_tronton'] ?? false,
                 'lokasi' => $i['lokasi'],
-                'pic' => null,
+                'pic' => 'UPTD Pengelola Aset',
                 'tarif_default' => $i['tarif'],
                 'satuan_tarif' => $i['satuan'],
+                'buffer_default' => 1,
                 'is_demo' => true,
                 'is_active' => true,
-                'metadata' => json_encode(['source' => 'placeholder PERDA 1/2024 + matriks stakeholder']),
+                'metadata' => json_encode(['source' => 'asset_module_demo_seed', 'seeded_at' => now()->toIso8601String()]),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
