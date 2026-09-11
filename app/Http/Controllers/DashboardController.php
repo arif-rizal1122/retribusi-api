@@ -15,6 +15,51 @@ use Carbon\Carbon;
 class DashboardController extends Controller
 {
     /**
+     * Role lintas-OPD (kota) — sinkron dengan GLOBAL_ROLES di
+     * App\Http\Middleware\EnsureOpdScope.
+     *
+     * Role ini boleh melihat agregat SELURUH OPD (mis. Bapenda sebagai
+     * pengendali pendapatan daerah, kepala_bapenda, walikota/pengawas).
+     * Sedangkan role opd/petugas/verifikator tetap terkunci ke opd_id sendiri.
+     *
+     * Sebelumnya gate di sini hardcode `isSuperAdmin()`, sehingga role
+     * `admin`/`kepala_bapenda` (yang di middleware sudah dianggap global)
+     * tetap dipaksa ter-scope ke OPD-nya sendiri — dashboard Bapenda jadi
+     * identik dengan dashboard dinas biasa.
+     */
+    private const CITY_WIDE_ROLES = [
+        'super_admin',
+        'admin',
+        'walikota',
+        'kepala_bapenda',
+        'viewer',
+        'pengawas',
+        'kabid_pengawas',
+        'kasubid_pengawas',
+    ];
+
+    /**
+     * Tentukan filter opd_id untuk agregat dashboard.
+     *
+     * - Role lintas-OPD: null (= semua OPD) kecuali minta ?opd_id= tertentu.
+     * - Role lain     : dikunci ke opd_id miliknya sendiri.
+     */
+    private function resolveScopeOpdId(Request $request): ?int
+    {
+        $user = $request->user();
+
+        if (in_array($user->role, self::CITY_WIDE_ROLES, true)) {
+            $requested = $request->query('opd_id');
+
+            return ($requested !== null && $requested !== '' && is_numeric($requested))
+                ? (int) $requested
+                : null;
+        }
+
+        return $user->opd_id ? (int) $user->opd_id : null;
+    }
+
+    /**
      * Get KPI statistics for the dashboard with date filtering
      */
     public function getStats(Request $request)
@@ -23,12 +68,9 @@ class DashboardController extends Controller
         if (in_array($user->role, ['citizen', 'wajib_pajak'])) {
             return response()->json(['message' => 'Unauthorized Access'], 403);
         }
-        // Allow Super Admin to filter by opd_id query parameter
-        // Non-SuperAdmin users are restricted to their own opd_id
-        $opdId = $request->query('opd_id');
-        if (!$user->isSuperAdmin()) {
-            $opdId = $user->opd_id;
-        }
+        // Filter OPD: role lintas-OPD boleh lihat seluruh OPD (?opd_id= opsional),
+        // role OPD/petugas/verifikator tetap terkunci ke opd_id sendiri.
+        $opdId = $this->resolveScopeOpdId($request);
 
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
@@ -247,12 +289,9 @@ class DashboardController extends Controller
         if (in_array($user->role, ['citizen', 'wajib_pajak'])) {
             return response()->json(['message' => 'Unauthorized Access'], 403);
         }
-        // Allow Super Admin to filter by opd_id query parameter
-        // Non-SuperAdmin users are restricted to their own opd_id
-        $opdId = $request->query('opd_id');
-        if (!$user->isSuperAdmin()) {
-            $opdId = $user->opd_id;
-        }
+        // Filter OPD: role lintas-OPD boleh lihat seluruh OPD (?opd_id= opsional),
+        // role OPD/petugas/verifikator tetap terkunci ke opd_id sendiri.
+        $opdId = $this->resolveScopeOpdId($request);
 
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
@@ -338,12 +377,9 @@ class DashboardController extends Controller
         if (in_array($user->role, ['citizen', 'wajib_pajak'])) {
             return response()->json(['message' => 'Unauthorized Access'], 403);
         }
-        // Allow Super Admin to filter by opd_id query parameter
-        // Non-SuperAdmin users are restricted to their own opd_id
-        $opdId = $request->query('opd_id');
-        if (!$user->isSuperAdmin()) {
-            $opdId = $user->opd_id;
-        }
+        // Filter OPD: role lintas-OPD boleh lihat seluruh OPD (?opd_id= opsional),
+        // role OPD/petugas/verifikator tetap terkunci ke opd_id sendiri.
+        $opdId = $this->resolveScopeOpdId($request);
         
         // 1. Get Zones (Potentials)
         $zones = \App\Models\Zone::with(['opd', 'retributionType'])
