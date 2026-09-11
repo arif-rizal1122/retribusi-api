@@ -48,6 +48,7 @@ Route::group(['middleware' => 'throttle:10,1'], function () {
 Route::get('/opds', [OpdController::class, 'index']); // Public access
 Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyBill']);
 Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
+Route::get('/verify/dlh-lab/{orderNumber}', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'verifyPublic']);
 
 // Public: Documents (PDF)
 Route::get('/public/pdf/npwpd/{id}', [\App\Http\Controllers\PdfController::class, 'generateNpwpd']);
@@ -589,6 +590,40 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/sector-data', [\App\Http\Controllers\OpdSectorDataController::class, 'index']);
         });
     });
+
+    // ----------------------------------------------------------------
+    // MODUL DINAS LINGKUNGAN HIDUP (DLH KOTA BAUBAU) — Perda 1/2024
+    // Persampahan Door-to-Door, Karcis Pasar, UPTD Lab, & Spasial Map
+    // ----------------------------------------------------------------
+    $dlhRoutes = function () {
+        // Lab Lingkungan (UPTD)
+        Route::get('/lab/parameters', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'indexParameters']);
+        Route::post('/lab/orders', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'storeOrder']);
+        Route::get('/lab/orders/{id}', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'showOrder']);
+        Route::post('/lab/orders/{id}/billing', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'generateBilling']);
+        Route::post('/lab/orders/{id}/results', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'uploadResult']);
+
+        // Karcis Pasar Harian & Batch Remittance Juru Pungut
+        Route::post('/market/tickets', [\App\Http\Controllers\Api\V1\Dlh\DlhMarketRemittanceController::class, 'issueMarketTicket']);
+        Route::get('/market/holding-balance', [\App\Http\Controllers\Api\V1\Dlh\DlhMarketRemittanceController::class, 'getCollectorHoldingBalance']);
+        Route::post('/market/remittance', [\App\Http\Controllers\Api\V1\Dlh\DlhMarketRemittanceController::class, 'submitRemittance']);
+        Route::post('/market/remittance/{id}/verify', [\App\Http\Controllers\Api\V1\Dlh\DlhMarketRemittanceController::class, 'verifyRemittance']);
+
+        // Peta Kepatuhan Spasial Persampahan (GeoJSON)
+        Route::get('/spatial/compliance-map', [\App\Http\Controllers\Api\V1\Dlh\DlhSpatialMonitoringController::class, 'getComplianceMap']);
+
+        // Laporan Eksekutif & Audit Juru Pungut BPK
+        Route::get('/reports/executive-summary', [\App\Http\Controllers\Api\V1\Dlh\DlhReportController::class, 'getExecutiveSummary']);
+        Route::get('/reports/collector-audit', [\App\Http\Controllers\Api\V1\Dlh\DlhReportController::class, 'getCollectorAuditReport']);
+
+        // Persampahan Property-Centric Billing & Occupant Transfer
+        Route::post('/trash/calculate', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'calculateTariff']);
+        Route::post('/trash/transfer-occupant/{taxObjectId}', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'transferOccupant']);
+        Route::post('/trash/generate-bills', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'generateMonthlyBills']);
+    };
+
+    Route::prefix('dlh')->group($dlhRoutes);
+    Route::prefix('v1/dlh')->group($dlhRoutes);
 });
 
 // ------------------------------------------------------------------------

@@ -13,11 +13,42 @@ return new class extends Migration
     public function up(): void
     {
         $puprOpd = DB::table('opds')->where('id', 9)->orWhere('name', 'LIKE', '%Pekerjaan Umum%')->first();
-        $opdId = $puprOpd ? $puprOpd->id : 9;
+        if (!$puprOpd) {
+            $opdId = DB::table('opds')->insertGetId([
+                'id' => 9,
+                'name' => 'Dinas Pekerjaan Umum dan Penataan Ruang',
+                'code' => 'PUPR',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            $opdId = $puprOpd->id;
+        }
 
         // Category IDs: 3 = Alat Berat, 4 = Kendaraan
-        $catAlatBerat = DB::table('asset_categories')->where('slug', 'alat-berat')->value('id') ?? 3;
-        $catKendaraan = DB::table('asset_categories')->where('slug', 'kendaraan')->value('id') ?? 4;
+        $catAlatBerat = DB::table('asset_categories')->where('slug', 'alat-berat')->value('id');
+        if (!$catAlatBerat) {
+            $catAlatBerat = DB::table('asset_categories')->insertGetId([
+                'id' => 3,
+                'name' => 'Alat Berat & Peralatan Konstruksi',
+                'slug' => 'alat-berat',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $catKendaraan = DB::table('asset_categories')->where('slug', 'kendaraan')->value('id');
+        if (!$catKendaraan) {
+            $catKendaraan = DB::table('asset_categories')->insertGetId([
+                'id' => 4,
+                'name' => 'Kendaraan & Angkutan',
+                'slug' => 'kendaraan',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         $items = [
             // --- ALAT BERAT & PERALATAN KONSTRUKSI (PERDA 1/2024) ---

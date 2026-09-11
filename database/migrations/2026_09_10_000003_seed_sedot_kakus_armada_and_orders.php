@@ -8,8 +8,29 @@ return new class extends Migration
     public function up(): void
     {
         $puprOpd = DB::table('opds')->where('id', 9)->orWhere('name', 'LIKE', '%Pekerjaan Umum%')->first();
-        $opdId = $puprOpd ? $puprOpd->id : 9;
-        $catKendaraan = DB::table('asset_categories')->where('slug', 'kendaraan')->value('id') ?? 4;
+        if (!$puprOpd) {
+            $opdId = DB::table('opds')->insertGetId([
+                'id' => 9,
+                'name' => 'Dinas Pekerjaan Umum dan Penataan Ruang',
+                'code' => 'PUPR',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            $opdId = $puprOpd->id;
+        }
+
+        $catKendaraan = DB::table('asset_categories')->where('slug', 'kendaraan')->value('id');
+        if (!$catKendaraan) {
+            $catKendaraan = DB::table('asset_categories')->insertGetId([
+                'id' => 4,
+                'name' => 'Kendaraan & Angkutan',
+                'slug' => 'kendaraan',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         // 1. Seed / update 3 spesifik armada Mobil Sedot Tinja / Sedot Kakus UPTD PUPR Baubau
         $armadas = [
@@ -109,9 +130,9 @@ return new class extends Migration
         // 2. Sample Bookings / Jadwal Pelayanan Sedot Kakus di Baubau
         $item1 = DB::table('asset_items')->where('code', 'SK-001')->first();
         $taxpayer = DB::table('taxpayers')->first();
-        $taxpayerId = $taxpayer ? $taxpayer->id : 1;
 
-        if ($item1) {
+        if ($item1 && $taxpayer) {
+            $taxpayerId = $taxpayer->id;
             $bookings = [
                 [
                     'rental_code' => 'KKS-202609-001',

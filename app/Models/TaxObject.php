@@ -45,6 +45,14 @@ class TaxObject extends Model
         'last_photo_url',
         'is_verified_physically',
         'is_active',
+        // DLH Property-Centric Fields (Perda 1/2024)
+        'tipe_penghuni',
+        'status_hunian',
+        'building_category',
+        'penanggung_jawab_nama',
+        'penanggung_jawab_kontak',
+        'land_size_m2',
+        'building_size_m2',
     ];
 
     protected $casts = [
@@ -56,6 +64,8 @@ class TaxObject extends Model
         'installation_date' => 'date',
         'is_verified_physically' => 'boolean',
         'is_active' => 'boolean',
+        'land_size_m2' => 'decimal:2',
+        'building_size_m2' => 'decimal:2',
     ];
 
     /**
