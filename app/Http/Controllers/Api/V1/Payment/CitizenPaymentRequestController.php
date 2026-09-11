@@ -21,11 +21,25 @@ class CitizenPaymentRequestController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'bill_ids' => ['required', 'array', 'min:1', 'max:20'],
-            'bill_ids.*' => ['integer', 'distinct', 'exists:bills,id'],
-            'method' => ['required', 'in:bri_va,sultra_va'],
+        \Illuminate\Support\Facades\Log::info('CitizenPaymentRequest::store incoming', [
+            'payload' => $request->all(),
+            'user_id' => $request->user()?->id,
+            'user_class' => $request->user() ? get_class($request->user()) : null,
         ]);
+
+        try {
+            $validated = $request->validate([
+                'bill_ids' => ['required', 'array', 'min:1', 'max:20'],
+                'bill_ids.*' => ['integer', 'distinct', 'exists:bills,id'],
+                'method' => ['required', 'in:bri_va,sultra_va'],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            \Illuminate\Support\Facades\Log::warning('CitizenPaymentRequest::store validation error', [
+                'errors' => $ve->errors(),
+                'payload' => $request->all(),
+            ]);
+            throw $ve;
+        }
 
         $taxpayer = $this->taxpayer($request);
         $billIds = collect($validated['bill_ids'])->map(fn ($id) => (int) $id)->sort()->values();
@@ -77,7 +91,6 @@ class CitizenPaymentRequestController extends Controller
 
             $activePaymentRequests = PaymentRequest::with('items.bill')
                 ->where('taxpayer_id', $taxpayer->id)
-                ->where('payment_channel', $channel)
                 ->where('method', 'VA')
                 ->where('status', 'pending')
                 ->where('expires_at', '>', now())
@@ -87,16 +100,18 @@ class CitizenPaymentRequestController extends Controller
                 ->get();
 
             $existing = $activePaymentRequests
+                ->where('payment_channel', $channel)
                 ->first(fn (PaymentRequest $paymentRequest) => $paymentRequest->items->pluck('bill_id')->sort()->values()->all() === $billIds->all());
 
             if ($existing) {
                 return [$existing, true];
             }
 
-            if ($activePaymentRequests->isNotEmpty()) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'bill_ids' => 'Satu atau lebih tagihan masih memiliki pembayaran '.($isSultra ? 'Bank Sultra' : 'BRIVA').' aktif.',
-                ]);
+            // Batalkan payment request pending lama yang tumpang tindih untuk tagihan-tagihan ini
+            // agar wajib pajak tidak terkunci (error 422) saat mengubah pilihan tagihan atau channel pembayaran.
+            foreach ($activePaymentRequests as $stalePaymentRequest) {
+                $stalePaymentRequest->update(['status' => 'cancelled']);
+                $stalePaymentRequest->items()->where('status', 'pending')->update(['status' => 'cancelled']);
             }
 
             $expiresAt = now()->addMinutes((int) config('snap.briva.payment_request_expiry_minutes', 1440));
