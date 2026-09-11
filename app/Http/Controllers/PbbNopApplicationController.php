@@ -127,6 +127,15 @@ class PbbNopApplicationController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // Maker-checker: pemohon tidak boleh memutuskan status permohonannya sendiri.
+        if (in_array($request->status, ['APPROVED', 'REJECTED'], true)
+            && $application->user_id
+            && (int) $application->user_id === (int) $request->user()->id) {
+            return response()->json([
+                'message' => 'Pemohon tidak boleh memutuskan status permohonannya sendiri (maker-checker).',
+            ], 403);
+        }
+
         if ($request->status === 'APPROVED' && $request->filled('nop')) {
             $nop = $request->nop;
 

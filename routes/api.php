@@ -349,7 +349,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         // Pendaftaran NOP (Warga — verifikasi admin)
         Route::get('/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'index']);
         Route::get('/nop-applications/{id}', [\App\Http\Controllers\PbbNopApplicationController::class, 'show']);
-        Route::post('/nop-applications/{id}/status', [\App\Http\Controllers\PbbNopApplicationController::class, 'updateStatus']);
+        Route::post('/nop-applications/{id}/status', [\App\Http\Controllers\PbbNopApplicationController::class, 'updateStatus'])
+            ->middleware('role:admin,kepala_bapenda');
 
         // H2H BPN / BPHTB
         Route::prefix('h2h/bphtb')->group(function () {
@@ -386,17 +387,22 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         // Notaris / PPAT Approval
         Route::prefix('notaris-approvals')->group(function () {
             Route::get('/', [\App\Http\Controllers\NotarisApprovalController::class, 'index']);
-            Route::post('/{id}/approve', [\App\Http\Controllers\NotarisApprovalController::class, 'approve']);
-            Route::post('/{id}/reject', [\App\Http\Controllers\NotarisApprovalController::class, 'reject']);
+            // Penyetuju aktivasi akun PPAT/Notaris = pimpinan (maker-checker).
+            Route::post('/{id}/approve', [\App\Http\Controllers\NotarisApprovalController::class, 'approve'])
+                ->middleware('role:kepala_bapenda');
+            Route::post('/{id}/reject', [\App\Http\Controllers\NotarisApprovalController::class, 'reject'])
+                ->middleware('role:kepala_bapenda');
         });
 
         // Permohonan Perubahan Data (admin)
         Route::get('/change-requests', [\App\Http\Controllers\TaxObjectChangeRequestController::class, 'index']);
-        Route::post('/change-requests/{changeRequest}/status', [\App\Http\Controllers\TaxObjectChangeRequestController::class, 'updateStatus']);
+        Route::post('/change-requests/{changeRequest}/status', [\App\Http\Controllers\TaxObjectChangeRequestController::class, 'updateStatus'])
+            ->middleware('role:kepala_bapenda');
 
         // Pendaftaran NOP alias (tab admin PBB)
         Route::get('/pbb/bapenda/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'index']);
-        Route::post('/pbb/bapenda/nop-applications/{id}/status', [\App\Http\Controllers\PbbNopApplicationController::class, 'updateStatus']);
+        Route::post('/pbb/bapenda/nop-applications/{id}/status', [\App\Http\Controllers\PbbNopApplicationController::class, 'updateStatus'])
+            ->middleware('role:admin,kepala_bapenda');
 
         // Pelaporan E-SPTPD
         Route::post('/sptpd', [\App\Http\Controllers\SptpdController::class, 'store']);
@@ -509,8 +515,10 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::prefix('amnesty')->group(function () {
             Route::get('/', [\App\Http\Controllers\PenaltyWaiverController::class, 'index']);
             Route::post('/', [\App\Http\Controllers\PenaltyWaiverController::class, 'store']);
-            Route::post('/{id}/approve', [\App\Http\Controllers\PenaltyWaiverController::class, 'approve']);
-            Route::post('/{id}/reject', [\App\Http\Controllers\PenaltyWaiverController::class, 'reject']);
+            Route::post('/{id}/approve', [\App\Http\Controllers\PenaltyWaiverController::class, 'approve'])
+                ->middleware('role:kepala_bapenda');
+            Route::post('/{id}/reject', [\App\Http\Controllers\PenaltyWaiverController::class, 'reject'])
+                ->middleware('role:kepala_bapenda');
             Route::get('/{id}/document', [\App\Http\Controllers\PenaltyWaiverController::class, 'generateDocument']);
         });
 
@@ -520,7 +528,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         });
 
         Route::prefix('pbb/bapenda')->group(function () {
-            Route::post('/reversal', [PbbBapendaController::class, 'reversal']);
+            Route::post('/reversal', [PbbBapendaController::class, 'reversal'])
+                ->middleware('role:kepala_bapenda');
             Route::get('/transactions', [PbbBapendaController::class, 'transactions']);
             Route::get('/stats', [PbbBapendaController::class, 'stats']);
             Route::post('/sync-all', [PbbBapendaController::class, 'syncAllObjects']);

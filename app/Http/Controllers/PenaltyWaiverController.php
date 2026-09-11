@@ -83,6 +83,13 @@ class PenaltyWaiverController extends Controller
             return response()->json(['message' => 'This waiver request is already ' . $waiver->status], 422);
         }
 
+        // Maker-checker: pengaju tidak boleh memutuskan permohonannya sendiri.
+        if ((int) $waiver->requested_by === (int) Auth::id()) {
+            return response()->json([
+                'message' => 'Pengaju tidak boleh menyetujui/menolak permohonannya sendiri (maker-checker).',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'approval_notes' => 'nullable|string',
         ]);
@@ -121,6 +128,13 @@ class PenaltyWaiverController extends Controller
 
         if ($waiver->status !== 'pending') {
             return response()->json(['message' => 'This waiver request is already ' . $waiver->status], 422);
+        }
+
+        // Maker-checker: pengaju tidak boleh memutuskan permohonannya sendiri.
+        if ((int) $waiver->requested_by === (int) Auth::id()) {
+            return response()->json([
+                'message' => 'Pengaju tidak boleh menyetujui/menolak permohonannya sendiri (maker-checker).',
+            ], 403);
         }
 
         $validated = $request->validate([

@@ -27,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'bank_h2h' => \App\Http\Middleware\BankSecurityCheck::class,
             'opd_scope' => \App\Http\Middleware\EnsureOpdScope::class,
             'auto_deduct_access' => \App\Http\Middleware\AutoDeductAccess::class,
+            // Gate otorisasi berbasis role per-route (maker-checker pelaksana vs penyetuju).
+            'role' => \App\Http\Middleware\EnsureRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
