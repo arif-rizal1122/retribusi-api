@@ -101,15 +101,9 @@ class CitizenPaymentRequestController extends Controller
 
             $expiresAt = now()->addMinutes((int) config('snap.briva.payment_request_expiry_minutes', 1440));
             foreach ($bills as $bill) {
-                if ($bill->due_date && $bill->due_date->lessThan($expiresAt)) {
+                if ($bill->due_date && $bill->due_date->isFuture() && $bill->due_date->lessThan($expiresAt)) {
                     $expiresAt = $bill->due_date->copy();
                 }
-            }
-
-            if ($expiresAt->lessThanOrEqualTo(now())) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'bill_ids' => 'Tagihan yang dipilih sudah melewati masa pembayaran.',
-                ]);
             }
 
             $baseAmount = $bills->sum(fn (Bill $bill) => (float) $bill->amount);
