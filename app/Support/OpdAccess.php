@@ -44,34 +44,80 @@ class OpdAccess
 
         $startsWith = static fn (string $c, string $prefix): bool => str_starts_with($c, $prefix);
 
-        $isDishubAset = in_array($user->role, ['admin_aset_dishub', 'dishub_aset'], true)
+        $opd = $user->opd ?: \App\Models\Opd::find($user->opd_id);
+        $opdCode = strtoupper($opd?->code ?? $user->opd?->code ?? '');
+        $opdName = strtolower($opd?->name ?? $user->opd?->name ?? '');
+        $email = strtolower($user->email ?? '');
+        $opdId = (int) $user->opd_id;
+
+        $isBapenda = in_array($opdCode, ['BAPENDA', 'DISPENDA'], true)
+            || str_contains($opdName, 'pendapatan daerah')
+            || str_contains($email, 'bapenda');
+
+        $isDishubAset = ! $isBapenda && (
+            in_array($user->role, ['admin_aset_dishub', 'dishub_aset'], true)
             || in_array(($user->metadata['role_code'] ?? null), ['admin_aset_dishub', 'dishub_aset'], true)
-            || str_contains(strtolower($user->email ?? ''), 'aset.dishub');
+            || str_contains($email, 'aset.dishub')
+        );
 
-        $isPupr = (int) $user->opd_id === 9 || str_contains(strtolower($user->email ?? ''), 'pupr');
+        $isPupr = ! $isBapenda && (
+            in_array($opdCode, ['PUPR', 'DINAS_PUPR', 'PEKERJAAN_UMUM'], true)
+            || str_contains($opdName, 'pekerjaan umum')
+            || str_contains($email, 'pupr')
+        );
 
-        $isPuprAset = in_array($user->role, ['admin_aset_pupr', 'pupr_aset', 'admin_pupr_aset'], true)
+        $isPuprAset = ! $isBapenda && (
+            in_array($user->role, ['admin_aset_pupr', 'pupr_aset', 'admin_pupr_aset'], true)
             || in_array(($user->metadata['role_code'] ?? null), ['admin_aset_pupr', 'pupr_aset', 'admin_pupr_aset'], true)
-            || str_contains(strtolower($user->email ?? ''), 'aset.pupr')
-            || $isPupr;
+            || str_contains($email, 'aset.pupr')
+            || $isPupr
+        );
+
+        $isDishub = ! $isBapenda && (
+            in_array($opdCode, ['DISHUB', 'DINAS_PERHUBUNGAN', 'PERHUBUNGAN'], true)
+            || str_contains($opdName, 'perhubungan')
+            || str_contains($email, 'dishub')
+        );
+
+        $isPerikanan = ! $isBapenda && (
+            in_array($opdCode, ['DINAS_PERIKANAN', 'DISKAN', 'PERIKANAN'], true)
+            || str_contains($opdName, 'perikanan')
+            || str_contains($email, 'perikanan')
+        );
+
+        $isPariwisata = ! $isBapenda && (
+            in_array($opdCode, ['PARIWISATA', 'DISPAR'], true)
+            || str_contains($opdName, 'pariwisata')
+            || str_contains($email, 'pariwisata')
+            || in_array('JU-REK', $codes, true)
+        );
+
+        $isPtsp = ! $isBapenda && (
+            in_array($opdCode, ['DPMPTSP', 'PTSP'], true)
+            || str_contains($opdName, 'penanaman modal')
+            || str_contains($email, 'ptsp')
+            || str_contains($email, 'dpmptsp')
+            || (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'PZ-'))
+        );
 
         $hasAset = (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'JU-ASET') || $startsWith($c, 'AS-') || $c === 'JU-PROD') || $isDishubAset || $isPuprAset || $isPupr;
 
         return [
-            'opd_id' => (int) $user->opd_id,
+            'opd_id' => $opdId,
+            'is_bapenda' => $isBapenda,
             'has_owned_service' => count($codes) > 0 || $isDishubAset || $isPuprAset,
             'codes' => $codes,
             'has_sector_mapping' => $hasSectorMapping,
             'flags' => [
-                'pbb'         => in_array('PBB-P2', $codes, true),
-                'bphtb'       => in_array('BPHTB', $codes, true),
+                'pbb'         => in_array('PBB-P2', $codes, true) || $isBapenda,
+                'bphtb'       => in_array('BPHTB', $codes, true) || $isBapenda,
                 'aset'        => $hasAset,
-                'ptsp'        => (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'PZ-')),
-                'rekreasi'    => in_array('JU-REK', $codes, true),
-                'perikanan'   => (int) $user->opd_id === 10 || (int) $user->opd_id === 26,
-                'dishub'      => (int) $user->opd_id === 2,
+                'ptsp'        => $isPtsp,
+                'rekreasi'    => $isPariwisata,
+                'perikanan'   => $isPerikanan,
+                'dishub'      => $isDishub,
                 'dishub_aset' => $isDishubAset,
-                'pupr'        => (int) $user->opd_id === 9,
+                'pupr'        => $isPupr,
                 'pupr_aset'   => $isPuprAset,
             ],
         ];
