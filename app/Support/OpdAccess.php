@@ -24,12 +24,12 @@ class OpdAccess
             return null;
         }
 
-        $query = RetributionClassification::where(function ($q) use ($user) {
-            $q->where('opd_id', $user->opd_id)
-              ->orWhereHas('retributionType', function ($tq) use ($user) {
-                  $tq->where('opd_id', $user->opd_id);
-              });
-        });
+        // Ownership klasifikasi = retribution_classifications.opd_id SAJA.
+        // Klausa orWhereHas('retributionType') DIHAPUS: retribution_type adalah
+        // tipe PAYUNG lintas-OPD (mis. id 106 "Retribusi Jasa Usaha" milik Bapenda),
+        // sehingga orWhereHas meloloskan klasifikasi milik OPD LAIN (mis. JU-PEL
+        // opd_id=10 Dinas Perikanan) ke daftar Bapenda.
+        $query = RetributionClassification::where('opd_id', $user->opd_id);
 
         if (\Illuminate\Support\Facades\Schema::hasColumn('retribution_classifications', 'is_active')) {
             $query->where('is_active', 1);
@@ -68,7 +68,7 @@ class OpdAccess
                 'aset'        => $hasAset,
                 'ptsp'        => (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'PZ-')),
                 'rekreasi'    => in_array('JU-REK', $codes, true),
-                'perikanan'   => in_array('JU-PEL', $codes, true) || (int) $user->opd_id === 12,
+                'perikanan'   => (int) $user->opd_id === 10 || (int) $user->opd_id === 26,
                 'dishub'      => (int) $user->opd_id === 2,
                 'dishub_aset' => $isDishubAset,
                 'pupr'        => (int) $user->opd_id === 9,
