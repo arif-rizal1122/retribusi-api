@@ -68,7 +68,23 @@ class BankSultraAftDirectDebitService
 
     public function maskAuditPayload(array $payload): array
     {
-        return $this->maskAccountNumbers($this->masker->mask($payload));
+        $maskedAccounts = $this->maskAccountNumbers($payload);
+        $masked = $this->masker->mask($payload);
+
+        return $this->mergeMaskedAccounts($masked, $maskedAccounts);
+    }
+
+    private function mergeMaskedAccounts(array $target, array $source): array
+    {
+        foreach ($source as $key => $value) {
+            if (is_array($value) && isset($target[$key]) && is_array($target[$key])) {
+                $target[$key] = $this->mergeMaskedAccounts($target[$key], $value);
+            } elseif ($this->isAccountKey((string) $key)) {
+                $target[$key] = $value;
+            }
+        }
+
+        return $target;
     }
 
     public function operationPath(string $operation): string

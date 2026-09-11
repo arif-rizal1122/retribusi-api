@@ -24,12 +24,15 @@ class CitizenPaymentRequestController extends Controller
         $validated = $request->validate([
             'bill_ids' => ['required', 'array', 'min:1', 'max:20'],
             'bill_ids.*' => ['integer', 'distinct', 'exists:bills,id'],
-            'method' => ['required', 'in:bri_va'],
+            'method' => ['required', 'in:bri_va,sultra_va'],
         ]);
 
         $taxpayer = $this->taxpayer($request);
         $billIds = collect($validated['bill_ids'])->map(fn ($id) => (int) $id)->sort()->values();
-        if (! $this->brivaReadiness->available()) {
+        $isSultra = $validated['method'] === 'sultra_va';
+        $channel = $isSultra ? 'Bank Sultra' : 'BRI';
+
+        if (! $isSultra && ! $this->brivaReadiness->available()) {
             return response()->json(['message' => $this->brivaReadiness->publicMessage()], 422);
         }
 
@@ -38,9 +41,9 @@ class CitizenPaymentRequestController extends Controller
         $customerNoLength = (int) config('snap.briva.customer_no_length', 20);
         $length = (int) config('snap.briva.va_length', 28);
 
-        [$paymentRequest, $reused] = DB::transaction(function () use ($billIds, $taxpayer, $partnerServiceId, $prefix, $customerNoLength, $length) {
+        [$paymentRequest, $reused] = DB::transaction(function () use ($billIds, $taxpayer, $isSultra, $channel, $partnerServiceId, $prefix, $customerNoLength, $length) {
             PaymentRequest::where('taxpayer_id', $taxpayer->id)
-                ->where('payment_channel', 'BRI')
+                ->where('payment_channel', $channel)
                 ->where('method', 'VA')
                 ->where('status', 'pending')
                 ->whereNotNull('expires_at')
@@ -74,7 +77,7 @@ class CitizenPaymentRequestController extends Controller
 
             $activePaymentRequests = PaymentRequest::with('items.bill')
                 ->where('taxpayer_id', $taxpayer->id)
-                ->where('payment_channel', 'BRI')
+                ->where('payment_channel', $channel)
                 ->where('method', 'VA')
                 ->where('status', 'pending')
                 ->where('expires_at', '>', now())
@@ -92,7 +95,7 @@ class CitizenPaymentRequestController extends Controller
 
             if ($activePaymentRequests->isNotEmpty()) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
-                    'bill_ids' => 'Satu atau lebih tagihan masih memiliki pembayaran BRIVA aktif.',
+                    'bill_ids' => 'Satu atau lebih tagihan masih memiliki pembayaran '.($isSultra ? 'Bank Sultra' : 'BRIVA').' aktif.',
                 ]);
             }
 
@@ -117,24 +120,28 @@ class CitizenPaymentRequestController extends Controller
                 'bill_id' => $bills->first()->id,
                 'tax_object_id' => $bills->first()->tax_object_id,
                 'taxpayer_id' => $taxpayer->id,
-                'payment_channel' => 'BRI',
+                'payment_channel' => $channel,
                 'method' => 'VA',
                 'amount_snapshot' => $baseAmount,
                 'admin_fee_snapshot' => $adminFee,
                 'penalty_snapshot' => $totalAmount - $baseAmount - $adminFee,
                 'expires_at' => $expiresAt,
-                'external_id' => 'MOB-BRI-'.Str::upper(Str::random(16)),
+                'external_id' => ($isSultra ? 'MOB-SULTRA-' : 'MOB-BRI-').Str::upper(Str::random(16)),
                 'status' => 'pending',
             ]);
 
-            $paymentRequest->update([
-                'va_number' => $this->buildVaNumber(
+            $vaNumber = $isSultra
+                ? $this->buildSultraVaNumber($paymentRequest->id)
+                : $this->buildVaNumber(
                     $paymentRequest->id,
                     $partnerServiceId,
                     $prefix,
                     $customerNoLength,
                     $length
-                ),
+                );
+
+            $paymentRequest->update([
+                'va_number' => $vaNumber,
             ]);
 
             foreach ($bills as $bill) {
@@ -150,6 +157,15 @@ class CitizenPaymentRequestController extends Controller
         });
 
         return response()->json(['data' => $this->payload($paymentRequest)], $reused ? 200 : 201);
+    }
+
+    private function buildSultraVaNumber(int $paymentRequestId): string
+    {
+        $partnerId = preg_replace('/\D/', '', (string) config('snap.partners.BANK_SULTRA.partner_id', '7472')) ?: '7472';
+        $partnerServiceId = str_pad(substr($partnerId, 0, 8), 8, '0', STR_PAD_LEFT);
+        $customerNo = str_pad((string) $paymentRequestId, 8, '0', STR_PAD_LEFT);
+
+        return $partnerServiceId.$customerNo;
     }
 
     private function buildVaNumber(
@@ -236,20 +252,38 @@ class CitizenPaymentRequestController extends Controller
     {
         $items = $paymentRequest->items;
         $receipts = $this->receipts($paymentRequest, $items);
-        $method = strtolower($paymentRequest->payment_channel) === 'bri' && strtoupper($paymentRequest->method) === 'VA'
+        $channelUpper = strtoupper((string) $paymentRequest->payment_channel);
+        $isSultra = in_array($channelUpper, ['BANK_SULTRA', 'BANK SULTRA', 'SULTRA'], true);
+        $isBri = in_array($channelUpper, ['BRI', 'BANK BRI'], true);
+
+        $method = ($isBri && strtoupper($paymentRequest->method) === 'VA')
             ? 'bri_va'
-            : strtolower($paymentRequest->method);
+            : (($isSultra && strtoupper($paymentRequest->method) === 'VA')
+                ? 'sultra_va'
+                : strtolower($paymentRequest->method));
         $totalAmount = (float) $paymentRequest->amount_snapshot
             + (float) $paymentRequest->admin_fee_snapshot
             + (float) $paymentRequest->penalty_snapshot;
 
+        $instructions = $isSultra ? [
+            'Buka aplikasi Mobile Banking Bank Sultra atau kunjungi ATM / Teller Bank Sultra.',
+            'Pilih menu Pembayaran Virtual Account / Pajak & Retribusi Daerah Baubau.',
+            'Masukkan nomor VA Bank Sultra dan pastikan nama serta nominal tagihan sesuai.',
+            'Selesaikan transaksi dan simpan bukti pembayaran. Status tagihan terverifikasi secara realtime.',
+        ] : [
+            'Buka BRImo, ATM BRI, BRILink, atau channel pembayaran BRI.',
+            'Pilih menu pembayaran BRIVA atau Virtual Account.',
+            'Masukkan nomor VA dan pastikan nama serta nominal tagihan sesuai.',
+            'Pembayaran akan diperbarui otomatis setelah callback bank diterima.',
+        ];
+
         return [
             'id' => (string) $paymentRequest->id,
             'external_id' => $paymentRequest->external_id,
-            'provider' => $paymentRequest->payment_channel,
+            'provider' => $isSultra ? 'Bank Sultra' : $paymentRequest->payment_channel,
             'method' => $method,
             'status' => $paymentRequest->status,
-            'status_label' => $this->statusLabel($paymentRequest->status),
+            'status_label' => $this->statusLabel($paymentRequest->status, $isSultra),
             'bill_ids' => $items->pluck('bill_id')->values(),
             'bill_numbers' => $items->map(fn (PaymentRequestItem $item) => $item->bill?->bill_number)->filter()->values(),
             'bills' => $items->map(fn (PaymentRequestItem $item) => [
@@ -288,12 +322,7 @@ class CitizenPaymentRequestController extends Controller
             'receipt_number' => $receipts->first()['receipt_number'] ?? null,
             'receipt_url' => $receipts->first()['download_path'] ?? null,
             'receipts' => $receipts,
-            'instructions' => [
-                'Buka BRImo, ATM BRI, BRILink, atau channel pembayaran BRI.',
-                'Pilih menu pembayaran BRIVA atau Virtual Account.',
-                'Masukkan nomor VA dan pastikan nama serta nominal tagihan sesuai.',
-                'Pembayaran akan diperbarui otomatis setelah callback bank diterima.',
-            ],
+            'instructions' => $instructions,
             'can_refresh' => $paymentRequest->status === 'pending',
             'can_cancel' => $paymentRequest->status === 'pending',
         ];
@@ -335,13 +364,15 @@ class CitizenPaymentRequestController extends Controller
         })->filter()->values();
     }
 
-    private function statusLabel(string $status): string
+    private function statusLabel(string $status, bool $isSultra = false): string
     {
         return match ($status) {
             'paid' => 'Pembayaran diterima.',
             'expired' => 'Payment request telah kedaluwarsa.',
             'cancelled' => 'Payment request dibatalkan.',
-            default => 'Menunggu pembayaran melalui channel BRI.',
+            default => $isSultra
+                ? 'Menunggu pembayaran melalui channel Bank Sultra.'
+                : 'Menunggu pembayaran melalui channel BRI.',
         };
     }
 }

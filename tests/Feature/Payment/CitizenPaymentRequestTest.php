@@ -276,6 +276,27 @@ class CitizenPaymentRequestTest extends TestCase
         ], $overrides));
     }
 
+    public function test_citizen_can_create_bank_sultra_va_payment_request(): void
+    {
+        Sanctum::actingAs($this->taxpayer, ['*']);
+        $bill = $this->createBill(['amount' => 50000]);
+
+        $createResponse = $this->postJson('/api/citizen/payment-requests', [
+            'bill_ids' => [$bill->id],
+            'method' => 'sultra_va',
+        ]);
+
+        $createResponse->assertCreated()
+            ->assertJsonPath('data.method', 'sultra_va')
+            ->assertJsonPath('data.provider', 'Bank Sultra')
+            ->assertJsonPath('data.status', 'pending');
+
+        $vaNumber = $createResponse->json('data.va_number');
+        $this->assertNotEmpty($vaNumber);
+        $this->assertStringStartsWith('00007472', $vaNumber);
+        $this->assertEquals(16, strlen($vaNumber));
+    }
+
     private function publicKey(): string
     {
         return <<<'PEM'

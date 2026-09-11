@@ -401,6 +401,10 @@ class BillController extends Controller
                     'Unggah bukti transfer untuk diverifikasi petugas.',
                 ],
             ],
+            'sultra_va' => [
+                'available' => $canPay,
+                'message' => null,
+            ],
             'bri_va' => [
                 'available' => $brivaAvailable,
                 'message' => $brivaAvailable ? null : $this->brivaReadiness->publicMessage(),
