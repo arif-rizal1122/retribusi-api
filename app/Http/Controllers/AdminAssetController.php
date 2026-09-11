@@ -45,6 +45,25 @@ class AdminAssetController extends Controller
         }
     }
 
+    /**
+     * Batasi hak akses modifikasi unit aset (item) sesuai OPD akun.
+     */
+    private function authorizeAssetItemScope(AssetItem $item): void
+    {
+        $user = auth()->user();
+        if (! $user || ! ($user instanceof User)) {
+            abort(403, 'Forbidden: Internal staff access required.');
+        }
+
+        if (in_array($user->role, self::GLOBAL_ASSET_ROLES, true)) {
+            return;
+        }
+
+        if (! $user->opd_id || (int) $user->opd_id !== (int) $item->opd_id) {
+            abort(403, 'Forbidden: Anda hanya dapat mengelola aset milik OPD Anda sendiri.');
+        }
+    }
+
     /** Scope query rental sesuai OPD user (role non-global). */
     private function scopeQueryToUserOpd($query)
     {
@@ -308,7 +327,17 @@ class AdminAssetController extends Controller
      */
     public function items(Request $request)
     {
-        $query = AssetItem::with('category:id,name,slug')->with('opd:id,name');
+        $query = AssetItem::with('category:id,name,slug')->with('opd:id,name,code');
+
+        // Scope berdasarkan OPD akun jika non-global
+        $user = auth()->user();
+        if ($user && ! in_array($user->role, self::GLOBAL_ASSET_ROLES, true)) {
+            if ($user->opd_id) {
+                $query->where('opd_id', $user->opd_id);
+            }
+        } elseif ($request->filled('opd_id') && $request->input('opd_id') !== 'all') {
+            $query->where('opd_id', $request->input('opd_id'));
+        }
 
         if ($request->filled('search')) {
             $term = '%' . $request->input('search') . '%';
@@ -364,6 +393,13 @@ class AdminAssetController extends Controller
             'image_url' => 'nullable|string|max:500',
         ]);
 
+        $user = auth()->user();
+        if ($user && ! in_array($user->role, self::GLOBAL_ASSET_ROLES, true)) {
+            $validated['opd_id'] = $user->opd_id;
+        } elseif (! isset($validated['opd_id']) && $user?->opd_id) {
+            $validated['opd_id'] = $user->opd_id;
+        }
+
         $item = AssetItem::create(array_merge($validated, ['is_demo' => false, 'is_active' => true]));
         return response()->json(['message' => 'Unit aset ditambahkan.', 'data' => $item], 201);
     }
@@ -371,17 +407,27 @@ class AdminAssetController extends Controller
     public function updateItem(Request $request, $id)
     {
         $item = AssetItem::findOrFail($id);
-        $item->update($request->only([
+        $this->authorizeAssetItemScope($item);
+
+        $user = auth()->user();
+        $fields = [
             'category_id', 'name', 'code', 'merk_type', 'spesifikasi', 'kondisi',
             'status_operasional', 'lokasi', 'pic', 'tarif_default', 'satuan_tarif',
-            'wajib_tronton', 'opd_id', 'is_active', 'is_demo', 'image_url',
-        ]));
+            'wajib_tronton', 'is_active', 'is_demo', 'image_url',
+        ];
+        if ($user && in_array($user->role, self::GLOBAL_ASSET_ROLES, true)) {
+            $fields[] = 'opd_id';
+        }
+
+        $item->update($request->only($fields));
         return response()->json(['message' => 'Unit aset diperbarui.', 'data' => $item]);
     }
 
     public function deleteItem($id)
     {
         $item = AssetItem::findOrFail($id);
+        $this->authorizeAssetItemScope($item);
+
         if ($item->rentals()->whereNotIn('status', ['Selesai', 'Ditolak', 'Dibatalkan'])->count() > 0) {
             return response()->json(['message' => 'Unit aset sedang memiliki sewa aktif.'], 422);
         }
@@ -394,21 +440,37 @@ class AdminAssetController extends Controller
      */
     public function dashboard()
     {
-        $totalItems = AssetItem::where('is_active', true)->count();
-        $totalDemo = AssetItem::where('is_active', true)->where('is_demo', true)->count();
-        $operasional = AssetItem::where('is_active', true)->where('status_operasional', 'Operasional')->count();
-        $terbatas = AssetItem::where('is_active', true)->where('status_operasional', 'Terbatas')->count();
-        $tidakOperasional = AssetItem::where('is_active', true)->where('status_operasional', 'Tidak Operasional')->count();
+        $user = auth()->user();
+        $isGlobal = ! $user || in_array($user->role, self::GLOBAL_ASSET_ROLES, true);
+        $opdId = $isGlobal ? null : $user->opd_id;
 
-        $pengajuan = AssetRental::count();
-        $pending = AssetRental::whereIn('status', ['Diajukan', 'Diverifikasi'])->count();
-        $disetujui = AssetRental::where('status', 'Disetujui')->count();
-        $selesai = AssetRental::where('status', 'Selesai')->count();
-        $pendapatan = (float) AssetRental::where('status', 'Selesai')->sum('total_biaya');
-        $pendapatanPending = (float) AssetRental::whereIn('status', ['Disetujui', 'Diverifikasi'])->sum('total_biaya');
+        $itemsQuery = AssetItem::where('is_active', true);
+        $rentalsQuery = AssetRental::query();
 
-        $perCategory = AssetItem::select('category_id', DB::raw('count(*) as total'))
-            ->where('is_active', true)
+        if ($opdId) {
+            $itemsQuery->where('opd_id', $opdId);
+            $rentalsQuery->whereHas('assetItem', fn ($q) => $q->where('opd_id', $opdId));
+        }
+
+        $totalItems = (clone $itemsQuery)->count();
+        $totalDemo = (clone $itemsQuery)->where('is_demo', true)->count();
+        $operasional = (clone $itemsQuery)->where('status_operasional', 'Operasional')->count();
+        $terbatas = (clone $itemsQuery)->where('status_operasional', 'Terbatas')->count();
+        $tidakOperasional = (clone $itemsQuery)->where('status_operasional', 'Tidak Operasional')->count();
+
+        $pengajuan = (clone $rentalsQuery)->count();
+        $pending = (clone $rentalsQuery)->whereIn('status', ['Diajukan', 'Diverifikasi'])->count();
+        $disetujui = (clone $rentalsQuery)->where('status', 'Disetujui')->count();
+        $selesai = (clone $rentalsQuery)->where('status', 'Selesai')->count();
+        $pendapatan = (float) (clone $rentalsQuery)->where('status', 'Selesai')->sum('total_biaya');
+        $pendapatanPending = (float) (clone $rentalsQuery)->whereIn('status', ['Disetujui', 'Diverifikasi'])->sum('total_biaya');
+
+        $perCategoryQuery = AssetItem::select('category_id', DB::raw('count(*) as total'))
+            ->where('is_active', true);
+        if ($opdId) {
+            $perCategoryQuery->where('opd_id', $opdId);
+        }
+        $perCategory = $perCategoryQuery
             ->groupBy('category_id')
             ->with('category:id,name')
             ->get()
