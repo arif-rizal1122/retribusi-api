@@ -38,11 +38,12 @@ class BillController extends Controller
         if ($user && in_array($user->role, ['opd', 'petugas'])) {
             $query->where('opd_id', $user->opd_id);
 
-            // If petugas, filter by assigned types and classifications
+            // If petugas, filter by assigned types and classifications, or bills issued by self
             if ($user->role === 'petugas') {
                 $assignments = $user->assignments;
                 if ($assignments->isNotEmpty()) {
-                    $query->where(function ($q) use ($assignments) {
+                    $query->where(function ($q) use ($assignments, $user) {
+                        $q->where('user_id', $user->id);
                         foreach ($assignments as $assignment) {
                             $q->orWhere(function ($sq) use ($assignment) {
                                 $sq->where('retribution_type_id', $assignment->retribution_type_id);
@@ -53,8 +54,8 @@ class BillController extends Controller
                         }
                     });
                 } else {
-                    // No assignments = no bills
-                    $query->whereRaw('1 = 0');
+                    // Petugas tanpa assignment eksplisit tetap dapat mengelola tagihan yang diterbitkannya sendiri
+                    $query->where('user_id', $user->id);
                 }
             }
         }
