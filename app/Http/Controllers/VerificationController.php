@@ -86,9 +86,30 @@ class VerificationController extends Controller
     {
         $user = $request->user();
         $query = Verification::with(['opd', 'submitter', 'verifier', 'taxObject.classification', 'taxObject.taxpayer']);
+        $targetOpdId = null;
 
-        if (!$user->isSuperAdmin() && $user->opd_id) {
-            $query->where('opd_id', $user->opd_id);
+        // 1. Jika request eksplisit mengirimkan opd_id (dari URL/dropdown OPD)
+        if ($request->filled('opd_id') && is_numeric($request->opd_id)) {
+            $requestedOpdId = (int) $request->opd_id;
+            if ($user->role === 'super_admin' || $user->role === 'admin' || !$user->opd_id || (int) $user->opd_id === $requestedOpdId) {
+                $targetOpdId = $requestedOpdId;
+            } else {
+                $targetOpdId = (int) $user->opd_id;
+            }
+        } elseif ($user->role === 'opd' || (!in_array($user->role, ['super_admin']) && $user->opd_id && (int) $user->opd_id !== 5)) {
+            // Pengguna OPD teknis (Perikanan, Dishub, DLH, PUPR, Pariwisata, dll) terisolasi ke OPD-nya
+            $targetOpdId = (int) $user->opd_id;
+        } elseif ($user->opd_id && !in_array($user->role, ['super_admin'])) {
+            $targetOpdId = (int) $user->opd_id;
+        }
+
+        if ($targetOpdId) {
+            $query->where(function ($q) use ($targetOpdId) {
+                $q->where('opd_id', $targetOpdId)
+                  ->orWhereHas('taxObject', function ($to) use ($targetOpdId) {
+                      $to->withoutGlobalScopes()->where('opd_id', $targetOpdId);
+                  });
+            });
         }
 
         if ($request->has('status')) {

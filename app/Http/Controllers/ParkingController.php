@@ -435,14 +435,17 @@ class ParkingController extends Controller
         $validated = $request->validate([
             'parking_location_id' => 'required|exists:parking_locations,id',
             'vehicle_type' => 'required|in:r2,r4,truk_bus,inap_truk,proxy_gt_1,proxy_gt_2,proxy_gt_3,proxy_gt_4',
-            'plate_hint' => 'nullable|string|max:10',
+            'duration_days' => 'nullable|integer|min:1|max:365',
+            'plate_hint' => 'nullable|string|max:30',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
         ]);
 
         $user = $request->user();
         $location = ParkingLocation::findOrFail($validated['parking_location_id']);
-        $amount = (float)$location->rateFor($validated['vehicle_type']);
+        $durationDays = max(1, (int)($validated['duration_days'] ?? 1));
+        $baseRate = (float)$location->rateFor($validated['vehicle_type']);
+        $amount = $baseRate * $durationDays;
         $today = now()->toDateString();
 
         // 1. Porsi Pembagian (70% RKUD : 30% Jukir)
@@ -481,7 +484,7 @@ class ParkingController extends Controller
         $receiptToken = 'PKR-' . date('ymd') . '-' . strtoupper(Str::random(6));
         $newDeposit = $currentDeposit - $rkudShare;
 
-        $session = DB::transaction(function () use ($validated, $user, $location, $amount, $rkudShare, $jukirShare, $today, $wallet, $receiptToken, $newDeposit, $currentDeposit) {
+        $session = DB::transaction(function () use ($validated, $user, $location, $amount, $baseRate, $durationDays, $rkudShare, $jukirShare, $today, $wallet, $receiptToken, $newDeposit, $currentDeposit) {
             // A. Potong Saldo Deposit di DB jika tabel tersedia
             if (DB::getSchemaBuilder()->hasTable('jukir_profiles')) {
                 $exists = DB::table('jukir_profiles')->where('user_id', $user->id)->exists();
@@ -540,6 +543,8 @@ class ParkingController extends Controller
                 'metadata' => [
                     'source' => 'parking_prepaid_cash',
                     'vehicle_type' => $validated['vehicle_type'],
+                    'base_rate' => $baseRate,
+                    'duration_days' => $durationDays,
                     'payment_method' => 'cash',
                     'deposit_deducted' => $rkudShare,
                     'jukir_earnings' => $jukirShare,
@@ -585,25 +590,28 @@ class ParkingController extends Controller
             'proxy_gt_3' => 'KAPAL GOL III (11 - 20 GT)',
             'proxy_gt_4' => 'KAPAL GOL IV (> 20 GT)',
         ];
+        $isHarbor = str_starts_with($validated['vehicle_type'], 'proxy_gt');
         $vehicleLabel = $vehicleLabels[$validated['vehicle_type']] ?? strtoupper($validated['vehicle_type']);
 
         // Format Payload ESC/POS Struk Thermal Mini Bluetooth (58mm)
         $thermalPayload = [
             'header' => 'PEMERINTAH KOTA BAUBAU',
-            'sub_header' => 'DINAS PERHUBUNGAN - M-PAD PARKIR',
+            'sub_header' => $isHarbor ? 'DISHUB - RETRIBUSI TAMBAT LABUH' : 'DINAS PERHUBUNGAN - M-PAD PARKIR',
             'location_name' => $location->name,
             'receipt_no' => $receiptToken,
             'datetime' => now()->format('d/m/Y H:i:s'),
-            'vehicle_type' => $vehicleLabel,
+            'vehicle_type' => $durationDays > 1 ? "{$vehicleLabel} ({$durationDays} Hari)" : $vehicleLabel,
             'plate_hint' => $validated['plate_hint'] ? strtoupper($validated['plate_hint']) : '-',
             'amount_total' => $amount,
+            'duration_days' => $durationDays,
             'qr_verification_url' => 'https://mpad.baubaukota.go.id/p/cek?token=' . $receiptToken,
             'footer_notice' => 'MINTA STRUK RESMI M-PAD. TANPA STRUK = PARKIR GRATIS!',
             'reward_notice' => 'Scan QR struk ini di aplikasi M-PAD Warga untuk dapat Poin Sadar Pajak & Tiket Undian Berhadiah.',
         ];
 
-        if (str_starts_with($validated['vehicle_type'], 'proxy_gt')) {
+        if ($isHarbor) {
             $thermalPayload['legal_notice'] = 'Retribusi Tambat Labuh Pemkot Baubau (Perda 1/2024). Bukan bukti kelaikan laut / SPB KSOP.';
+            $thermalPayload['footer_notice'] = 'BUKTI RETRIBUSI RESMI DISHUB KOTA BAUBAU';
         }
 
         return response()->json([

@@ -238,6 +238,43 @@ class DishubQuadrupleLockAndJembatanBatuTest extends TestCase
         $this->assertStringContainsString('Bukan bukti kelaikan laut / SPB KSOP', $response->json('data.thermal_print_payload.legal_notice'));
     }
 
+    public function test_prepaid_cash_with_proxy_gt_ship_multi_day(): void
+    {
+        Sanctum::actingAs($this->jukir);
+
+        $this->postJson('/api/parking/shift/open', [
+            'parking_location_id' => $this->locationJembatanBatu->id,
+        ])->assertStatus(201);
+
+        DB::table('jukir_profiles')->updateOrInsert(
+            ['user_id' => $this->jukir->id],
+            [
+                'surat_tugas_no' => 'ST.DISHUB/PKR/2026/0001',
+                'surat_tugas_expired_at' => now()->addMonths(6),
+                'deposit_balance' => 50000.00,
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        // Golongan II (5 - 10 GT): Rp 3.000 / hari x 3 hari = Rp 9.000 -> RKUD 70% = Rp 6.300
+        $response = $this->postJson('/api/parking/sessions/prepaid-cash', [
+            'parking_location_id' => $this->locationJembatanBatu->id,
+            'vehicle_type' => 'proxy_gt_2',
+            'duration_days' => 3,
+            'plate_hint' => 'KM SPEED BAUBAU 01',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.tariff_total', 9000)
+            ->assertJsonPath('data.deposit_deducted_rkud', 6300)
+            ->assertJsonPath('data.thermal_print_payload.duration_days', 3)
+            ->assertJsonPath('data.thermal_print_payload.vehicle_type', 'KAPAL GOL II (5 - 10 GT) (3 Hari)');
+
+        $this->assertStringContainsString('Bukan bukti kelaikan laut / SPB KSOP', $response->json('data.thermal_print_payload.legal_notice'));
+    }
+
     public function test_overnight_truck_parking_at_jembatan_batu(): void
     {
         Sanctum::actingAs($this->jukir);

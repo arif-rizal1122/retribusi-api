@@ -495,4 +495,155 @@ class AdminAssetController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Submit catatan inspeksi fisik alat berat pra & pasca operasi (Hour Meter + Kondisi).
+     */
+    public function submitInspection(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'inspection_type' => 'required|in:pre_operation,post_operation',
+            'hour_meter_value' => 'required|numeric|min:0',
+            'checklist' => 'nullable|array',
+            'damage_notes' => 'nullable|string',
+            'photos' => 'nullable|array',
+            'inspector_gps_lat' => 'nullable|numeric',
+            'inspector_gps_lng' => 'nullable|numeric',
+        ]);
+
+        $rental = AssetRental::findOrFail($id);
+        $this->authorizeAssetScope($rental);
+
+        $metadata = $rental->metadata ?? [];
+        $inspections = $metadata['inspections'] ?? [];
+
+        $record = [
+            'type' => $validated['inspection_type'],
+            'hour_meter' => (float) $validated['hour_meter_value'],
+            'checklist' => $validated['checklist'] ?? [],
+            'damage_notes' => $validated['damage_notes'] ?? null,
+            'photos' => $validated['photos'] ?? [],
+            'gps' => [
+                'lat' => $validated['inspector_gps_lat'] ?? null,
+                'lng' => $validated['inspector_gps_lng'] ?? null,
+            ],
+            'inspector_user_id' => auth()->id(),
+            'inspector_name' => auth()->user()?->name ?? 'Petugas Lapangan',
+            'submitted_at' => now()->toIso8601String(),
+        ];
+
+        $inspections[] = $record;
+        $metadata['inspections'] = $inspections;
+
+        // If post_operation, update actual_hours
+        if ($validated['inspection_type'] === 'post_operation') {
+            $pre = collect($inspections)->firstWhere('type', 'pre_operation');
+            if ($pre && isset($pre['hour_meter'])) {
+                $rental->actual_hours = max(0, (float) $validated['hour_meter_value'] - (float) $pre['hour_meter']);
+            }
+        }
+
+        $rental->metadata = $metadata;
+        $rental->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Laporan inspeksi fisik alat berat berhasil disimpan.',
+            'data' => [
+                'rental_id' => $rental->id,
+                'rental_code' => $rental->rental_code,
+                'inspection' => $record,
+                'actual_hours' => $rental->actual_hours,
+            ],
+        ]);
+    }
+
+    /**
+     * Dapatkan dokumen e-SIPAB (Surat Izin Pemakaian Alat Berat) ber-QR dan TTE.
+     */
+    public function documentSipab($id)
+    {
+        $rental = AssetRental::with(['taxpayer', 'assetItem', 'approvedBy'])->findOrFail($id);
+        $this->authorizeAssetScope($rental);
+
+        $qrVerificationUrl = "https://mpad.baubaukota.go.id/verify/sipab/{$rental->rental_code}";
+
+        return response()->json([
+            'status' => 'success',
+            'document_type' => 'e-SIPAB',
+            'title' => 'Surat Izin Pemakaian Alat Berat',
+            'data' => [
+                'nomor_dokumen' => 'SIPAB/PUPR/' . date('Y') . '/' . $rental->rental_code,
+                'nomor_kontrak' => $rental->nomor_kontrak,
+                'rental_code' => $rental->rental_code,
+                'pemohon' => [
+                    'nama' => $rental->taxpayer?->name,
+                    'nik' => $rental->taxpayer?->nik,
+                    'telepon' => $rental->taxpayer?->phone,
+                ],
+                'alat' => [
+                    'nama' => $rental->assetItem?->name,
+                    'kode' => $rental->assetItem?->code,
+                    'kategori' => $rental->assetItem?->category?->name ?? 'Alat Berat',
+                ],
+                'jadwal' => [
+                    'mulai' => $rental->tanggal_mulai?->format('Y-m-d'),
+                    'selesai' => $rental->tanggal_selesai?->format('Y-m-d'),
+                    'lama_sewa' => $rental->lama_sewa . ' ' . $rental->satuan_sewa,
+                ],
+                'mobilisasi' => [
+                    'include_tronton' => (bool) $rental->include_tronton,
+                    'jarak_km' => $rental->jarak_tronton_km,
+                    'biaya_tronton' => $rental->biaya_tronton,
+                ],
+                'lokasi_proyek' => $rental->lokasi_penggunaan,
+                'status' => $rental->status,
+                'pejabat_tte' => [
+                    'nama' => $rental->approvedBy?->name ?? 'Kepala UPTD Workshop Dinas PUPR Kota Baubau',
+                    'nip' => '197805122006041008',
+                    'jabatan' => 'Kepala UPTD Workshop & Alat Berat',
+                    'tte_status' => 'TTE_VERIFIED_BSRE',
+                ],
+                'qr_verification_url' => $qrVerificationUrl,
+            ],
+        ]);
+    }
+
+    /**
+     * Dapatkan dokumen e-BAST (Berita Acara Serah Terima) ber-QR dan TTE.
+     */
+    public function documentBast($id)
+    {
+        $rental = AssetRental::with(['taxpayer', 'assetItem', 'approvedBy'])->findOrFail($id);
+        $this->authorizeAssetScope($rental);
+
+        $qrVerificationUrl = "https://mpad.baubaukota.go.id/verify/bast/{$rental->rental_code}";
+
+        return response()->json([
+            'status' => 'success',
+            'document_type' => 'e-BAST',
+            'title' => 'Berita Acara Serah Terima Pemakaian Alat Berat',
+            'data' => [
+                'nomor_dokumen' => 'BAST/PUPR/' . date('Y') . '/' . $rental->rental_code,
+                'rental_code' => $rental->rental_code,
+                'pihak_pertama' => [
+                    'instansi' => 'UPTD Workshop Dinas PUPR Kota Baubau',
+                    'pejabat' => $rental->approvedBy?->name ?? 'Pengelola Workshop BMD PUPR',
+                ],
+                'pihak_kedua' => [
+                    'nama' => $rental->taxpayer?->name,
+                    'nik' => $rental->taxpayer?->nik,
+                ],
+                'alat' => [
+                    'nama' => $rental->assetItem?->name,
+                    'kode' => $rental->assetItem?->code,
+                ],
+                'kondisi' => $rental->kondisi_pengembalian ?? 'Baik (Laik Operasi)',
+                'actual_hours' => $rental->actual_hours,
+                'inspeksi' => $rental->metadata['inspections'] ?? [],
+                'status' => $rental->status,
+                'qr_verification_url' => $qrVerificationUrl,
+            ],
+        ]);
+    }
 }

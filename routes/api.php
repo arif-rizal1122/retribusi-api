@@ -425,6 +425,9 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/asset/dashboard', [\App\Http\Controllers\AdminAssetController::class, 'dashboard']);
         Route::get('/asset/rentals', [\App\Http\Controllers\AdminAssetController::class, 'rentals']);
         Route::post('/asset/rentals/{id}/survey', [\App\Http\Controllers\AdminAssetController::class, 'submitSurvey']);
+        Route::post('/asset/rentals/{id}/inspection', [\App\Http\Controllers\AdminAssetController::class, 'submitInspection']);
+        Route::get('/asset/rentals/{id}/document/sipab', [\App\Http\Controllers\AdminAssetController::class, 'documentSipab']);
+        Route::get('/asset/rentals/{id}/document/bast', [\App\Http\Controllers\AdminAssetController::class, 'documentBast']);
         Route::post('/asset/rentals/{id}/contract', [\App\Http\Controllers\AdminAssetController::class, 'generateContract']);
         Route::post('/asset/rentals/{id}/verify', [\App\Http\Controllers\AdminAssetController::class, 'verify']);
         Route::post('/asset/rentals/{id}/approve', [\App\Http\Controllers\AdminAssetController::class, 'approve']);
