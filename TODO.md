@@ -52,8 +52,13 @@ Terakhir diperbarui: 2026-08-03
 - [x] **DISHUB-M32-003** Implementasikan recurring auto-billing (e-SKRD) 15 Kios Kawasan Jembatan Batu (Rp 120.000 / tenant / bulan, Perda 1/2024 Pasal 84) secara idempoten.
 - [x] **DISHUB-M32-004** Automated feature test suite `DishubQuadrupleLockAndJembatanBatuTest` lulus 100% (13 test cases, 85 assertions).
 
+## Persiapan portal warga Dishub/PUPR/DLH — 14 September 2026
+
+- [x] **AM-BASE-01** Petakan owner data lokal, route, ID, status, dokumen, dan consumer aset/bisnis. Hasil: [peta kontrak](docs/05_modul_aplikasi/AM_BASE_01_DASHBOARD_CONTRACT_MAP.md). Dashboard `retribusi-aset`/`retribusi-bisnis` direferensikan workspace tetapi folder belum tersedia; D01 tetap terbuka untuk integrasi. Tidak mengubah runtime/admin/petugas.
+- Validasi checkpoint dokumentasi: inspeksi source empat repo, pengecekan target tautan/referensi source, dan `git diff --check`. Tidak ada pengujian bank, browser, atau produksi.
+- Task persiapan selanjutnya: **AM-PAY-01** (inventaris bank berdasarkan source dan bukti lokal), kemudian **AM-BASE-02** (kontrak citizen per layanan). Backlog lengkap dan hasil commit/push: `../TODO_MPAD_API_MOBILE_2026-09-14.md` serta `../WORKBOARD.md`.
+
 ## Aturan Lanjutan
 
 - Setelah PAY-002 selesai, perbarui `../WORKBOARD.md`, lalu lanjutkan hanya jika pengguna menginstruksikan.
 - Endpoint atau perubahan schema baru wajib menambahkan/menyesuaikan test yang relevan.
-
