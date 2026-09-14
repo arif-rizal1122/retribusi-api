@@ -315,7 +315,7 @@ class CitizenAssetController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Permohonan sewa berhasil diajukan. Petugas PUPR akan memverifikasi permohonan Anda.',
-                'data' => $rental->load('assetItem:id,name,code'),
+                'data' => $this->citizenRentalPayload($rental->load('assetItem:id,name,code')),
             ], 201);
         });
     }
@@ -339,7 +339,7 @@ class CitizenAssetController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return response()->json(['data' => $rentals]);
+        return response()->json(['data' => $rentals->map(fn (AssetRental $rental) => $this->citizenRentalPayload($rental))]);
     }
 
     /**
@@ -353,7 +353,18 @@ class CitizenAssetController extends Controller
             ->where('taxpayer_id', $taxpayer->id)
             ->firstOrFail();
 
-        return response()->json(['data' => $rental]);
+        return response()->json(['data' => $this->citizenRentalPayload($rental)]);
+    }
+
+    private function citizenRentalPayload(AssetRental $rental): array
+    {
+        $payload = $rental->toArray();
+        // Calendar days have no UTC offset. Preserve timestamps for survey/approval events.
+        foreach (['tanggal_mulai', 'tanggal_selesai', 'tanggal_pengembalian'] as $field) {
+            $payload[$field] = $rental->{$field}?->toDateString();
+        }
+
+        return $payload;
     }
 
     /**
