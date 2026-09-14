@@ -313,6 +313,34 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/{token}/complete', [OfficerPaymentController::class, 'complete']);
     });
 
+    // ------------------------------------------------------------------------
+    // Dishub Parking Quick-Tap (Kasir Lapangan & Inspektur Patroli)
+    // RBAC + OPD-scoping dijaga di Concerns\ParkingAccess.
+    // ------------------------------------------------------------------------
+    Route::prefix('parking')->group(function () {
+        // Operasional bersama (jukir & inspektur)
+        Route::get('/locations', [\App\Http\Controllers\Api\V1\Parking\ParkingController::class, 'locations']);
+        Route::get('/dashboard', [\App\Http\Controllers\Api\V1\Parking\ParkingController::class, 'dashboard']);
+        Route::get('/harbor/proxy-gt-rates', [\App\Http\Controllers\Api\V1\Parking\ParkingController::class, 'proxyGtRates']);
+
+        // Shift harian jukir
+        Route::post('/shift/open', [\App\Http\Controllers\Api\V1\Parking\ParkingShiftController::class, 'open']);
+        Route::post('/shift/close', [\App\Http\Controllers\Api\V1\Parking\ParkingShiftController::class, 'close']);
+        Route::get('/shift-summary', [\App\Http\Controllers\Api\V1\Parking\ParkingShiftController::class, 'summary']);
+
+        // Transaksi Quick-Tap
+        Route::post('/sessions', [\App\Http\Controllers\Api\V1\Parking\ParkingSessionController::class, 'record']);
+        Route::post('/sessions/prepaid-cash', [\App\Http\Controllers\Api\V1\Parking\ParkingSessionController::class, 'prepaidCash']);
+
+        // Profil & top-up deposit jukir
+        Route::get('/jukir/profile', [\App\Http\Controllers\Api\V1\Parking\JukirController::class, 'profile']);
+        Route::post('/jukir/topup', [\App\Http\Controllers\Api\V1\Parking\JukirController::class, 'topup']);
+
+        // Inspektur patroli (opd/pengawas*/super_admin)
+        Route::get('/inspector/spot-check', [\App\Http\Controllers\Api\V1\Parking\ParkingInspectorController::class, 'spotCheck']);
+        Route::post('/inspector/sanction', [\App\Http\Controllers\Api\V1\Parking\ParkingInspectorController::class, 'sanction']);
+    });
+
     // PBB Bapenda Citizen Actions
     Route::group(['prefix' => 'pbb/bapenda'], function () {
         Route::post('/link-nop', [PbbBapendaController::class, 'linkNop']);

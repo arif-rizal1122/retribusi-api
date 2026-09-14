@@ -36,6 +36,8 @@ class User extends Authenticatable
         'latitude',
         'longitude',
         'retribution_type_id',
+        'surat_tugas_no',
+        'surat_tugas_expired_at',
     ];
  
     /**
@@ -59,6 +61,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'metadata' => 'array',
+            'surat_tugas_expired_at' => 'datetime',
         ];
     }
 
@@ -173,6 +176,26 @@ class User extends Authenticatable
     public function confirmedPayments(): HasMany
     {
         return $this->hasMany(Payment::class, 'approved_by');
+    }
+
+    public function parkingSessions(): HasMany
+    {
+        return $this->hasMany(ParkingSession::class, 'jukir_user_id');
+    }
+
+    public function parkingShifts(): HasMany
+    {
+        return $this->hasMany(ParkingShift::class, 'user_id');
+    }
+
+    public function parkingDeposits(): HasMany
+    {
+        return $this->hasMany(ParkingDeposit::class, 'user_id');
+    }
+
+    public function parkingSanctions(): HasMany
+    {
+        return $this->hasMany(ParkingSanction::class, 'jukir_user_id');
     }
 
     /**

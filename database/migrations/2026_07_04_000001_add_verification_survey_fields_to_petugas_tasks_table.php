@@ -12,9 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('petugas_tasks', function (Blueprint $table) {
-            $table->string('task_type')->default('general')->after('taxpayer_id');
-            $table->foreignId('tax_object_id')->nullable()->after('taxpayer_id')->constrained()->nullOnDelete();
-            $table->foreignId('verification_id')->nullable()->after('tax_object_id')->constrained()->nullOnDelete();
+            if (!Schema::hasColumn('petugas_tasks', 'tax_object_id')) {
+                $table->foreignId('tax_object_id')->nullable()->after('taxpayer_id')->constrained()->nullOnDelete();
+            }
+            if (!Schema::hasColumn('petugas_tasks', 'verification_id')) {
+                $table->foreignId('verification_id')->nullable()->after('tax_object_id')->constrained()->nullOnDelete();
+            }
         });
     }
 
