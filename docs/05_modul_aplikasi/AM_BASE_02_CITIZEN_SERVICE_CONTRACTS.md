@@ -30,6 +30,8 @@ Usulan read: `GET /api/citizen/service-requests?service_code=&status=&page=` dan
 
 Status workflow, bill, payment request dan dokumen merupakan empat domain terpisah. Contoh: alat sudah `completed`, termin kedua masih `unpaid`; lab `completed` tetapi dokumen `awaiting_signature`. `disputed` bukan reversal/refund otomatis. Mapping legacy (`UNPAID`, `PAID`, `lunas`, dll.) akan diterapkan melalui AM-BASE-03 dengan test, tanpa mengganti enum internal hanya karena tabel rancangan ini.
 
+Implementasi parsial AM-BASE-03B (14 September 2026): response `/api/citizen/bills` menggunakan `CitizenBillStatus` untuk alias legacy dan status `pending`, `overdue`, `paid`, `pending_verification`, `cancelled`, `expired`, `disputed`, `unknown`. Hanya pending/overdue yang dapat memiliki can_pay=true; status kosong/tidak dikenal tidak diubah menjadi unpaid karena jatuh tempo atau klaim. Pemetaan ini hanya pada response citizen, tanpa penulisan ulang status database. Matriks PHP standalone 26 kasus dan consumer mobile lulus; feature endpoint masih tertunda karena autoload Laravel tidak tersedia. AM-BASE-03 belum selesai end-to-end.
+
 ## Kontrak per layanan
 
 | Layanan | Existing yang diperiksa | Usulan endpoint baru | Input wajib dan referensi |

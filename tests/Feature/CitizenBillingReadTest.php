@@ -242,6 +242,49 @@ class CitizenBillingReadTest extends TestCase
         $this->getJson('/api/citizen/tax-objects')->assertForbidden();
     }
 
+    public function test_non_payable_statuses_are_preserved_despite_due_dates_and_pending_claims(): void
+    {
+        $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
+        $cases = [
+            ['EXPIRED', 'expired', 'Kedaluwarsa'],
+            ['disputed', 'disputed', 'Dalam sengketa'],
+            ['new-state', 'unknown', 'Status belum diketahui'],
+            ['pending_verification', 'pending_verification', 'Menunggu verifikasi pembayaran'],
+            ['PAID', 'paid', 'Lunas'],
+            ['voided', 'cancelled', 'Dibatalkan'],
+        ];
+        $expected = [];
+        foreach ($cases as [$raw, $status, $label]) {
+            $bill = $this->createBill($taxpayer, ['status' => $raw, 'due_date' => now()->subDay()]);
+            $this->createPayment($bill);
+            $expected[$bill->id] = [$raw, $status, $label];
+        }
+
+        Sanctum::actingAs($taxpayer);
+        $response = $this->getJson('/api/citizen/bills?per_page=100')->assertOk();
+        $rows = collect($response->json('data'))->keyBy('id');
+        foreach ($expected as $id => [$raw, $status, $label]) {
+            $this->assertSame($status, $rows[$id]['status']);
+            $this->assertSame($label, $rows[$id]['status_label']);
+            $this->assertFalse($rows[$id]['can_pay']);
+            foreach (['bri_va', 'sultra_va', 'manual_transfer'] as $method) {
+                $this->assertFalse($rows[$id]['payment_options'][$method]['available']);
+            }
+            $this->assertSame($raw, Bill::findOrFail($id)->getRawOriginal('status'));
+        }
+    }
+
+    public function test_legacy_unpaid_status_is_payable_without_changing_storage(): void
+    {
+        $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
+        $bill = $this->createBill($taxpayer, ['status' => 'UNPAID', 'due_date' => now()->addDay()]);
+        Sanctum::actingAs($taxpayer);
+        $this->getJson('/api/citizen/bills')->assertOk()
+            ->assertJsonPath('data.0.status', 'pending')
+            ->assertJsonPath('data.0.can_pay', true);
+        $this->assertSame('UNPAID', $bill->fresh()->getRawOriginal('status'));
+    }
+
     private function createBill(Taxpayer $taxpayer, array $overrides = []): Bill
     {
         $taxObject = TaxObject::factory()->create([
