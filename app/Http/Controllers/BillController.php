@@ -9,6 +9,7 @@ use App\Models\Taxpayer;
 use App\Services\BillCreationService;
 use App\Services\BillPeriodService;
 use App\Services\Payment\Snap\SnapBrivaReadiness;
+use App\Support\CitizenBillStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -301,16 +302,8 @@ class BillController extends Controller
         unset($payload['has_pending_payment_claim'], $payload['has_active_payment_request']);
 
         $payload['status'] = $status;
-        $payload['status_label'] = match ($status) {
-            'overdue' => 'Jatuh tempo',
-            'paid' => 'Lunas',
-            'pending_verification' => (bool) $bill->has_active_payment_request
-                ? 'Menunggu pembayaran BRIVA'
-                : 'Menunggu verifikasi pembayaran',
-            'cancelled' => 'Dibatalkan',
-            default => 'Menunggu pembayaran',
-        };
-        $payload['can_pay'] = in_array($status, ['pending', 'overdue'], true);
+        $payload['status_label'] = CitizenBillStatus::label($status, (bool) $bill->has_active_payment_request);
+        $payload['can_pay'] = CitizenBillStatus::canPay($status);
         $payload['payment_options'] = $this->citizenPaymentOptions($bill, $payload['can_pay']);
         $payload['active_payment_request'] = $this->activePaymentRequestPayload($bill);
 
@@ -415,29 +408,12 @@ class BillController extends Controller
 
     private function citizenBillStatus(Bill $bill): string
     {
-        $storedStatus = strtolower((string) $bill->getRawOriginal('status'));
-
-        if (in_array($storedStatus, ['paid', 'lunas', 'success', 'settled'], true)) {
-            return 'paid';
-        }
-
-        if (in_array($storedStatus, ['cancelled', 'canceled', 'expired', 'void', 'voided'], true)) {
-            return 'cancelled';
-        }
-
-        if ((bool) $bill->has_pending_payment_claim) {
-            return 'pending_verification';
-        }
-
-        if ((bool) $bill->has_active_payment_request) {
-            return 'pending_verification';
-        }
-
-        if ($storedStatus === 'overdue' || $bill->due_date?->isPast()) {
-            return 'overdue';
-        }
-
-        return 'pending';
+        return CitizenBillStatus::normalize(
+            $bill->getRawOriginal('status'),
+            (bool) $bill->has_pending_payment_claim,
+            (bool) $bill->has_active_payment_request,
+            (bool) $bill->due_date?->isPast(),
+        );
     }
 
     /**
@@ -625,4 +601,3 @@ class BillController extends Controller
         ]);
     }
 }
-

@@ -1,0 +1,31 @@
+<?php
+
+// [raw status, pending claim, active request, past due, citizen status, can pay, label]
+return [
+    'pending' => ['pending', false, false, false, 'pending', true, 'Menunggu pembayaran'],
+    'legacy unpaid' => ['UNPAID', false, false, false, 'pending', true, 'Menunggu pembayaran'],
+    'whitespace unpaid' => [' unpaid ', false, false, true, 'overdue', true, 'Jatuh tempo'],
+    'overdue' => ['overdue', false, false, false, 'overdue', true, 'Jatuh tempo'],
+    'late alias' => ['LATE', false, false, false, 'overdue', true, 'Jatuh tempo'],
+    'due pending' => ['pending', false, false, true, 'overdue', true, 'Jatuh tempo'],
+    'claim before due' => ['pending', true, false, true, 'pending_verification', false, 'Menunggu verifikasi pembayaran'],
+    'active request before due' => ['UNPAID', false, true, true, 'pending_verification', false, 'Menunggu pembayaran BRIVA'],
+    'overdue with claim' => ['overdue', true, false, true, 'pending_verification', false, 'Menunggu verifikasi pembayaran'],
+    'paid' => ['PAID', false, false, true, 'paid', false, 'Lunas'],
+    'lunas beats claim' => [' lunas ', true, true, true, 'paid', false, 'Lunas'],
+    'success alias' => ['SUCCESS', false, false, false, 'paid', false, 'Lunas'],
+    'settled alias' => ['settled', false, false, false, 'paid', false, 'Lunas'],
+    'cancelled' => ['cancelled', false, false, false, 'cancelled', false, 'Dibatalkan'],
+    'canceled beats claim' => ['CANCELED', true, true, true, 'cancelled', false, 'Dibatalkan'],
+    'void' => ['void', false, false, true, 'cancelled', false, 'Dibatalkan'],
+    'voided' => ['voided', false, false, false, 'cancelled', false, 'Dibatalkan'],
+    'expired distinct' => ['EXPIRED', true, true, true, 'expired', false, 'Kedaluwarsa'],
+    'disputed distinct' => ['disputed', true, true, true, 'disputed', false, 'Dalam sengketa'],
+    'stored verification' => ['pending_verification', false, false, true, 'pending_verification', false, 'Menunggu verifikasi pembayaran'],
+    'confirmation alias' => ['pending_confirmation', false, false, true, 'pending_verification', false, 'Menunggu verifikasi pembayaran'],
+    'processing alias' => ['processing_receipt', false, false, true, 'pending_verification', false, 'Menunggu verifikasi pembayaran'],
+    'null not payable' => [null, false, false, false, 'unknown', false, 'Status belum diketahui'],
+    'empty past due' => ['', false, false, true, 'unknown', false, 'Status belum diketahui'],
+    'unknown with claim' => ['new-state', true, true, true, 'unknown', false, 'Status belum diketahui'],
+    'failed not unpaid' => ['failed', false, false, true, 'unknown', false, 'Status belum diketahui'],
+];

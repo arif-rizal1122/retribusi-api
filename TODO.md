@@ -52,8 +52,21 @@ Terakhir diperbarui: 2026-08-03
 - [x] **DISHUB-M32-003** Implementasikan recurring auto-billing (e-SKRD) 15 Kios Kawasan Jembatan Batu (Rp 120.000 / tenant / bulan, Perda 1/2024 Pasal 84) secara idempoten.
 - [x] **DISHUB-M32-004** Automated feature test suite `DishubQuadrupleLockAndJembatanBatuTest` lulus 100% (13 test cases, 85 assertions).
 
+## Persiapan portal warga Dishub/PUPR/DLH — 14 September 2026
+
+- [ ] **AM-BASE-03B — implementasi siap, validasi endpoint tertunda.** CitizenBillStatus memetakan alias legacy pada response `/api/citizen/bills`, mempertahankan expired/disputed/unknown, dan hanya memperhitungkan klaim/request aktif/jatuh tempo pada status pending/overdue yang dikenal. can_pay dan label konsisten; status database, route shared admin/petugas, serta settlement tidak diubah. Parent BASE-03 tetap terbuka untuk integrasi DLH/gateway/rekap.
+- Validasi aktual: `php tests/Standalone/citizen_bill_status.php` 26 kasus lulus (78 pemeriksaan status/can_pay/label) menggunakan class produksi langsung tanpa Laravel/DB; `php -l` enam file PHP terkait dan `git diff --check` lulus. PHPUnit Unit memakai matriks kasus yang sama. `php artisan test --filter=CitizenBillingReadTest` gagal bootstrap karena `vendor/autoload.php` tidak tersedia; test feature baru dan existing belum dieksekusi. Tidak mengklaim pengujian endpoint lulus.
+- Consumer: pencarian source admin/petugas tidak menemukan pemakai `/api/citizen/bills`; mobile `citizenBillingService`, Tagihan dan Pembayaran sudah mendukung expired/disputed/unknown. `npm.cmd run test -- src/services/citizenBillingService.test.ts` di mobile 18/18 lulus. Tidak mengubah frontend; typecheck/build frontend tidak dijalankan ulang. Tidak ada migration/deploy/perubahan .env. Jalankan feature test terisolasi setelah dependency API tersedia sebelum menerima integrasi.
+
+- [x] **AM-BASE-01** Petakan owner data lokal, route, ID, status, dokumen, dan consumer aset/bisnis. Hasil: [peta kontrak](docs/05_modul_aplikasi/AM_BASE_01_DASHBOARD_CONTRACT_MAP.md). Dashboard `retribusi-aset`/`retribusi-bisnis` direferensikan workspace tetapi folder belum tersedia; D01 tetap terbuka untuk integrasi. Tidak mengubah runtime/admin/petugas.
+- Validasi checkpoint dokumentasi: inspeksi source empat repo, pengecekan target tautan/referensi source, dan `git diff --check`. Tidak ada pengujian bank, browser, atau produksi.
+- [x] **AM-PAY-01** Inventaris bank per produk/environment: [hasil pemeriksaan](docs/10_payment_gateway_h2h/AM_PAY_01_BANK_PRODUCT_INVENTORY.md). Pisahkan BRIVA/QRIS BRI, VA/H2H/AFT Sultra, BNI simulator, Mandiri QRIS, BTN dan QRIS generik. D03 tetap terbuka untuk pengujian/aktivasi bank; tidak mengubah runtime.
+- Validasi AM-PAY-01: 29 tautan lokal tersedia, 21 commit bukti merupakan ancestor HEAD API, pemeriksaan source/consumer empat repo dan `git diff --check`. Suite PHP tidak dijalankan karena `vendor/autoload.php` tidak tersedia; bukan hasil UAT/produksi.
+- [x] **AM-BASE-02** Susun [kontrak citizen per layanan](docs/05_modul_aplikasi/AM_BASE_02_CITIZEN_SERVICE_CONTRACTS.md): katalog, quote, pengajuan, status, bill/payment/document reference, field wajib serta matriks kompatibilitas empat consumer. Endpoint usulan dipisahkan dari route existing; bukan implementasi atau aktivasi layanan. Validasi: 6 tautan lokal, inspeksi validator/envelope/consumer, `git diff --check`.
+- [x] **AM-GOV-05** Susun [matriks mitigasi inquiry/reverse inquiry](docs/10_payment_gateway_h2h/AM_GOV_05_INQUIRY_MITIGATION_MATRIX.md): 22 skenario, perilaku API target, audit, retry/eskalasi, rancangan antrean dan dependensi implementasi. Spesifikasi selesai; PAY-09/10, SMP-02/05, LAB-04 tetap terbuka. Validasi: 3 tautan, 22 baris/5 kolom, source referensi, `git diff --check`.
+- Backlog lengkap dan hasil commit/push: `../TODO_MPAD_API_MOBILE_2026-09-14.md` serta `../WORKBOARD.md`. Pengguna meminta beberapa task mandiri pada sesi ini; setiap task tetap memiliki checkpoint terpisah.
+
 ## Aturan Lanjutan
 
 - Setelah PAY-002 selesai, perbarui `../WORKBOARD.md`, lalu lanjutkan hanya jika pengguna menginstruksikan.
 - Endpoint atau perubahan schema baru wajib menambahkan/menyesuaikan test yang relevan.
-
