@@ -127,8 +127,10 @@ class CitizenAssetController extends Controller
             'tarif_per_satuan' => 'nullable|numeric|min:0',
             'dp' => 'nullable|numeric|min:0',
             'metode_pembayaran' => 'nullable|string',
-            'lokasi_penggunaan' => 'required|string',
+            'lokasi_penggunaan' => 'nullable|string',
             'koordinat' => 'nullable|string',
+            'room_id' => 'nullable|integer',
+            'is_guarantee_paid' => 'nullable|boolean',
             'jenis_pekerjaan' => 'nullable|string',
             'luas_volume' => 'nullable|string',
             'nama_proyek' => 'nullable|string',
@@ -168,72 +170,123 @@ class CitizenAssetController extends Controller
             if (!$asset->is_active || $asset->kondisi === 'Tidak Operasional' || $asset->status_operasional !== 'Operasional') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Alat berat sedang dalam perbaikan / tidak dapat disewa saat ini.',
+                    'message' => 'Unit aset sedang dalam perbaikan / tidak dapat disewa saat ini.',
                 ], 422);
             }
 
-            $bufferHari = (int) ($asset->buffer_default ?? 1);
-            $blockedStart = $mulai->copy()->subDays($bufferHari)->toDateString();
-            $blockedEnd = $selesai->copy()->addDays($bufferHari)->toDateString();
+            $isRusunawa = str_starts_with($asset->code ?? '', 'RUSUN-');
+            $roomId = null;
+            $isGuaranteePaid = (bool) ($validated['is_guarantee_paid'] ?? false);
 
-            $hasConflict = AssetRental::where('asset_item_id', $asset->id)
-                ->whereIn('status', ['Diajukan', 'Diverifikasi', 'Disetujui'])
-                ->where(function ($query) use ($blockedStart, $blockedEnd) {
-                    $query->whereDate('tanggal_mulai', '<=', $blockedEnd)
-                        ->where(function ($sub) use ($blockedStart) {
-                            $sub->whereDate('tanggal_selesai', '>=', $blockedStart)
-                                ->orWhere(function ($s2) use ($blockedStart) {
-                                    $s2->whereNull('tanggal_selesai')
-                                        ->whereDate('tanggal_mulai', '>=', $blockedStart);
-                                });
-                        });
-                })
-                ->lockForUpdate()
-                ->exists();
+            if ($isRusunawa) {
+                if (empty($validated['room_id'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Silakan pilih nomor unit kamar rusunawa.',
+                    ], 422);
+                }
 
-            if ($hasConflict) {
-                $durationDays = $mulai->diffInDays($selesai) + 1;
-                $nextAvailable = $this->availabilityService->findNextAvailableDate($asset->id, $mulai, $durationDays);
+                $room = \App\Models\RusunRoom::where('id', $validated['room_id'])
+                    ->where('asset_item_id', $asset->id)
+                    ->lockForUpdate()
+                    ->first();
 
-                return response()->json([
-                    'success' => false,
-                    'error_code' => 'SCHEDULE_CONFLICT',
-                    'message' => 'Jadwal yang Anda pilih bentrok dengan penyewaan lain atau masa jeda mobilisasi alat (1 hari).',
-                    'suggested_dates' => $nextAvailable,
-                ], 422);
-            }
+                if (!$room || $room->status !== 'available') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unit kamar tidak tersedia atau sedang ditempati.',
+                    ], 422);
+                }
 
-            $days = $mulai->diffInDays($selesai) + 1;
-            $tarifPerSatuan = isset($validated['tarif_per_satuan']) && $validated['tarif_per_satuan'] !== null
-                ? (float) $validated['tarif_per_satuan']
-                : (float) $asset->tarif_default;
-            $satuanSewa = $validated['satuan_sewa'] ?? ($asset->satuan_tarif ?? 'per hari');
+                $roomId = $room->id;
 
-            // Logika Tronton: Wajib untuk alat beroda rantai besi (Excavator/Bulldozer/Roller)
-            $isWajibTronton = (bool) ($asset->wajib_tronton ?? false);
-            $includeTronton = $isWajibTronton || (bool) ($validated['include_tronton'] ?? false);
-            $jarakKm = isset($validated['jarak_tronton_km']) ? (float) $validated['jarak_tronton_km'] : 10.0;
-            $biayaTronton = 0;
+                $hasConflict = AssetRental::where('room_id', $roomId)
+                    ->whereIn('status', ['Diajukan', 'Diverifikasi', 'Disetujui'])
+                    ->lockForUpdate()
+                    ->exists();
 
-            if ($includeTronton) {
-                if (isset($validated['biaya_tronton']) && (float) $validated['biaya_tronton'] > 0) {
-                    $biayaTronton = (float) $validated['biaya_tronton'];
-                } else {
-                    // Zonasi Tarif Perda 1/2024
-                    if ($jarakKm <= 20) {
-                        $biayaTronton = 450000;
-                    } elseif ($jarakKm <= 40) {
-                        $biayaTronton = 900000;
-                    } elseif ($jarakKm <= 60) {
-                        $biayaTronton = 1350000;
-                    } elseif ($jarakKm <= 80) {
-                        $biayaTronton = 1800000;
-                    } elseif ($jarakKm <= 100) {
-                        $biayaTronton = 2700000;
+                if ($hasConflict) {
+                    return response()->json([
+                        'success' => false,
+                        'error_code' => 'ROOM_ALREADY_RESERVED',
+                        'message' => 'Kamar ini sedang dalam proses pengajuan atau sewa aktif.',
+                    ], 422);
+                }
+
+                $bufferHari = 0;
+                $days = 1;
+                $satuanSewa = 'per bulan';
+                $tarifPerSatuan = (float) $asset->tarif_default;
+                $includeTronton = false;
+                $biayaTronton = 0;
+                $jarakKm = null;
+                $isWajibTronton = false;
+                $lokasiPenggunaan = $validated['lokasi_penggunaan'] ?? ($asset->lokasi ?: 'Rusunawa Kota Baubau');
+            } else {
+                $bufferHari = (int) ($asset->buffer_default ?? 1);
+                $blockedStart = $mulai->copy()->subDays($bufferHari)->toDateString();
+                $blockedEnd = $selesai->copy()->addDays($bufferHari)->toDateString();
+
+                $hasConflict = AssetRental::where('asset_item_id', $asset->id)
+                    ->whereIn('status', ['Diajukan', 'Diverifikasi', 'Disetujui'])
+                    ->where(function ($query) use ($blockedStart, $blockedEnd) {
+                        $query->whereDate('tanggal_mulai', '<=', $blockedEnd)
+                            ->where(function ($sub) use ($blockedStart) {
+                                $sub->whereDate('tanggal_selesai', '>=', $blockedStart)
+                                    ->orWhere(function ($s2) use ($blockedStart) {
+                                        $s2->whereNull('tanggal_selesai')
+                                            ->whereDate('tanggal_mulai', '>=', $blockedStart);
+                                    });
+                            });
+                    })
+                    ->lockForUpdate()
+                    ->exists();
+
+                if ($hasConflict) {
+                    $durationDays = $mulai->diffInDays($selesai) + 1;
+                    $nextAvailable = $this->availabilityService->findNextAvailableDate($asset->id, $mulai, $durationDays);
+
+                    return response()->json([
+                        'success' => false,
+                        'error_code' => 'SCHEDULE_CONFLICT',
+                        'message' => 'Jadwal yang Anda pilih bentrok dengan penyewaan lain atau masa jeda mobilisasi alat (1 hari).',
+                        'suggested_dates' => $nextAvailable,
+                    ], 422);
+                }
+
+                $days = $mulai->diffInDays($selesai) + 1;
+                $tarifPerSatuan = isset($validated['tarif_per_satuan']) && $validated['tarif_per_satuan'] !== null
+                    ? (float) $validated['tarif_per_satuan']
+                    : (float) $asset->tarif_default;
+                $satuanSewa = $validated['satuan_sewa'] ?? ($asset->satuan_tarif ?? 'per hari');
+
+                // Logika Tronton: Wajib untuk alat beroda rantai besi (Excavator/Bulldozer/Roller)
+                $isWajibTronton = (bool) ($asset->wajib_tronton ?? false);
+                $includeTronton = $isWajibTronton || (bool) ($validated['include_tronton'] ?? false);
+                $jarakKm = isset($validated['jarak_tronton_km']) ? (float) $validated['jarak_tronton_km'] : 10.0;
+                $biayaTronton = 0;
+
+                if ($includeTronton) {
+                    if (isset($validated['biaya_tronton']) && (float) $validated['biaya_tronton'] > 0) {
+                        $biayaTronton = (float) $validated['biaya_tronton'];
                     } else {
-                        $biayaTronton = 2250000;
+                        // Zonasi Tarif Perda 1/2024
+                        if ($jarakKm <= 20) {
+                            $biayaTronton = 450000;
+                        } elseif ($jarakKm <= 40) {
+                            $biayaTronton = 900000;
+                        } elseif ($jarakKm <= 60) {
+                            $biayaTronton = 1350000;
+                        } elseif ($jarakKm <= 80) {
+                            $biayaTronton = 1800000;
+                        } elseif ($jarakKm <= 100) {
+                            $biayaTronton = 2700000;
+                        } else {
+                            $biayaTronton = 2250000;
+                        }
                     }
                 }
+                $lokasiPenggunaan = $validated['lokasi_penggunaan'] ?? ($asset->lokasi ?: 'Kota Baubau');
             }
 
             $isSedotKakus = str_starts_with($asset->code ?? '', 'SK-')
@@ -280,12 +333,14 @@ class CitizenAssetController extends Controller
                 'rental_code' => $rentalCode,
                 'taxpayer_id' => $taxpayerId,
                 'asset_item_id' => $asset->id,
+                'room_id' => $roomId,
                 'retribution_type_id' => $asetType?->id ?? 106,
                 'retribution_classification_id' => $asetClassification?->id ?? 211,
                 'tanggal_mulai' => $mulai->toDateString(),
                 'tanggal_selesai' => !empty($validated['tanggal_selesai']) ? $selesai->toDateString() : null,
                 'lama_sewa' => $days,
                 'satuan_sewa' => $satuanSewa,
+                'periode_bulan' => $isRusunawa ? $mulai->format('Y-m') : null,
                 'buffer_hari' => $bufferHari,
                 'tarif_per_satuan' => $tarifPerSatuan,
                 'include_tronton' => $includeTronton,
@@ -293,14 +348,16 @@ class CitizenAssetController extends Controller
                 'biaya_tronton' => $includeTronton ? $biayaTronton : null,
                 'total_biaya' => $totalBiaya,
                 'dp' => $dp,
+                'is_guarantee_paid' => $isGuaranteePaid,
+                'guarantee_paid_at' => $isGuaranteePaid ? now() : null,
                 'sisa_pembayaran' => $sisaPembayaran,
                 'metode_pembayaran' => $validated['metode_pembayaran'] ?? 'Transfer Bank',
                 'status' => 'Diajukan',
-                'lokasi_penggunaan' => $validated['lokasi_penggunaan'],
+                'lokasi_penggunaan' => $lokasiPenggunaan,
                 'koordinat' => $validated['koordinat'] ?? null,
-                'jenis_pekerjaan' => $validated['jenis_pekerjaan'] ?? ($isSedotKakus ? 'Penyedotan Kakus / Tinja' : null),
-                'luas_volume' => $validated['luas_volume'] ?? ($isSedotKakus ? ($validated['jumlah_rit'] ?? 1) . ' Rit' : null),
-                'nama_proyek' => $validated['nama_proyek'] ?? ($isSedotKakus ? 'Layanan Sedot Kakus ' . ($validated['jenis_bangunan'] ?? '') : null),
+                'jenis_pekerjaan' => $validated['jenis_pekerjaan'] ?? ($isSedotKakus ? 'Penyedotan Kakus / Tinja' : ($isRusunawa ? 'Hunian Rusunawa' : null)),
+                'luas_volume' => $validated['luas_volume'] ?? ($isSedotKakus ? ($validated['jumlah_rit'] ?? 1) . ' Rit' : ($isRusunawa ? '1 Unit Kamar' : null)),
+                'nama_proyek' => $validated['nama_proyek'] ?? ($isSedotKakus ? 'Layanan Sedot Kakus ' . ($validated['jenis_bangunan'] ?? '') : ($isRusunawa ? 'Sewa ' . $asset->name : null)),
                 'nomor_spk' => $validated['nomor_spk'] ?? null,
                 'penyelia' => $validated['penyelia'] ?? null,
                 'hp_penyelia' => $validated['hp_penyelia'] ?? null,
@@ -312,10 +369,16 @@ class CitizenAssetController extends Controller
                 'metadata' => $metadata,
             ]);
 
+            $message = $isRusunawa
+                ? 'Permohonan sewa rusunawa berhasil diajukan. Petugas Disperkim akan memverifikasi permohonan Anda.'
+                : ($isSedotKakus
+                    ? 'Permohonan layanan sedot kakus berhasil diajukan.'
+                    : 'Permohonan sewa berhasil diajukan. Petugas PUPR akan memverifikasi permohonan Anda.');
+
             return response()->json([
                 'success' => true,
-                'message' => 'Permohonan sewa berhasil diajukan. Petugas PUPR akan memverifikasi permohonan Anda.',
-                'data' => $rental->load('assetItem:id,name,code'),
+                'message' => $message,
+                'data' => $rental->load(['assetItem:id,name,code', 'room:id,room_number,floor,complex_code']),
             ], 201);
         });
     }

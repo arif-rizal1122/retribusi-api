@@ -268,6 +268,11 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/asset/rentals', [\App\Http\Controllers\CitizenAssetController::class, 'myRentals']);
         Route::get('/asset/rentals/{id}', [\App\Http\Controllers\CitizenAssetController::class, 'showRental']);
 
+        // Rusunawa Hierarchical Selector
+        Route::get('/rusun/complexes', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'complexes']);
+        Route::get('/rusun/floors', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'floors']);
+        Route::get('/rusun/rooms', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'availableRooms']);
+
         // Pembayaran
         Route::get('/payments/history', [PaymentController::class, 'history']);
         Route::post('/payments', [PaymentController::class, 'store']);
@@ -450,6 +455,11 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/asset/items', [\App\Http\Controllers\AdminAssetController::class, 'storeItem']);
         Route::put('/asset/items/{id}', [\App\Http\Controllers\AdminAssetController::class, 'updateItem']);
         Route::delete('/asset/items/{id}', [\App\Http\Controllers\AdminAssetController::class, 'deleteItem']);
+
+        // Rusunawa Room Management (Disperkim)
+        Route::get('/rusun/rooms', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'adminRooms']);
+        Route::post('/rusun/rooms/{id}/set-maintenance', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setMaintenance']);
+        Route::post('/rusun/rooms/{id}/set-available', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setAvailable']);
 
         // DINAS PUPR (Aset Alat Berat, Tronton Bundling, & Inspeksi Hour Meter)
         Route::prefix('pupr')->group(function () {

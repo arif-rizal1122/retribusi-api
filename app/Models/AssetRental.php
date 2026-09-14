@@ -12,16 +12,20 @@ class AssetRental extends Model
         'nomor_kontrak',
         'taxpayer_id',
         'asset_item_id',
+        'room_id',
         'retribution_type_id',
         'retribution_classification_id',
         'tanggal_mulai',
         'tanggal_selesai',
         'lama_sewa',
         'satuan_sewa',
+        'periode_bulan',
         'buffer_hari',
         'tarif_per_satuan',
         'total_biaya',
         'dp',
+        'is_guarantee_paid',
+        'guarantee_paid_at',
         'sisa_pembayaran',
         'tahap_1_amount',
         'tahap_1_status',
@@ -102,9 +106,16 @@ class AssetRental extends Model
         'tanggal_approval' => 'datetime',
         'tanggal_pengembalian' => 'date',
         'dokumen' => 'array',
+        'is_guarantee_paid' => 'boolean',
+        'guarantee_paid_at' => 'datetime',
         'is_demo' => 'boolean',
         'metadata' => 'array',
     ];
+
+    public function room(): BelongsTo
+    {
+        return $this->belongsTo(RusunRoom::class, 'room_id');
+    }
 
     public function taxpayer(): BelongsTo
     {
