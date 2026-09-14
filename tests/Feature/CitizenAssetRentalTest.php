@@ -9,6 +9,7 @@ use App\Models\Opd;
 use App\Models\RetributionClassification;
 use App\Models\RetributionType;
 use App\Models\Taxpayer;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -98,5 +99,54 @@ class CitizenAssetRentalTest extends TestCase
         $this->actingAs($this->citizen)->postJson('/api/citizen/asset/rentals', $payload)
             ->assertCreated()->assertJsonPath('data.tanggal_mulai', $payload['tanggal_mulai'])
             ->assertJsonPath('data.tanggal_selesai', $payload['tanggal_selesai']);
+    }
+
+    public function test_guest_cannot_read_or_submit_rentals(): void
+    {
+        $rental = $this->rental();
+        $this->getJson('/api/citizen/asset/rentals')->assertUnauthorized();
+        $this->getJson('/api/citizen/asset/rentals/'.$rental->id)->assertUnauthorized();
+        $this->postJson('/api/citizen/asset/rentals', $this->booking())->assertUnauthorized();
+        $this->assertDatabaseCount('asset_rentals', 1);
+    }
+
+    public function test_internal_user_with_matching_numeric_id_cannot_use_citizen_rentals(): void
+    {
+        $rental = $this->rental();
+        $internal = User::factory()->create(['id' => $this->citizen->id, 'role' => 'super_admin']);
+        $this->actingAs($internal);
+        $this->getJson('/api/citizen/asset/rentals')->assertForbidden();
+        $this->getJson('/api/citizen/asset/rentals/'.$rental->id)->assertForbidden();
+        $this->postJson('/api/citizen/asset/rentals', $this->booking())->assertForbidden();
+        // Authorization precedes input validation, including invalid asset IDs.
+        $this->postJson('/api/citizen/asset/rentals', [])->assertForbidden();
+        $this->assertDatabaseCount('asset_rentals', 1);
+    }
+
+    public function test_other_citizen_cannot_read_rental_even_with_owner_id_in_query(): void
+    {
+        $rental = $this->rental();
+        $other = Taxpayer::factory()->create(['opd_id' => $this->citizen->opd_id]);
+        $this->actingAs($other);
+        $this->getJson('/api/citizen/asset/rentals?taxpayer_id='.$this->citizen->id)
+            ->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/citizen/asset/rentals/'.$rental->id.'?taxpayer_id='.$this->citizen->id)
+            ->assertNotFound();
+    }
+
+    public function test_submission_owner_comes_from_authenticated_citizen(): void
+    {
+        $other = Taxpayer::factory()->create(['opd_id' => $this->citizen->opd_id]);
+        $response = $this->actingAs($this->citizen)->postJson('/api/citizen/asset/rentals', $this->booking([
+            'taxpayer_id' => $other->id, 'user_id' => $other->id,
+        ]))->assertCreated()->assertJsonPath('data.taxpayer_id', $this->citizen->id);
+        $this->assertDatabaseHas('asset_rentals', ['id' => $response->json('data.id'), 'taxpayer_id' => $this->citizen->id]);
+    }
+
+    public function test_septic_service_defaults_customer_name_to_authenticated_citizen(): void
+    {
+        $this->asset->update(['code' => 'SK-CITIZEN-TEST']);
+        $this->actingAs($this->citizen)->postJson('/api/citizen/asset/rentals', $this->booking())
+            ->assertCreated()->assertJsonPath('data.metadata.nama_konsumen', $this->citizen->name);
     }
 }

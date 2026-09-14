@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AssetCategory;
 use App\Models\AssetItem;
 use App\Models\AssetRental;
+use App\Models\Taxpayer;
 use App\Services\AssetAvailabilityService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -119,6 +120,7 @@ class CitizenAssetController extends Controller
      */
     public function storeRental(Request $request)
     {
+        $taxpayer = $this->citizenTaxpayer($request);
         $validated = $request->validate([
             'asset_item_id' => 'required|exists:asset_items,id',
             'tanggal_mulai' => 'required|date|after_or_equal:today',
@@ -152,15 +154,12 @@ class CitizenAssetController extends Controller
             'bukti_pembayaran_manual' => 'nullable|string',
         ]);
 
-        $user = $request->user();
-        $taxpayerId = $user->taxpayer?->id ?? ($user instanceof \App\Models\Taxpayer ? $user->id : ($user->taxpayer_id ?? $user->id));
-
         $mulai = Carbon::parse($validated['tanggal_mulai'])->startOfDay();
         $selesai = !empty($validated['tanggal_selesai'])
             ? Carbon::parse($validated['tanggal_selesai'])->startOfDay()
             : $mulai->copy();
 
-        return DB::transaction(function () use ($validated, $taxpayerId, $mulai, $selesai) {
+        return DB::transaction(function () use ($validated, $taxpayer, $mulai, $selesai) {
             $asset = AssetItem::where('id', $validated['asset_item_id'])
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -267,7 +266,7 @@ class CitizenAssetController extends Controller
 
             if ($isSedotKakus) {
                 $metadata['is_sedot_kakus'] = true;
-                $metadata['nama_konsumen'] = $validated['nama_konsumen'] ?? ($user->name ?? 'Konsumen');
+                $metadata['nama_konsumen'] = $validated['nama_konsumen'] ?? $taxpayer->name;
                 $metadata['jenis_bangunan'] = $validated['jenis_bangunan'] ?? 'Rumah Tinggal';
                 $metadata['jumlah_rit'] = (int) ($validated['jumlah_rit'] ?? 1);
                 $metadata['kelurahan'] = $validated['kelurahan'] ?? null;
@@ -278,7 +277,7 @@ class CitizenAssetController extends Controller
 
             $rental = AssetRental::create([
                 'rental_code' => $rentalCode,
-                'taxpayer_id' => $taxpayerId,
+                'taxpayer_id' => $taxpayer->id,
                 'asset_item_id' => $asset->id,
                 'retribution_type_id' => $asetType?->id ?? 106,
                 'retribution_classification_id' => $asetClassification?->id ?? 211,
@@ -333,7 +332,7 @@ class CitizenAssetController extends Controller
      */
     public function myRentals(Request $request)
     {
-        $taxpayer = $request->user();
+        $taxpayer = $this->citizenTaxpayer($request);
         $rentals = AssetRental::with(['assetItem:id,name,code', 'surveyor:id,name'])
             ->where('taxpayer_id', $taxpayer->id)
             ->orderByDesc('created_at')
@@ -347,13 +346,21 @@ class CitizenAssetController extends Controller
      */
     public function showRental(Request $request, $id)
     {
-        $taxpayer = $request->user();
+        $taxpayer = $this->citizenTaxpayer($request);
         $rental = AssetRental::with(['assetItem:id,name,code,category_id', 'surveyor:id,name', 'verifiedBy:id,name', 'approvedBy:id,name'])
             ->where('id', $id)
             ->where('taxpayer_id', $taxpayer->id)
             ->firstOrFail();
 
         return response()->json(['data' => $this->citizenRentalPayload($rental)]);
+    }
+
+    private function citizenTaxpayer(Request $request): Taxpayer
+    {
+        $taxpayer = $request->user();
+        abort_unless($taxpayer instanceof Taxpayer, 403, 'Endpoint ini hanya untuk wajib pajak.');
+
+        return $taxpayer;
     }
 
     private function citizenRentalPayload(AssetRental $rental): array

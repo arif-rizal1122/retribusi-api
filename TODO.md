@@ -2,6 +2,9 @@
 
 ## Checkpoint pengujian rental warga - 14 September 2026
 
+- [x] **AM-BASE-04A** Create/list/detail rental citizen hanya menerima identitas Taxpayer dari sesi; akun internal dengan ID angka sama ditolak 403, guest 401, detail warga lain 404, query/body taxpayer_id tidak menentukan pemilik. Identitas diperiksa sebelum validasi pengajuan. Nama konsumen layanan tinja yang tidak diisi memakai nama Taxpayer terautentikasi.
+- Validasi AM-BASE-04A: suite `CitizenAssetRentalTest` lulus 10 test/56 assertion pada SQLite :memory:, termasuk regresi tanggal. Test ID internal sebelum fix mendapat HTTP 200 dan gagal. PHP lint controller, Pint test file dan diff check lulus. Route/consumer tiga frontend diperiksa; endpoint internal admin/petugas terpisah dan tidak berubah. Parent AM-BASE-04 masih terbuka untuk layanan/aksi lain.
+
 - [x] **AM-BASE-06G** Perbaiki tanggal kalender pada create/list/detail `/api/citizen/asset/rentals`: tanggal_mulai, tanggal_selesai dan tanggal_pengembalian berupa YYYY-MM-DD/null, sehingga mobile tidak mundur sehari akibat serialisasi UTC. Timestamp survei tetap timestamp; model bersama dan endpoint internal tidak berubah.
 - Validasi: `php artisan test tests/Feature/CitizenAssetRentalTest.php --do-not-cache-result` pada SQLite :memory: lulus 5 test/39 assertion (WITA, UTC, America/Los_Angeles). Sebelum fix, 4 test gagal. `php -l app/Http/Controllers/CitizenAssetController.php` lulus. Consumer mobile: `npm.cmd run test -- src/pages/Aset.history.test.tsx src/pages/Aset.location.test.tsx --pool=threads --maxWorkers=1` lulus 17 test. Pencarian tiga frontend: endpoint citizen dipakai assetService mobile; admin/petugas memakai endpoint internal `/api/asset/rentals`. Konfirmasi visual browser masih tertunda karena halaman belum selesai memuat; tidak ada perubahan DB atau gateway.
 
