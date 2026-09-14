@@ -58,7 +58,8 @@ Terakhir diperbarui: 2026-08-03
 - Validasi checkpoint dokumentasi: inspeksi source empat repo, pengecekan target tautan/referensi source, dan `git diff --check`. Tidak ada pengujian bank, browser, atau produksi.
 - [x] **AM-PAY-01** Inventaris bank per produk/environment: [hasil pemeriksaan](docs/10_payment_gateway_h2h/AM_PAY_01_BANK_PRODUCT_INVENTORY.md). Pisahkan BRIVA/QRIS BRI, VA/H2H/AFT Sultra, BNI simulator, Mandiri QRIS, BTN dan QRIS generik. D03 tetap terbuka untuk pengujian/aktivasi bank; tidak mengubah runtime.
 - Validasi AM-PAY-01: 29 tautan lokal tersedia, 21 commit bukti merupakan ancestor HEAD API, pemeriksaan source/consumer empat repo dan `git diff --check`. Suite PHP tidak dijalankan karena `vendor/autoload.php` tidak tersedia; bukan hasil UAT/produksi.
-- Task persiapan selanjutnya: **AM-BASE-02** (kontrak citizen per layanan). Backlog lengkap dan hasil commit/push: `../TODO_MPAD_API_MOBILE_2026-09-14.md` serta `../WORKBOARD.md`.
+- [x] **AM-BASE-02** Susun [kontrak citizen per layanan](docs/05_modul_aplikasi/AM_BASE_02_CITIZEN_SERVICE_CONTRACTS.md): katalog, quote, pengajuan, status, bill/payment/document reference, field wajib serta matriks kompatibilitas empat consumer. Endpoint usulan dipisahkan dari route existing; bukan implementasi atau aktivasi layanan. Validasi: 6 tautan lokal, inspeksi validator/envelope/consumer, `git diff --check`.
+- Backlog lengkap dan hasil commit/push: `../TODO_MPAD_API_MOBILE_2026-09-14.md` serta `../WORKBOARD.md`. Pengguna meminta beberapa task mandiri pada sesi ini; setiap task tetap memiliki checkpoint terpisah.
 
 ## Aturan Lanjutan
 
