@@ -2,6 +2,9 @@
 
 ## Checkpoint pengujian rental warga - 14 September 2026
 
+- [x] **AM-PUPR-04C** Validasi titik WGS84 pada pengajuan citizen, simpan di metadata.koordinat dan kembalikan pada create/list/detail. Input opsional dan record lama tanpa titik tetap null. Tidak mengubah polygon_geom/skema/endpoint internal. [Kontrak dan bukti](docs/05_modul_aplikasi/AM_PUPR_04C_CITIZEN_PROJECT_POINT.md).
+- Validasi akhir: `CitizenAssetRentalTest` lulus 35 test/186 assertion pada SQLite :memory:, Pint rule/test, PHP lint controller dan diff check lulus. Regresi Aset.location/MapPicker mobile lulus 12 test. Browser belum terverifikasi karena koneksi MySQL lokal ditolak; parent AM-PUPR-04/D04 tetap terbuka untuk batas area resmi dan integrasi dashboard.
+
 - [x] **AM-BASE-04A** Create/list/detail rental citizen hanya menerima identitas Taxpayer dari sesi; akun internal dengan ID angka sama ditolak 403, guest 401, detail warga lain 404, query/body taxpayer_id tidak menentukan pemilik. Identitas diperiksa sebelum validasi pengajuan. Nama konsumen layanan tinja yang tidak diisi memakai nama Taxpayer terautentikasi.
 - Validasi AM-BASE-04A: suite `CitizenAssetRentalTest` lulus 10 test/56 assertion pada SQLite :memory:, termasuk regresi tanggal. Test ID internal sebelum fix mendapat HTTP 200 dan gagal. PHP lint controller, Pint test file dan diff check lulus. Route/consumer tiga frontend diperiksa; endpoint internal admin/petugas terpisah dan tidak berubah. Parent AM-BASE-04 masih terbuka untuk layanan/aksi lain.
 

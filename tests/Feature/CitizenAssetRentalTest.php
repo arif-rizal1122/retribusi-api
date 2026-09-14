@@ -149,4 +149,63 @@ class CitizenAssetRentalTest extends TestCase
         $this->actingAs($this->citizen)->postJson('/api/citizen/asset/rentals', $this->booking())
             ->assertCreated()->assertJsonPath('data.metadata.nama_konsumen', $this->citizen->name);
     }
+
+    public static function validPoints(): array
+    {
+        return [
+            ['-5.4667,122.6333', '-5.4667,122.6333'],
+            [' -5.4667 , +122.6333 ', '-5.4667,+122.6333'],
+            ['0,0', '0,0'], ['90,-180', '90,-180'], ['-90,180', '-90,180'],
+            ['+.5,-.25', '+.5,-.25'],
+        ];
+    }
+
+    #[DataProvider('validPoints')]
+    public function test_project_point_survives_storage_and_citizen_reads(string $input, string $expected): void
+    {
+        $response = $this->actingAs($this->citizen)->postJson('/api/citizen/asset/rentals', $this->booking([
+            'koordinat' => $input,
+            'metadata' => ['koordinat' => '99,999', 'source' => 'forged'],
+        ]))->assertCreated()->assertJsonPath('data.koordinat', $expected);
+        $rental = AssetRental::findOrFail($response->json('data.id'));
+        $this->assertSame($expected, $rental->metadata['koordinat']);
+        $this->assertSame('citizen_submission', $rental->metadata['source']);
+        $this->assertNull($rental->polygon_geom);
+        $this->getJson('/api/citizen/asset/rentals')->assertOk()->assertJsonPath('data.0.koordinat', $expected);
+        $this->getJson('/api/citizen/asset/rentals/'.$rental->id)->assertOk()->assertJsonPath('data.koordinat', $expected);
+    }
+
+    public static function invalidPoints(): array
+    {
+        return [
+            ['90.0001,0'], ['0,-180.0001'], ['-90.001,180.1'],
+            ['122.6333,-5.4667'], ['-5,122,0'], ['-5'], [','], ['NaN,Infinity'],
+            ['-5e0,122'], ['0x10,122'], ['-5;122'], [['lat' => -5, 'lng' => 122]],
+            [str_repeat('1', 101).',0'], [true], [123],
+        ];
+    }
+
+    #[DataProvider('invalidPoints')]
+    public function test_invalid_project_point_is_rejected_without_creating_rental(mixed $input): void
+    {
+        $this->actingAs($this->citizen)->postJson('/api/citizen/asset/rentals', $this->booking(['koordinat' => $input]))
+            ->assertUnprocessable()->assertJsonValidationErrors('koordinat');
+        $this->assertDatabaseCount('asset_rentals', 0);
+    }
+
+    public static function absentPoints(): array
+    {
+        return [[[]], [['koordinat' => null]], [['koordinat' => '']], [['koordinat' => '   ']]];
+    }
+
+    #[DataProvider('absentPoints')]
+    public function test_project_point_remains_optional_for_legacy_and_new_rentals(array $point): void
+    {
+        $this->actingAs($this->citizen);
+        $legacy = $this->rental();
+        $this->getJson('/api/citizen/asset/rentals/'.$legacy->id)->assertOk()->assertJsonPath('data.koordinat', null);
+        $this->postJson('/api/citizen/asset/rentals', $this->booking(array_merge([
+            'tanggal_mulai' => now()->addYears(4)->toDateString(), 'tanggal_selesai' => now()->addYears(4)->addDay()->toDateString(),
+        ], $point)))->assertCreated()->assertJsonPath('data.koordinat', null);
+    }
 }

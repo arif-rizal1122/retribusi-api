@@ -6,6 +6,7 @@ use App\Models\AssetCategory;
 use App\Models\AssetItem;
 use App\Models\AssetRental;
 use App\Models\Taxpayer;
+use App\Rules\Wgs84Point;
 use App\Services\AssetAvailabilityService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -130,7 +131,7 @@ class CitizenAssetController extends Controller
             'dp' => 'nullable|numeric|min:0',
             'metode_pembayaran' => 'nullable|string',
             'lokasi_penggunaan' => 'required|string',
-            'koordinat' => 'nullable|string',
+            'koordinat' => ['bail', 'nullable', 'string', 'max:100', new Wgs84Point],
             'jenis_pekerjaan' => 'nullable|string',
             'luas_volume' => 'nullable|string',
             'nama_proyek' => 'nullable|string',
@@ -264,6 +265,12 @@ class CitizenAssetController extends Controller
                 'is_wajib_tronton' => $isWajibTronton,
             ];
 
+            // The old koordinat column was removed; retain the citizen point in JSON.
+            // polygon_geom represents a boundary and must not receive a point.
+            if (isset($validated['koordinat'])) {
+                $metadata['koordinat'] = implode(',', array_map('trim', explode(',', $validated['koordinat'])));
+            }
+
             if ($isSedotKakus) {
                 $metadata['is_sedot_kakus'] = true;
                 $metadata['nama_konsumen'] = $validated['nama_konsumen'] ?? $taxpayer->name;
@@ -296,7 +303,6 @@ class CitizenAssetController extends Controller
                 'metode_pembayaran' => $validated['metode_pembayaran'] ?? 'Transfer Bank',
                 'status' => 'Diajukan',
                 'lokasi_penggunaan' => $validated['lokasi_penggunaan'],
-                'koordinat' => $validated['koordinat'] ?? null,
                 'jenis_pekerjaan' => $validated['jenis_pekerjaan'] ?? ($isSedotKakus ? 'Penyedotan Kakus / Tinja' : null),
                 'luas_volume' => $validated['luas_volume'] ?? ($isSedotKakus ? ($validated['jumlah_rit'] ?? 1) . ' Rit' : null),
                 'nama_proyek' => $validated['nama_proyek'] ?? ($isSedotKakus ? 'Layanan Sedot Kakus ' . ($validated['jenis_bangunan'] ?? '') : null),
@@ -366,6 +372,7 @@ class CitizenAssetController extends Controller
     private function citizenRentalPayload(AssetRental $rental): array
     {
         $payload = $rental->toArray();
+        $payload['koordinat'] = $rental->metadata['koordinat'] ?? null;
         // Calendar days have no UTC offset. Preserve timestamps for survey/approval events.
         foreach (['tanggal_mulai', 'tanggal_selesai', 'tanggal_pengembalian'] as $field) {
             $payload[$field] = $rental->{$field}?->toDateString();
