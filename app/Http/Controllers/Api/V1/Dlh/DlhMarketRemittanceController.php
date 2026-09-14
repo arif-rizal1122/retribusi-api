@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Dlh;
 
 use App\Http\Controllers\Controller;
+use App\Models\DlhCollectorRemittance;
+use App\Models\DlhMarketTrashTicket;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +29,7 @@ class DlhMarketRemittanceController extends Controller
         $ticketCode = 'KRC-SMP-' . date('ymd') . '-' . strtoupper(Str::random(6));
         $qrToken = 'MPAD-DLH-TICKET-' . md5($ticketCode . now()->timestamp);
 
-        $ticketId = DB::table('dlh_market_trash_tickets')->insertGetId([
+        $ticket = DlhMarketTrashTicket::create([
             'ticket_code' => $ticketCode,
             'collector_user_id' => $userId,
             'remittance_id' => null, // Belum disetor ke RKUD
@@ -38,11 +40,7 @@ class DlhMarketRemittanceController extends Controller
             'payment_method' => $validated['payment_method'],
             'qr_token' => $qrToken,
             'issued_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
-
-        $ticket = DB::table('dlh_market_trash_tickets')->where('id', $ticketId)->first();
 
         return response()->json([
             'status' => 'success',
@@ -60,8 +58,7 @@ class DlhMarketRemittanceController extends Controller
         $month = $request->query('month', date('n'));
         $year = $request->query('year', date('Y'));
 
-        $tickets = DB::table('dlh_market_trash_tickets')
-            ->where('collector_user_id', $userId)
+        $tickets = DlhMarketTrashTicket::where('collector_user_id', $userId)
             ->whereNull('remittance_id') // Yang belum masuk setoran
             ->whereMonth('issued_at', $month)
             ->whereYear('issued_at', $year)
@@ -105,8 +102,7 @@ class DlhMarketRemittanceController extends Controller
         $userId = $request->user()?->id ?? 1;
 
         return DB::transaction(function () use ($validated, $userId) {
-            $unremittedTickets = DB::table('dlh_market_trash_tickets')
-                ->where('collector_user_id', $userId)
+            $unremittedTickets = DlhMarketTrashTicket::where('collector_user_id', $userId)
                 ->whereNull('remittance_id')
                 ->whereMonth('issued_at', $validated['period_month'])
                 ->whereYear('issued_at', $validated['period_year'])
@@ -122,7 +118,7 @@ class DlhMarketRemittanceController extends Controller
             $totalCollected = $unremittedTickets->sum('amount');
             $remittanceNumber = 'REM-DLH-' . date('ymd') . '-' . strtoupper(Str::random(5));
 
-            $remittanceId = DB::table('dlh_collector_remittances')->insertGetId([
+            $remittance = DlhCollectorRemittance::create([
                 'remittance_number' => $remittanceNumber,
                 'collector_user_id' => $userId,
                 'opd_id' => 4,
@@ -135,25 +131,20 @@ class DlhMarketRemittanceController extends Controller
                 'bank_reference_number' => $validated['bank_reference_number'] ?? null,
                 'sts_proof_url' => $validated['sts_proof_url'] ?? null,
                 'status' => 'SUBMITTED',
-                'notes' => json_encode(['collector_notes' => $validated['notes'] ?? '']),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'notes' => ['collector_notes' => $validated['notes'] ?? ''],
             ]);
 
             // Kunci karcis-karcis tersebut ke remittance_id ini
-            DB::table('dlh_market_trash_tickets')
-                ->whereIn('id', $unremittedTickets->pluck('id'))
+            DlhMarketTrashTicket::whereIn('id', $unremittedTickets->pluck('id'))
                 ->update([
-                    'remittance_id' => $remittanceId,
+                    'remittance_id' => $remittance->id,
                     'updated_at' => now(),
                 ]);
-
-            $remittance = DB::table('dlh_collector_remittances')->where('id', $remittanceId)->first();
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Setoran karcis pasar berhasil diajukan untuk verifikasi bendahara penerimaan DLH.',
-                'data' => $remittance,
+                'data' => $remittance->fresh(),
             ], 201);
         });
     }
@@ -163,23 +154,23 @@ class DlhMarketRemittanceController extends Controller
      */
     public function verifyRemittance(Request $request, $remittanceId)
     {
-        $remittance = DB::table('dlh_collector_remittances')->where('id', $remittanceId)->first();
+        $remittance = DlhCollectorRemittance::find($remittanceId);
         if (!$remittance) {
             return response()->json(['status' => 'error', 'message' => 'Data remittance tidak ditemukan.'], 404);
         }
 
         $verifierId = $request->user()?->id ?? 1;
 
-        DB::table('dlh_collector_remittances')->where('id', $remittanceId)->update([
+        $remittance->update([
             'status' => 'RECONCILED',
             'verified_by' => $verifierId,
             'verified_at' => now(),
-            'updated_at' => now(),
         ]);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Setoran juru pungut telah diverifikasi dan direkonsiliasi ke Kasda RKUD.',
+            'data' => $remittance->fresh(),
         ]);
     }
 }
