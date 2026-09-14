@@ -227,6 +227,15 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/kios-jembatan-batu', [\App\Http\Controllers\ParkingController::class, 'kiosJembatanBatu']);
         Route::post('/kios-jembatan-batu/generate-bills', [\App\Http\Controllers\ParkingController::class, 'generateKiosBills']);
         Route::get('/harbor/proxy-gt-rates', [\App\Http\Controllers\ParkingController::class, 'proxyGtRates']);
+
+        // MODUL DINAS PERHUBUNGAN (DISHUB KOTA BAUBAU) — Kepelabuhanan, Proxy GT & Manifes Lakologou
+        Route::prefix('dishub')->group(function () {
+            Route::get('/harbor/proxy-gt-rates', [\App\Http\Controllers\Api\V1\Dishub\HarborProxyGtController::class, 'indexRates']);
+            Route::post('/harbor/session', [\App\Http\Controllers\Api\V1\Dishub\HarborProxyGtController::class, 'storeSession']);
+            Route::get('/harbor/manifest', [\App\Http\Controllers\Api\V1\Dishub\HarborProxyGtController::class, 'getManifest']);
+            Route::post('/lakologou/manifest', [\App\Http\Controllers\Api\V1\Dishub\LakologouManifestController::class, 'storeManifest']);
+            Route::get('/lakologou/manifest', [\App\Http\Controllers\Api\V1\Dishub\LakologouManifestController::class, 'getSummary']);
+        });
     });
     
     // Citizen Service Registration (Shared, but usually for citizens)
@@ -441,6 +450,16 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/asset/items', [\App\Http\Controllers\AdminAssetController::class, 'storeItem']);
         Route::put('/asset/items/{id}', [\App\Http\Controllers\AdminAssetController::class, 'updateItem']);
         Route::delete('/asset/items/{id}', [\App\Http\Controllers\AdminAssetController::class, 'deleteItem']);
+
+        // DINAS PUPR (Aset Alat Berat, Tronton Bundling, & Inspeksi Hour Meter)
+        Route::prefix('pupr')->group(function () {
+            Route::get('/calendar/{itemId}', [\App\Http\Controllers\Api\V1\Pupr\AssetCalendarController::class, 'getCalendar']);
+            Route::post('/calendar/check-availability', [\App\Http\Controllers\Api\V1\Pupr\AssetCalendarController::class, 'checkAvailability']);
+            Route::post('/tronton/calculate', [\App\Http\Controllers\Api\V1\Pupr\TrontonBundlingController::class, 'calculate']);
+            Route::post('/inspection/pre', [\App\Http\Controllers\Api\V1\Pupr\InspectionController::class, 'storePreOperation']);
+            Route::post('/inspection/post', [\App\Http\Controllers\Api\V1\Pupr\InspectionController::class, 'storePostOperation']);
+            Route::get('/inspection/history/{rentalId}', [\App\Http\Controllers\Api\V1\Pupr\InspectionController::class, 'getHistory']);
+        });
         
         Route::get('/analytics/realization', [AnalyticsController::class, 'getRealization']);
         Route::get('/analytics/heatmap', [AnalyticsController::class, 'getHeatmapData']);
@@ -623,6 +642,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/trash/calculate', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'calculateTariff']);
         Route::post('/trash/transfer-occupant/{taxObjectId}', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'transferOccupant']);
         Route::post('/trash/generate-bills', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'generateMonthlyBills']);
+        Route::get('/trash/inquiry', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'inquiry']);
     };
 
     Route::prefix('dlh')->group($dlhRoutes);

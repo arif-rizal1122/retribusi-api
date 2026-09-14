@@ -121,4 +121,76 @@ class DlhTrashBillingController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Inkuiri Tagihan Persampahan (Portal Warga / Mobile)
+     */
+    public function inquiry(Request $request)
+    {
+        $query = $request->query('query');
+        if (empty($query)) {
+            return response()->json(['status' => 'error', 'message' => 'Parameter query pencarian wajib diisi.'], 422);
+        }
+
+        $taxObject = TaxObject::withoutGlobalScopes()
+            ->where(function ($q) {
+                $q->where('opd_id', 4)
+                  ->orWhere('retribution_classification_id', 198);
+            })
+            ->where(function ($q) use ($query) {
+                $q->where('name', 'LIKE', "%{$query}%")
+                  ->orWhere('address', 'LIKE', "%{$query}%")
+                  ->orWhere('penanggung_jawab_nama', 'LIKE', "%{$query}%");
+                if (is_numeric($query)) {
+                    $q->orWhere('id', (int) $query);
+                }
+            })
+            ->first();
+
+        if (!$taxObject) {
+            return response()->json(['status' => 'error', 'message' => 'Objek persampahan tidak ditemukan.'], 404);
+        }
+
+        $bills = \App\Models\Bill::withoutGlobalScopes()
+            ->where('opd_id', 4)
+            ->where(function ($q) use ($taxObject) {
+                $q->where('tax_object_id', $taxObject->id)
+                  ->orWhere('taxpayer_id', $taxObject->taxpayer_id);
+            })
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $activeBill = $bills->where('status', '!=', 'PAID')->first() ?? $bills->first();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'id' => $taxObject->id,
+                'name' => $taxObject->name,
+                'address' => $taxObject->address,
+                'building_category' => $taxObject->building_category ?? 'RUMAH_SEDERHANA',
+                'tipe_penghuni' => $taxObject->tipe_penghuni ?? 'PEMILIK',
+                'status_hunian' => $taxObject->status_hunian ?? 'BERPENGHUNI',
+                'taxpayer_name' => $taxObject->penanggung_jawab_nama ?? $taxObject->name,
+                'active_bill' => $activeBill ? [
+                    'id' => $activeBill->id,
+                    'bill_number' => $activeBill->bill_number,
+                    'period' => $activeBill->period ?? date('Y-m'),
+                    'amount' => (float) $activeBill->amount,
+                    'penalty_amount' => (float) $activeBill->penalty_amount,
+                    'total_amount' => (float) ($activeBill->amount + $activeBill->penalty_amount + $activeBill->admin_fee),
+                    'status' => $activeBill->status,
+                    'due_date' => $activeBill->due_date ? Carbon::parse($activeBill->due_date)->toDateString() : null,
+                ] : null,
+                'bill_history' => $bills->take(5)->map(fn ($b) => [
+                    'id' => $b->id,
+                    'bill_number' => $b->bill_number,
+                    'period' => $b->period,
+                    'total_amount' => (float) $b->amount,
+                    'status' => $b->status,
+                    'due_date' => $b->due_date,
+                ])->values(),
+            ],
+        ]);
+    }
 }
