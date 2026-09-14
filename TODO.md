@@ -56,7 +56,9 @@ Terakhir diperbarui: 2026-08-03
 
 - [x] **AM-BASE-01** Petakan owner data lokal, route, ID, status, dokumen, dan consumer aset/bisnis. Hasil: [peta kontrak](docs/05_modul_aplikasi/AM_BASE_01_DASHBOARD_CONTRACT_MAP.md). Dashboard `retribusi-aset`/`retribusi-bisnis` direferensikan workspace tetapi folder belum tersedia; D01 tetap terbuka untuk integrasi. Tidak mengubah runtime/admin/petugas.
 - Validasi checkpoint dokumentasi: inspeksi source empat repo, pengecekan target tautan/referensi source, dan `git diff --check`. Tidak ada pengujian bank, browser, atau produksi.
-- Task persiapan selanjutnya: **AM-PAY-01** (inventaris bank berdasarkan source dan bukti lokal), kemudian **AM-BASE-02** (kontrak citizen per layanan). Backlog lengkap dan hasil commit/push: `../TODO_MPAD_API_MOBILE_2026-09-14.md` serta `../WORKBOARD.md`.
+- [x] **AM-PAY-01** Inventaris bank per produk/environment: [hasil pemeriksaan](docs/10_payment_gateway_h2h/AM_PAY_01_BANK_PRODUCT_INVENTORY.md). Pisahkan BRIVA/QRIS BRI, VA/H2H/AFT Sultra, BNI simulator, Mandiri QRIS, BTN dan QRIS generik. D03 tetap terbuka untuk pengujian/aktivasi bank; tidak mengubah runtime.
+- Validasi AM-PAY-01: 29 tautan lokal tersedia, 21 commit bukti merupakan ancestor HEAD API, pemeriksaan source/consumer empat repo dan `git diff --check`. Suite PHP tidak dijalankan karena `vendor/autoload.php` tidak tersedia; bukan hasil UAT/produksi.
+- Task persiapan selanjutnya: **AM-BASE-02** (kontrak citizen per layanan). Backlog lengkap dan hasil commit/push: `../TODO_MPAD_API_MOBILE_2026-09-14.md` serta `../WORKBOARD.md`.
 
 ## Aturan Lanjutan
 
