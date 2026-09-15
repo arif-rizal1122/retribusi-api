@@ -144,7 +144,7 @@ class BapendaTestingSeeder extends Seeder
         $billCounter = 1;
         $kecamatanList = array_keys($this->baubauCoords);
 
-        foreach ($this->businesses as $clsCode => $businessList) {
+        foreach ($this->businesses as $clsIdx => $clsCode => $businessList) {
             $classification = RetributionClassification::where('code', $clsCode)->first();
             if (!$classification) {
                 $this->command->warn("Classification {$clsCode} not found, skipping");
@@ -235,43 +235,51 @@ class BapendaTestingSeeder extends Seeder
                 $months = ['Januari 2026', 'Februari 2026', 'Maret 2026'];
                 foreach ($months as $mIdx => $month) {
                     $billAmount = $biz['omzet'] * 0.1; // 10% pajak
-                    $isPaid = $mIdx < 2 && $bizIdx < 3; // Only first 2 months for first 3 businesses
-                    $isPending = !$isPaid && ($mIdx < 2);
-                    $isOverdue = $mIdx === 0 && $bizIdx >= 3;
 
-                    $billStatus = $isPaid ? 'paid' : ($isOverdue ? 'overdue' : 'unpaid');
+                    // Hanya 1 bill lunas: bulan pertama, bisnis pertama
+                    $isPaid = $mIdx === 0 && $bizIdx === 0 && $clsIdx === 0;
+                    // Overdue: bulan yang sudah lewat dan belum bayar
+                    $isOverdue = $mIdx === 0 && !$isPaid;
+                    // Pending: bulan depan/belum jatuh tempo
+                    $billStatus = $isPaid ? 'lunas' : ($isOverdue ? 'overdue' : 'pending');
                     $penaltyAmount = $isOverdue ? $billAmount * 0.02 : 0;
 
-                    $bill = Bill::create([
-                        'taxpayer_id' => $taxpayer->id,
-                        'tax_object_id' => $taxObject->id,
-                        'opd_id' => $bapenda->id,
-                        'user_id' => $admin->id,
-                        'retribution_type_id' => $type->id,
-                        'retribution_classification_id' => $classification->id,
-                        'bill_number' => 'BIL-' . date('Y') . '-' . str_pad($billCounter++, 5, '0', STR_PAD_LEFT),
-                        'amount' => $billAmount,
-                        'penalty_amount' => $penaltyAmount,
-                        'status' => $billStatus,
-                        'period' => $month,
-                        'period_start' => Carbon::create(2026, $mIdx + 1, 1),
-                        'period_end' => Carbon::create(2026, $mIdx + 1, 1)->endOfMonth(),
-                        'due_date' => Carbon::create(2026, $mIdx + 1, 15),
-                    ]);
+                    $billNumber = 'BIL-' . date('Y') . '-' . str_pad($billCounter++, 5, '0', STR_PAD_LEFT);
+
+                    $bill = Bill::updateOrCreate(
+                        ['bill_number' => $billNumber],
+                        [
+                            'taxpayer_id' => $taxpayer->id,
+                            'tax_object_id' => $taxObject->id,
+                            'opd_id' => $bapenda->id,
+                            'user_id' => $admin->id,
+                            'retribution_type_id' => $type->id,
+                            'retribution_classification_id' => $classification->id,
+                            'amount' => $billAmount,
+                            'penalty_amount' => $penaltyAmount,
+                            'status' => $billStatus,
+                            'period' => $month,
+                            'period_start' => Carbon::create(2026, $mIdx + 1, 1),
+                            'period_end' => Carbon::create(2026, $mIdx + 1, 1)->endOfMonth(),
+                            'due_date' => Carbon::create(2026, $mIdx + 1, 15),
+                        ]
+                    );
 
                     // 6. Create Payment for paid bills
                     if ($isPaid) {
-                        Payment::create([
-                            'bill_id' => $bill->id,
-                            'billing_period' => $month,
-                            'taxpayer_id' => $taxpayer->id,
-                            'tax_object_id' => $taxObject->id,
-                            'payment_method' => ['cash', 'transfer', 'qris'][rand(0, 2)],
-                            'amount' => $billAmount,
-                            'status' => 'approved',
-                            'approved_by' => $admin->id,
-                            'paid_at' => Carbon::create(2026, $mIdx + 1, rand(10, 14)),
-                        ]);
+                        Payment::updateOrCreate(
+                            ['bill_id' => $bill->id],
+                            [
+                                'billing_period' => $month,
+                                'taxpayer_id' => $taxpayer->id,
+                                'tax_object_id' => $taxObject->id,
+                                'payment_method' => 'transfer',
+                                'amount' => $billAmount,
+                                'status' => 'approved',
+                                'approved_by' => $admin->id,
+                                'paid_at' => Carbon::create(2026, 1, 10),
+                            ]
+                        );
                     }
                 }
             }

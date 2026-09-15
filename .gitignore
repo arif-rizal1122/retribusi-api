@@ -57,3 +57,6 @@ public/reveal.txt
 database/seeders/ProductionMainCredentialsSeeder.php
 **/CREDENTIALS_GUIDE.md
 docs/10_payment_gateway_h2h/BTN/Kredensial_DEV*
+
+# Local-only tooling (jangan di-push)
+/scripts/leantime/

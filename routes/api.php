@@ -274,6 +274,15 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         });
 
         Route::post('/payments', [PaymentController::class, 'store']);
+        // Aset & Sewa Alat Berat (Wajib Pajak / Mobile)
+        Route::group(['prefix' => 'asset'], function () {
+            Route::get('/categories', [\App\Http\Controllers\Api\V1\Asset\CitizenAssetController::class, 'categories']);
+            Route::get('/items', [\App\Http\Controllers\Api\V1\Asset\CitizenAssetController::class, 'items']);
+            Route::get('/form-template', [\App\Http\Controllers\Api\V1\Asset\CitizenAssetController::class, 'formTemplate']);
+            Route::post('/rentals', [\App\Http\Controllers\Api\V1\Asset\CitizenAssetController::class, 'storeRental']);
+            Route::post('/availability', [\App\Http\Controllers\Api\V1\Asset\CitizenAssetController::class, 'availability']);
+        });
+
         Route::post('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'store']);
         Route::get('/reports', [\App\Http\Controllers\MonthlyReportController::class, 'index']);
         Route::post('/complaints', [ComplaintController::class, 'store']);
@@ -341,6 +350,23 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/inspector/sanction', [\App\Http\Controllers\Api\V1\Parking\ParkingInspectorController::class, 'sanction']);
     });
 
+    // ----------------------------------------------------------------
+    // PUPR: Modul Aset / Sewa Alat Berat / Overtime Denda
+    // RBAC + OPD-scoping dijaga di Concerns\AssetAccess.
+    // ----------------------------------------------------------------
+    Route::prefix('asset')->group(function () {
+        Route::get('/rentals', [\App\Http\Controllers\Api\V1\Asset\AssetRentalController::class, 'index']);
+        Route::get('/rentals/{id}', [\App\Http\Controllers\Api\V1\Asset\AssetRentalController::class, 'show']);
+        Route::post('/rentals/{id}/inspection', [\App\Http\Controllers\Api\V1\Asset\AssetRentalController::class, 'inspection']);
+        Route::post('/rentals/{id}/survey', [\App\Http\Controllers\Api\V1\Asset\AssetRentalController::class, 'survey']);
+    });
+
+    // PUPR: Inspeksi pra/pasca operasi + penagihan overtime otomatis
+    Route::prefix('pupr')->group(function () {
+        Route::post('/inspection/pre', [\App\Http\Controllers\Api\V1\Asset\PuprInspectionController::class, 'pre']);
+        Route::post('/inspection/post', [\App\Http\Controllers\Api\V1\Asset\PuprInspectionController::class, 'post']);
+    });
+
     // PBB Bapenda Citizen Actions
     Route::group(['prefix' => 'pbb/bapenda'], function () {
         Route::post('/link-nop', [PbbBapendaController::class, 'linkNop']);
@@ -400,6 +426,17 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::apiResource('retribution-rates', RetributionRateController::class);
         Route::apiResource('opds', OpdController::class)->except(['create', 'edit', 'index']);
         Route::apiResource('users', UserController::class);
+
+        // PUPR Admin: Master Aset & Manajemen Sewa
+        Route::apiResource('asset-items', \App\Http\Controllers\Api\V1\Asset\AssetItemController::class);
+        Route::get('/asset/rentals', [\App\Http\Controllers\Api\V1\Asset\AssetRentalController::class, 'index']);
+        Route::post('/asset/rentals', [\App\Http\Controllers\Api\V1\Asset\AssetRentalController::class, 'store']);
+        Route::get('/asset/rentals/{id}', [\App\Http\Controllers\Api\V1\Asset\AssetRentalController::class, 'show']);
+        Route::patch('/asset/rentals/{id}/status', [\App\Http\Controllers\Api\V1\Asset\AssetRentalController::class, 'updateStatus']);
+        Route::post('/asset/rentals/{id}/verify', [\App\Http\Controllers\Api\V1\Asset\AssetRentalController::class, 'verify']);
+        Route::post('/asset/rentals/{id}/approve', [\App\Http\Controllers\Api\V1\Asset\AssetRentalController::class, 'approve']);
+        Route::post('/asset/rentals/{id}/contract', [\App\Http\Controllers\Api\V1\Asset\AssetRentalController::class, 'contract']);
+        Route::post('/asset/rentals/{id}/complete', [\App\Http\Controllers\Api\V1\Asset\AssetRentalController::class, 'complete']);
 
         Route::prefix('dashboard')->group(function () {
             Route::get('/stats', [DashboardController::class, 'getStats']);

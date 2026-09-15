@@ -213,6 +213,9 @@ class DatabaseSeeder extends Seeder
         $this->call(AchievementSeeder::class);
         $this->call(AdminWilayahSeeder::class);
         $this->call(DemoLoginSeeder::class);
+        $this->call(TaxpayerWithNibSeeder::class);
+        $this->call(PuprAssetSeeder::class);
+        $this->call(PuprPetugasSeeder::class);
 
         $this->command->info('Database seeded successfully!');
         $this->command->info('Super Admin: superadmin@sipanda.online / Mpad123#');

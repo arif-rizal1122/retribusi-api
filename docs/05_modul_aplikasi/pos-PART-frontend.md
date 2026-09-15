@@ -67,4 +67,4 @@ Detailed frontend architecture using React, focusing on a premium user experienc
 
 ---
 > [!TIP]
-> Use the reusable `cn` utility for combining Tailwind classes dynamically and avoiding class conflicts.
+> Use the reusable `cn` utility for combining Tailwind classes dynamically and avoiding class conflicts.    

@@ -107,7 +107,10 @@ return new class extends Migration
             $hasBankConfig = Schema::hasTable('bank_configs');
 
             if (!Schema::hasColumn('payments', 'bank_config_id')) {
-                $column = $table->unsignedBigInteger('bank_config_id')->nullable()->after('payment_request_id');
+                $column = $table->unsignedBigInteger('bank_config_id')->nullable();
+                if (Schema::hasColumn('payments', 'payment_request_id')) {
+                    $column->after('payment_request_id');
+                }
                 if ($hasBankConfig) {
                     $table->foreign('bank_config_id')->references('id')->on('bank_configs')->onDelete('set null');
                 }

@@ -264,21 +264,62 @@ class AuthController extends Controller
     }
 
     /**
-     * Login citizen (taxpayer) using NIK and Password (DEPRECATED - keep for backward compat)
+     * Login citizen (taxpayer).
+     *
+     * Mendukung 3 metode login mobile:
+     *   1. method=email    -> identifier = email, password
+     *   2. method=nik      -> identifier = nik, mother_name (nama ibu kandung)
+     *   3. Backward compat -> nik + password
      */
     public function citizenLogin(Request $request)
     {
         $request->validate([
-            'nik' => 'required|string',
-            'password' => 'required|string',
+            'method' => 'sometimes|string|in:email,nik',
+            'identifier' => 'required_with:method|string',
+            'nik' => 'required_without:method|string',
+            'password' => 'nullable|string',
+            'mother_name' => 'sometimes|nullable|string',
         ]);
 
-        $taxpayer = \App\Models\Taxpayer::where('nik', $request->nik)->first();
+        $taxpayer = null;
+        $method = $request->input('method');
 
-        if (!$taxpayer || !Hash::check($request->password, $taxpayer->password)) {
-            return response()->json([
-                'message' => 'NIK atau password salah'
-            ], 401);
+        if ($method === 'email') {
+            $email = $request->input('identifier');
+            $taxpayer = \App\Models\Taxpayer::where('metadata->email', $email)->first();
+
+            if (!$taxpayer || !Hash::check($request->input('password'), $taxpayer->password)) {
+                return response()->json([
+                    'message' => 'Email atau password salah'
+                ], 401);
+            }
+        } elseif ($method === 'nik') {
+            $nik = $request->input('identifier');
+            $taxpayer = \App\Models\Taxpayer::where('nik', $nik)->first();
+
+            if (!$taxpayer) {
+                return response()->json([
+                    'message' => 'NIK tidak terdaftar'
+                ], 401);
+            }
+
+            $motherName = $request->input('mother_name');
+            $storedMother = data_get($taxpayer->metadata, 'mother_name');
+
+            if (empty($storedMother) || strcasecmp(trim($motherName ?? ''), trim($storedMother)) !== 0) {
+                return response()->json([
+                    'message' => 'Nama ibu kandung tidak sesuai'
+                ], 401);
+            }
+        } else {
+            // Backward compat: nik + password
+            $taxpayer = \App\Models\Taxpayer::where('nik', $request->nik)->first();
+
+            if (!$taxpayer || !Hash::check($request->password, $taxpayer->password)) {
+                return response()->json([
+                    'message' => 'NIK atau password salah'
+                ], 401);
+            }
         }
 
         if (!$taxpayer->is_active) {

@@ -166,6 +166,22 @@ class TestingScenarioSeeder extends Seeder
             ]
         );
 
+        // Overdue Bill (PBB)
+        Bill::updateOrCreate(
+            ['bill_number' => 'INV-202412-003'],
+            [
+                'taxpayer_id' => $budi->id,
+                'tax_object_id' => $pbbObject->id,
+                'opd_id' => $bapenda->id,
+                'retribution_type_id' => $pbbType->id,
+                'amount' => 750000,
+                'status' => 'overdue',
+                'period' => '2024-12',
+                'due_date' => Carbon::now()->subMonths(2),
+                'penalty_amount' => 15000,
+            ]
+        );
+
         // 7. Create Pending Verification for Ani (Testing Approval Flow)
         $newObject = TaxObject::create([
             'taxpayer_id' => $ani->id,
