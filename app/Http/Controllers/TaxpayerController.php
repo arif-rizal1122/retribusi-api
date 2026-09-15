@@ -342,12 +342,10 @@ class TaxpayerController extends Controller
             $metadata = json_decode($metadata, true) ?: [];
         }
 
-        if ($request->hasFile('foto_lokasi_open_kamera')) {
-            $metadata['foto_lokasi_open_kamera'] = $cloudinary->upload($request->file('foto_lokasi_open_kamera'), 'taxpayers/survey');
-        }
-        
-        if ($request->hasFile('formulir_data_dukung')) {
-            $metadata['formulir_data_dukung'] = $cloudinary->upload($request->file('formulir_data_dukung'), 'taxpayers/docs');
+        // Simpan seluruh file terunggah (termasuk key per-klasifikasi, mis. foto_lokasi_open_kamera__cls61)
+        foreach ($request->allFiles() as $key => $file) {
+            $folder = str_contains($key, 'foto') ? 'taxpayers/survey' : 'taxpayers/docs';
+            $metadata[$key] = $cloudinary->upload($file, $folder);
         }
 
         $selectedClassifications = collect();
@@ -498,6 +496,14 @@ class TaxpayerController extends Controller
 
         if (!$name) return;
 
+        // Filter metadata to only include keys for this classification (backward-compat: raw keys & namespaced __cls{id})
+        $nsSuffix = $classificationId ? "__cls{$classificationId}" : null;
+        $scopedMetadata = array_filter($metadata, function ($key) use ($classificationId, $nsSuffix) {
+            if (!$classificationId) return true;
+            return $key === "_object_name_{$classificationId}" || str_ends_with((string)$key, $nsSuffix);
+        });
+        if (empty($scopedMetadata)) $scopedMetadata = $metadata;
+
         // [OPTIMIZATION] Generate NOP using pre-fetched components to avoid repeated string manipulation
         $nopPrefix = $taxpayer->npwpd ?: 'NOP-' . str_pad($taxpayer->id, 4, '0', STR_PAD_LEFT);
         $nop = $nopPrefix . '-' . $typeId . ($classificationId ? '-' . $classificationId : '');
@@ -511,7 +517,7 @@ class TaxpayerController extends Controller
             'latitude' => $taxpayer->latitude,
             'longitude' => $taxpayer->longitude,
             'nop' => $nop,
-            'metadata' => $metadata,
+            'metadata' => $scopedMetadata,
         ];
 
         try {
@@ -576,9 +582,22 @@ class TaxpayerController extends Controller
             ]);
         }
 
+        // Klasifikasi penagihan otomatis (kode berawalan 'DENDA-', mis. denda overtime)
+        // hanya dipakai sistem saat menghitung tagihan, bukan untuk registrasi objek baru.
+        $penaltyClassification = $selectedClassifications->first(
+            fn ($c) => str_starts_with((string) $c->code, 'DENDA-')
+        );
+        if ($penaltyClassification) {
+            throw ValidationException::withMessages([
+                'retribution_classification_ids' => 'Klasifikasi ' . $penaltyClassification->name . ' adalah klasifikasi penagihan otomatis dan tidak dapat dipilih untuk registrasi objek baru.',
+            ]);
+        }
+
         $missingTypeNames = [];
         foreach ($typeIds as $typeId) {
-            $typeClassifications = $allClassificationsForTypes->where('retribution_type_id', $typeId);
+            $typeClassifications = $allClassificationsForTypes
+                ->where('retribution_type_id', $typeId)
+                ->reject(fn ($c) => str_starts_with((string) $c->code, 'DENDA-'));
             if ($typeClassifications->isNotEmpty() && $selectedClassifications->where('retribution_type_id', $typeId)->isEmpty()) {
                 $typeName = RetributionType::whereKey($typeId)->value('name') ?: "ID {$typeId}";
                 $missingTypeNames[] = $typeName;
@@ -632,6 +651,8 @@ class TaxpayerController extends Controller
         $errors = [];
 
         foreach ($classifications as $classification) {
+            $ns = fn (string $key) => "{$key}__cls{$classification->id}";
+
             foreach (($classification->form_schema ?? []) as $field) {
                 if (!($field['required'] ?? false)) {
                     continue;
@@ -642,7 +663,7 @@ class TaxpayerController extends Controller
                     continue;
                 }
 
-                $value = $metadata[$key] ?? null;
+                $value = $metadata[$ns($key)] ?? $metadata[$key] ?? null;
                 if ($value === null || (is_string($value) && trim($value) === '')) {
                     $label = $field['label'] ?? $key;
                     $errors["metadata.{$key}"] = "{$label} wajib diisi.";
@@ -659,8 +680,8 @@ class TaxpayerController extends Controller
                     continue;
                 }
 
-                $existingValue = $metadata[$key] ?? null;
-                if (!$request->hasFile($key) && !$existingValue) {
+                $existingValue = $metadata[$ns($key)] ?? $metadata[$key] ?? null;
+                if (!$request->hasFile($ns($key)) && !$request->hasFile($key) && !$existingValue) {
                     $label = $requirement['label'] ?? $requirement['name'] ?? $key;
                     $errors[$key] = "{$label} wajib diunggah.";
                 }

@@ -54,6 +54,18 @@ class PuprAssetSeeder extends Seeder
             ]
         );
 
+        // Admin dashboard retribusi-admin yang dikunci ke OPD PUPR
+        User::updateOrCreate(
+            ['email' => 'admin.pupr@baubaukota.go.id'],
+            [
+                'name' => 'Admin PUPR',
+                'password' => Hash::make('password123'),
+                'role' => 'admin',
+                'opd_id' => $pupr->id,
+                'status' => 'active',
+            ]
+        );
+
         // Retribusi tipe: Sewa Alat Berat
         $type = RetributionType::updateOrCreate(
             ['opd_id' => $pupr->id, 'name' => 'Sewa Alat Berat'],
@@ -75,6 +87,54 @@ class PuprAssetSeeder extends Seeder
                 'is_self_assessment' => false,
             ]
         );
+
+        // Klasifikasi registrasi (self-assessment) per kategori aset.
+        // Struktur mengikuti kategori pada aplikasi warga (mobile):
+        //   Alat Berat / Kendaraan / Sedot Kakus. Option 'jenis_alat' = unit master aset.
+        RetributionClassification::withoutGlobalScopes()
+            ->where('opd_id', $pupr->id)
+            ->where('code', 'SEWA-ALAT-BERAT')
+            ->delete();
+
+        $kategoriAset = [
+            'ALAT-BERAT' => [
+                'name' => 'Alat Berat',
+                'description' => 'Sewa alat berat konstruksi (ekskavator, buldoser, wheel loader, vibro roller, mesin molen).',
+                'jenis_alat' => ['Excavator Komatsu PC200', 'Bulldozer D65E', 'Wheel Loader WA500', 'Vibro Roller 8 Ton', 'Mesin Molen 0.5 m3'],
+            ],
+            'KENDARAAN' => [
+                'name' => 'Kendaraan',
+                'description' => 'Sewa kendaraan operasional (dump truck, tronton) milik Pemkot Bau-Bau.',
+                'jenis_alat' => ['Dump Truck 10 Ton', 'Tronton 20 Ton'],
+            ],
+            'SEDOT-KAKUS' => [
+                'name' => 'Sedot Kakus',
+                'description' => 'Jasa sedot limbah tinja / mobil tinja.',
+                'jenis_alat' => ['Sedot Kakus / Mobil Tinja'],
+            ],
+        ];
+
+        foreach ($kategoriAset as $code => $cfg) {
+            RetributionClassification::updateOrCreate(
+                ['opd_id' => $pupr->id, 'code' => $code],
+                [
+                    'retribution_type_id' => $type->id,
+                    'name' => $cfg['name'],
+                    'description' => $cfg['description'],
+                    'is_self_assessment' => true,
+                    'form_schema' => [
+                        ['key' => 'tanggal_pendataan', 'label' => 'Tanggal Pendataan', 'type' => 'date', 'required' => true],
+                        ['key' => 'jenis_alat', 'label' => 'Jenis Alat', 'type' => 'select', 'options' => $cfg['jenis_alat'], 'required' => true],
+                        ['key' => 'durasi_sewa_hari', 'label' => 'Durasi Sewa (Hari)', 'type' => 'number', 'required' => true],
+                        ['key' => 'lokasi_google_maps', 'label' => 'Titik Lokasi Proyek', 'type' => 'google_map', 'required' => true],
+                    ],
+                    'requirements' => [
+                        ['key' => 'foto_lokasi_open_kamera', 'label' => 'Dokumentasi Open Kamera', 'required' => true],
+                        ['key' => 'formulir_data_dukung', 'label' => 'Upload Formulir Data Dukung', 'required' => true],
+                    ],
+                ]
+            );
+        }
 
         // Unit aset awal (demo + realistis)
         $assets = [
