@@ -272,6 +272,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/rusun/complexes', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'complexes']);
         Route::get('/rusun/floors', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'floors']);
         Route::get('/rusun/rooms', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'availableRooms']);
+        Route::get('/rusun/available-rooms', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'availableRooms']);
 
         // Pembayaran
         Route::get('/payments/history', [PaymentController::class, 'history']);
@@ -456,8 +457,19 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::put('/asset/items/{id}', [\App\Http\Controllers\AdminAssetController::class, 'updateItem']);
         Route::delete('/asset/items/{id}', [\App\Http\Controllers\AdminAssetController::class, 'deleteItem']);
 
-        // Rusunawa Room Management (Disperkim)
+        // Rusunawa Room Management (Disperkim) - Admin Endpoints
+        Route::prefix('admin/rusun')->group(function () {
+            Route::get('/rooms', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'adminRooms']);
+            Route::post('/rooms/{id}/maintenance', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setMaintenance']);
+            Route::post('/rooms/{id}/available', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setAvailable']);
+            Route::post('/rooms/{id}/set-maintenance', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setMaintenance']);
+            Route::post('/rooms/{id}/set-available', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setAvailable']);
+        });
+
+        // Rusunawa Room Management (Disperkim) - Legacy / Direct alias
         Route::get('/rusun/rooms', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'adminRooms']);
+        Route::post('/rusun/rooms/{id}/maintenance', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setMaintenance']);
+        Route::post('/rusun/rooms/{id}/available', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setAvailable']);
         Route::post('/rusun/rooms/{id}/set-maintenance', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setMaintenance']);
         Route::post('/rusun/rooms/{id}/set-available', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setAvailable']);
 

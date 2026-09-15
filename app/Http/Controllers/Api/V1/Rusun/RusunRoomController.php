@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\RusunRoom;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class RusunRoomController extends Controller
 {
@@ -21,6 +22,20 @@ class RusunRoomController extends Controller
      */
     public function complexes(): JsonResponse
     {
+        if (!Schema::hasTable('rusun_rooms')) {
+            $data = collect(['kotamara', 'mahasiswa', 'wameo', 'asn'])->map(function ($code) {
+                return [
+                    'code' => $code,
+                    'name' => self::COMPLEX_NAMES[$code] ?? ucfirst($code),
+                ];
+            })->values();
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+            ]);
+        }
+
         $codes = RusunRoom::select('complex_code')
             ->distinct()
             ->pluck('complex_code');
@@ -48,11 +63,29 @@ class RusunRoomController extends Controller
      */
     public function floors(Request $request): JsonResponse
     {
-        $request->validate([
-            'complex' => 'required|string',
-        ]);
+        $complex = strtolower($request->input('complex_code') ?? $request->input('complex') ?? '');
+        if (empty($complex)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parameter complex atau complex_code wajib diisi.',
+            ], 422);
+        }
 
-        $complex = strtolower($request->input('complex'));
+        if (!Schema::hasTable('rusun_rooms')) {
+            $floors = $complex === 'kotamara' ? collect([1, 2]) : collect([1, 2, 3, 4]);
+            $data = $floors->map(function ($f) {
+                return [
+                    'floor' => (int) $f,
+                    'label' => 'Lantai ' . $f,
+                ];
+            })->values();
+
+            return response()->json([
+                'success' => true,
+                'complex' => $complex,
+                'data' => $data,
+            ]);
+        }
 
         $floors = RusunRoom::where('complex_code', $complex)
             ->select('floor')
@@ -84,13 +117,28 @@ class RusunRoomController extends Controller
      */
     public function availableRooms(Request $request): JsonResponse
     {
+        $complex = strtolower($request->input('complex_code') ?? $request->input('complex') ?? '');
+        if (empty($complex)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parameter complex atau complex_code wajib diisi.',
+            ], 422);
+        }
+
         $request->validate([
-            'complex' => 'required|string',
             'floor' => 'required|integer',
         ]);
 
-        $complex = strtolower($request->input('complex'));
         $floor = (int) $request->input('floor');
+
+        if (!Schema::hasTable('rusun_rooms')) {
+            return response()->json([
+                'success' => true,
+                'complex' => $complex,
+                'floor' => $floor,
+                'data' => [],
+            ]);
+        }
 
         $rooms = RusunRoom::with(['assetItem:id,name,code,tarif_default,satuan_tarif,lokasi'])
             ->where('complex_code', $complex)
@@ -112,13 +160,21 @@ class RusunRoomController extends Controller
      */
     public function adminRooms(Request $request): JsonResponse
     {
+        if (!Schema::hasTable('rusun_rooms')) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        }
+
         $query = RusunRoom::with([
             'assetItem:id,name,code,tarif_default,opd_id',
             'currentRental.taxpayer:id,name,phone,nik',
         ]);
 
-        if ($request->filled('complex')) {
-            $query->where('complex_code', strtolower($request->input('complex')));
+        $complex = $request->input('complex_code') ?? $request->input('complex');
+        if ($complex) {
+            $query->where('complex_code', strtolower($complex));
         }
 
         if ($request->filled('floor')) {
@@ -134,9 +190,40 @@ class RusunRoomController extends Controller
             ->orderBy('room_number')
             ->get();
 
+        $taxpayerIds = $rooms->pluck('currentRental.taxpayer_id')->filter()->unique()->values();
+
+        $unpaidStats = collect();
+        if ($taxpayerIds->isNotEmpty()) {
+            $unpaidStats = \App\Models\Bill::whereIn('taxpayer_id', $taxpayerIds)
+                ->where('opd_id', 11)
+                ->whereIn('status', ['pending', 'overdue', 'unpaid'])
+                ->selectRaw('taxpayer_id, COUNT(*) as count, SUM(amount) as total')
+                ->groupBy('taxpayer_id')
+                ->get()
+                ->keyBy('taxpayer_id');
+        }
+
+        $data = $rooms->map(function ($room) use ($unpaidStats) {
+            $taxpayerId = $room->currentRental?->taxpayer_id;
+            $stat = $taxpayerId ? $unpaidStats->get($taxpayerId) : null;
+            $unpaidCount = $stat ? (int) $stat->count : 0;
+            $unpaidAmount = $stat ? (float) $stat->total : 0;
+
+            $arr = $room->toArray();
+            $arr['complex_code'] = strtoupper($room->complex_code);
+            $arr['monthly_rate'] = $room->assetItem ? (float) $room->assetItem->tarif_default : 0;
+            $arr['unpaid_rentals_count'] = $unpaidCount;
+
+            if ($room->currentRental) {
+                $arr['current_rental']['sisa_pembayaran'] = $unpaidAmount;
+            }
+
+            return $arr;
+        });
+
         return response()->json([
             'success' => true,
-            'data' => $rooms,
+            'data' => $data,
         ]);
     }
 
