@@ -18,6 +18,153 @@ class DlhTrashBillingController extends Controller
     }
 
     /**
+     * Daftar akun objek persampahan persil (Admin DLH & Master Management)
+     */
+    public function indexAccounts(Request $request)
+    {
+        $search = $request->query('search');
+        $statusHunian = $request->query('status_hunian');
+        $kategoriId = $request->query('tarif_kategori_id');
+        $district = $request->query('district');
+        $subDistrict = $request->query('sub_district');
+        $perPage = (int) $request->query('per_page', 15);
+
+        // Sumber 1: Tabel dlh_sampah_accounts
+        if (\Illuminate\Support\Facades\Schema::hasTable('dlh_sampah_accounts') && \App\Models\Dlh\DlhSampahAccount::count() > 0) {
+            $query = \App\Models\Dlh\DlhSampahAccount::with(['tarifKategori', 'taxObject.taxpayer']);
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('kode_objek', 'LIKE', "%{$search}%")
+                      ->orWhere('penanggung_jawab_nama', 'LIKE', "%{$search}%")
+                      ->orWhere('alamat_lengkap', 'LIKE', "%{$search}%");
+                });
+            }
+
+            if ($statusHunian) {
+                $query->where('status', $statusHunian);
+            }
+
+            if ($kategoriId) {
+                $query->where('tarif_kategori_id', $kategoriId);
+            }
+
+            if ($district) {
+                $query->where('kecamatan', $district);
+            }
+
+            if ($subDistrict) {
+                $query->where('kelurahan', $subDistrict);
+            }
+
+            $accounts = $query->orderBy('id', 'desc')->paginate($perPage);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $accounts->items(),
+                'meta' => [
+                    'current_page' => $accounts->currentPage(),
+                    'last_page' => $accounts->lastPage(),
+                    'per_page' => $accounts->perPage(),
+                    'total' => $accounts->total(),
+                ],
+            ]);
+        }
+
+        // Sumber 2 (Fallback): Tabel TaxObject
+        $query = TaxObject::with('taxpayer')
+            ->where(function ($q) {
+                $q->where('retribution_classification_id', 198)
+                  ->orWhere('opd_id', 4);
+            });
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('address', 'LIKE', "%{$search}%")
+                  ->orWhere('penanggung_jawab_nama', 'LIKE', "%{$search}%");
+            });
+        }
+
+        if ($statusHunian) {
+            $query->where('status_hunian', $statusHunian);
+        }
+
+        if ($district) {
+            $query->where('district', $district);
+        }
+
+        if ($subDistrict) {
+            $query->where('sub_district', $subDistrict);
+        }
+
+        $taxObjects = $query->orderBy('id', 'desc')->paginate($perPage);
+
+        $mapped = collect($taxObjects->items())->map(function ($obj) {
+            $monthlyRate = 8500;
+            $cat = $obj->building_category ?? 'RUMAH_SEDERHANA';
+            if ($cat === 'RUMAH_MENENGAH') $monthlyRate = 15000;
+            elseif ($cat === 'RUKO_NIAGA') $monthlyRate = 22000;
+            elseif ($cat === 'RESTORAN') $monthlyRate = 45000;
+            elseif ($cat === 'PASAR') $monthlyRate = 22000;
+            elseif ($cat === 'INDUSTRI') $monthlyRate = 50000;
+            elseif ($cat === 'SOSIAL_IBADAH') $monthlyRate = 0;
+
+            return [
+                'id' => $obj->id,
+                'tax_object_id' => $obj->id,
+                'kode_objek' => 'SMP-' . str_pad((string) $obj->id, 5, '0', STR_PAD_LEFT),
+                'penanggung_jawab_nama' => $obj->penanggung_jawab_nama ?? $obj->name,
+                'penanggung_jawab_telepon' => $obj->penanggung_jawab_kontak ?? $obj->taxpayer?->phone_number,
+                'alamat_lengkap' => $obj->address,
+                'kelurahan' => $obj->sub_district ?? 'Kota Baubau',
+                'kecamatan' => $obj->district ?? 'Kota Baubau',
+                'latitude' => $obj->latitude,
+                'longitude' => $obj->longitude,
+                'status' => $obj->status_hunian ?? 'BERPENGHUNI',
+                'nama_kategori' => ucwords(strtolower(str_replace('_', ' ', $cat))),
+                'tarif_bulanan' => $monthlyRate,
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $mapped,
+            'meta' => [
+                'current_page' => $taxObjects->currentPage(),
+                'last_page' => $taxObjects->lastPage(),
+                'per_page' => $taxObjects->perPage(),
+                'total' => $taxObjects->total(),
+            ],
+        ]);
+    }
+
+    /**
+     * Master daftar kategori tarif persampahan Perda Kota Baubau No. 1/2024
+     */
+    public function listTarifCategories()
+    {
+        if (\Illuminate\Support\Facades\Schema::hasTable('dlh_sampah_tarif_kategori')) {
+            $categories = \App\Models\Dlh\DlhSampahTarifKategori::where('is_active', true)->get();
+            if ($categories->isNotEmpty()) {
+                return response()->json(['status' => 'success', 'data' => $categories]);
+            }
+        }
+
+        $defaults = [
+            ['id' => 1, 'kode_tarif' => 'SMP-01', 'nama_kategori' => 'Rumah Tangga Sederhana', 'kelompok' => 'RUMAH_TANGGA', 'tarif_bulanan' => 8500],
+            ['id' => 2, 'kode_tarif' => 'SMP-02', 'nama_kategori' => 'Rumah Tangga Menengah / Mewah', 'kelompok' => 'RUMAH_TANGGA', 'tarif_bulanan' => 15000],
+            ['id' => 3, 'kode_tarif' => 'SMP-03', 'nama_kategori' => 'Ruko / Kantor / Toko Niaga', 'kelompok' => 'NIAGA', 'tarif_bulanan' => 22000],
+            ['id' => 4, 'kode_tarif' => 'SMP-04', 'nama_kategori' => 'Restoran / Rumah Makan / Kafe', 'kelompok' => 'NIAGA', 'tarif_bulanan' => 45000],
+            ['id' => 5, 'kode_tarif' => 'SMP-05', 'nama_kategori' => 'Kios / Los Pasar', 'kelompok' => 'PASAR', 'tarif_bulanan' => 22000],
+            ['id' => 6, 'kode_tarif' => 'SMP-06', 'nama_kategori' => 'Industri / Pabrik / Hotel', 'kelompok' => 'INDUSTRI', 'tarif_bulanan' => 50000],
+            ['id' => 7, 'kode_tarif' => 'SMP-07', 'nama_kategori' => 'Sosial / Rumah Ibadah / Panti', 'kelompok' => 'SOSIAL', 'tarif_bulanan' => 0],
+        ];
+
+        return response()->json(['status' => 'success', 'data' => $defaults]);
+    }
+
+    /**
      * Hitung simulasi tarif retribusi persampahan
      */
     public function calculateTariff(Request $request)

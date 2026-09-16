@@ -344,4 +344,51 @@ class DlhTrashBillingTest extends TestCase
 
         $this->assertEquals('KOSONG', $taxObject->fresh()->status_hunian);
     }
+
+    public function test_admin_can_index_trash_accounts(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        TaxObject::create([
+            'nop' => '74.72.010.001.001-9999.0',
+            'taxpayer_id' => $this->taxpayer->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'retribution_classification_id' => 198,
+            'name' => 'Kios Pasar Wameo',
+            'address' => 'Kompleks Pasar Wameo Blok B',
+            'building_category' => 'PASAR',
+            'status_hunian' => 'BERPENGHUNI',
+            'penanggung_jawab_nama' => 'Haji Nasir',
+            'is_active' => true,
+        ]);
+
+        $response = $this->getJson('/api/v1/dlh/trash/accounts?search=Wameo');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('status', 'success')
+            ->assertJsonStructure([
+                'status',
+                'data',
+                'meta' => ['current_page', 'last_page', 'per_page', 'total'],
+            ]);
+
+        $this->assertGreaterThanOrEqual(1, count($response->json('data')));
+    }
+
+    public function test_can_list_tarif_categories(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $response = $this->getJson('/api/v1/dlh/trash/tarif-categories');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('status', 'success')
+            ->assertJsonStructure([
+                'status',
+                'data' => [
+                    '*' => ['nama_kategori', 'tarif_bulanan'],
+                ],
+            ]);
+    }
 }

@@ -669,6 +669,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/reports/collector-audit', [\App\Http\Controllers\Api\V1\Dlh\DlhReportController::class, 'getCollectorAuditReport']);
 
         // Persampahan Property-Centric Billing & Occupant Transfer
+        Route::get('/trash/accounts', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'indexAccounts']);
+        Route::get('/trash/tarif-categories', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'listTarifCategories']);
         Route::post('/trash/calculate', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'calculateTariff']);
         Route::post('/trash/transfer-occupant/{taxObjectId}', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'transferOccupant']);
         Route::post('/trash/generate-bills', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'generateMonthlyBills']);
