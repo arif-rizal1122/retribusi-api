@@ -93,7 +93,7 @@
     </div>
 
     <div class="footer">
-        <p>Kendari, {{ date('d F Y') }}</p>
+        <p>Baubau, {{ date('d F Y') }}</p>
         <p>BENDAHARA PENERIMA,</p>
         <br><br><br>
         <p>( ________________________ )</p>

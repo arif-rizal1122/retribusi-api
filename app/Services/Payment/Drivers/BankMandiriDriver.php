@@ -212,13 +212,9 @@ class BankMandiriDriver implements PaymentGatewayInterface
 
             // [HOOK] TTE Automated Signing
             try {
-                $signer = \App\Models\User::whereIn('role', ['super_admin', 'admin', 'kabid_pengawas'])->first();
-                if ($signer) {
-                    $docService = app(\App\Services\OfficialDocumentService::class);
-                    $docService->signDocument('bill', $bill->id, $signer, 'Signed automatically via Mandiri QRIS Callback');
-                }
-            } catch (\Exception $e) {
-                Log::error('Mandiri QRIS TTE Hook Failed:', ['bill' => $bill->bill_number, 'error' => $e->getMessage()]);
+                app(\App\Services\AutoTteHookService::class)->handlePaidBill($lockedBill, 'qris', $ntpd);
+            } catch (\Throwable $e) {
+                Log::error('Mandiri QRIS TTE Hook Failed:', ['bill' => $lockedBill->bill_number, 'error' => $e->getMessage()]);
             }
 
             return [

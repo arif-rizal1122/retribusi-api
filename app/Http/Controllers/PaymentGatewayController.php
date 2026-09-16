@@ -10,10 +10,12 @@ use Illuminate\Support\Facades\Log;
 class PaymentGatewayController extends Controller
 {
     protected $billingService;
+    protected \App\Services\AutoTteHookService $autoTteHook;
 
-    public function __construct(BillingService $billingService)
+    public function __construct(BillingService $billingService, \App\Services\AutoTteHookService $autoTteHook)
     {
         $this->billingService = $billingService;
+        $this->autoTteHook = $autoTteHook;
     }
     /**
      * Mock generating a payment token/link/QRIS
@@ -92,8 +94,15 @@ class PaymentGatewayController extends Controller
                 $bill->status = 'lunas';
                 $bill->save();
 
-                Log::info("Bill {$bill->bill_number} marked as LUNAS via webhook.");
-                return response()->json(['message' => 'Payment processed, billing updated to lunas.']);
+                // Trigger Auto-TTE Hook
+                $this->autoTteHook->handlePaidBill(
+                    $bill,
+                    $payload['payment_type'] ?? 'GATEWAY',
+                    $payload['transaction_id'] ?? null
+                );
+
+                Log::info("Bill {$bill->bill_number} marked as LUNAS via webhook and Auto-TTE sealed.");
+                return response()->json(['message' => 'Payment processed, billing updated to lunas, and TTE document issued.']);
             }
         }
 

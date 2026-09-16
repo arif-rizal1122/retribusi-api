@@ -445,6 +445,49 @@ class OfficialDocumentService
     }
 
     /**
+     * Generate SIPAB (Surat Izin Pemakaian Alat Berat & Pemanfaatan Aset Daerah)
+     */
+    public function generateSIPAB(Bill $bill)
+    {
+        $bill->load(['taxpayer', 'retributionType', 'payments', 'opd']);
+        $rental = \App\Models\AssetRental::with(['assetItem', 'room'])->find($bill->asset_rental_id);
+        $signedDoc = \App\Models\SignedDocument::where('document_type', get_class($bill))
+            ->where('document_id', $bill->id)
+            ->first();
+        $tokenRecord = \App\Models\AssetToken::where('bill_id', $bill->id)->first();
+
+        $total = (float) $bill->amount + (float) $bill->penalty_amount + (float) $bill->fixed_fine_amount + (float) $bill->surcharge_amount;
+        $opdName = $bill->opd?->name ?? 'DINAS PEKERJAAN UMUM DAN PENATAAN RUANG';
+
+        return [
+            'document_title' => 'SURAT IZIN PEMAKAIAN ALAT BERAT & UTILITAS (SIPAB)',
+            'document_number' => $signedDoc?->document_number ?? ('SIPAB/' . date('Y') . '/' . $bill->bill_number),
+            'number' => $bill->bill_number,
+            'taxpayer' => $bill->taxpayer?->name ?? 'N/A',
+            'taxpayer_nik' => $bill->taxpayer?->nik ?? '-',
+            'address' => $bill->taxpayer?->address ?? 'Kota Baubau',
+            'opd_name' => $opdName,
+            'asset_name' => $rental?->assetItem?->name ?? $bill->retributionType?->name ?? 'Unit Alat Berat',
+            'bmd_code' => $rental?->assetItem?->code ?? '-',
+            'lokasi_penggunaan' => $rental?->lokasi_penggunaan ?? 'Kota Baubau',
+            'valid_from' => $rental?->tanggal_mulai ? date('d/m/Y', strtotime($rental->tanggal_mulai)) : date('d/m/Y'),
+            'valid_until' => $rental?->tanggal_selesai ? date('d/m/Y', strtotime($rental->tanggal_selesai)) : date('d/m/Y', strtotime('+3 days')),
+            'duration' => $rental?->lama_sewa ?? 1,
+            'operator_name' => $rental?->operator_nama ?? 'Operator Resmi Ditugaskan',
+            'amount' => (float) $bill->amount,
+            'biaya_tronton' => (float) ($rental?->biaya_tronton ?? 0),
+            'total_amount' => $total,
+            'terbilang' => self::terbilang($total) . ' Rupiah',
+            'ntpd' => $bill->payments->first()?->receipt_number ?? $bill->payments->first()?->reference_number ?? 'NTPD-LUNAS',
+            'token_code' => $tokenRecord?->token_code ?? $signedDoc?->signer_nip,
+            'signer_title' => 'KEPALA ' . strtoupper($opdName),
+            'signer_name' => $signedDoc?->signer_name ?? 'Kepala Dinas PUPR Kota Baubau',
+            'signer_nip' => $signedDoc?->signer_nip ?? '-',
+            'qr_url' => url("/api/tte/verify/{$bill->bill_number}"),
+        ];
+    }
+
+    /**
      * Generate SPMP (Surat Perintah Melaksanakan Penyitaan)
      * Asset seizure order - final enforcement step
      */
@@ -529,7 +572,7 @@ class OfficialDocumentService
      */
     public static function terbilang($angka)
     {
-        $angka = abs($angka);
+        $angka = (int) floor(abs((float) $angka));
         $baca = array("", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas");
         $terbilang = "";
         

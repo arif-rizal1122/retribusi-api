@@ -40,9 +40,9 @@
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode($qr_url) }}" alt="QR Code">
              </div>
         </div>
-        <div class="signature">
-            <p>Kendari, {{ $date }}</p>
-            <p>Kepala Bidang Pengawasan,</p>
+        <div style="float: right; text-align: center; width: 200px;">
+            <p>Baubau, {{ $date }}</p>
+            <p>Kepala Badan Pendapatan Daerah,</p>
             <br><br><br>
             <p><strong>( ________________________ )</strong></p>
             <p>NIP. .............................</p>

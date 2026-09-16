@@ -74,6 +74,17 @@ class DocumentController extends Controller
     }
 
     /**
+     * Generate SIPAB (Surat Izin Pemakaian Alat Berat & Pemanfaatan Aset Daerah)
+     * GET /api/documents/sipab/{billId}
+     */
+    public function sipab($billId)
+    {
+        $bill = Bill::with(['taxpayer', 'retributionType', 'payments', 'opd'])->findOrFail($billId);
+        $data = $this->docService->generateSIPAB($bill);
+        return $this->docService->renderPDF('pdf.sipab', $data, "SIPAB-{$bill->bill_number}.pdf");
+    }
+
+    /**
      * Generate SPPT (Surat Pemberitahuan Pajak Terutang - PBB)
      * GET /api/documents/sppt/{billId}
      */

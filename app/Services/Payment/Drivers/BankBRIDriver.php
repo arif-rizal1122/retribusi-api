@@ -128,12 +128,8 @@ class BankBRIDriver implements PaymentGatewayInterface
             
             // Automated TTE Signing Hook
             try {
-                $signer = \App\Models\User::whereIn('role', ['super_admin', 'admin', 'kabid_pengawas'])->first();
-                if ($signer) {
-                    $docService = app(\App\Services\OfficialDocumentService::class);
-                    $docService->signDocument('bill', $lockedBill->id, $signer, 'Signed automatically via Bank H2H Callback');
-                }
-            } catch (\Exception $e) {
+                app(\App\Services\AutoTteHookService::class)->handlePaidBill($lockedBill, 'va', $ntpd);
+            } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::error('H2H TTE Hook Failed:', ['bill' => $lockedBill->bill_number, 'error' => $e->getMessage()]);
             }
 

@@ -55,6 +55,8 @@ Route::get('/public/pdf/npwpd/{id}', [\App\Http\Controllers\PdfController::class
 Route::get('/public/pdf/skrd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skrd']);
 Route::get('/public/pdf/skpd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skpd']);
 Route::get('/public/pdf/sspd/{billId}', [\App\Http\Controllers\DocumentController::class, 'sspd']);
+Route::get('/public/pdf/ssrd/{billId}', [\App\Http\Controllers\DocumentController::class, 'ssrd']);
+Route::get('/public/pdf/sipab/{billId}', [\App\Http\Controllers\DocumentController::class, 'sipab']);
 Route::get('/public/pdf/sppt/{billId}', [\App\Http\Controllers\DocumentController::class, 'sppt']);
 Route::get('/public/pdf/surat-teguran/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'suratTeguran']);
 

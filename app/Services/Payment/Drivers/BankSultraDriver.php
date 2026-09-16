@@ -172,15 +172,11 @@ class BankSultraDriver implements PaymentGatewayInterface
                 'raw_callback_data' => $masker->mask($payload)
             ]);
 
-            // [HOOK] TTE Automated Signing for Receipt (SSPD/SSRD)
+            // [HOOK] TTE Automated Signing for Receipt (SSPD/SSRD/Aset)
             try {
-                $signer = \App\Models\User::whereIn('role', ['super_admin', 'admin', 'kabid_pengawas'])->first();
-                if ($signer) {
-                    $docService = app(\App\Services\OfficialDocumentService::class);
-                    $docService->signDocument('bill', $bill->id, $signer, 'Signed automatically via Bank H2H Callback');
-                }
-            } catch (\Exception $e) {
-                Log::error('H2H TTE Hook Failed:', ['bill' => $bill->bill_number, 'error' => $e->getMessage()]);
+                app(\App\Services\AutoTteHookService::class)->handlePaidBill($lockedBill, 'va', $ntpd);
+            } catch (\Throwable $e) {
+                Log::error('H2H TTE Hook Failed:', ['bill' => $lockedBill->bill_number, 'error' => $e->getMessage()]);
                 // We don't roll back the payment just because TTE failed
             }
 
