@@ -216,6 +216,7 @@ class DatabaseSeeder extends Seeder
         $this->call(TaxpayerWithNibSeeder::class);
         $this->call(PuprAssetSeeder::class);
         $this->call(PuprPetugasSeeder::class);
+        $this->call(DlhDualModeSeeder::class);
 
         $this->command->info('Database seeded successfully!');
         $this->command->info('Super Admin: superadmin@sipanda.online / Mpad123#');
@@ -223,5 +224,7 @@ class DatabaseSeeder extends Seeder
         $this->command->info('OPD Dishub: dishub@retribusi.id / password123');
         $this->command->info('OPD Disperindag: disperindag@retribusi.id / password123');
         $this->command->info('OPD DLH: dlh@retribusi.id / password123');
+        $this->command->info('DLH Juru Pungut Pasar: dlh.pasar@baubaukota.go.id / password123');
+        $this->command->info('DLH Petugas Kelurahan: dlh.kelurahan@baubaukota.go.id / password123');
     }
 }
