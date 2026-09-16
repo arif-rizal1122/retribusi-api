@@ -197,8 +197,11 @@ class PublicTaxObjectBillController extends Controller
     private function resolveObject(string $code): ?array
     {
         // 1. Cek di tabel akun DLH khusus
+        $code = trim($code);
+
+        // 1. Cek di DlhSampahAccount jika tabel ada
         $dlhAccount = null;
-        if (class_exists(DlhSampahAccount::class)) {
+        if (class_exists(DlhSampahAccount::class) && \Illuminate\Support\Facades\Schema::hasTable('dlh_sampah_accounts')) {
             try {
                 $dlhAccount = DlhSampahAccount::with(['tarifKategori', 'taxObject.taxpayer'])
                     ->where('kode_objek', $code)
@@ -215,12 +218,21 @@ class PublicTaxObjectBillController extends Controller
             ];
         }
 
-        // 2. Cek di TaxObject umum
+        // 2. Parse pola SMP-00001 / SMP-xxxxx menjadi ID integer
+        $extractedId = null;
+        if (preg_match('/^SMP-(\d+)$/i', $code, $matches)) {
+            $extractedId = (int) $matches[1];
+        } elseif (is_numeric($code)) {
+            $extractedId = (int) $code;
+        }
+
+        // 3. Cek di TaxObject umum
         $taxObject = TaxObject::with('taxpayer')
-            ->where(function ($q) use ($code) {
-                if (is_numeric($code)) {
-                    $q->where('id', (int) $code);
+            ->where(function ($q) use ($code, $extractedId) {
+                if ($extractedId !== null) {
+                    $q->where('id', $extractedId);
                 }
+                $q->orWhere('nop', $code);
                 $q->orWhere('name', 'LIKE', "%{$code}%");
             })
             ->first();
