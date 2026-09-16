@@ -24,11 +24,13 @@ class SetScopeUser
             RetributionTypeScope::setAuthenticatedUser($user);
         }
 
-        $response = $next($request);
-
-        // Reset for next request (important for long-running processes)
-        RetributionTypeScope::resetUser();
-
-        return $response;
+        try {
+            return $next($request);
+        } finally {
+            // Reset for next request (important for long-running processes).
+            // Runs even when the route throws (e.g. ModelNotFoundException on
+            // cross-OPD route-model binding) to keep static state clean.
+            RetributionTypeScope::resetUser();
+        }
     }
 }

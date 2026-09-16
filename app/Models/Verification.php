@@ -11,6 +11,11 @@ class Verification extends Model
 {
     use Auditable;
 
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+    }
+
     protected $fillable = [
         'opd_id',
         'user_id',

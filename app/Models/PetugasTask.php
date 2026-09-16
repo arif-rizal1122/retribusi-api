@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class PetugasTask extends Model
 {
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+    }
+
     protected $fillable = [
         'user_id',
         'zone_id',

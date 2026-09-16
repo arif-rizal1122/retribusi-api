@@ -236,8 +236,8 @@ class PetugasTaskController extends Controller
              return response()->json(['message' => 'Unauthorized deletion'], 403);
          }
 
-         // Enforce OPD scoping for non-super-admins
-         if (!$user->isSuperAdmin() && $task->user->opd_id !== $user->opd_id) {
+         // Enforce OPD scoping for non-super-admins (nullable-safe relation load)
+         if (!$user->isSuperAdmin() && ($task->user?->opd_id ?? null) !== $user->opd_id) {
              return response()->json(['message' => 'Unauthorized deletion of other OPD tasks'], 403);
          }
 

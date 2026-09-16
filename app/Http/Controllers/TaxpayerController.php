@@ -21,32 +21,30 @@ class TaxpayerController extends Controller
         $user = $request->user();
         $query = Taxpayer::with(['opd', 'retributionTypes', 'retributionClassifications', 'creator', 'taxObjects']);
 
-        // Admin OPD and Petugas only see their own OPD's taxpayers
-        if ($user && in_array($user->role, ['opd', 'petugas'])) {
-            $query->where('opd_id', $user->opd_id);
-
-            // If petugas, further filter by assigned retribution types and created_by
-            if ($user->role === 'petugas') {
-                $assignments = $user->assignments;
-                if ($assignments->isNotEmpty()) {
-                    $query->where(function($masterQ) use ($user, $assignments) {
-                        $masterQ->where('created_by', $user->id)
-                                ->orWhereHas('retributionTypes', function($q) use ($assignments) {
-                                    $q->where(function($query) use ($assignments) {
-                                        foreach ($assignments as $assignment) {
-                                            $query->orWhere(function($sq) use ($assignment) {
-                                                $sq->where('retribution_types.id', $assignment->retribution_type_id);
-                                                if ($assignment->retribution_classification_id) {
-                                                    $sq->where('taxpayer_retribution_type.retribution_classification_id', $assignment->retribution_classification_id);
-                                                }
-                                            });
-                                        }
-                                    });
+        // OPD isolation is enforced automatically by the authenticated
+        // user's global Query Scope (see RetributionTypeScope), so there is
+        // no need to manually add `where('opd_id', ...)` here anymore.
+        if ($user && $user->role === 'petugas') {
+            // Petugas additionally filtered by assigned retribution types and created_by
+            $assignments = $user->assignments;
+            if ($assignments->isNotEmpty()) {
+                $query->where(function($masterQ) use ($user, $assignments) {
+                    $masterQ->where('created_by', $user->id)
+                            ->orWhereHas('retributionTypes', function($q) use ($assignments) {
+                                $q->where(function($query) use ($assignments) {
+                                    foreach ($assignments as $assignment) {
+                                        $query->orWhere(function($sq) use ($assignment) {
+                                            $sq->where('retribution_types.id', $assignment->retribution_type_id);
+                                            if ($assignment->retribution_classification_id) {
+                                                $sq->where('taxpayer_retribution_type.retribution_classification_id', $assignment->retribution_classification_id);
+                                            }
+                                        });
+                                    }
                                 });
-                    });
-                } else {
-                    $query->where('created_by', $user->id);
-                }
+                            });
+                });
+            } else {
+                $query->where('created_by', $user->id);
             }
         }
 

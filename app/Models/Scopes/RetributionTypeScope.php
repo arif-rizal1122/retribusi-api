@@ -9,7 +9,9 @@ use App\Models\Taxpayer;
 use App\Models\Bill;
 use App\Models\Payment;
 use App\Models\TaxObject;
+use App\Models\PetugasTask;
 use App\Models\User;
+use App\Models\Verification;
 use App\Models\RetributionClassification;
 use App\Models\Zone;
 
@@ -58,7 +60,41 @@ class RetributionTypeScope implements Scope
 
         $user = static::$resolvedUser;
 
+        // =====================================================================
+        // Layer A: OPD Isolation (staff-only).
+        // Non-super-admin staff (petugas/opd/pengawas) may only see rows owned
+        // by their own OPD. SuperAdmin & Admin (isSuperAdmin) bypass; citizens
+        // (Taxpayer) are never scoped because they are not instances of User.
+        // =====================================================================
+        if ($user instanceof User && !$user->isSuperAdmin()) {
+            $opdId = $user->opd_id;
+
+            // Skip when the user has no OPD bound (avoid `WHERE opd_id =` null).
+            if ($opdId !== null && $opdId !== '') {
+                if ($model instanceof Taxpayer
+                    || $model instanceof Bill
+                    || $model instanceof TaxObject
+                    || $model instanceof Verification
+                ) {
+                    $builder->where('opd_id', (int) $opdId);
+                } elseif ($model instanceof Payment) {
+                    $builder->whereHas('bill', function ($q) use ($opdId) {
+                        $q->where('opd_id', (int) $opdId);
+                    });
+                } elseif ($model instanceof PetugasTask) {
+                    $builder->whereHas('user', function ($q) use ($opdId) {
+                        $q->where('opd_id', (int) $opdId);
+                    });
+                } elseif ($model instanceof User) {
+                    $builder->where('opd_id', (int) $opdId);
+                }
+            }
+        }
+
+        // =====================================================================
+        // Layer B: Retribution-type scope (existing behavior, unchanged).
         // This scope only applies to admin/pengawas with a specific retribution_type_id
+        // =====================================================================
         if (!$user || !isset($user->role) || !in_array($user->role, ['admin', 'pengawas']) || !$user->retribution_type_id) {
             return;
         }
