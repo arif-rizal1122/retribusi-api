@@ -91,6 +91,18 @@ class CitizenServiceController extends Controller
             ->latest()
             ->get();
 
+        $cleanRequirements = is_array($classification->requirements) 
+            ? $classification->requirements 
+            : (json_decode($classification->requirements, true) ?: []);
+
+        // Sanitasi blanko persampahan (DLH) — buang requirement usang kartu pelanggan/kontrak
+        if ($classification->id == 198 || $classification->code === 'RET-SMP' || ($classification->opd_id == 4) || stripos($classification->name, 'sampah') !== false) {
+            $cleanRequirements = collect($cleanRequirements)
+                ->reject(fn ($r) => preg_match('/pelanggan|kontrak/i', $r['key'] ?? '') || preg_match('/pelanggan|kontrak/i', $r['name'] ?? '') || preg_match('/pelanggan|kontrak/i', $r['label'] ?? ''))
+                ->values()
+                ->toArray();
+        }
+
         return response()->json([
             'data' => [
                 'id' => $classification->id,
@@ -103,7 +115,7 @@ class CitizenServiceController extends Controller
                 'unit' => $service->unit,
                 'opd' => $service->opd,
                 'form_schema' => $classification->form_schema,
-                'requirements' => $classification->requirements,
+                'requirements' => $cleanRequirements,
                 'calculation_formula' => $classification->calculation_formula,
                 'objects' => $objects,
                 'bills' => $bills,
