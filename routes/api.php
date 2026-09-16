@@ -71,6 +71,14 @@ Route::post('/public/nib/candidate', [\App\Http\Controllers\NibPublicController:
 // Public: Banner beranda mobile
 Route::get('/public/banners', [\App\Http\Controllers\BannerController::class, 'indexPublic']);
 
+// Public: Zero-Login Stiker QR Persil & Pembayaran Mandiri
+$publicObjectRoutes = function () {
+    Route::get('/objects/{code}/bill', [\App\Http\Controllers\Api\V1\Public\PublicTaxObjectBillController::class, 'showBill']);
+    Route::post('/objects/{code}/pay', [\App\Http\Controllers\Api\V1\Public\PublicTaxObjectBillController::class, 'generatePayInstructions']);
+};
+Route::prefix('public')->group($publicObjectRoutes);
+Route::prefix('v1/public')->group($publicObjectRoutes);
+
 // Public self-registration portal (pendaftaran warga)
 Route::prefix('public')->group(function () {
     Route::get('/retribution-types', [\App\Http\Controllers\PublicRegistrationController::class, 'getTypes']);
@@ -665,6 +673,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/trash/transfer-occupant/{taxObjectId}', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'transferOccupant']);
         Route::post('/trash/generate-bills', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'generateMonthlyBills']);
         Route::get('/trash/inquiry', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'inquiry']);
+        Route::post('/trash/empty-house-notice/{taxObjectId}', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'reportEmptyHouse']);
     };
 
     Route::prefix('dlh')->group($dlhRoutes);

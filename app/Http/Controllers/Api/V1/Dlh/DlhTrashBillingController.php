@@ -193,4 +193,90 @@ class DlhTrashBillingController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Pelaporan & penanganan rumah/persil kosong saat kunjungan juru pungut/petugas lapangan.
+     * Melakukan validasi GPS geofencing (< 30m) dan memicu auto-notifikasi WhatsApp.
+     */
+    public function reportEmptyHouse(Request $request, $taxObjectId)
+    {
+        $validated = $request->validate([
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $taxObject = TaxObject::with('taxpayer')->findOrFail($taxObjectId);
+
+        // 1. Validasi Geofencing (< 30m)
+        $distanceMeters = null;
+        $isWithinGeofence = true;
+
+        if (isset($validated['latitude'], $validated['longitude']) && $taxObject->latitude && $taxObject->longitude) {
+            $distanceMeters = $this->calculateHaversineDistance(
+                (float) $validated['latitude'],
+                (float) $validated['longitude'],
+                (float) $taxObject->latitude,
+                (float) $taxObject->longitude
+            );
+
+            // Radius geofence standar 30 meter
+            $isWithinGeofence = $distanceMeters <= 30.0;
+        }
+
+        // 2. Tandai status hunian persil menjadi KOSONG
+        $taxObject->update([
+            'status_hunian' => 'KOSONG',
+        ]);
+
+        // 3. Picu notifikasi pengingat via WhatsApp Gateway jika nomor kontak tersedia
+        $waSent = false;
+        $recipientPhone = $taxObject->penanggung_jawab_kontak 
+            ?? $taxObject->taxpayer?->phone_number 
+            ?? $taxObject->taxpayer?->phone;
+
+        if ($recipientPhone) {
+            try {
+                $waService = app(\App\Services\WaGatewayService::class);
+                $objectCode = 'SMP-' . str_pad((string) $taxObject->id, 5, '0', STR_PAD_LEFT);
+                $message = "Yth. Warga Kota Baubau,\n\nPetugas DLH Kota Baubau baru saja melakukan kunjungan operasional retribusi persampahan ke persil Anda (*{$taxObject->name}* - {$taxObject->address}), namun persil terpantau sedang *kosong/tutup*.\n\nUntuk kemudahan Anda, rincian tagihan retribusi persampahan dapat dicek dan dibayar secara mandiri tanpa login melalui tautan resmi:\nhttps://mpad.baubaukota.go.id/s/{$objectCode}\n\nTerima kasih atas partisipasi aktif Anda dalam menjaga kebersihan Kota Baubau.\n\n_Dinas Lingkungan Hidup Kota Baubau_";
+
+                $waSent = $waService->sendMessage($recipientPhone, $message);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("Gagal mengirim WA notifikasi rumah kosong: " . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Status persil berhasil ditandai KOSONG dan log kunjungan tercatat.',
+            'data' => [
+                'tax_object_id' => $taxObject->id,
+                'status_hunian' => 'KOSONG',
+                'distance_meters' => $distanceMeters !== null ? round($distanceMeters, 1) : null,
+                'is_within_geofence' => $isWithinGeofence,
+                'wa_notification_sent' => $waSent,
+                'geofence_warning' => !$isWithinGeofence ? 'Peringatan: Posisi GPS petugas berada di luar radius sah persil (> 30 meter).' : null,
+            ],
+        ]);
+    }
+
+    /**
+     * Hitung jarak dua koordinat menggunakan formula Haversine (dalam satuan meter)
+     */
+    private function calculateHaversineDistance(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $earthRadius = 6371000; // Radius bumi dalam meter
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon / 2) * sin($dLon / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
 }

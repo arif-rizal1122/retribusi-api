@@ -259,4 +259,89 @@ class DlhTrashBillingTest extends TestCase
             ->assertJsonPath('data.new_bills_generated', 2)
             ->assertJsonPath('data.total_amount_billed', 23500); // 8500 + 15000
     }
+
+    public function test_public_zero_login_can_inquire_object_bill_without_auth(): void
+    {
+        $taxObject = TaxObject::create([
+            'nop' => '74.72.010.001.001-9999.0',
+            'taxpayer_id' => $this->taxpayer->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'retribution_classification_id' => 198,
+            'name' => 'Kios Pasar Wameo A-12',
+            'address' => 'Jl. Pasar Baru No. 12',
+            'building_category' => 'RUKO_NIAGA',
+            'status_hunian' => 'BERPENGHUNI',
+            'penanggung_jawab_nama' => 'Haji Mansyur Sulaeman',
+            'is_active' => true,
+        ]);
+
+        Bill::create([
+            'bill_number' => 'BILL-PUB-DLH-001',
+            'taxpayer_id' => $this->taxpayer->id,
+            'tax_object_id' => $taxObject->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'period' => '2026-09',
+            'amount' => 22000,
+            'penalty_amount' => 0,
+            'status' => 'UNPAID',
+            'due_date' => '2026-09-15',
+        ]);
+
+        // Zero-Login: Tidak menggunakan Sanctum auth
+        $response = $this->getJson("/api/v1/public/objects/{$taxObject->id}/bill");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.tax_object_id', $taxObject->id)
+            ->assertJsonPath('data.penanggung_jawab', 'H*** M**** S****') // Masked
+            ->assertJsonPath('data.status_bulan_ini', 'BELUM_LUNAS')
+            ->assertJsonPath('data.total_tunggakan', 22000);
+
+        // Uji inisiasi bayar publik via QRIS
+        $payResponse = $this->postJson("/api/v1/public/objects/{$taxObject->id}/pay", [
+            'method' => 'QRIS',
+        ]);
+
+        $payResponse->assertStatus(200)
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.method', 'QRIS')
+            ->assertJsonPath('data.total_amount', 22000);
+    }
+
+    public function test_officer_can_report_empty_house_and_trigger_geofence_check(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $taxObject = TaxObject::create([
+            'nop' => '74.72.010.001.001-8888.0',
+            'taxpayer_id' => $this->taxpayer->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'retribution_classification_id' => 198,
+            'name' => 'Rumah Lapangan GPS',
+            'address' => 'Jl. Murhum No. 45',
+            'building_category' => 'RUMAH_SEDERHANA',
+            'status_hunian' => 'BERPENGHUNI',
+            'latitude' => -5.46781200,
+            'longitude' => 122.60543200,
+            'penanggung_jawab_kontak' => '081234567890',
+            'is_active' => true,
+        ]);
+
+        // Lapor dalam radius (<30m)
+        $response = $this->postJson("/api/v1/dlh/trash/empty-house-notice/{$taxObject->id}", [
+            'latitude' => -5.46781210,
+            'longitude' => 122.60543210,
+            'notes' => 'Pintu terkunci saat petugas datang',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.status_hunian', 'KOSONG')
+            ->assertJsonPath('data.is_within_geofence', true);
+
+        $this->assertEquals('KOSONG', $taxObject->fresh()->status_hunian);
+    }
 }
