@@ -101,4 +101,41 @@ class PublicVerificationController extends Controller
             'is_valid' => true,
         ]);
     }
+
+    /**
+     * Verifikasi publik untuk dokumen selain tagihan (SPP, teguran, WAIVER,
+     * SKT, SPMP, LKOK). Menampilkan halaman verifikasi generik yang jujur.
+     */
+    public function verifyDocument(string $type, string $number)
+    {
+        $label = [
+            'spp'     => 'Surat Pemberitahuan Pajak (SPP)',
+            'teguran' => 'Surat Teguran',
+            'waiver'  => 'SK Penghapusan Denda',
+            'skt'     => 'Surat Keterangan Terdaftar (SKT)',
+            'spmp'    => 'Surat Pemberitahuan Pajak Masa (SPMP)',
+            'lkok'    => 'Laporan Kondisi Objek Pajak (LKOK)',
+        ][strtolower($type)] ?? 'Dokumen Resmi';
+
+        // Coba telusuri apakah nomor ini terkait tagihan yang dikenal.
+        $bill = $this->findBillByAnyNumber($number, withPayments: true);
+
+        $payment = null;
+        if ($bill && in_array(strtolower((string) $bill->status), ['lunas', 'paid'], true)) {
+            $payment = $bill->payments
+                ->sortByDesc(fn($p) => $p->paid_at ?? $p->created_at)
+                ->first();
+        }
+
+        return view('verification.document', [
+            'doc_type'  => strtolower($type),
+            'doc_label' => $label,
+            'number'    => $number,
+            'bill'      => $bill,
+            'payment'   => $payment,
+            'is_valid'  => (bool) $bill,
+            'title'     => 'Verifikasi ' . $label,
+        ]);
+    }
+
 }

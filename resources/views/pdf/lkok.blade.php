@@ -92,5 +92,29 @@
             <p>NIP. .............................</p>
         </div>
     </div>
+
+    <div class="signature-section" style="margin-top: 25px; page-break-inside: avoid;">
+        <table style="width:100%; border:none;">
+            <tr>
+                <td style="width:55%; text-align:center; vertical-align:top; border:none;">
+                    @if(!empty($signature['tte_qr']))
+                    <img src="{{ $signature['tte_qr'] }}" alt="QR TTE" style="width:80px; height:80px;">
+                    <p style="font-size:8px; margin:4px 0 0 0;">Tanda Tangan Elektronik</p>
+                    @endif
+                </td>
+                <td style="width:45%; text-align:center; vertical-align:top; border:none;">
+                    <p style="margin:0;">{{ $signature['kota'] ?? 'Baubau' }}, {{ date('d F Y') }}</p>
+                    <p style="margin:0;"><strong>{{ $signature['jabatan'] ?? 'Kepala Badan Pendapatan Daerah' }}</strong></p>
+                    <div style="height:70px;"></div>
+                    <p style="text-decoration: underline; font-weight: bold; margin:0;">{{ $signature['nama'] ?? '[Nama Pejabat]' }}</p>
+                    <p style="margin:0;">NIP. {{ $signature['nip'] ?? '-' }}</p>
+                </td>
+            </tr>
+        </table>
+        @if(!empty($signature['tte_keterangan']))
+        <p style="font-size:8px; font-style:italic; text-align:center; margin-top:6px;">{{ $signature['tte_keterangan'] }}</p>
+        @endif
+    </div>
+
 </body>
 </html>

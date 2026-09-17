@@ -128,7 +128,8 @@ class OfficialDocumentService
             'address' => $notice->taxObject->address ?? 'Kota Baubau',
             'notes' => $notice->notes,
             'date' => $notice->created_at->translatedFormat('d F Y'),
-            'qr_url' => url("/verify/spp/{$notice->number}"),
+            'qr_url' => url("/api/verify/doc/spp/{$notice->number}"),
+            'signature' => $this->signatureBlock($notice->number),
         ];
     }
 
@@ -159,7 +160,8 @@ class OfficialDocumentService
             'total' => $total,
             'terbilang' => self::terbilang($total) . " Rupiah",
             'date' => $notice->created_at->translatedFormat('d F Y'),
-            'qr_url' => url("/verify/notice/{$notice->number}"),
+            'qr_url' => url("/api/verify/doc/teguran/{$notice->number}"),
+            'signature' => $this->signatureBlock($notice->number),
         ];
     }
 
@@ -177,7 +179,8 @@ class OfficialDocumentService
             'tax_object_name' => $notice->taxObject->name,
             'period' => $notice->notes ?? now()->isoFormat('MMMM YYYY'),
             'date' => $notice->created_at->translatedFormat('d F Y'),
-            'qr_url' => url("/verify/notice/{$notice->number}"),
+            'qr_url' => url("/api/verify/doc/teguran/{$notice->number}"),
+            'signature' => $this->signatureBlock($notice->number),
         ];
     }
 
@@ -397,7 +400,8 @@ class OfficialDocumentService
             'terbilang_waived' => self::terbilang($waivedAmount) . ' Rupiah',
             'total_after_waiver' => (float) $bill->amount + $remainingPenalty,
             'terbilang_total' => self::terbilang((float) $bill->amount + $remainingPenalty) . ' Rupiah',
-            'qr_url' => url("/api/verify/waiver/{$skNumber}"),
+            'qr_url' => url("/api/verify/doc/waiver/{$skNumber}"),
+            'signature' => $this->signatureBlock($skNumber),
         ];
     }
 
@@ -421,7 +425,8 @@ class OfficialDocumentService
             'opd_name' => $taxpayer->opd->name ?? 'BAPENDA Kota Baubau',
             'registered_at' => $taxpayer->created_at->translatedFormat('d F Y'),
             'tax_objects_count' => $taxpayer->taxObjects()->count(),
-            'qr_url' => url("/api/verify/skt/{$sktNumber}"),
+            'qr_url' => url("/api/verify/doc/skt/{$sktNumber}"),
+            'signature' => $this->signatureBlock($sktNumber),
         ];
     }
 
@@ -617,7 +622,8 @@ class OfficialDocumentService
             'notes' => $notice->notes,
             'auditor_name' => $notice->creator->name ?? 'N/A',
             'issued_at' => now()->translatedFormat('d F Y'),
-            'qr_url' => url("/api/verify/spmp/{$spmpNumber}"),
+            'qr_url' => url("/api/verify/doc/spmp/{$spmpNumber}"),
+            'signature' => $this->signatureBlock($spmpNumber),
         ];
     }
 
@@ -649,7 +655,8 @@ class OfficialDocumentService
             'audit_status' => $taxObject->audit_status ?? 'pending',
             'registered_at' => $taxObject->created_at->translatedFormat('d F Y'),
             'assessed_at' => now()->translatedFormat('d F Y'),
-            'qr_url' => url("/api/verify/lkok/{$lkokNumber}"),
+            'qr_url' => url("/api/verify/doc/lkok/{$lkokNumber}"),
+            'signature' => $this->signatureBlock($lkokNumber),
         ];
     }
 

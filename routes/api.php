@@ -48,6 +48,9 @@ Route::group(['middleware' => 'throttle:10,1'], function () {
 Route::get('/opds', [OpdController::class, 'index']); // Public access
 Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyBill']);
 Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
+// Verifikasi publik dokumen lain (SPP, teguran, WAIVER, SKT, SPMP, LKOK).
+// Sebelumnya QR dokumen-dokumen ini mengarah ke route yang TIDAK ADA (404).
+Route::get('/verify/doc/{type}/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyDocument']);
 Route::get('/verify/dlh-lab/{orderNumber}', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'verifyPublic']);
 
 // Public: Documents (PDF)
