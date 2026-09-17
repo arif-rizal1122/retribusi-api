@@ -78,10 +78,24 @@
                  </div>
             </div>
 
-            @if(isset($payment))
+            @php
+                $sudahLunas = in_array($bill->status, ['lunas', 'paid'], true);
+                $waktuBayar = isset($payment) && $payment && $payment->paid_at
+                    ? $payment->paid_at
+                    : null;
+            @endphp
+
+            @if($sudahLunas)
             <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-center">
                 <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Status Pembayaran</p>
-                <p class="text-sm font-black text-emerald-700 uppercase">LUNAS PADA {{ $payment->paid_at->format('d/m/Y H:i') }}</p>
+                <p class="text-sm font-black text-emerald-700 uppercase">
+                    LUNAS{{ $waktuBayar ? ' PADA ' . $waktuBayar->format('d/m/Y H:i') : '' }}
+                </p>
+            </div>
+            @elseif($bill->status === 'overdue')
+            <div class="p-4 bg-rose-50 rounded-2xl border border-rose-100 text-center">
+                <p class="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-1">Status Tagihan</p>
+                <p class="text-sm font-black text-rose-700 uppercase">TERLAMBAT — SEGERA BAYAR</p>
             </div>
             @else
             <div class="p-4 bg-amber-50 rounded-2xl border border-amber-100 text-center">

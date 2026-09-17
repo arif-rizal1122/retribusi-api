@@ -34,8 +34,19 @@ class PublicVerificationController extends Controller
             }
         }
 
+        // Ambil bukti pembayaran (kalau ada) supaya status yang ditampilkan JUJUR.
+        // Tanpa ini, halaman selalu bilang "MENUNGGU PEMBAYARAN" walau sudah lunas.
+        $bill->loadMissing('payments');
+        $payment = null;
+        if ($bill->status === 'lunas' || $bill->status === 'paid') {
+            $payment = $bill->payments
+                ->sortByDesc(fn($p) => $p->paid_at ?? $p->created_at)
+                ->first();
+        }
+
         return view('verification.bill', [
             'bill' => $bill,
+            'payment' => $payment,
             'title' => 'Verifikasi Tagihan (SKRD)',
             'is_valid' => true,
         ]);
