@@ -77,8 +77,19 @@ class TTEService
                 'ip_address' => request()?->ip() ?? '127.0.0.1',
                 'bsre_status' => $signResult['status'] ?? 'fallback_local_seal',
                 'bsre_reference' => $signResult['reference'] ?? null,
+                // Kejujuran status: apakah TTE ini BENAR dari BSrE BSSN,
+                // atau hanya segel kriptografis lokal M-PAD?
+                'tte_is_bsre_verified' => ($signResult['status'] ?? '') === 'success',
+                'tte_mode' => ($signResult['status'] ?? '') === 'success'
+                    ? 'BSRE_BSSN'
+                    : 'LOCAL_SEAL_ONLY',
+                'tte_disclaimer' => ($signResult['status'] ?? '') === 'success'
+                    ? null
+                    : 'Dokumen ini disegel secara elektronik oleh sistem M-PAD. '
+                      . 'Belum tersertifikasi BSrE BSSN. Keabsahan hukum penuh '
+                      . 'menunggu aktivasi sertifikat elektronik BSrE.',
             ],
-            'verification_url' => url("/api/tte/verify/{$docNumber}"),
+            'verification_url' => $this->verifyUrlFor($docNumber),
         ]);
 
         return $signedDoc;
@@ -132,8 +143,12 @@ class TTEService
                 'tenant_identity' => $tenantIdentity,
                 'notes' => $notes,
                 'bsre_status' => 'institutional_seal_fallback',
+                'tte_is_bsre_verified' => false,
+                'tte_mode' => 'LOCAL_SEAL_ONLY',
+                'tte_disclaimer' => 'Dokumen disahkan melalui kode registrasi OPD dan segel '
+                    . 'elektronik lokal M-PAD. Belum ber-TTE BSrE BSSN.',
             ],
-            'verification_url' => url("/api/tte/verify/{$docNumber}"),
+            'verification_url' => $this->verifyUrlFor($docNumber),
         ]);
 
         return $signedDoc;
@@ -169,6 +184,20 @@ class TTEService
     /**
      * REST API Client to BSrE BSSN with graceful fallback
      */
+
+    /**
+     * Bangun URL verifikasi publik dokumen.
+     * PENTING: JANGAN pakai url() polos, karena APP_URL server ini
+     * (api.sipanda.online) BUKAN domain publik yang dilihat warga.
+     * Warga memindai QR -> harus mendarat di domain mpad.baubaukota.go.id.
+     */
+    protected function verifyUrlFor(string $docNumber): string
+    {
+        $base = config('services.bsre.verify_base_url')
+            ?: env('BSRE_VERIFY_URL', 'https://mpad.baubaukota.go.id/verify');
+
+        return rtrim($base, '/') . '/' . rawurlencode($docNumber);
+    }
     protected function callBsreSignEndpoint(string $docNumber, string $signerNip, string $signatureType): array
     {
         $startTime = microtime(true);

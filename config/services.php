@@ -93,4 +93,15 @@ return [
         ],
     ],
 
+    // TTE BSrE (Badan Siber dan Sandi Negara) — Sertifikat Elektronik
+    // Mode: kalau url kosong/placeholder → fallback segel lokal (jangan klaim sah BSrE)
+    'bsre' => [
+        'url' => env('BSRE_API_URL', ''),
+        'username' => env('BSRE_USERNAME', ''),
+        'password' => env('BSRE_PASSWORD', ''),
+        'timeout' => env('BSRE_TIMEOUT', 3000),
+        // URL verifikasi publik yang dicetak di QR Code dokumen
+        'verify_base_url' => env('BSRE_VERIFY_URL', 'https://mpad.baubaukota.go.id/verify'),
+    ],
+
 ];

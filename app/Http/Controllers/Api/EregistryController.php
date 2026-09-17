@@ -25,16 +25,28 @@ class EregistryController extends Controller
             ], 404);
         }
 
+        $meta = $signedDoc->metadata ?? [];
+        $isBsre = (bool) ($meta['tte_is_bsre_verified'] ?? false);
+        $mode = $meta['tte_mode'] ?? 'LOCAL_SEAL_ONLY';
+
         return response()->json([
-            'is_valid' => true,
+            'is_valid' => $isBsre,                 // true HANYA kalau ber-TTE BSrE BSSN
+            'is_valid_seal' => true,               // segel kriptografis internal M-PAD terverifikasi
             'document_number' => $signedDoc->document_number,
             'signer' => [
-                'name' => $signedDoc->signer->name ?? 'N/A',
-                'nip' => $signedDoc->metadata['signer_nip'] ?? '-',
+                'name' => $signedDoc->signer->name ?? ($meta['signer_name'] ?? 'N/A'),
+                'nip' => $meta['signer_nip'] ?? '-',
                 'signed_at' => $signedDoc->signed_at->toIso8601String(),
             ],
             'hash' => $signedDoc->signature_hash,
-            'status' => 'DOKUMEN VALID',
+            'tte_mode' => $mode,                   // BSRE_BSSN | LOCAL_SEAL_ONLY
+            'tte_status' => $isBsre
+                ? 'DOKUMEN VALID — TTE BSrE BSSN'
+                : 'SEGEL ELEKTRONIK M-PAD (belum TTE BSrE)',
+            'disclaimer' => $meta['tte_disclaimer']
+                ?? ($isBsre ? null : 'Dokumen ini disegel secara elektronik oleh sistem M-PAD '
+                    . 'dan belum tersertifikasi BSrE BSSN.'),
+            'status' => $isBsre ? 'DOKUMEN VALID' : 'SEGEL ELEKTRONIK M-PAD',
         ]);
     }
 
