@@ -92,6 +92,7 @@ Spesifikasi integrasi perbankan multi-bank:
 - `/docs/10_payment_gateway_h2h/BPD/`
 - `/docs/10_payment_gateway_h2h/BTN/`
 - `/docs/10_payment_gateway_h2h/BPN/`
+- `/docs/10_payment_gateway_h2h/BSRE/` (Dokumentasi TTE BSrE, spesifikasi server Esign, dan pemenuhan 11 standar)
 - `/docs/10_payment_gateway_h2h/mPaD_H2H_API_Specification.md`
 
 ## 🚀 11. Kesiapan Launching & Materi Rapat
