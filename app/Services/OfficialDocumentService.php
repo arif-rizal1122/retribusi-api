@@ -235,6 +235,7 @@ class OfficialDocumentService
             'due_date' => $bill->due_date,
             'qr_url' => $this->qrUrlFor($bill),
             'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
             'billing' => $bill,
         ];
     }
@@ -350,8 +351,10 @@ class OfficialDocumentService
             'due_date' => $bill->due_date ? $bill->due_date->isoFormat('D MMMM YYYY') : '-',
             'qr_url' => $this->qrUrlFor($bill),
             'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
             'qr_base64' => $qrBase64,
             'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
         ];
     }
 
@@ -594,6 +597,8 @@ class OfficialDocumentService
             'signer_name' => $signedDoc?->signer_name ?? 'Kepala Dinas PUPR Kota Baubau',
             'signer_nip' => $signedDoc?->signer_nip ?? '-',
             'qr_url' => url("/api/tte/verify/{$bill->bill_number}"),
+            'qr_data_uri' => $this->qrImageDataUri(url("/api/tte/verify/{$bill->bill_number}")),
+            'signature' => $this->signatureBlock($bill->bill_number),
         ];
     }
 

@@ -15,6 +15,20 @@
         .warning-box { border: 2px solid #000; padding: 10px; margin: 10px 0; background: #f9f9f9; }
         .urgent { color: #CC0000; font-weight: bold; }
     </style>
+<style>
+    /* Compact layout — agar dokumen muat 1 halaman A4 */
+    html, body { font-size: 9px !important; line-height: 1.28 !important; margin: 0 !important; padding: 0 !important; }
+    @page { margin: 22px 26px 22px 26px; }
+    table { border-collapse: collapse; }
+    td, th { padding: 2px 4px !important; font-size: 9px; }
+    h1 { font-size: 13px !important; margin: 3px 0 !important; }
+    h2 { font-size: 11px !important; margin: 3px 0 !important; }
+    h3 { font-size: 10px !important; margin: 2px 0 !important; }
+    p { margin: 2px 0 !important; }
+    .footer { font-size: 7px !important; margin-top: 6px !important; }
+    .signature-section, .tte-block { page-break-inside: avoid !important; }
+    img.qr-code, .qr-code { width: 70px !important; height: 70px !important; }
+</style>
 </head>
 <body>
     @include('pdf.header')
@@ -104,28 +118,27 @@
         </tr>
     </table>
 
-    <div class="signature-section" style="margin-top: 25px; page-break-inside: avoid;">
-        <table style="width:100%; border:none;">
+    <div class="tte-block" style="margin-top:12px;">
+        <table style="width:100%; border:none; border-collapse:collapse;">
             <tr>
-                <td style="width:55%; text-align:center; vertical-align:top; border:none;">
+                <td style="width:50%; text-align:center; vertical-align:top; border:none; padding:0;">
                     @if(!empty($signature['tte_qr']))
-                    <img src="{{ $signature['tte_qr'] }}" alt="QR TTE" style="width:80px; height:80px;">
-                    <p style="font-size:8px; margin:4px 0 0 0;">Tanda Tangan Elektronik</p>
+                    <img src="{{ $signature['tte_qr'] }}" alt="QR TTE" style="width:62px; height:62px;">
+                    <p style="font-size:6px; margin:1px 0 0 0; line-height:1.1;">Tanda Tangan Elektronik</p>
                     @endif
                 </td>
-                <td style="width:45%; text-align:center; vertical-align:top; border:none;">
-                    <p style="margin:0;">{{ $signature['kota'] ?? 'Baubau' }}, {{ date('d F Y') }}</p>
-                    <p style="margin:0;"><strong>{{ $signature['jabatan'] ?? 'Kepala Badan Pendapatan Daerah' }}</strong></p>
-                    <div style="height:70px;"></div>
-                    <p style="text-decoration: underline; font-weight: bold; margin:0;">{{ $signature['nama'] ?? '[Nama Pejabat]' }}</p>
-                    <p style="margin:0;">NIP. {{ $signature['nip'] ?? '-' }}</p>
+                <td style="width:50%; text-align:center; vertical-align:top; border:none; padding:0;">
+                    <p style="margin:0; font-size:8px; line-height:1.25;">{{ $signature['kota'] ?? 'Baubau' }}, {{ date('d F Y') }}</p>
+                    <p style="margin:0; font-size:8px; line-height:1.25;"><strong>{{ $signature['jabatan'] ?? 'Kepala Badan Pendapatan Daerah' }}</strong></p>
+                    <div style="height:46px;"></div>
+                    <p style="margin:0; font-size:8px; line-height:1.25; text-decoration:underline; font-weight:bold;">{{ $signature['nama'] ?? '[Nama Pejabat]' }}</p>
+                    <p style="margin:0; font-size:8px; line-height:1.25;">NIP. {{ $signature['nip'] ?? '-' }}</p>
                 </td>
             </tr>
         </table>
         @if(!empty($signature['tte_keterangan']))
-        <p style="font-size:8px; font-style:italic; text-align:center; margin-top:6px;">{{ $signature['tte_keterangan'] }}</p>
+        <p style="font-size:6px; font-style:italic; text-align:center; margin:3px 0 0 0; line-height:1.15;">{{ $signature['tte_keterangan'] }}</p>
         @endif
     </div>
-
 </body>
 </html>
