@@ -15,9 +15,12 @@
         .danger-alert { background: #fee; border: 1px solid #CC0000; padding: 10px; margin-bottom: 20px; font-weight: bold; color: #CC0000; text-align: center; }
     </style>
 <style>
-    /* Compact layout — agar dokumen muat 1 halaman A4 */
-    html, body { font-size: 9px !important; line-height: 1.28 !important; margin: 0 !important; padding: 0 !important; }
-    @page { margin: 22px 26px 22px 26px; }
+    /* Compact layout — margin kertas dipertahankan agar hasil print rapi.
+       CATATAN: jangan set html/body margin:0, karena dompdf akan
+       mengabaikan @page margin dan konten mentok ke tepi kertas. */
+    @page { margin: 34px 40px 34px 40px; }
+    html, body { font-size: 9px !important; line-height: 1.28 !important; }
+    body { margin: 0 !important; padding: 0 !important; }
     table { border-collapse: collapse; }
     td, th { padding: 2px 4px !important; font-size: 9px; }
     h1 { font-size: 13px !important; margin: 3px 0 !important; }
