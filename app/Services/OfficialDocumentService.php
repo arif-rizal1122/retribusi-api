@@ -19,6 +19,36 @@ class OfficialDocumentService
     /**
      * Render data to PDF
      */
+    /**
+     * Tentukan URL QR yang tepat sesuai STATUS tagihan.
+     * - Sudah lunas / paid -> halaman BUKTI PELUNASAN publik (verify/payment)
+     * - Belum lunas        -> halaman verifikasi tagihan (verify/bill)
+     *
+     * Ini memastikan QR pada struk termal / dokumen yang sudah dibayar
+     * selalu mengarah ke bukti pelunasan, bukan surat tagihan.
+     */
+    public function qrUrlFor(Bill $bill): string
+    {
+        $lunas = in_array(strtolower((string) $bill->status), ['lunas', 'paid'], true);
+        $path  = $lunas ? 'payment' : 'bill';
+
+        return url("/api/verify/{$path}/{$bill->bill_number}");
+    }
+
+    /**
+     * Sama seperti qrUrlFor(), tapi menerima nomor dokumen apa pun
+     * (bill_number ATAU receipt_number/NTPD) supaya warga yang mengetik
+     * NTPD dari struk bank tetap bisa verifikasi.
+     */
+    public function qrUrlForNumber(string $number): string
+    {
+        if (preg_match('/^NTPD-/i', $number)) {
+            return url("/api/verify/payment/{$number}");
+        }
+
+        return url("/api/verify/bill/{$number}");
+    }
+
     public function renderPDF(string $viewPath, array $data, string $filename = 'document.pdf')
     {
         // Sanitize filename to prevent HeaderUtils error
@@ -112,7 +142,7 @@ class OfficialDocumentService
             'terbilang' => self::terbilang($total) . " Rupiah",
             'period' => $bill->period,
             'due_date' => $bill->due_date,
-            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
             'billing' => $bill,
         ];
     }
@@ -138,7 +168,7 @@ class OfficialDocumentService
             'terbilang' => self::terbilang($total) . " Rupiah",
             'period' => $bill->period,
             'due_date' => $bill->due_date,
-            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
             'billing' => $bill,
         ];
     }
@@ -183,7 +213,7 @@ class OfficialDocumentService
             'payment_reference' => $payment?->receipt_number ?? $payment?->reference_number ?? null,
             'unit_name' => $bill->opd?->name ?? ($bill->taxObject?->opd?->name ?? 'BAPENDA Kota Baubau'),
             'object_name' => $bill->taxObject?->name ?? null,
-            'qr_url' => url("/api/verify/payment/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
         ];
     }
 
@@ -228,7 +258,7 @@ class OfficialDocumentService
 
         $totalPbb = (float) $calc['pbb_terhutang'];
 
-        $qrBase64 = base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(200)->generate(url("/api/verify/bill/{$bill->bill_number}")));
+        $qrBase64 = base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(200)->generate($this->qrUrlFor($bill)));
 
         return [
             'nop' => $bill->taxObject->nop ?? 'BELUM ADA NOP',
@@ -250,7 +280,7 @@ class OfficialDocumentService
             'pbb_terhutang' => $totalPbb,
             'terbilang' => self::terbilang($totalPbb),
             'due_date' => $bill->due_date ? $bill->due_date->isoFormat('D MMMM YYYY') : '-',
-            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
             'qr_base64' => $qrBase64,
         ];
     }
@@ -352,7 +382,7 @@ class OfficialDocumentService
             'terbilang' => self::terbilang($total) . ' Rupiah',
             'audit_notes' => $auditNotes,
             'due_date' => now()->addDays(30)->translatedFormat('d F Y'),
-            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
         ];
     }
 
@@ -377,7 +407,7 @@ class OfficialDocumentService
             'status' => 'NIHIL',
             'audit_notes' => $auditNotes,
             'issued_at' => now()->translatedFormat('d F Y'),
-            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
         ];
     }
 
@@ -409,7 +439,7 @@ class OfficialDocumentService
             'period' => $bill->period,
             'paid_at' => $bill->payments->first()->paid_at ?? now(),
             'payment_method' => $bill->payments->first()->payment_method ?? 'CASH',
-            'qr_url' => url("/api/verify/payment/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
         ];
     }
 
@@ -440,7 +470,7 @@ class OfficialDocumentService
             'due_date' => $bill->due_date?->translatedFormat('d F Y') ?? '-',
             'months_late' => $monthsLate,
             'payment_deadline' => now()->addDays(14)->translatedFormat('d F Y'),
-            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
         ];
     }
 
