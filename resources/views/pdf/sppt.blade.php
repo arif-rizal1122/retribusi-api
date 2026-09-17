@@ -133,7 +133,7 @@
                 <tr>
                     <td class="signature-cell">
                         <p>Scan untuk Verifikasi:</p>
-                        <img src="data:image/png;base64,{{ $qr_base64 ?? '' }}" class="qr-code" alt="QR Code">
+                        <img src="{{ $qr_data_uri ?? ('data:image/svg+xml;base64,' . ($qr_base64 ?? '')) }}" class="qr-code" alt="QR Code">
                     </td>
                     <td class="signature-cell">
                         <p>Baubau, {{ date('d F Y') }}</p>

@@ -110,8 +110,6 @@
         <p style="font-size:8px; font-style:italic; margin-top:6px;">{{ $signature['tte_keterangan'] }}</p>
         @endif
     </div>
-        <p style="text-decoration: underline; font-weight: bold;">Nama Pejabat Retribusi, S.E, M.Si</p>
-        <p>NIP. 19800101 200503 1 002</p>
     </div>
 
     <div class="footer">

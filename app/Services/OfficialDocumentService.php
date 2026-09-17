@@ -231,6 +231,7 @@ class OfficialDocumentService
             'period' => $bill->period,
             'due_date' => $bill->due_date,
             'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
             'billing' => $bill,
         ];
     }
@@ -345,7 +346,9 @@ class OfficialDocumentService
             'terbilang' => self::terbilang($totalPbb),
             'due_date' => $bill->due_date ? $bill->due_date->isoFormat('D MMMM YYYY') : '-',
             'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
             'qr_base64' => $qrBase64,
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
         ];
     }
 
