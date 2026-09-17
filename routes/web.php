@@ -16,3 +16,9 @@ Route::prefix('docs')->middleware('auth:sanctum')->group(function () {
     Route::get('/assets/{filename}', [DocumentationController::class, 'asset']);
     Route::get('/{page}', [DocumentationController::class, 'show']);
 });
+
+// Laman Verifikasi Publik Web (QR Code / Struk)
+Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
+Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyBill']);
+Route::get('/verify/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
+

@@ -269,6 +269,9 @@ class BillController extends Controller
             'opd',
             'taxObject.classification',
             'classification',
+            'taxpayer',
+            'payments' => fn ($query) => $query->where('status', 'success')->latest(),
+            'signedDocuments' => fn ($query) => $query->where('status', 'signed')->latest(),
             'paymentRequestItems' => fn ($query) => $query
                 ->whereHas('paymentRequest', $activePaymentRequest)
                 ->with(['paymentRequest' => $activePaymentRequest]),
@@ -306,6 +309,60 @@ class BillController extends Controller
         $payload['can_pay'] = CitizenBillStatus::canPay($status);
         $payload['payment_options'] = $this->citizenPaymentOptions($bill, $payload['can_pay']);
         $payload['active_payment_request'] = $this->activePaymentRequestPayload($bill);
+
+        // Document type & official PDF URL
+        $typeName = strtolower($bill->retributionType?->name ?? '');
+        $category = strtolower($bill->retributionType?->category ?? '');
+        $isAsset = str_contains($typeName, 'sewa')
+            || str_contains($typeName, 'alat')
+            || str_contains($typeName, 'tanah')
+            || str_contains($typeName, 'bangunan')
+            || str_contains($typeName, 'gedung')
+            || str_contains($category, 'aset')
+            || !empty($bill->asset_rental_id);
+        $isPbb = str_contains($typeName, 'pbb') || str_contains($category, 'pbb');
+        $isTax = str_contains($category, 'pajak') || str_contains($typeName, 'bphtb') || str_contains($typeName, 'pbjt') || str_contains($typeName, 'reklame');
+
+        $isPaid = in_array($status, ['paid', 'lunas']) || $bill->payments->where('status', 'success')->isNotEmpty();
+        $latestPayment = null;
+
+        if ($isPaid) {
+            $docType = $isAsset ? 'sipab' : ($isPbb ? 'sppt' : ($isTax ? 'sspd' : 'ssrd'));
+            $latestPayment = $bill->payments->where('status', 'success')->first() ?? $bill->payments->first();
+            $numberForVerification = $latestPayment?->receipt_number ?? $bill->bill_number;
+            $payload['verification_url'] = url("/verify/payment/{$numberForVerification}");
+        } else {
+            $docType = $isAsset ? 'sipab' : ($isPbb ? 'sppt' : ($isTax ? 'skpd' : 'skrd'));
+            $payload['verification_url'] = url("/verify/bill/{$bill->bill_number}");
+        }
+
+        $payload['document_type_code'] = strtoupper($docType);
+        $payload['official_document_url'] = url("/api/public/pdf/{$docType}/{$bill->id}");
+
+        $payload['payment_details'] = $latestPayment ? [
+            'id' => $latestPayment->id,
+            'receipt_number' => $latestPayment->receipt_number,
+            'transaction_id' => $latestPayment->transaction_id,
+            'reference_number' => $latestPayment->reference_number,
+            'payment_method' => $latestPayment->payment_method,
+            'channel' => $latestPayment->channel,
+            'amount' => (float) $latestPayment->amount,
+            'status' => $latestPayment->status,
+            'paid_at' => $latestPayment->paid_at?->toIso8601String() ?? $latestPayment->created_at?->toIso8601String(),
+        ] : null;
+
+        $payload['signed_documents'] = $bill->signedDocuments->map(fn ($d) => [
+            'id' => $d->id,
+            'document_number' => $d->document_number,
+            'signature_hash' => $d->signature_hash,
+            'signature_type' => $d->signature_type,
+            'signer_name' => $d->signer_name,
+            'signer_role' => $d->signer_role,
+            'signed_at' => $d->signed_at?->toIso8601String(),
+            'status' => $d->status,
+            'verification_url' => $d->verification_url,
+        ])->values()->all();
+        $payload['is_signed'] = $bill->signedDocuments->isNotEmpty();
 
         return $payload;
     }
