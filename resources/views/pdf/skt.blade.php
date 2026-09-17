@@ -59,7 +59,7 @@
         <tr>
             <td style="width: 50%;">
                 <div class="qr-box">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode($qr_url) }}" alt="QR Code">
+                    <img src="{{ $qr_data_uri ?? app(\App\Services\OfficialDocumentService::class)->qrImageDataUri($qr_url, 100) }}" alt="QR Code">
                     <p style="font-size: 8px; margin: 5px 0 0 0;">VERIFIKASI DIGITAL E-REGISTRY</p>
                 </div>
             </td>

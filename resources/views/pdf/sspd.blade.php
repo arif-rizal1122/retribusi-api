@@ -118,8 +118,34 @@
     </div>
 
     <div style="text-align: center; margin: 30px 0;">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ urlencode($qr_url) }}" alt="Verification QR">
+        <img src="{{ $qr_data_uri ?? app(\App\Services\OfficialDocumentService::class)->qrImageDataUri($qr_url, 120) }}" alt="Verification QR">
         <p style="font-size: 10px; margin-top: 5px;">PINDAI UNTUK VALIDASI KEASLIAN DOKUMEN</p>
+    </div>
+
+
+    <div class="signature-section" style="margin-top: 25px; page-break-inside: avoid;">
+        <p style="text-align: right;">{{ $signature['kota'] ?? 'Baubau' }}, {{ date('d F Y') }}</p>
+        <p style="text-align: right;"><strong>{{ $signature['jabatan'] ?? 'Kepala Badan Pendapatan Daerah' }}</strong></p>
+
+        <table style="width:100%; margin-top:10px; border:none;">
+            <tr>
+                <td style="width:50%; text-align:center; vertical-align:top; border:none;">
+                    @if(!empty($signature['tte_qr']))
+                    <img src="{{ $signature['tte_qr'] }}" alt="QR TTE" style="width:80px; height:80px;">
+                    <p style="font-size:8px; margin:4px 0 0 0;">Tanda Tangan Elektronik</p>
+                    @endif
+                </td>
+                <td style="width:50%; text-align:center; vertical-align:top; border:none;">
+                    <div style="height:80px;"></div>
+                </td>
+            </tr>
+        </table>
+
+        <p style="text-align: right; text-decoration: underline; font-weight: bold;">{{ $signature['nama'] ?? '[Nama Pejabat]' }}</p>
+        <p style="text-align: right;">NIP. {{ $signature['nip'] ?? '-' }}</p>
+        @if(!empty($signature['tte_keterangan']))
+        <p style="text-align: right; font-size:8px; font-style:italic; margin-top:6px;">{{ $signature['tte_keterangan'] }}</p>
+        @endif
     </div>
 
     <div class="footer">

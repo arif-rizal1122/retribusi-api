@@ -93,7 +93,7 @@
     <table style="width: 100%; margin-top: 15px;">
         <tr>
             <td style="width: 50%; text-align: center; vertical-align: top;">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=95x95&data={{ urlencode($qr_url ?? url('/api/tte/verify/' . ($document_number ?? $number))) }}" alt="Verification QR">
+                <img src="{{ $qr_data_uri ?? app(\App\Services\OfficialDocumentService::class)->qrImageDataUri($qr_url ?? url('/api/tte/verify/' . ($document_number ?? $number)), 95) }}" alt="Verification QR">
                 <p style="font-size: 8px; margin-top: 4px; color: #666;">PINDAI UNTUK VALIDASI BSrE</p>
             </td>
             <td style="width: 50%; text-align: center; vertical-align: top;">

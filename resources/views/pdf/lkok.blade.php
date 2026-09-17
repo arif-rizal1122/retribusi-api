@@ -80,7 +80,7 @@
 
     <div class="footer">
         <div class="qr-box">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data={{ urlencode($qr_url) }}" alt="QR Code">
+            <img src="{{ $qr_data_uri ?? app(\App\Services\OfficialDocumentService::class)->qrImageDataUri($qr_url, 80) }}" alt="QR Code">
             <p style="font-size: 7px;">VERIFIKASI DATA TEKNIS</p>
         </div>
         

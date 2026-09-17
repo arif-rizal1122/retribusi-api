@@ -49,6 +49,66 @@ class OfficialDocumentService
         return url("/api/verify/bill/{$number}");
     }
 
+    /**
+     * QR code LOKAL (data URI SVG) — tanpa layanan pihak ketiga.
+     *
+     * CSP produksi: img-src 'self' data: → data URI DIIZINKAN.
+     * Dipakai semua template PDF supaya dokumen tetap bisa dicetak
+     * walau server tidak punya akses internet ke api.qrserver.com.
+     */
+    public function qrImageDataUri(string $url, int $size = 120): string
+    {
+        return 'data:image/svg+xml;base64,' . base64_encode(
+            \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+                ->size($size)
+                ->margin(0)
+                ->generate($url)
+        );
+    }
+
+    /**
+     * Blok tanda tangan pejabat + QR TTE.
+     *
+     * Nama/NIP/Jabatan diambil dari config (JANGAN hardcode).
+     * Status TTE jujur: BSrE/BSSN BELUM aktif, jadi dokumen TIDAK boleh
+     * diklaim tersertifikasi BSrE — hanya "disegel elektronik oleh M-PAD".
+     *
+     * @param  string|null  $number  nomor dokumen (untuk URL verifikasi TTE)
+     * @param  int          $qrSize  ukuran QR dalam px
+     */
+    public function signatureBlock(?string $number = null, int $qrSize = 100): array
+    {
+        $bapenda = config('services.bapenda', []);
+
+        $nama    = $bapenda['kepala_nama']    ?? '[Nama Kepala Bapenda — set BAPENDA_KEPALA_NAMA di .env]';
+        $nip     = $bapenda['kepala_nip']     ?? '[NIP belum diisi — set BAPENDA_KEPALA_NIP di .env]';
+        $jabatan = $bapenda['kepala_jabatan'] ?? 'Kepala Badan Pendapatan Daerah Kota Baubau';
+
+        // BSrE aktif hanya kalau URL & kredensial benar-benar diisi.
+        $bsreAktif = !empty($bapenda['bsre_aktif']);
+
+        $tteUrl = $number
+            ? url("/api/tte/verify/{$number}")
+            : url('/api/tte/verify');
+
+        $tteQrDataUri = $this->qrImageDataUri($tteUrl, $qrSize);
+
+        // Keterangan JUJUR sesuai status TTE sebenarnya.
+        $tteKeterangan = $bsreAktif
+            ? 'Dokumen ini ditandatangani secara elektronik tersertifikasi BSrE (BSSN).'
+            : 'Dokumen ini disegel secara elektronik oleh sistem M-PAD dan belum tersertifikasi BSrE BSSN.';
+
+        return [
+            'nama'          => $nama,
+            'nip'           => $nip,
+            'jabatan'       => $jabatan,
+            'bsre_aktif'    => $bsreAktif,
+            'tte_url'       => $tteUrl,
+            'tte_qr'        => $tteQrDataUri,
+            'tte_keterangan'=> $tteKeterangan,
+            'kota'          => config('services.bapenda.signature_city', 'Baubau'),
+        ];
+    }
     public function renderPDF(string $viewPath, array $data, string $filename = 'document.pdf')
     {
         // Sanitize filename to prevent HeaderUtils error
@@ -143,6 +203,8 @@ class OfficialDocumentService
             'period' => $bill->period,
             'due_date' => $bill->due_date,
             'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
             'billing' => $bill,
         ];
     }
@@ -214,6 +276,8 @@ class OfficialDocumentService
             'unit_name' => $bill->opd?->name ?? ($bill->taxObject?->opd?->name ?? 'BAPENDA Kota Baubau'),
             'object_name' => $bill->taxObject?->name ?? null,
             'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
         ];
     }
 
@@ -383,6 +447,8 @@ class OfficialDocumentService
             'audit_notes' => $auditNotes,
             'due_date' => now()->addDays(30)->translatedFormat('d F Y'),
             'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
         ];
     }
 
@@ -408,6 +474,8 @@ class OfficialDocumentService
             'audit_notes' => $auditNotes,
             'issued_at' => now()->translatedFormat('d F Y'),
             'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
         ];
     }
 
@@ -440,6 +508,8 @@ class OfficialDocumentService
             'paid_at' => $bill->payments->first()->paid_at ?? now(),
             'payment_method' => $bill->payments->first()->payment_method ?? 'CASH',
             'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
         ];
     }
 
@@ -471,6 +541,8 @@ class OfficialDocumentService
             'months_late' => $monthsLate,
             'payment_deadline' => now()->addDays(14)->translatedFormat('d F Y'),
             'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
         ];
     }
 

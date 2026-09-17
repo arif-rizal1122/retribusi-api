@@ -37,7 +37,7 @@
         <div class="qr-box">
              <div class="qr-code">
                 <p style="font-size: 10px; margin: 0 0 5px 0;">VERIFIKASI DIGITAL</p>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode($qr_url) }}" alt="QR Code">
+                <img src="{{ $qr_data_uri ?? app(\App\Services\OfficialDocumentService::class)->qrImageDataUri($qr_url, 100) }}" alt="QR Code">
              </div>
         </div>
         <div style="float: right; text-align: center; width: 200px;">

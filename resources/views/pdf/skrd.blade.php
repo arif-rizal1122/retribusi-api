@@ -87,11 +87,29 @@
     </div>
 
     <div class="signature-section">
-        <p>Baubau, {{ date('d F Y') }}</p>
-        <p><strong>Kepala Bidang Pendapatan Bapenda</strong></p>
-        <div class="signature-space">
-            <!-- Signature image would go here -->
-        </div>
+        <p>{{ $signature['kota'] ?? 'Baubau' }}, {{ date('d F Y') }}</p>
+        <p><strong>{{ $signature['jabatan'] ?? 'Kepala Badan Pendapatan Daerah' }}</strong></p>
+
+        <table style="width:100%; margin-top:10px; border:none;">
+            <tr>
+                <td style="width:50%; text-align:center; vertical-align:top; border:none;">
+                    @if(!empty($signature['tte_qr']))
+                    <img src="{{ $signature['tte_qr'] }}" alt="QR TTE" style="width:80px; height:80px;">
+                    <p style="font-size:8px; margin:4px 0 0 0;">Tanda Tangan Elektronik</p>
+                    @endif
+                </td>
+                <td style="width:50%; text-align:center; vertical-align:top; border:none;">
+                    <div class="signature-space"></div>
+                </td>
+            </tr>
+        </table>
+
+        <p style="text-decoration: underline; font-weight: bold;">{{ $signature['nama'] ?? '[Nama Pejabat]' }}</p>
+        <p>NIP. {{ $signature['nip'] ?? '-' }}</p>
+        @if(!empty($signature['tte_keterangan']))
+        <p style="font-size:8px; font-style:italic; margin-top:6px;">{{ $signature['tte_keterangan'] }}</p>
+        @endif
+    </div>
         <p style="text-decoration: underline; font-weight: bold;">Nama Pejabat Retribusi, S.E, M.Si</p>
         <p>NIP. 19800101 200503 1 002</p>
     </div>
