@@ -125,6 +125,10 @@ class ForeignTouristController extends Controller
                 'session_time' => $validated['session_time'] ?? 'all',
                 'nationality' => strtoupper($validated['nationality']),
                 'passport_number' => $validated['passport_number'],
+                'is_guest_checkout' => true,
+                'guest_name' => $validated['full_name'],
+                'guest_email' => $validated['email'] ?? null,
+                'guest_phone' => $validated['phone'] ?? null,
                 'master_qr_token' => Str::uuid()->toString(),
                 'metadata' => json_encode([
                     'guest' => [
