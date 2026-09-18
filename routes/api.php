@@ -685,6 +685,29 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
     Route::prefix('dlh')->group($dlhRoutes);
     Route::prefix('v1/dlh')->group($dlhRoutes);
+
+});
+
+// ------------------------------------------------------------------------
+// MODUL DINAS PARIWISATA & KEBUDAYAAN (OPD 16) — Perda Kota Baubau 1/2024
+// Top-level: katalog & portal WNA harus publik (tanpa auth:sanctum).
+// Endpoint tulis tetap dilindungi auth:sanctum di dalam blok.
+// ------------------------------------------------------------------------
+Route::prefix('tourism')->group(function () {
+    // Katalog publik: destinasi, kuota, matriks tarif, add-on sewa alat
+    Route::get('/catalog', [\App\Http\Controllers\Api\V1\Pariwisata\TourismTicketController::class, 'getCatalog']);
+
+    // Portal wisatawan asing — guest checkout tanpa NIK/login
+    Route::post('/guest-checkout', [\App\Http\Controllers\Api\V1\Pariwisata\ForeignTouristController::class, 'guestCheckout']);
+    Route::get('/ticket-status', [\App\Http\Controllers\Api\V1\Pariwisata\ForeignTouristController::class, 'checkTicketStatus']);
+
+    // Butuh login: pemesanan domestik, check-in gerbang, keringanan, link mitra
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/order', [\App\Http\Controllers\Api\V1\Pariwisata\TourismTicketController::class, 'order']);
+        Route::post('/check-in', [\App\Http\Controllers\Api\V1\Pariwisata\TourismTicketController::class, 'scanCheckIn']);
+        Route::post('/kiosk-relief', [\App\Http\Controllers\Api\V1\Pariwisata\TourismTicketController::class, 'applyKioskRelief']);
+        Route::post('/partner-link', [\App\Http\Controllers\Api\V1\Pariwisata\ForeignTouristController::class, 'generateBookingLink']);
+    });
 });
 
 // ------------------------------------------------------------------------
