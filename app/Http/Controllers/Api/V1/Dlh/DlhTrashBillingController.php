@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Bill;
 use App\Models\TaxObject;
 use App\Models\Taxpayer;
+use App\Models\User;
 use App\Services\Dlh\DlhTrashBillingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -53,7 +54,15 @@ class DlhTrashBillingController extends Controller
      */
     public function transferOccupant(Request $request, $taxObjectId)
     {
-        $taxObject = TaxObject::findOrFail($taxObjectId);
+        $this->authorizeDlhOperator($request);
+
+        $taxObject = TaxObject::withoutGlobalScopes()
+            ->whereKey($taxObjectId)
+            ->where(function ($q) {
+                $q->where('opd_id', 4)
+                    ->orWhere('retribution_classification_id', 198);
+            })
+            ->firstOrFail();
 
         $validated = $request->validate([
             'tipe_penghuni' => 'required|string|in:PEMILIK,PENYEWA',
@@ -76,6 +85,8 @@ class DlhTrashBillingController extends Controller
      */
     public function generateMonthlyBills(Request $request)
     {
+        $this->authorizeDlhOperator($request);
+
         $validated = $request->validate([
             'period' => 'nullable|date_format:Y-m',
             'district' => 'nullable|string',
@@ -199,5 +210,14 @@ class DlhTrashBillingController extends Controller
                 'bill_history' => $bills->take(5)->map($billPayload)->values(),
             ],
         ]);
+    }
+
+    private function authorizeDlhOperator(Request $request): void
+    {
+        $user = $request->user();
+        $isDlhOperator = $user instanceof User
+            && ($user->isSuperAdmin() || (int) $user->opd_id === 4);
+
+        abort_unless($isDlhOperator, 403, 'Aksi ini hanya dapat dilakukan oleh petugas internal DLH.');
     }
 }

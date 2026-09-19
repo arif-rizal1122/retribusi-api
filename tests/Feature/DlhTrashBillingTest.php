@@ -368,4 +368,74 @@ class DlhTrashBillingTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors(['query']);
     }
+
+    public function test_citizen_cannot_run_dlh_mutations(): void
+    {
+        $taxObject = TaxObject::create([
+            'nop' => 'SMP-74-MUTATION-001',
+            'taxpayer_id' => $this->taxpayer->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'retribution_classification_id' => 198,
+            'name' => 'Objek Mutasi',
+            'address' => 'Jl. Mutasi',
+            'building_category' => 'RUMAH_SEDERHANA',
+            'status_hunian' => 'BERPENGHUNI',
+            'penanggung_jawab_nama' => 'Pemilik Lama',
+            'is_active' => true,
+        ]);
+
+        Sanctum::actingAs($this->taxpayer, ['*']);
+
+        $this->postJson("/api/v1/dlh/trash/transfer-occupant/{$taxObject->id}", [
+            'tipe_penghuni' => 'PENYEWA',
+            'status_hunian' => 'BERPENGHUNI',
+            'penanggung_jawab_nama' => 'Pemilik Baru',
+        ])->assertForbidden();
+
+        $this->postJson('/api/v1/dlh/trash/generate-bills', [
+            'period' => '2026-09',
+        ])->assertForbidden();
+
+        $this->assertDatabaseHas('tax_objects', [
+            'id' => $taxObject->id,
+            'penanggung_jawab_nama' => 'Pemilik Lama',
+        ]);
+    }
+
+    public function test_non_dlh_internal_user_cannot_mutate_dlh_occupant(): void
+    {
+        $otherOpd = Opd::create([
+            'name' => 'Dinas Lain',
+            'code' => 'OPD-LAIN',
+        ]);
+        $otherUser = User::create([
+            'name' => 'Operator Lain',
+            'email' => 'operator.lain@baubaukota.go.id',
+            'password' => bcrypt('password'),
+            'role' => 'admin_opd',
+            'opd_id' => $otherOpd->id,
+        ]);
+        $taxObject = TaxObject::create([
+            'nop' => 'SMP-74-CROSS-001',
+            'taxpayer_id' => $this->taxpayer->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'retribution_classification_id' => 198,
+            'name' => 'Objek Lintas OPD',
+            'address' => 'Jl. Lintas',
+            'building_category' => 'RUMAH_SEDERHANA',
+            'status_hunian' => 'BERPENGHUNI',
+            'penanggung_jawab_nama' => 'Pemilik DLH',
+            'is_active' => true,
+        ]);
+
+        Sanctum::actingAs($otherUser, ['*']);
+
+        $this->postJson("/api/v1/dlh/trash/transfer-occupant/{$taxObject->id}", [
+            'tipe_penghuni' => 'PENYEWA',
+            'status_hunian' => 'BERPENGHUNI',
+            'penanggung_jawab_nama' => 'Operator Lain',
+        ])->assertForbidden();
+    }
 }

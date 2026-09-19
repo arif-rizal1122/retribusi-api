@@ -1,5 +1,10 @@
 # API Backlog
 
+## Otorisasi mutasi persampahan DLH — 19 September 2026
+
+- [x] **AM-BASE-04C** Endpoint transfer penghuni dan generate billing massal kini hanya untuk `User` internal super admin atau operator `opd_id=4`; Taxpayer tetap dapat membaca inquiry/kalkulator tetapi tidak dapat mengubah objek atau menerbitkan tagihan. Transfer juga dibatasi ke objek scope DLH.
+- Validasi: `DlhTrashBillingTest` lulus **10 test/38 assertion** pada SQLite `:memory:`; Pint controller/test lulus. Pencarian consumer di mobile/admin/petugas tidak menemukan pemakai endpoint mutasi. [Kontrak](docs/05_modul_aplikasi/AM_BASE_04C_DLH_MUTATION_AUTHORIZATION.md). Pemutakhiran penghuni oleh warga tetap menunggu workflow verifikasi D05.
+
 ## Inquiry ID Bangunan persampahan — 19 September 2026
 
 - [x] **AM-SMP-01A/02A** Inquiry warga memakai `tax_objects.nop` sebagai ID Bangunan yang dicari secara exact-match. Sesi `Taxpayer` hanya dapat melihat objek miliknya; NIK, nama, alamat, dan ID database tidak lagi menjadi kunci. Bills dibatasi ke `tax_object_id` yang diinquiry, status/total dinormalisasi, dan route diberi throttle 30 permintaan/menit pada alias `/api/dlh` serta `/api/v1/dlh`.
