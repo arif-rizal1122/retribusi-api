@@ -643,7 +643,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/trash/calculate', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'calculateTariff']);
         Route::post('/trash/transfer-occupant/{taxObjectId}', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'transferOccupant']);
         Route::post('/trash/generate-bills', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'generateMonthlyBills']);
-        Route::get('/trash/inquiry', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'inquiry']);
+        Route::get('/trash/inquiry', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'inquiry'])
+            ->middleware('throttle:30,1');
     };
 
     Route::prefix('dlh')->group($dlhRoutes);

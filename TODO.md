@@ -1,11 +1,17 @@
 # API Backlog
 
+## Inquiry ID Bangunan persampahan — 19 September 2026
+
+- [x] **AM-SMP-01A/02A** Inquiry warga memakai `tax_objects.nop` sebagai ID Bangunan yang dicari secara exact-match. Sesi `Taxpayer` hanya dapat melihat objek miliknya; NIK, nama, alamat, dan ID database tidak lagi menjadi kunci. Bills dibatasi ke `tax_object_id` yang diinquiry, status/total dinormalisasi, dan route diberi throttle 30 permintaan/menit pada alias `/api/dlh` serta `/api/v1/dlh`.
+- Validasi: `php artisan test tests/Feature/DlhTrashBillingTest.php tests/Feature/DlhBankSultraPaymentIntegrationTest.php tests/Feature/DlhSpatialComplianceTest.php --do-not-cache-result` lulus **12 test/65 assertion** pada SQLite `:memory:`; PHP lint, Pint controller/test, route list, dan diff check lulus. Consumer admin/petugas tidak memakai endpoint ini; mobile memakai kontrak langsung tanpa fallback daftar tagihan.
+- [Kontrak](docs/05_modul_aplikasi/AM_SMP_01A_BUILDING_INQUIRY_OWNERSHIP.md). Parent `AM-SMP-01` tetap terbuka untuk master ID Bangunan resmi/backfill, relasi penghuni dan rekonsiliasi sumber data. `AM-SMP-03/04` tetap menunggu tarif resmi dan kebijakan scheduler.
+
 ## Checkpoint pengujian rental warga - 14 September 2026
 
 - [x] **AM-BASE-04B** Order laboratorium citizen diikat ke `Taxpayer` sesi; detail dan billing owner-scoped; input hasil hanya untuk model `User` internal. Warga lain mendapat 404 dan tidak dapat mengubah hasil. Public QR verification tidak diubah.
 - Validasi AM-BASE-04B: `CitizenDlhLabOwnershipTest` + `DlhLabServiceTest` lulus 7 test/34 assertion pada SQLite :memory:. PHP lint, Pint check dan diff check lulus. Mobile `dlhLabService.ts` memakai route yang sama dan tidak berubah; admin/petugas mempertahankan akses operasional. [Kontrak](docs/05_modul_aplikasi/AM_BASE_04B_CITIZEN_LAB_OWNERSHIP.md). Parent AM-BASE-04 tetap terbuka untuk billing, hasil, dokumen dan setoran layanan lain.
 
-- [x] **AM-LAB-01A** Tambahkan lookup owner-scoped `/lab/orders/by-number/{orderNumber}` untuk pelacakan citizen, dengan envelope detail yang sama dan alias `/v1/dlh`. Route publik QR tetap terpisah. Commit `b42c489`; [kontrak](docs/05_modul_aplikasi/AM_LAB_01A_OWNER_TRACKING.md).
+- [x] **AM-LAB-01A** Tambahkan lookup owner-scoped `/lab/orders/by-number/{orderNumber}` untuk pelacakan citizen, dengan envelope detail yang sama dan alias `/v1/dlh`. Route publik QR tetap terpisah. Commit `7c8d84e`; [kontrak](docs/05_modul_aplikasi/AM_LAB_01A_OWNER_TRACKING.md).
 - Validasi AM-LAB-01A: tiga suite lab/gateway lulus 10 test/61 assertion; route alias dan consumer mobile diperiksa. Tidak ada migration atau perubahan admin/petugas. Push commit belum berhasil karena proxy lokal menolak koneksi.
 
 - [x] **AM-PUPR-04C** Validasi titik WGS84 pada pengajuan citizen, simpan di metadata.koordinat dan kembalikan pada create/list/detail. Input opsional dan record lama tanpa titik tetap null. Tidak mengubah polygon_geom/skema/endpoint internal. [Kontrak dan bukti](docs/05_modul_aplikasi/AM_PUPR_04C_CITIZEN_PROJECT_POINT.md).

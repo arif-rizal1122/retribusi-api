@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\V1\Dlh;
 
 use App\Http\Controllers\Controller;
+use App\Models\Bill;
 use App\Models\TaxObject;
+use App\Models\Taxpayer;
 use App\Services\Dlh\DlhTrashBillingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -80,21 +82,21 @@ class DlhTrashBillingController extends Controller
             'sub_district' => 'nullable|string',
         ]);
 
-        $periodDate = !empty($validated['period'])
+        $periodDate = ! empty($validated['period'])
             ? Carbon::createFromFormat('Y-m', $validated['period'])
             : Carbon::now();
 
         $query = TaxObject::where(function ($q) {
             $q->where('retribution_classification_id', 198)
-              ->orWhere('opd_id', 4);
+                ->orWhere('opd_id', 4);
         })
-        ->where('is_active', true)
-        ->where('status_hunian', 'BERPENGHUNI'); // Rumah kosong tidak ditagih
+            ->where('is_active', true)
+            ->where('status_hunian', 'BERPENGHUNI'); // Rumah kosong tidak ditagih
 
-        if (!empty($validated['district'])) {
+        if (! empty($validated['district'])) {
             $query->where('district', $validated['district']);
         }
-        if (!empty($validated['sub_district'])) {
+        if (! empty($validated['sub_district'])) {
             $query->where('sub_district', $validated['sub_district']);
         }
 
@@ -127,69 +129,74 @@ class DlhTrashBillingController extends Controller
      */
     public function inquiry(Request $request)
     {
-        $query = $request->query('query');
-        if (empty($query)) {
-            return response()->json(['status' => 'error', 'message' => 'Parameter query pencarian wajib diisi.'], 422);
-        }
+        $validated = $request->validate([
+            // NOP is the stable building/object identifier currently available in
+            // tax_objects. Names, addresses, NIK and the database id are not
+            // inquiry keys because they are ambiguous or expose unrelated data.
+            'query' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9._-]+$/'],
+        ]);
+        $buildingId = trim($validated['query']);
+        $user = $request->user();
 
         $taxObject = TaxObject::withoutGlobalScopes()
+            ->where('is_active', true)
             ->where(function ($q) {
                 $q->where('opd_id', 4)
-                  ->orWhere('retribution_classification_id', 198);
+                    ->orWhere('retribution_classification_id', 198);
             })
-            ->where(function ($q) use ($query) {
-                $q->where('name', 'LIKE', "%{$query}%")
-                  ->orWhere('address', 'LIKE', "%{$query}%")
-                  ->orWhere('penanggung_jawab_nama', 'LIKE', "%{$query}%");
-                if (is_numeric($query)) {
-                    $q->orWhere('id', (int) $query);
-                }
-            })
+            ->whereRaw('LOWER(nop) = ?', [strtolower($buildingId)])
+            // A citizen may inspect only their own building. Internal users keep
+            // the operational inquiry capability behind the authenticated route.
+            ->when($user instanceof Taxpayer, fn ($q) => $q->where('taxpayer_id', $user->id))
             ->first();
 
-        if (!$taxObject) {
-            return response()->json(['status' => 'error', 'message' => 'Objek persampahan tidak ditemukan.'], 404);
+        if (! $taxObject) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'ID Bangunan persampahan tidak ditemukan atau bukan milik akun ini.',
+            ], 404);
         }
 
-        $bills = \App\Models\Bill::withoutGlobalScopes()
+        $bills = Bill::withoutGlobalScopes()
             ->where('opd_id', 4)
-            ->where(function ($q) use ($taxObject) {
-                $q->where('tax_object_id', $taxObject->id)
-                  ->orWhere('taxpayer_id', $taxObject->taxpayer_id);
-            })
+            ->where('tax_object_id', $taxObject->id)
             ->orderBy('id', 'desc')
             ->get();
 
-        $activeBill = $bills->where('status', '!=', 'PAID')->first() ?? $bills->first();
+        $activeBill = $bills->first(function (Bill $bill) {
+            $status = strtoupper((string) $bill->getRawOriginal('status'));
+
+            return in_array($status, ['UNPAID', 'PENDING', 'OVERDUE'], true);
+        }) ?? $bills->first();
+
+        $billPayload = function (Bill $bill): array {
+            $rawStatus = strtoupper((string) $bill->getRawOriginal('status'));
+
+            return [
+                'id' => $bill->id,
+                'bill_number' => $bill->bill_number,
+                'period' => $bill->period ?? date('Y-m'),
+                'amount' => (float) $bill->amount,
+                'penalty_amount' => (float) $bill->penalty_amount,
+                'total_amount' => (float) $bill->total_amount,
+                'status' => $rawStatus,
+                'due_date' => $bill->due_date?->toDateString(),
+            ];
+        };
 
         return response()->json([
             'status' => 'success',
             'data' => [
                 'id' => $taxObject->id,
+                'object_code' => $taxObject->nop,
                 'name' => $taxObject->name,
                 'address' => $taxObject->address,
                 'building_category' => $taxObject->building_category ?? 'RUMAH_SEDERHANA',
                 'tipe_penghuni' => $taxObject->tipe_penghuni ?? 'PEMILIK',
                 'status_hunian' => $taxObject->status_hunian ?? 'BERPENGHUNI',
                 'taxpayer_name' => $taxObject->penanggung_jawab_nama ?? $taxObject->name,
-                'active_bill' => $activeBill ? [
-                    'id' => $activeBill->id,
-                    'bill_number' => $activeBill->bill_number,
-                    'period' => $activeBill->period ?? date('Y-m'),
-                    'amount' => (float) $activeBill->amount,
-                    'penalty_amount' => (float) $activeBill->penalty_amount,
-                    'total_amount' => (float) ($activeBill->amount + $activeBill->penalty_amount + $activeBill->admin_fee),
-                    'status' => $activeBill->status,
-                    'due_date' => $activeBill->due_date ? Carbon::parse($activeBill->due_date)->toDateString() : null,
-                ] : null,
-                'bill_history' => $bills->take(5)->map(fn ($b) => [
-                    'id' => $b->id,
-                    'bill_number' => $b->bill_number,
-                    'period' => $b->period,
-                    'total_amount' => (float) $b->amount,
-                    'status' => $b->status,
-                    'due_date' => $b->due_date,
-                ])->values(),
+                'active_bill' => $activeBill ? $billPayload($activeBill) : null,
+                'bill_history' => $bills->take(5)->map($billPayload)->values(),
             ],
         ]);
     }

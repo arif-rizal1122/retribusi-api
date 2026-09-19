@@ -4,8 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Bill;
 use App\Models\Opd;
-use App\Models\RetributionClassification;
-use App\Models\RetributionType;
 use App\Models\TaxObject;
 use App\Models\Taxpayer;
 use App\Models\User;
@@ -21,8 +19,11 @@ class DlhTrashBillingTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private Opd $dlh;
+
     private Taxpayer $taxpayer;
+
     private DlhTrashBillingService $service;
 
     protected function setUp(): void
@@ -258,5 +259,113 @@ class DlhTrashBillingTest extends TestCase
             ->assertJsonPath('status', 'success')
             ->assertJsonPath('data.new_bills_generated', 2)
             ->assertJsonPath('data.total_amount_billed', 23500); // 8500 + 15000
+    }
+
+    public function test_citizen_inquiry_is_owner_scoped_to_an_exact_building_id(): void
+    {
+        $taxObject = TaxObject::create([
+            'nop' => 'SMP-74-OWNER-001',
+            'taxpayer_id' => $this->taxpayer->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'retribution_classification_id' => 198,
+            'name' => 'Rumah Pemilik',
+            'address' => 'Jl. Pemilik',
+            'building_category' => 'RUMAH_SEDERHANA',
+            'status_hunian' => 'BERPENGHUNI',
+            'penanggung_jawab_nama' => 'La Ode Sampah',
+            'is_active' => true,
+        ]);
+
+        Bill::create([
+            'taxpayer_id' => $this->taxpayer->id,
+            'tax_object_id' => $taxObject->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'retribution_classification_id' => 198,
+            'bill_number' => 'DLH-SMP-OWNER-001',
+            'amount' => 8500,
+            'admin_fee' => 500,
+            'penalty_amount' => 0,
+            'status' => 'UNPAID',
+            'period' => '2026-09',
+            'due_date' => '2026-09-15',
+        ]);
+
+        // Another object under the same citizen must not bleed into this inquiry.
+        $otherObject = TaxObject::create([
+            'nop' => 'SMP-74-OWNER-002',
+            'taxpayer_id' => $this->taxpayer->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'retribution_classification_id' => 198,
+            'name' => 'Kios Pemilik',
+            'address' => 'Jl. Kios',
+            'building_category' => 'RUKO_NIAGA',
+            'status_hunian' => 'BERPENGHUNI',
+            'is_active' => true,
+        ]);
+        Bill::create([
+            'taxpayer_id' => $this->taxpayer->id,
+            'tax_object_id' => $otherObject->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'retribution_classification_id' => 198,
+            'bill_number' => 'DLH-SMP-OWNER-002',
+            'amount' => 22000,
+            'status' => 'UNPAID',
+            'period' => '2026-09',
+            'due_date' => '2026-09-15',
+        ]);
+
+        Sanctum::actingAs($this->taxpayer, ['*']);
+
+        $response = $this->getJson('/api/v1/dlh/trash/inquiry?query=SMP-74-OWNER-001');
+
+        $response->assertOk()
+            ->assertJsonPath('data.object_code', 'SMP-74-OWNER-001')
+            ->assertJsonPath('data.active_bill.bill_number', 'DLH-SMP-OWNER-001')
+            ->assertJsonPath('data.active_bill.total_amount', 9000)
+            ->assertJsonCount(1, 'data.bill_history');
+    }
+
+    public function test_citizen_cannot_inquire_another_citizens_building_or_by_nik(): void
+    {
+        $otherTaxpayer = Taxpayer::create([
+            'opd_id' => 4,
+            'nik' => '7472010101900099',
+            'name' => 'Warga Lain',
+            'phone' => '081234567891',
+            'address' => 'Jl. Lain',
+        ]);
+        TaxObject::create([
+            'nop' => 'SMP-74-OTHER-001',
+            'taxpayer_id' => $otherTaxpayer->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'retribution_classification_id' => 198,
+            'name' => 'Objek Warga Lain',
+            'address' => 'Jl. Rahasia',
+            'building_category' => 'RUMAH_SEDERHANA',
+            'status_hunian' => 'BERPENGHUNI',
+            'is_active' => true,
+        ]);
+
+        Sanctum::actingAs($this->taxpayer, ['*']);
+
+        $this->getJson('/api/v1/dlh/trash/inquiry?query=SMP-74-OTHER-001')
+            ->assertNotFound();
+
+        $this->getJson('/api/v1/dlh/trash/inquiry?query=7472010101900099')
+            ->assertNotFound();
+    }
+
+    public function test_trash_inquiry_rejects_non_identifier_search_terms(): void
+    {
+        Sanctum::actingAs($this->taxpayer, ['*']);
+
+        $this->getJson('/api/v1/dlh/trash/inquiry?query=Jl.%20Wolter%20Monginsidi')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['query']);
     }
 }
