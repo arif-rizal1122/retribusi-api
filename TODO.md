@@ -1,5 +1,10 @@
 # API Backlog
 
+## Normalisasi status receipt citizen — 20 September 2026
+
+- [x] **AM-PAY-03C**: lookup receipt pada detail payment request citizen menerima payment `SUCCESS`/`success` secara case-insensitive, sehingga bukti settlement legacy tidak hilang dari response.
+- Validasi: `CitizenPaymentRequestTest` lulus **16 test/105 assertion** setelah penambahan kasus uppercase `SUCCESS`; PHP lint, Pint, dan `git diff --check` dijalankan. Endpoint dan envelope existing dipertahankan.
+
 ## Kontrak estimasi rute tronton — 20 September 2026
 
 - [x] **AM-PUPR-05A**: kalkulator bundling tronton mengembalikan basis `straight_line_estimate` dan penanda `route_confirmation_required`; estimasi garis lurus tidak dianggap jarak jalan atau tagihan final. Konfirmasi akses dan tarif akhir tetap di pemeriksaan lapangan/dashboard PUPR.
@@ -247,5 +252,6 @@ Terakhir diperbarui: 2026-08-03
 
 - Setelah PAY-002 selesai, perbarui `../WORKBOARD.md`, lalu lanjutkan hanya jika pengguna menginstruksikan.
 - Endpoint atau perubahan schema baru wajib menambahkan/menyesuaikan test yang relevan.
+
 
 

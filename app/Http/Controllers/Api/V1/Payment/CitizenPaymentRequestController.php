@@ -369,7 +369,7 @@ class CitizenPaymentRequestController extends Controller
 
         $payments = Payment::where('taxpayer_id', $paymentRequest->taxpayer_id)
             ->whereIn('bill_id', $items->pluck('bill_id'))
-            ->where('status', 'success')
+            ->whereRaw('LOWER(status) = ?', ['success'])
             ->whereNotNull('receipt_number')
             ->latest('id')
             ->get()

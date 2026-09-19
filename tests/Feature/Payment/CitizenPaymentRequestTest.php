@@ -207,6 +207,32 @@ class CitizenPaymentRequestTest extends TestCase
         }
     }
 
+    public function test_paid_request_exposes_receipt_for_uppercase_success_payment(): void
+    {
+        $bill = $this->createBill(['status' => 'PAID']);
+        $paymentRequest = $this->attachPaymentRequest($bill, 'paid');
+        Payment::create([
+            'bill_id' => $bill->id,
+            'taxpayer_id' => $this->taxpayer->id,
+            'tax_object_id' => $bill->tax_object_id,
+            'transaction_id' => 'PAY-RECEIPT-UPPER',
+            'payment_method' => 'briva',
+            'amount' => $bill->total_amount,
+            'status' => 'SUCCESS',
+            'billing_period' => $bill->period,
+            'paid_at' => now(),
+            'reference_number' => 'BRI-RECEIPT-UPPER',
+            'receipt_number' => 'SSPD-RECEIPT-UPPER',
+        ]);
+        Sanctum::actingAs($this->taxpayer);
+
+        $this->getJson("/api/citizen/payment-requests/{$paymentRequest->id}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.receipts')
+            ->assertJsonPath('data.receipt_number', 'SSPD-RECEIPT-UPPER')
+            ->assertJsonPath('data.receipts.0.reference_number', 'BRI-RECEIPT-UPPER');
+    }
+
     public function test_citizen_briva_va_uses_partner_service_id_and_numeric_customer_no(): void
     {
         config([
