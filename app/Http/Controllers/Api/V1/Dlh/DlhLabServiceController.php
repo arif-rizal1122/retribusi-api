@@ -229,6 +229,24 @@ class DlhLabServiceController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Order tidak ditemukan.'], 404);
         }
 
+        return $this->orderDetailResponse($order);
+    }
+
+    /**
+     * Tampilkan detail order berdasarkan nomor yang diberikan kepada warga.
+     */
+    public function showOrderByNumber(Request $request, string $orderNumber)
+    {
+        $order = $this->findOrderByNumberForRequest($request, $orderNumber, ['bill', 'orderParameters.parameter']);
+        if (! $order) {
+            return response()->json(['status' => 'error', 'message' => 'Order tidak ditemukan.'], 404);
+        }
+
+        return $this->orderDetailResponse($order);
+    }
+
+    private function orderDetailResponse(DlhLabOrder $order)
+    {
         $parameters = $order->orderParameters->map(function ($op) {
             return [
                 'code' => $op->parameter?->code,
@@ -299,13 +317,25 @@ class DlhLabServiceController extends Controller
      */
     private function findOrderForRequest(Request $request, $orderId, array $relations = []): ?DlhLabOrder
     {
-        $query = DlhLabOrder::query()->with($relations)->whereKey($orderId);
+        return $this->orderQueryForRequest($request, $relations)->whereKey($orderId)->first();
+    }
+
+    private function findOrderByNumberForRequest(Request $request, string $orderNumber, array $relations = []): ?DlhLabOrder
+    {
+        return $this->orderQueryForRequest($request, $relations)
+            ->where('order_number', $orderNumber)
+            ->first();
+    }
+
+    private function orderQueryForRequest(Request $request, array $relations = [])
+    {
+        $query = DlhLabOrder::query()->with($relations);
         $user = $request->user();
 
         if ($user instanceof Taxpayer) {
             $query->where('taxpayer_id', $user->getKey());
         }
 
-        return $query->first();
+        return $query;
     }
 }

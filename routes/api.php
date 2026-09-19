@@ -621,6 +621,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         // Lab Lingkungan (UPTD)
         Route::get('/lab/parameters', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'indexParameters']);
         Route::post('/lab/orders', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'storeOrder']);
+        Route::get('/lab/orders/by-number/{orderNumber}', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'showOrderByNumber']);
         Route::get('/lab/orders/{id}', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'showOrder']);
         Route::post('/lab/orders/{id}/billing', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'generateBilling']);
         Route::post('/lab/orders/{id}/results', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'uploadResult']);
@@ -746,4 +747,3 @@ Route::middleware('auth:sanctum')->prefix('tpi')->group(function () {
 // DEPLOY HOOK (Staging only - protected by X-Deploy-Secret header)
 // ------------------------------------------------------------------------
 Route::post('/admin/deploy-hook', [\App\Http\Controllers\Admin\DeployHookController::class, 'handle']);
-

@@ -5,6 +5,9 @@
 - [x] **AM-BASE-04B** Order laboratorium citizen diikat ke `Taxpayer` sesi; detail dan billing owner-scoped; input hasil hanya untuk model `User` internal. Warga lain mendapat 404 dan tidak dapat mengubah hasil. Public QR verification tidak diubah.
 - Validasi AM-BASE-04B: `CitizenDlhLabOwnershipTest` + `DlhLabServiceTest` lulus 7 test/34 assertion pada SQLite :memory:. PHP lint, Pint check dan diff check lulus. Mobile `dlhLabService.ts` memakai route yang sama dan tidak berubah; admin/petugas mempertahankan akses operasional. [Kontrak](docs/05_modul_aplikasi/AM_BASE_04B_CITIZEN_LAB_OWNERSHIP.md). Parent AM-BASE-04 tetap terbuka untuk billing, hasil, dokumen dan setoran layanan lain.
 
+- [x] **AM-LAB-01A** Tambahkan lookup owner-scoped `/lab/orders/by-number/{orderNumber}` untuk pelacakan citizen, dengan envelope detail yang sama dan alias `/v1/dlh`. Route publik QR tetap terpisah. Commit `b42c489`; [kontrak](docs/05_modul_aplikasi/AM_LAB_01A_OWNER_TRACKING.md).
+- Validasi AM-LAB-01A: tiga suite lab/gateway lulus 10 test/61 assertion; route alias dan consumer mobile diperiksa. Tidak ada migration atau perubahan admin/petugas. Push commit belum berhasil karena proxy lokal menolak koneksi.
+
 - [x] **AM-PUPR-04C** Validasi titik WGS84 pada pengajuan citizen, simpan di metadata.koordinat dan kembalikan pada create/list/detail. Input opsional dan record lama tanpa titik tetap null. Tidak mengubah polygon_geom/skema/endpoint internal. [Kontrak dan bukti](docs/05_modul_aplikasi/AM_PUPR_04C_CITIZEN_PROJECT_POINT.md).
 - Validasi akhir: `CitizenAssetRentalTest` lulus 35 test/186 assertion pada SQLite :memory:, Pint rule/test, PHP lint controller dan diff check lulus. Regresi Aset.location/MapPicker mobile lulus 12 test. Browser belum terverifikasi karena koneksi MySQL lokal ditolak; parent AM-PUPR-04/D04 tetap terbuka untuk batas area resmi dan integrasi dashboard.
 

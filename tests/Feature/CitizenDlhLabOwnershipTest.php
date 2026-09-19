@@ -96,9 +96,21 @@ class CitizenDlhLabOwnershipTest extends TestCase
         Sanctum::actingAs($this->otherCitizen, ['*']);
 
         $this->getJson("/api/v1/dlh/lab/orders/{$order->id}")->assertNotFound();
+        $this->getJson("/api/v1/dlh/lab/orders/by-number/{$order->order_number}")->assertNotFound();
         $this->postJson("/api/v1/dlh/lab/orders/{$order->id}/billing")
             ->assertNotFound();
         $this->assertDatabaseCount('bills', 0);
+    }
+
+    public function test_citizen_can_track_own_order_by_number(): void
+    {
+        $order = $this->createCitizenOrder();
+
+        $this->getJson("/api/v1/dlh/lab/orders/by-number/{$order->order_number}")
+            ->assertOk()
+            ->assertJsonPath('data.order.id', $order->id)
+            ->assertJsonPath('data.order.taxpayer_id', $this->citizen->id)
+            ->assertJsonPath('data.parameters.0.code', 'LAB-PH');
     }
 
     public function test_citizen_cannot_upload_lab_results(): void
