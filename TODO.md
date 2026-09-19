@@ -3,7 +3,7 @@
 ## Otorisasi endpoint citizen service — 20 September 2026
 
 - [x] **AM-BASE-04F**: `CitizenServiceController` mewajibkan sesi `Taxpayer` pada katalog, detail, pendaftaran objek, daftar bill, periode pending, dan tax objects. Guest tetap 401 dari auth; akun internal menerima 403 sebelum query atau mutasi citizen dijalankan.
-- Validasi: guard **2 test/11 assertion**; regresi service/citizen billing/registration **16 test/153 assertion**; PHP lint, Pint, `git diff --check`, dan audit consumer mobile/admin/petugas lulus. Payload warga, role, migration, dan dashboard tidak berubah. Kontrak [AM_BASE_04F_CITIZEN_SERVICE_AUTHORIZATION.md](docs/05_modul_aplikasi/AM_BASE_04F_CITIZEN_SERVICE_AUTHORIZATION.md). Parent AM-BASE-04 tetap terbuka untuk ownership layanan, hasil, dokumen, dan setoran lainnya.
+- Validasi: guard **2 test/11 assertion**; regresi service/citizen billing/registration **16 test/153 assertion**; PHP lint, Pint, `git diff --check`, dan audit consumer mobile/admin/petugas lulus. Payload warga, role, migration, dan dashboard tidak berubah. Kontrak [AM_BASE_04F_CITIZEN_SERVICE_AUTHORIZATION.md](docs/05_modul_aplikasi/AM_BASE_04F_CITIZEN_SERVICE_AUTHORIZATION.md). Commit `3ef93b6` (`fix: restrict citizen service endpoints to taxpayers`) dibuat; push `origin/main` ditolak `fetch first` karena remote memiliki commit yang belum ada di checkout. Tidak dilakukan pull, reset, rebase, atau force-push. Parent AM-BASE-04 tetap terbuka untuk ownership layanan, hasil, dokumen, dan setoran lainnya.
 
 ## Status status tagihan terbuka legacy — 20 September 2026
 
