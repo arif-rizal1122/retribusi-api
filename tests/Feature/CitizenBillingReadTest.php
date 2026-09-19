@@ -204,6 +204,36 @@ class CitizenBillingReadTest extends TestCase
             ->assertJsonPath('data.0.payment_options.bri_va.message', null);
     }
 
+    public function test_sultra_va_option_requires_explicit_runtime_and_contract_readiness(): void
+    {
+        $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
+        $bill = $this->createBill($taxpayer, [
+            'status' => 'pending',
+            'due_date' => now()->addDay(),
+        ]);
+
+        Sanctum::actingAs($taxpayer);
+
+        $this->getJson('/api/citizen/bills?per_page=100')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $bill->id)
+            ->assertJsonPath('data.0.payment_options.sultra_va.available', false)
+            ->assertJsonPath('data.0.payment_options.sultra_va.message', 'Virtual Account Bank Sultra belum tersedia. Gunakan transfer manual atau metode lain.');
+
+        config(['snap.bank_sultra_va.enabled' => true]);
+
+        $this->getJson('/api/citizen/bills?per_page=100')
+            ->assertOk()
+            ->assertJsonPath('data.0.payment_options.sultra_va.available', false);
+
+        config(['snap.bank_sultra_va.contract_confirmed' => true]);
+
+        $this->getJson('/api/citizen/bills?per_page=100')
+            ->assertOk()
+            ->assertJsonPath('data.0.payment_options.sultra_va.available', true)
+            ->assertJsonPath('data.0.payment_options.sultra_va.message', null);
+    }
+
     public function test_citizen_payment_history_is_owner_scoped_and_hides_internal_payloads(): void
     {
         $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);

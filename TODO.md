@@ -1,5 +1,11 @@
 # API Backlog
 
+## Kesiapan payment option citizen — 19 September 2026
+
+- [x] AM-PAY-02: payment_options API sekarang memakai gate readiness per produk. BRIVA tetap melalui SnapBrivaReadiness; transfer manual hanya tersedia bila rekening klasifikasi valid; Sultra VA citizen default-off dan baru boleh dibuat/diiklankan setelah BANK_SULTRA_CITIZEN_VA_ENABLED serta BANK_SULTRA_CITIZEN_VA_CONTRACT_CONFIRMED dikonfirmasi.
+- Validasi: suite readiness/checkout **23 test/206 assertion lulus**; regresi DLH/lab/citizen/payment/SNAP/rekening manual **54 test/387 assertion lulus**; PHP lint, Pint, dan diff check lulus. Kontrak: docs/05_modul_aplikasi/AM_PAY_02_CITIZEN_PAYMENT_AVAILABILITY.md.
+- Tidak ada migration, credential, callback, atau outbound bank request. Flag contract_confirmed adalah guard operasional dan tidak menjadi bukti UAT/provisioning. Consumer audit mobile/admin/petugas selesai; mobile sudah menghormati available=false dari API.
+
 ## Status payment request pada batas citizen — 19 September 2026
 
 - [x] AM-BASE-03G: Top-level payment request dan active_payment_request pada citizen bills sekarang memakai CitizenPaymentRequestStatus. Alias success/settled/processing/void dan status tidak dikenal dinormalisasi; label channel BRI/Sultra konsisten. can_refresh/can_cancel tidak diperluas di luar lifecycle storage pending.

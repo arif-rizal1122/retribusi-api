@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\BillCreationService;
 use App\Services\BillPeriodService;
 use App\Services\OfficialDocumentService;
+use App\Services\Payment\Snap\BankSultraCitizenVaReadiness;
 use App\Services\Payment\Snap\SnapBrivaReadiness;
 use App\Support\CitizenBillStatus;
 use App\Support\CitizenPaymentRequestStatus;
@@ -29,7 +30,8 @@ class BillController extends Controller
     public function __construct(
         BillCreationService $billCreationService,
         BillPeriodService $periodService,
-        private readonly SnapBrivaReadiness $brivaReadiness
+        private readonly SnapBrivaReadiness $brivaReadiness,
+        private readonly BankSultraCitizenVaReadiness $sultraVaReadiness
     ) {
         $this->billCreationService = $billCreationService;
         $this->periodService = $periodService;
@@ -381,6 +383,7 @@ class BillController extends Controller
             ->values();
 
         $brivaAvailable = $canPay && $this->brivaReadiness->available();
+        $sultraVaAvailable = $canPay && $this->sultraVaReadiness->available();
 
         return [
             'manual_transfer' => [
@@ -396,8 +399,10 @@ class BillController extends Controller
                 ],
             ],
             'sultra_va' => [
-                'available' => $canPay,
-                'message' => null,
+                'available' => $sultraVaAvailable,
+                'message' => $sultraVaAvailable
+                    ? null
+                    : $this->sultraVaReadiness->publicMessage(),
             ],
             'bri_va' => [
                 'available' => $brivaAvailable,

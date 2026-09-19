@@ -370,6 +370,11 @@ class CitizenPaymentRequestTest extends TestCase
 
     public function test_citizen_can_create_bank_sultra_va_payment_request(): void
     {
+        config([
+            'snap.bank_sultra_va.enabled' => true,
+            'snap.bank_sultra_va.contract_confirmed' => true,
+        ]);
+
         Sanctum::actingAs($this->taxpayer, ['*']);
         $bill = $this->createBill(['amount' => 50000]);
 
@@ -387,6 +392,21 @@ class CitizenPaymentRequestTest extends TestCase
         $this->assertNotEmpty($vaNumber);
         $this->assertStringStartsWith('00007472', $vaNumber);
         $this->assertEquals(16, strlen($vaNumber));
+    }
+
+    public function test_citizen_sultra_va_payment_request_is_rejected_until_contract_is_ready(): void
+    {
+        Sanctum::actingAs($this->taxpayer, ['*']);
+        $bill = $this->createBill(['amount' => 50000]);
+
+        $this->postJson('/api/citizen/payment-requests', [
+            'bill_ids' => [$bill->id],
+            'method' => 'sultra_va',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Virtual Account Bank Sultra belum tersedia. Gunakan transfer manual atau metode lain.');
+
+        $this->assertDatabaseCount('payment_requests', 0);
     }
 
     private function publicKey(): string

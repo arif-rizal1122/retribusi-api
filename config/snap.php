@@ -53,6 +53,11 @@ return [
         'payment_request_expiry_minutes' => (int) env('BRI_SNAP_PAYMENT_REQUEST_EXPIRY_MINUTES', 1440),
     ],
 
+    'bank_sultra_va' => [
+        'enabled' => env('BANK_SULTRA_CITIZEN_VA_ENABLED', false),
+        'contract_confirmed' => env('BANK_SULTRA_CITIZEN_VA_CONTRACT_CONFIRMED', false),
+    ],
+
     'bank_sultra_aft' => [
         'enabled' => env('BANK_SULTRA_AFT_ENABLED', false),
         'selected_product' => env('BANK_SULTRA_AFT_SELECTED_PRODUCT', ''),

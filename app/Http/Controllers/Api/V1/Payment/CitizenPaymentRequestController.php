@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\PaymentRequest;
 use App\Models\PaymentRequestItem;
 use App\Models\Taxpayer;
+use App\Services\Payment\Snap\BankSultraCitizenVaReadiness;
 use App\Services\Payment\Snap\SnapBrivaReadiness;
 use App\Support\CitizenBillStatus;
 use App\Support\CitizenPaymentRequestStatus;
@@ -21,7 +22,10 @@ use Illuminate\Validation\ValidationException;
 
 class CitizenPaymentRequestController extends Controller
 {
-    public function __construct(private readonly SnapBrivaReadiness $brivaReadiness) {}
+    public function __construct(
+        private readonly SnapBrivaReadiness $brivaReadiness,
+        private readonly BankSultraCitizenVaReadiness $sultraVaReadiness
+    ) {}
 
     public function store(Request $request): JsonResponse
     {
@@ -52,6 +56,10 @@ class CitizenPaymentRequestController extends Controller
 
         if (! $isSultra && ! $this->brivaReadiness->available()) {
             return response()->json(['message' => $this->brivaReadiness->publicMessage()], 422);
+        }
+
+        if ($isSultra && ! $this->sultraVaReadiness->available()) {
+            return response()->json(['message' => $this->sultraVaReadiness->publicMessage()], 422);
         }
 
         $partnerServiceId = preg_replace('/\D/', '', (string) config('snap.briva.partner_service_id'));
