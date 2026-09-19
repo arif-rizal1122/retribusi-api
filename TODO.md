@@ -3,7 +3,7 @@
 ## Status status tagihan terbuka legacy — 20 September 2026
 
 - [x] **AM-BASE-03N**: query payment request warga, klaim transfer manual, dan pencarian bill idempotent pada `BillCreationService` sekarang mencocokkan status `pending`/`overdue`/`unpaid` serta alias terminal secara case-insensitive. Data `UNPAID` legacy tetap dapat dibayar tanpa mengubah storage, dan bill periode yang sama tidak diterbitkan ulang.
-- Validasi: targeted payment/billing **23 test/140 assertion**; suite regresi bank/core/DLH/lab/citizen billing/SNAP/dokumen **114 test/560 assertion**; PHP lint, Pint, `git diff --check`, dan audit consumer mobile/admin/petugas lulus. Kontrak [AM_BASE_03N_LEGACY_OPEN_BILL_STATUS.md](docs/05_modul_aplikasi/AM_BASE_03N_LEGACY_OPEN_BILL_STATUS.md). Tidak ada perubahan payload, frontend, migration, credential, atau gateway. Parent AM-BASE-03 tetap terbuka untuk reverse inquiry/retry provider dan UAT gateway eksternal.
+- Validasi: targeted payment/billing **23 test/140 assertion**; suite regresi bank/core/DLH/lab/citizen billing/SNAP/dokumen **114 test/560 assertion**; PHP lint, Pint, `git diff --check`, dan audit consumer mobile/admin/petugas lulus. Kontrak [AM_BASE_03N_LEGACY_OPEN_BILL_STATUS.md](docs/05_modul_aplikasi/AM_BASE_03N_LEGACY_OPEN_BILL_STATUS.md). Commit `de41e0d` (`fix: accept legacy unpaid bill statuses`) dibuat; push `origin/main` ditolak `fetch first` karena remote memiliki commit yang belum ada di checkout. Tidak dilakukan pull, reset, rebase, atau force-push. Tidak ada perubahan payload, frontend, migration, credential, atau gateway. Parent AM-BASE-03 tetap terbuka untuk reverse inquiry/retry provider dan UAT gateway eksternal.
 
 ## Status bill inquiry persampahan DLH — 20 September 2026
 
