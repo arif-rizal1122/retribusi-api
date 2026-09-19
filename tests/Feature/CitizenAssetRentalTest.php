@@ -120,12 +120,22 @@ class CitizenAssetRentalTest extends TestCase
             ->assertJsonPath('data.dp', '0.00')
             ->assertJsonPath('data.sisa_pembayaran', '200000.00')
             ->assertJsonPath('data.metadata.quote_source', 'asset_items.tarif_default')
+            ->assertJsonPath('data.metadata.quote.version', 'asset-master-v1')
+            ->assertJsonPath('data.metadata.quote.asset_item_id', $this->asset->id)
+            ->assertJsonPath('data.metadata.quote.service_quantity', 2)
+            ->assertJsonPath('data.metadata.quote.rental_days', 2)
+            ->assertJsonPath('data.metadata.quote.total_biaya', 200000)
             ->assertJsonPath('data.metadata.requested_dp', 999999);
 
         $rental = AssetRental::findOrFail($response->json('data.id'));
         $this->assertEquals(100000.0, (float) $rental->getRawOriginal('tarif_per_satuan'));
         $this->assertEquals(200000.0, (float) $rental->getRawOriginal('total_biaya'));
         $this->assertEquals(0.0, (float) $rental->getRawOriginal('dp'));
+        $this->assertSame('asset-master-v1', $rental->metadata['quote']['version']);
+        $this->assertSame(100000.0, (float) $rental->metadata['quote']['tarif_per_satuan']);
+        $this->assertSame(200000.0, (float) $rental->metadata['quote']['total_biaya']);
+        $this->assertSame(999999.0, (float) $rental->metadata['quote']['requested_dp']);
+        $this->assertSame(0.0, (float) $rental->metadata['quote']['confirmed_dp']);
     }
 
     public function test_tronton_fee_comes_from_server_band_not_client_amount(): void
@@ -142,7 +152,10 @@ class CitizenAssetRentalTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.include_tronton', true)
             ->assertJsonPath('data.biaya_tronton', '450000.00')
-            ->assertJsonPath('data.total_biaya', '550000.00');
+            ->assertJsonPath('data.total_biaya', '550000.00')
+            ->assertJsonPath('data.metadata.quote.include_tronton', true)
+            ->assertJsonPath('data.metadata.quote.jarak_tronton_km', 15)
+            ->assertJsonPath('data.metadata.quote.biaya_tronton', 450000);
 
         $this->assertDatabaseHas('asset_rentals', [
             'id' => $response->json('data.id'),

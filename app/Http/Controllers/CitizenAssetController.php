@@ -252,6 +252,30 @@ class CitizenAssetController extends Controller
             $dp = 0.0;
             $sisaPembayaran = $totalBiaya;
 
+            // Keep the exact server quote beside the rental so later review can
+            // explain which master row and inputs produced the amount. This is
+            // an audit snapshot, not an approval or a replacement for the
+            // official tariff versioning decision.
+            $quoteSnapshot = [
+                'version' => 'asset-master-v1',
+                'source' => 'asset_items',
+                'asset_item_id' => (int) $asset->id,
+                'asset_updated_at' => $asset->updated_at?->toIso8601String(),
+                'tarif_per_satuan' => $tarifPerSatuan,
+                'satuan_sewa' => $satuanSewa,
+                'service_quantity' => $isSedotKakus && ! empty($validated['jumlah_rit'])
+                    ? (int) $validated['jumlah_rit']
+                    : $days,
+                'rental_days' => $days,
+                'include_tronton' => $includeTronton,
+                'jarak_tronton_km' => $includeTronton ? $jarakKm : null,
+                'biaya_tronton' => $biayaTronton,
+                'total_biaya' => $totalBiaya,
+                'requested_dp' => $requestedDp,
+                'confirmed_dp' => $dp,
+                'sisa_pembayaran' => $sisaPembayaran,
+            ];
+
             $asetType = $this->jasaUsahaType();
             $asetClassification = $this->jasaUsahaClassification();
 
@@ -264,6 +288,7 @@ class CitizenAssetController extends Controller
                 'is_wajib_tronton' => $isWajibTronton,
                 'quote_source' => 'asset_items.tarif_default',
                 'requested_dp' => $requestedDp,
+                'quote' => $quoteSnapshot,
             ];
 
             // The old koordinat column was removed; retain the citizen point in JSON.

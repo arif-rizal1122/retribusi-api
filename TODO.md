@@ -1,5 +1,10 @@
 # API Backlog
 
+## Snapshot quote sewa aset PUPR - 19 September 2026
+
+- [x] **AM-BASE-05B / AM-PUPR-03B** Setiap pengajuan rental citizen yang berhasil menyimpan `metadata.quote` dengan versi adapter, sumber/master aset, waktu perubahan master, tarif/satuan, kuantitas/hari, tronton, total, requested DP, confirmed DP, dan sisa pembayaran. Snapshot memakai angka server yang sama dengan kolom rental dan tidak membutuhkan migration.
+- Validasi: `CitizenAssetRentalTest` lulus **38 test/219 assertion** pada SQLite `:memory:`; PHP lint, Pint test, dan diff check lulus. Consumer mobile/admin/petugas tetap kompatibel karena metadata bersifat additive. [Kontrak](docs/05_modul_aplikasi/AM_BASE_05B_QUOTE_SNAPSHOT.md). Versi tarif Perda/zona resmi dan payment settlement rental tetap menunggu D02/D04/PAY.
+
 ## Otoritas quote sewa aset PUPR - 19 September 2026
 
 - [x] **AM-BASE-05A / AM-PUPR-03A** Pengajuan citizen tidak lagi mempercayai tarif, satuan, biaya tronton, atau DP dari payload mobile. Tarif/satuan diambil dari master `asset_items`, biaya tronton dihitung dari band server yang sudah ada, alat `wajib_tronton` tetap memaksa mobilisasi, dan DP kiriman disimpan sebagai `metadata.requested_dp` tanpa dianggap settlement.
