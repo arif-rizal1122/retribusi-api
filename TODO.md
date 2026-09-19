@@ -1,5 +1,11 @@
 # API Backlog
 
+## Otorisasi monitoring H2H — 19 September 2026
+
+- [x] AM-BASE-04D: GET /api/bank-h2h/logs dan POST /api/bank-h2h/reconcile memakai middleware role:super_admin. Taxpayer dan User internal role admin ditolak sebelum controller; super admin tetap kompatibel dengan consumer admin H2HLogs.
+- Validasi terarah BankH2HTest + GenericH2HStillWorksTest lulus 9 test/61 assertion; suite lintas bank/core/DLH/citizen billing/SNAP lulus 109 test/527 assertion. PHP lint, route list, dan git diff --check lulus. Mobile/petugas tidak memiliki consumer endpoint monitoring.
+- Kontrak [AM_BASE_04D_H2H_MONITORING_AUTHORIZATION.md](docs/05_modul_aplikasi/AM_BASE_04D_H2H_MONITORING_AUTHORIZATION.md). Parent AM-BASE-04 masih terbuka untuk ownership/izin layanan, dokumen, dan setoran lain.
+
 ## Audit trail rekonsiliasi gateway — 19 September 2026
 
 - [x] AM-BASE-03K: endpoint internal POST /api/bank-h2h/reconcile sekarang mencatat report sukses maupun error ke payment_gateway_logs melalui PaymentAuditService. Response matched/mismatch/details tetap kompatibel dan proses tetap report-only.

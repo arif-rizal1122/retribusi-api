@@ -559,7 +559,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         });
 
         // Bank H2H Monitoring Logs
-        Route::prefix('bank-h2h')->group(function () {
+        Route::prefix('bank-h2h')->middleware('role:super_admin')->group(function () {
             Route::get('/logs', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'logs']);
             Route::post('/reconcile', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'reconcile']);
         });

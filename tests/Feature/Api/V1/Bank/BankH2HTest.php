@@ -145,4 +145,27 @@ class BankH2HTest extends TestCase
         $this->assertSame(1, $log->payload_out['data']['mismatch'] ?? null);
         $this->assertSame('Tidak Ditemukan', $log->payload_out['data']['details'][0]['status'] ?? null);
     }
+
+    public function test_bank_h2h_monitoring_routes_reject_citizen_and_non_platform_staff(): void
+    {
+        $taxpayer = Taxpayer::factory()->create();
+        Sanctum::actingAs($taxpayer, ['*']);
+
+        $this->getJson('/api/bank-h2h/logs')
+            ->assertForbidden();
+        $this->postJson('/api/bank-h2h/reconcile', [
+            'driver' => 'sultra',
+            'transactions' => [],
+        ])->assertForbidden();
+
+        $staff = \App\Models\User::factory()->create(['role' => 'admin']);
+        Sanctum::actingAs($staff, ['*']);
+
+        $this->getJson('/api/bank-h2h/logs')
+            ->assertForbidden();
+        $this->postJson('/api/bank-h2h/reconcile', [
+            'driver' => 'sultra',
+            'transactions' => [],
+        ])->assertForbidden();
+    }
 }
