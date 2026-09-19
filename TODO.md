@@ -1,5 +1,11 @@
 # API Backlog
 
+## Status bill pada riwayat pembayaran citizen — 19 September 2026
+
+- [x] **AM-BASE-03E** Endpoint `GET /api/citizen/payments/history` menormalkan status bill nested dengan `CitizenBillStatus` dan menerbitkan `status_label` additive. Status storage lama (`lunas`, `PAID`, `pending`, dan variasinya) tidak diubah; ownership, pagination, dan status pembayaran top-level tetap kompatibel.
+- Validasi: suite DLH/lab/citizen billing **33 test/230 assertion lulus**; Pint, PHP lint, dan diff check lulus. Regresi H2H DLH menerbitkan bill melalui `DlhTrashBillingService` agar inquiry, callback, idempotensi, dan rekap memakai fixture layanan yang sama. [Kontrak](docs/05_modul_aplikasi/AM_BASE_03E_CITIZEN_PAYMENT_HISTORY_STATUS.md).
+- Consumer audit: mobile hanya memakai field top-level untuk tren/aktivitas dan sekarang mendeklarasikan status nested canonical; admin dan petugas tidak memakai endpoint ini. Typecheck/build mobile lulus; lint penuh dan Vitest terhalang baseline/environment yang dicatat di kontrak. Parent AM-BASE-03 tetap terbuka untuk rekonsiliasi gateway lain dan alur settlement eksternal.
+
 ## Settlement dan rekap DLH — 19 September 2026
 
 - [x] **AM-BASE-03D / AM-SMP-08A / AM-LAB-06A** Normalisasi pembacaan status settlement DLH pada rekap eksekutif dan peta kepatuhan. Status H2H `lunas`/variasi `PAID` dihitung sebagai lunas; piutang dan denda memakai status kanonik. Bill lab yang tertaut tidak dihitung ulang sebagai persampahan; order lab yang bill-nya sudah lunas masuk realisasi satu kali.

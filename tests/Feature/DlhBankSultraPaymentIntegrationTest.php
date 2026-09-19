@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Bill;
 use App\Models\Opd;
 use App\Models\Payment;
 use App\Models\PaymentChannel;
@@ -10,6 +9,7 @@ use App\Models\RetributionType;
 use App\Models\TaxObject;
 use App\Models\Taxpayer;
 use App\Models\User;
+use App\Services\Dlh\DlhTrashBillingService;
 use Carbon\Carbon;
 use Database\Seeders\DlhMasterTariffSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -116,19 +116,11 @@ class DlhBankSultraPaymentIntegrationTest extends TestCase
             'is_active' => true,
         ]);
 
-        $period = date('Y-m');
-        $bill = Bill::create([
-            'bill_number' => 'SKRD-DLH-'.date('Ym').'-0088',
-            'taxpayer_id' => $taxpayer->id,
-            'tax_object_id' => $taxObject->id,
-            'opd_id' => $this->dlhOpd->id,
-            'retribution_type_id' => $retType->id,
-            'amount' => 8500.00,
-            'penalty_amount' => 0.00,
-            'status' => 'pending',
-            'period' => $period,
-            'due_date' => Carbon::now()->addDays(20),
-        ]);
+        $bill = app(DlhTrashBillingService::class)->generateMonthlyBill(
+            $taxObject,
+            Carbon::now()->startOfMonth()->addMonth(),
+        );
+        $this->assertSame(8500.0, (float) $bill->amount);
 
         $timestamp = Carbon::now()->toDateTimeString();
 

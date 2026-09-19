@@ -233,6 +233,24 @@ class CitizenBillingReadTest extends TestCase
         $this->assertArrayNotHasKey('approved_by', $response->json('data.0'));
     }
 
+    public function test_citizen_payment_history_normalizes_nested_bill_status_aliases(): void
+    {
+        $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
+        $bill = $this->createBill($taxpayer, [
+            'status' => 'lunas',
+            'due_date' => now()->subDay(),
+        ]);
+        $payment = $this->createPayment($bill, ['status' => 'success']);
+
+        Sanctum::actingAs($taxpayer);
+
+        $this->getJson('/api/citizen/payments/history')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $payment->id)
+            ->assertJsonPath('data.0.bill.status', 'paid')
+            ->assertJsonPath('data.0.bill.status_label', 'Lunas');
+    }
+
     public function test_internal_user_cannot_use_citizen_billing_endpoints(): void
     {
         Sanctum::actingAs(User::factory()->create(['role' => 'super_admin']));

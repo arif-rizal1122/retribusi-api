@@ -9,10 +9,13 @@ use App\Models\TaxObject;
 use App\Models\Taxpayer;
 use App\Services\BillCreationService;
 use App\Services\BillingService;
+use App\Support\CitizenBillStatus;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
 {
@@ -36,7 +39,7 @@ class PaymentController extends Controller
         $user = $request->user();
         $query = Payment::with(['taxObject', 'taxpayer', 'bill', 'approvedBy']);
 
-        if ($user instanceof \App\Models\Taxpayer) {
+        if ($user instanceof Taxpayer) {
             $query->where('taxpayer_id', $user->id);
         } elseif (! $user->isSuperAdmin()) {
             $query->whereHas('taxObject', function ($q) use ($user) {
@@ -84,6 +87,7 @@ class PaymentController extends Controller
             $bill = $payment->bill;
             $retributionType = $bill?->retributionType;
             $taxObject = $payment->taxObject;
+            $billStatus = $bill ? $this->citizenHistoryBillStatus($bill) : null;
 
             return [
                 'id' => $payment->id,
@@ -102,7 +106,8 @@ class PaymentController extends Controller
                 'bill' => $bill ? [
                     'id' => $bill->id,
                     'bill_number' => $bill->bill_number,
-                    'status' => $bill->status,
+                    'status' => $billStatus,
+                    'status_label' => CitizenBillStatus::label($billStatus),
                     'period' => $bill->period,
                     'total_amount' => $bill->total_amount,
                 ] : null,
@@ -127,6 +132,16 @@ class PaymentController extends Controller
                 'total' => $payments->total(),
             ],
         ]);
+    }
+
+    private function citizenHistoryBillStatus(Bill $bill): string
+    {
+        return CitizenBillStatus::normalize(
+            $bill->getRawOriginal('status'),
+            false,
+            false,
+            (bool) $bill->due_date?->isPast(),
+        );
     }
 
     /**
@@ -155,7 +170,7 @@ class PaymentController extends Controller
     {
         try {
             $user = $request->user();
-            $isCitizen = $user instanceof \App\Models\Taxpayer;
+            $isCitizen = $user instanceof Taxpayer;
 
             if ($isCitizen && $request->has('bill_ids')) {
                 return $this->storeCitizenBillClaims($request, $user);
@@ -280,9 +295,9 @@ class PaymentController extends Controller
                 'message' => $isCitizen ? 'Klaim pembayaran berhasil dikirim. Menunggu verifikasi petugas.' : 'Pembayaran berhasil dicatat',
                 'data' => $payment->load(['taxObject', 'taxpayer']),
             ], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             throw $e;
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             throw $e;
         } catch (\Throwable $e) {
             \Log::error('Payment Store Failed: '.$e->getMessage(), [
@@ -319,7 +334,7 @@ class PaymentController extends Controller
                 ->values();
 
             if ($bills->count() !== $billIds->count()) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'bill_ids' => 'Satu atau lebih tagihan tidak dapat diajukan untuk pembayaran.',
                 ]);
             }
@@ -329,7 +344,7 @@ class PaymentController extends Controller
                 ->exists();
 
             if ($hasExistingPayment) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'bill_ids' => 'Satu atau lebih tagihan sudah lunas atau sedang menunggu verifikasi pembayaran.',
                 ]);
             }
@@ -340,7 +355,7 @@ class PaymentController extends Controller
                 ->exists();
 
             if ($hasActivePaymentRequest) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'bill_ids' => 'Satu atau lebih tagihan masih memiliki pembayaran BRIVA aktif.',
                 ]);
             }
@@ -376,7 +391,7 @@ class PaymentController extends Controller
     {
         $user = $request->user();
 
-        if ($user instanceof \App\Models\Taxpayer) {
+        if ($user instanceof Taxpayer) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -413,7 +428,7 @@ class PaymentController extends Controller
                             ->exists();
 
                     if ($alreadySettled) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
+                        throw ValidationException::withMessages([
                             'status' => 'Tagihan sudah lunas melalui pembayaran lain.',
                         ]);
                     }
