@@ -8,7 +8,9 @@ use App\Models\RetributionClassification;
 use App\Models\RetributionType;
 use App\Models\TaxObject;
 use App\Models\Taxpayer;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class CitizenServiceObjectBillingGateTest extends TestCase
@@ -63,5 +65,28 @@ class CitizenServiceObjectBillingGateTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data.bills')
             ->assertJsonPath('data.bills.0.tax_object_id', $active->id);
+    }
+
+    public function test_internal_user_cannot_use_citizen_service_registration_endpoints(): void
+    {
+        $opd = Opd::factory()->create();
+        $type = RetributionType::factory()->create(['opd_id' => $opd->id]);
+        $classification = RetributionClassification::factory()->create([
+            'opd_id' => $opd->id,
+            'retribution_type_id' => $type->id,
+        ]);
+
+        Sanctum::actingAs(User::factory()->create([
+            'role' => User::ROLE_SUPER_ADMIN,
+        ]));
+
+        $this->getJson('/api/citizen/services')->assertForbidden();
+        $this->getJson('/api/citizen/services/pending-periods')->assertForbidden();
+        $this->getJson("/api/citizen/services/{$classification->id}")->assertForbidden();
+        $this->getJson("/api/citizen/services/{$classification->id}/bills")->assertForbidden();
+        $this->postJson("/api/citizen/services/{$classification->id}/register", [
+            'name' => 'Internal attempt',
+            'address' => 'Should be rejected before validation',
+        ])->assertForbidden();
     }
 }

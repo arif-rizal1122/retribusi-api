@@ -1,5 +1,10 @@
 # API Backlog
 
+## Otorisasi endpoint citizen service — 20 September 2026
+
+- [x] **AM-BASE-04F**: `CitizenServiceController` mewajibkan sesi `Taxpayer` pada katalog, detail, pendaftaran objek, daftar bill, periode pending, dan tax objects. Guest tetap 401 dari auth; akun internal menerima 403 sebelum query atau mutasi citizen dijalankan.
+- Validasi: guard **2 test/11 assertion**; regresi service/citizen billing/registration **16 test/153 assertion**; PHP lint, Pint, `git diff --check`, dan audit consumer mobile/admin/petugas lulus. Payload warga, role, migration, dan dashboard tidak berubah. Kontrak [AM_BASE_04F_CITIZEN_SERVICE_AUTHORIZATION.md](docs/05_modul_aplikasi/AM_BASE_04F_CITIZEN_SERVICE_AUTHORIZATION.md). Parent AM-BASE-04 tetap terbuka untuk ownership layanan, hasil, dokumen, dan setoran lainnya.
+
 ## Status status tagihan terbuka legacy — 20 September 2026
 
 - [x] **AM-BASE-03N**: query payment request warga, klaim transfer manual, dan pencarian bill idempotent pada `BillCreationService` sekarang mencocokkan status `pending`/`overdue`/`unpaid` serta alias terminal secara case-insensitive. Data `UNPAID` legacy tetap dapat dibayar tanpa mengubah storage, dan bill periode yang sama tidak diterbitkan ulang.

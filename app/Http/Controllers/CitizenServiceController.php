@@ -2,18 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\RetributionType;
-use App\Models\Taxpayer;
-use App\Models\TaxObject;
-use App\Models\TaxpayerPbbObject;
-use App\Models\PbbNopApplication;
 use App\Models\Bill;
+use App\Models\PbbNopApplication;
+use App\Models\RetributionClassification;
+use App\Models\TaxObject;
+use App\Models\Taxpayer;
+use App\Models\TaxpayerPbbObject;
 use App\Models\Verification;
+use App\Services\BillingService;
+use App\Services\CloudinaryService;
+use App\Services\PbbBapendaService;
 use App\Services\RequirementFileService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
-use Carbon\Carbon;
 
 class CitizenServiceController extends Controller
 {
@@ -22,14 +26,10 @@ class CitizenServiceController extends Controller
      */
     public function index(Request $request)
     {
-        $taxpayer = $request->user();
-        
-        if (!$taxpayer) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-        
-        $classifications = \App\Models\RetributionClassification::active()
-            ->whereHas('retributionType', function($q) {
+        $taxpayer = $this->authenticatedTaxpayer($request);
+
+        $classifications = RetributionClassification::active()
+            ->whereHas('retributionType', function ($q) {
                 $q->where('is_active', true);
             })
             ->with(['retributionType.opd'])
@@ -38,7 +38,7 @@ class CitizenServiceController extends Controller
                 $objects = TaxObject::where('taxpayer_id', $taxpayer->id)
                     ->where('retribution_classification_id', $cls->id)
                     ->get();
-                
+
                 return [
                     'id' => $cls->id,
                     'name' => $cls->name,
@@ -63,29 +63,25 @@ class CitizenServiceController extends Controller
      */
     public function show(Request $request, $id)
     {
-        $taxpayer = $request->user();
-        
-        if (!$taxpayer) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-        
-        $classification = \App\Models\RetributionClassification::with(['retributionType.opd'])
+        $taxpayer = $this->authenticatedTaxpayer($request);
+
+        $classification = RetributionClassification::with(['retributionType.opd'])
             ->findOrFail($id);
 
         // Layanan dinonaktifkan sementara (contoh: 201 Kesehatan menunggu alur BLUD)
-        if (array_key_exists('is_active', $classification->getAttributes()) && !$classification->is_active) {
+        if (array_key_exists('is_active', $classification->getAttributes()) && ! $classification->is_active) {
             return response()->json(['message' => 'Layanan ini untuk sementara tidak tersedia.'], 404);
         }
 
         $service = $classification->retributionType;
-        
+
         $objects = TaxObject::where('taxpayer_id', $taxpayer->id)
             ->where('retribution_classification_id', $classification->id)
             ->with('zone')
             ->get();
-        
+
         $activeObjectIds = $objects->where('status', 'active')->pluck('id');
-        
+
         $bills = Bill::whereIn('tax_object_id', $activeObjectIds)
             ->with(['opd:id,name', 'taxObject'])
             ->latest()
@@ -107,7 +103,7 @@ class CitizenServiceController extends Controller
                 'calculation_formula' => $classification->calculation_formula,
                 'objects' => $objects,
                 'bills' => $bills,
-            ]
+            ],
         ]);
     }
 
@@ -116,22 +112,18 @@ class CitizenServiceController extends Controller
      */
     public function register(Request $request, $id)
     {
-        $taxpayer = $request->user();
-
-        if (!$taxpayer) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-        $classification = \App\Models\RetributionClassification::with('retributionType')->findOrFail($id);
+        $taxpayer = $this->authenticatedTaxpayer($request);
+        $classification = RetributionClassification::with('retributionType')->findOrFail($id);
 
         // Layanan dinonaktifkan sementara — tolak pendaftaran objek baru
-        if (array_key_exists('is_active', $classification->getAttributes()) && !$classification->is_active) {
+        if (array_key_exists('is_active', $classification->getAttributes()) && ! $classification->is_active) {
             return response()->json(['message' => 'Layanan ini untuk sementara tidak tersedia.'], 404);
         }
 
         $service = $classification->retributionType;
 
         // GATE NIB (PTSP-13): layanan usaha wajib NIB
-        \App\Http\Controllers\NibPublicController::enforceNibGate($request, $classification, $taxpayer);
+        NibPublicController::enforceNibGate($request, $classification, $taxpayer);
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -142,7 +134,7 @@ class CitizenServiceController extends Controller
             'metadata' => 'nullable',
         ]);
 
-        $cloudinary = app(\App\Services\CloudinaryService::class);
+        $cloudinary = app(CloudinaryService::class);
         $metadata = $request->input('metadata', []);
         if (is_string($metadata)) {
             $metadata = json_decode($metadata, true) ?: [];
@@ -153,27 +145,29 @@ class CitizenServiceController extends Controller
         foreach ($classification->form_schema ?? [] as $schemaField) {
             $fkey = $schemaField['key'] ?? null;
             $ftype = $schemaField['type'] ?? null;
-            if (!$fkey || !in_array($ftype, ['upload', 'file'], true)) continue;
+            if (! $fkey || ! in_array($ftype, ['upload', 'file'], true)) {
+                continue;
+            }
             if ($request->hasFile($fkey)) {
                 $request->validate([
                     $fkey => 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
                 ]);
                 $metadata[$fkey] = $cloudinary->upload(
                     $request->file($fkey),
-                    'citizen/documents/' . $service->id
+                    'citizen/documents/'.$service->id
                 );
             }
         }
 
         $metadata = $this->applySchemaDefaults($classification->form_schema ?? [], $metadata);
         $missingMetadata = $this->missingRequiredMetadata($classification->form_schema ?? [], $metadata);
-        if (!empty($missingMetadata)) {
+        if (! empty($missingMetadata)) {
             throw ValidationException::withMessages($missingMetadata);
         }
 
         $isPbb = (stripos($classification->name ?? '', 'pbb') !== false) || ($classification->id == 186);
         $nop = $metadata['nop_pbb'] ?? null;
-        if ($isPbb && !empty($nop)) {
+        if ($isPbb && ! empty($nop)) {
             if (TaxObject::where('metadata->nop_pbb', $nop)->exists()) {
                 throw ValidationException::withMessages([
                     'metadata' => ['NOP PBB sudah terdaftar. Silakan gunakan NOP lain atau hubungi Bapenda.'],
@@ -188,18 +182,18 @@ class CitizenServiceController extends Controller
 
             // Zero-Trust Server Verification (Task 1951): Inquiry langsung dari server
             try {
-                $inquiry = app(\App\Services\PbbBapendaService::class)->inquiryWithFallback($nop, date('Y'));
+                $inquiry = app(PbbBapendaService::class)->inquiryWithFallback($nop, date('Y'));
                 if (($inquiry['status'] ?? 0) === 200) {
-                    if (!empty($inquiry['nama_wp'])) {
+                    if (! empty($inquiry['nama_wp'])) {
                         $metadata['nama_wp'] = $inquiry['nama_wp'];
                     }
-                    if (!empty($inquiry['alamat_wp'])) {
+                    if (! empty($inquiry['alamat_wp'])) {
                         $metadata['alamat_wp'] = $inquiry['alamat_wp'];
                     }
-                    if (!empty($inquiry['kelurahan'])) {
+                    if (! empty($inquiry['kelurahan'])) {
                         $metadata['kelurahan'] = $inquiry['kelurahan'];
                     }
-                    if (!empty($inquiry['kota'])) {
+                    if (! empty($inquiry['kota'])) {
                         $metadata['kota'] = $inquiry['kota'];
                     }
                     $metadata['pbb_pokok'] = (float) ($inquiry['pbb_pokok'] ?? $metadata['pbb_pokok'] ?? 0);
@@ -210,14 +204,14 @@ class CitizenServiceController extends Controller
                     $metadata['h2h_verified_at'] = now()->toISOString();
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Zero-trust PBB inquiry lookup skipped/failed: ' . $e->getMessage());
+                Log::warning('Zero-trust PBB inquiry lookup skipped/failed: '.$e->getMessage());
             }
         }
 
         // Handle dynamic document uploads based on requirements from this classification
         $requirements = $classification->requirements ?? [];
         $missingFiles = $this->missingRequiredFiles($request, $requirements);
-        if (!empty($missingFiles)) {
+        if (! empty($missingFiles)) {
             throw ValidationException::withMessages($missingFiles);
         }
 
@@ -229,8 +223,8 @@ class CitizenServiceController extends Controller
             if ($key && $request->hasFile($key)) {
                 $request->validate([$key => $requirementFiles->rulesFor($req, $index)]);
                 $metadata[$key] = $cloudinary->upload(
-                    $request->file($key), 
-                    'citizen/documents/' . $service->id
+                    $request->file($key),
+                    'citizen/documents/'.$service->id
                 );
                 $processedKeys[] = $key;
             }
@@ -239,16 +233,16 @@ class CitizenServiceController extends Controller
         // Safety fallback: Handle common keys from mobile app if they were sent but not in requirements
         $fallbacks = ['foto_lokasi_open_kamera', 'formulir_data_dukung'];
         foreach ($fallbacks as $key) {
-            if (!in_array($key, $processedKeys) && $request->hasFile($key)) {
+            if (! in_array($key, $processedKeys) && $request->hasFile($key)) {
                 $request->validate([
                     $key => $requirementFiles->rulesFor([
                         'key' => $key,
                         'type' => $key === 'foto_lokasi_open_kamera' ? 'image' : 'document',
-                    ])
+                    ]),
                 ]);
                 $metadata[$key] = $cloudinary->upload(
-                    $request->file($key), 
-                    'citizen/documents/' . $service->id
+                    $request->file($key),
+                    'citizen/documents/'.$service->id
                 );
             }
         }
@@ -283,17 +277,17 @@ class CitizenServiceController extends Controller
                 'opd_id' => $service->opd_id,
                 'taxpayer_id' => $taxpayer->id,
                 'tax_object_id' => $taxObject->id,
-                'document_number' => 'REG-' . strtoupper(uniqid()),
+                'document_number' => 'REG-'.strtoupper(uniqid()),
                 'taxpayer_name' => $taxpayer->name,
                 'type' => 'Pendaftaran Objek',
                 'amount' => 0,
                 'status' => 'pending',
                 'proof_file_url' => $firstFileUrl,
                 'submitted_at' => Carbon::now(),
-                'notes' => 'Pendaftaran unit baru (' . $classification->name . '): ' . $taxObject->name,
+                'notes' => 'Pendaftaran unit baru ('.$classification->name.'): '.$taxObject->name,
             ]);
 
-            if (!$taxpayer->opd_id) {
+            if (! $taxpayer->opd_id) {
                 $taxpayer->update(['opd_id' => $service->opd_id]);
             }
 
@@ -301,7 +295,7 @@ class CitizenServiceController extends Controller
             // Satu sumber objek PBB warga: daftar via layanan = otomatis bisa cek & bayar.
             if ($isPbb) {
                 $nopLink = $metadata['nop_pbb'] ?? null;
-                if (!empty($nopLink)) {
+                if (! empty($nopLink)) {
                     TaxpayerPbbObject::firstOrCreate(
                         ['taxpayer_id' => $taxpayer->id, 'nop' => $nopLink],
                         [
@@ -310,7 +304,7 @@ class CitizenServiceController extends Controller
                             'kelurahan' => $metadata['kelurahan'] ?? $request->sub_district ?? null,
                             'kota' => $metadata['kota'] ?? $request->district ?? null,
                             'is_verified' => true,
-                            'notes' => 'Otomatis dari pendaftaran layanan PBB (REG-' . strtoupper(uniqid()) . ')',
+                            'notes' => 'Otomatis dari pendaftaran layanan PBB (REG-'.strtoupper(uniqid()).')',
                         ]
                     );
                 }
@@ -324,7 +318,7 @@ class CitizenServiceController extends Controller
             'data' => [
                 'object' => $taxObject,
                 'verification_id' => $verification->id,
-            ]
+            ],
         ], 201);
     }
 
@@ -332,7 +326,7 @@ class CitizenServiceController extends Controller
     {
         foreach ($schema as $field) {
             $key = $field['key'] ?? null;
-            if (!$key || array_key_exists($key, $metadata)) {
+            if (! $key || array_key_exists($key, $metadata)) {
                 continue;
             }
 
@@ -349,12 +343,12 @@ class CitizenServiceController extends Controller
         $errors = [];
 
         foreach ($schema as $field) {
-            if (!($field['required'] ?? false)) {
+            if (! ($field['required'] ?? false)) {
                 continue;
             }
 
             $key = $field['key'] ?? null;
-            if (!$key) {
+            if (! $key) {
                 continue;
             }
 
@@ -375,12 +369,12 @@ class CitizenServiceController extends Controller
         $errors = [];
 
         foreach ($requirements as $requirement) {
-            if (!($requirement['required'] ?? false)) {
+            if (! ($requirement['required'] ?? false)) {
                 continue;
             }
 
             $key = $requirement['key'] ?? null;
-            if (!$key || $request->hasFile($key)) {
+            if (! $key || $request->hasFile($key)) {
                 continue;
             }
 
@@ -404,11 +398,7 @@ class CitizenServiceController extends Controller
      */
     public function taxObjects(Request $request)
     {
-        $taxpayer = $request->user();
-
-        if (!$taxpayer instanceof Taxpayer) {
-            return response()->json(['message' => 'Endpoint ini hanya untuk wajib pajak.'], 403);
-        }
+        $taxpayer = $this->authenticatedTaxpayer($request);
 
         $objects = TaxObject::with(['taxpayer', 'retributionType', 'opd', 'classification'])
             ->where('taxpayer_id', $taxpayer->id)
@@ -423,13 +413,9 @@ class CitizenServiceController extends Controller
      */
     public function bills(Request $request, $id)
     {
-        $taxpayer = $request->user();
+        $taxpayer = $this->authenticatedTaxpayer($request);
+        $classification = RetributionClassification::findOrFail($id);
 
-        if (!$taxpayer) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-        $classification = \App\Models\RetributionClassification::findOrFail($id);
-        
         $objectIds = TaxObject::where('taxpayer_id', $taxpayer->id)
             ->where('retribution_classification_id', $classification->id)
             ->where('status', 'active')
@@ -448,25 +434,21 @@ class CitizenServiceController extends Controller
      */
     public function getPendingPeriods(Request $request)
     {
-        $user = $request->user();
-        
-        if (!$user) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-        
+        $user = $this->authenticatedTaxpayer($request);
+
         $objects = TaxObject::where('taxpayer_id', $user->id)
             ->where('status', 'active')
             ->with(['retributionType', 'classification', 'opd'])
             ->get();
 
-        $billingService = app(\App\Services\BillingService::class);
+        $billingService = app(BillingService::class);
         $allPending = collect();
 
         foreach ($objects as $obj) {
             $periods = $billingService->getPendingPeriods($obj);
             foreach ($periods as $period) {
                 $allPending->push(array_merge($period, [
-                    'id' => 'VIRTUAL-' . $obj->id . '-' . $period['period'],
+                    'id' => 'VIRTUAL-'.$obj->id.'-'.$period['period'],
                     'tax_object_id' => $obj->id,
                     'tax_object' => $obj,
                     'retribution_type' => $obj->retributionType,
@@ -477,5 +459,14 @@ class CitizenServiceController extends Controller
         }
 
         return response()->json(['data' => $allPending]);
+    }
+
+    private function authenticatedTaxpayer(Request $request): Taxpayer
+    {
+        $user = $request->user();
+
+        abort_unless($user instanceof Taxpayer, 403, 'Endpoint ini hanya untuk wajib pajak.');
+
+        return $user;
     }
 }
