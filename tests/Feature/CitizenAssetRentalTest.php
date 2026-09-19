@@ -101,6 +101,70 @@ class CitizenAssetRentalTest extends TestCase
             ->assertJsonPath('data.tanggal_selesai', $payload['tanggal_selesai']);
     }
 
+    public function test_rental_amount_uses_asset_master_and_does_not_trust_client_values(): void
+    {
+        $payload = $this->booking([
+            'tanggal_selesai' => now()->addDays(8)->toDateString(),
+            'satuan_sewa' => 'per jam',
+            'tarif_per_satuan' => 1,
+            'dp' => 999999,
+            'biaya_tronton' => 1,
+        ]);
+
+        $response = $this->actingAs($this->citizen)
+            ->postJson('/api/citizen/asset/rentals', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.tarif_per_satuan', '100000.00')
+            ->assertJsonPath('data.satuan_sewa', 'per hari')
+            ->assertJsonPath('data.total_biaya', '200000.00')
+            ->assertJsonPath('data.dp', '0.00')
+            ->assertJsonPath('data.sisa_pembayaran', '200000.00')
+            ->assertJsonPath('data.metadata.quote_source', 'asset_items.tarif_default')
+            ->assertJsonPath('data.metadata.requested_dp', 999999);
+
+        $rental = AssetRental::findOrFail($response->json('data.id'));
+        $this->assertEquals(100000.0, (float) $rental->getRawOriginal('tarif_per_satuan'));
+        $this->assertEquals(200000.0, (float) $rental->getRawOriginal('total_biaya'));
+        $this->assertEquals(0.0, (float) $rental->getRawOriginal('dp'));
+    }
+
+    public function test_tronton_fee_comes_from_server_band_not_client_amount(): void
+    {
+        $this->asset->update(['wajib_tronton' => true]);
+
+        $response = $this->actingAs($this->citizen)
+            ->postJson('/api/citizen/asset/rentals', $this->booking([
+                'tanggal_selesai' => now()->addDays(7)->toDateString(),
+                'include_tronton' => false,
+                'jarak_tronton_km' => 15,
+                'biaya_tronton' => 1,
+            ]))
+            ->assertCreated()
+            ->assertJsonPath('data.include_tronton', true)
+            ->assertJsonPath('data.biaya_tronton', '450000.00')
+            ->assertJsonPath('data.total_biaya', '550000.00');
+
+        $this->assertDatabaseHas('asset_rentals', [
+            'id' => $response->json('data.id'),
+            'biaya_tronton' => 450000,
+        ]);
+    }
+
+    public function test_rental_is_rejected_when_asset_master_rate_is_unavailable(): void
+    {
+        $this->asset->update(['tarif_default' => 0]);
+
+        $this->actingAs($this->citizen)
+            ->postJson('/api/citizen/asset/rentals', $this->booking([
+                'tarif_per_satuan' => 1,
+            ]))
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error_code', 'ASSET_RATE_UNAVAILABLE');
+
+        $this->assertDatabaseCount('asset_rentals', 0);
+    }
+
     public function test_guest_cannot_read_or_submit_rentals(): void
     {
         $rental = $this->rental();

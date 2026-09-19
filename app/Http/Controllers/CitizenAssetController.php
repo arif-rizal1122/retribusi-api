@@ -21,6 +21,7 @@ class CitizenAssetController extends Controller
     {
         $this->availabilityService = $availabilityService;
     }
+
     /**
      * Daftar kategori aset (1 layanan JU-ASET, field pertama = dropdown kategori).
      */
@@ -156,7 +157,7 @@ class CitizenAssetController extends Controller
         ]);
 
         $mulai = Carbon::parse($validated['tanggal_mulai'])->startOfDay();
-        $selesai = !empty($validated['tanggal_selesai'])
+        $selesai = ! empty($validated['tanggal_selesai'])
             ? Carbon::parse($validated['tanggal_selesai'])->startOfDay()
             : $mulai->copy();
 
@@ -165,7 +166,7 @@ class CitizenAssetController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if (!$asset->is_active || $asset->kondisi === 'Tidak Operasional' || $asset->status_operasional !== 'Operasional') {
+            if (! $asset->is_active || $asset->kondisi === 'Tidak Operasional' || $asset->status_operasional !== 'Operasional') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Alat berat sedang dalam perbaikan / tidak dapat disewa saat ini.',
@@ -204,10 +205,19 @@ class CitizenAssetController extends Controller
             }
 
             $days = $mulai->diffInDays($selesai) + 1;
-            $tarifPerSatuan = isset($validated['tarif_per_satuan']) && $validated['tarif_per_satuan'] !== null
-                ? (float) $validated['tarif_per_satuan']
-                : (float) $asset->tarif_default;
-            $satuanSewa = $validated['satuan_sewa'] ?? ($asset->satuan_tarif ?? 'per hari');
+            // Tarif and unit are owned by the published asset master. Values sent
+            // by the mobile client are display hints only and must never set the
+            // amount persisted for a rental.
+            $tarifPerSatuan = (float) $asset->tarif_default;
+            $satuanSewa = (string) ($asset->satuan_tarif ?: 'per hari');
+
+            if ($tarifPerSatuan <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'error_code' => 'ASSET_RATE_UNAVAILABLE',
+                    'message' => 'Tarif resmi aset belum tersedia. Pengajuan belum dapat diteruskan.',
+                ], 422);
+            }
 
             // Logika Tronton: Wajib untuk alat beroda rantai besi (Excavator/Bulldozer/Roller)
             $isWajibTronton = (bool) ($asset->wajib_tronton ?? false);
@@ -216,24 +226,9 @@ class CitizenAssetController extends Controller
             $biayaTronton = 0;
 
             if ($includeTronton) {
-                if (isset($validated['biaya_tronton']) && (float) $validated['biaya_tronton'] > 0) {
-                    $biayaTronton = (float) $validated['biaya_tronton'];
-                } else {
-                    // Zonasi Tarif Perda 1/2024
-                    if ($jarakKm <= 20) {
-                        $biayaTronton = 450000;
-                    } elseif ($jarakKm <= 40) {
-                        $biayaTronton = 900000;
-                    } elseif ($jarakKm <= 60) {
-                        $biayaTronton = 1350000;
-                    } elseif ($jarakKm <= 80) {
-                        $biayaTronton = 1800000;
-                    } elseif ($jarakKm <= 100) {
-                        $biayaTronton = 2700000;
-                    } else {
-                        $biayaTronton = 2250000;
-                    }
-                }
+                // The client may request a distance for a quote, but cannot set
+                // the fee. Final route/zone review remains an internal decision.
+                $biayaTronton = $this->calculateTrontonFee($jarakKm);
             }
 
             $isSedotKakus = str_starts_with($asset->code ?? '', 'SK-')
@@ -241,7 +236,7 @@ class CitizenAssetController extends Controller
                 || str_contains(strtolower($asset->name ?? ''), 'kakus')
                 || str_contains(strtolower($satuanSewa), 'rit');
 
-            if ($isSedotKakus && !empty($validated['jumlah_rit'])) {
+            if ($isSedotKakus && ! empty($validated['jumlah_rit'])) {
                 $rit = (int) $validated['jumlah_rit'];
                 $totalBiaya = $rit * $tarifPerSatuan;
                 $days = 1;
@@ -250,19 +245,25 @@ class CitizenAssetController extends Controller
                 $totalBiaya = ($days * $tarifPerSatuan) + $biayaTronton;
             }
 
-            $dp = (float) ($validated['dp'] ?? 0);
-            $sisaPembayaran = max(0, $totalBiaya - $dp);
+            // A submitted DP is not a settlement proof. Keep it as an audit
+            // hint only; confirmed payment must update the rental through the
+            // payment flow owned by the API.
+            $requestedDp = (float) ($validated['dp'] ?? 0);
+            $dp = 0.0;
+            $sisaPembayaran = $totalBiaya;
 
             $asetType = $this->jasaUsahaType();
             $asetClassification = $this->jasaUsahaClassification();
 
             $prefix = $isSedotKakus ? 'KKS-' : 'AST-';
-            $rentalCode = $prefix . now()->format('Ym') . '-' . strtoupper(Str::random(5));
+            $rentalCode = $prefix.now()->format('Ym').'-'.strtoupper(Str::random(5));
 
             $metadata = [
                 'source' => 'citizen_submission',
                 'item_code' => $asset->code,
                 'is_wajib_tronton' => $isWajibTronton,
+                'quote_source' => 'asset_items.tarif_default',
+                'requested_dp' => $requestedDp,
             ];
 
             // The old koordinat column was removed; retain the citizen point in JSON.
@@ -289,7 +290,7 @@ class CitizenAssetController extends Controller
                 'retribution_type_id' => $asetType?->id ?? 106,
                 'retribution_classification_id' => $asetClassification?->id ?? 211,
                 'tanggal_mulai' => $mulai->toDateString(),
-                'tanggal_selesai' => !empty($validated['tanggal_selesai']) ? $selesai->toDateString() : null,
+                'tanggal_selesai' => ! empty($validated['tanggal_selesai']) ? $selesai->toDateString() : null,
                 'lama_sewa' => $days,
                 'satuan_sewa' => $satuanSewa,
                 'buffer_hari' => $bufferHari,
@@ -304,8 +305,8 @@ class CitizenAssetController extends Controller
                 'status' => 'Diajukan',
                 'lokasi_penggunaan' => $validated['lokasi_penggunaan'],
                 'jenis_pekerjaan' => $validated['jenis_pekerjaan'] ?? ($isSedotKakus ? 'Penyedotan Kakus / Tinja' : null),
-                'luas_volume' => $validated['luas_volume'] ?? ($isSedotKakus ? ($validated['jumlah_rit'] ?? 1) . ' Rit' : null),
-                'nama_proyek' => $validated['nama_proyek'] ?? ($isSedotKakus ? 'Layanan Sedot Kakus ' . ($validated['jenis_bangunan'] ?? '') : null),
+                'luas_volume' => $validated['luas_volume'] ?? ($isSedotKakus ? ($validated['jumlah_rit'] ?? 1).' Rit' : null),
+                'nama_proyek' => $validated['nama_proyek'] ?? ($isSedotKakus ? 'Layanan Sedot Kakus '.($validated['jenis_bangunan'] ?? '') : null),
                 'nomor_spk' => $validated['nomor_spk'] ?? null,
                 'penyelia' => $validated['penyelia'] ?? null,
                 'hp_penyelia' => $validated['hp_penyelia'] ?? null,
@@ -381,6 +382,20 @@ class CitizenAssetController extends Controller
         return $payload;
     }
 
+    private function calculateTrontonFee(float $distanceKm): float
+    {
+        // Existing server tariff bands; official route/zone confirmation remains
+        // an operational dependency before this becomes a final bill amount.
+        return match (true) {
+            $distanceKm <= 20 => 450000.0,
+            $distanceKm <= 40 => 900000.0,
+            $distanceKm <= 60 => 1350000.0,
+            $distanceKm <= 80 => 1800000.0,
+            $distanceKm <= 100 => 2700000.0,
+            default => 2250000.0,
+        };
+    }
+
     /**
      * Type JU-ASET yang SUDAH ADA di prod: "Retribusi Jasa Usaha" (id 106, OPD BAPENDA).
      * Fallback: cari type lain bernama aset/jasa usaha.
@@ -393,6 +408,7 @@ class CitizenAssetController extends Controller
         if ($type) {
             return $type;
         }
+
         return DB::table('retribution_types')
             ->where('name', 'like', '%Aset%')
             ->orWhere('name', 'like', '%Jasa Usaha%')

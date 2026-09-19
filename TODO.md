@@ -1,5 +1,11 @@
 # API Backlog
 
+## Otoritas quote sewa aset PUPR - 19 September 2026
+
+- [x] **AM-BASE-05A / AM-PUPR-03A** Pengajuan citizen tidak lagi mempercayai tarif, satuan, biaya tronton, atau DP dari payload mobile. Tarif/satuan diambil dari master `asset_items`, biaya tronton dihitung dari band server yang sudah ada, alat `wajib_tronton` tetap memaksa mobilisasi, dan DP kiriman disimpan sebagai `metadata.requested_dp` tanpa dianggap settlement.
+- Tarif master nol ditolak dengan `ASSET_RATE_UNAVAILABLE`; bentuk response rental tetap kompatibel dengan consumer mobile. Tidak ada migration atau perubahan admin/petugas. [Kontrak](docs/05_modul_aplikasi/AM_BASE_05A_SERVER_ASSET_QUOTE.md). Pencocokan band tronton terhadap Perda/SOP dan update DP setelah payment confirmed tetap terbuka pada D02/D04/PAY.
+- Validasi: `CitizenAssetRentalTest` lulus **38 test/206 assertion** pada SQLite `:memory:`; `PuprInspectionAndDocumentsTest` lulus **4 test/14 assertion**. Suite `AssetRentalWorkflowTest` dan `AssetRentalBookingConflictTest` masih gagal sebelum request karena fixture membuat slug `alat-berat` yang sudah di-seed migration (`UNIQUE asset_categories.slug`); bukan regresi pada controller quote. PHP lint, Pint test, dan diff check lulus.
+
 ## Otorisasi mutasi persampahan DLH — 19 September 2026
 
 - [x] **AM-BASE-04C** Endpoint transfer penghuni dan generate billing massal kini hanya untuk `User` internal super admin atau operator `opd_id=4`; Taxpayer tetap dapat membaca inquiry/kalkulator tetapi tidak dapat mengubah objek atau menerbitkan tagihan. Transfer juga dibatasi ke objek scope DLH.
