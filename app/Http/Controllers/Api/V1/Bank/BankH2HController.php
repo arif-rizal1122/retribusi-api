@@ -119,10 +119,15 @@ class BankH2HController extends Controller
 
         try {
             $result = $this->paymentManager->driver($request->driver)->reconcile($request->transactions);
+            $this->logActivity($request, $result);
+
             return response()->json($result);
         } catch (\Exception $e) {
             Log::error('H2H Reconciliation Error:', ['msg' => $e->getMessage()]);
-            return response()->json(['status' => 'error', 'message' => 'Gagal melakukan rekonsiliasi'], 500);
+            $result = ['status' => 'error', 'message' => 'Gagal melakukan rekonsiliasi', 'code' => 500];
+            $this->logActivity($request, $result);
+
+            return response()->json($result, 500);
         }
     }
 }

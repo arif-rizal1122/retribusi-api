@@ -3,10 +3,14 @@
 namespace Tests\Feature\Api\V1\Bank;
 
 use App\Models\Bill;
+use App\Models\PaymentGatewayLog;
 use App\Models\Taxpayer;
 use App\Models\RetributionType;
 use App\Models\TaxObject;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class BankH2HTest extends TestCase
@@ -112,5 +116,33 @@ class BankH2HTest extends TestCase
         ]);
 
         $response->assertStatus(401);
+    }
+
+    public function test_reconciliation_report_is_audited_without_settling_any_bill(): void
+    {
+        Cache::forget('payment_channel_sultra');
+        Sanctum::actingAs(User::factory()->create(['role' => 'super_admin']), ['*']);
+
+        $response = $this->postJson('/api/bank-h2h/reconcile', [
+            'driver' => 'sultra',
+            'transactions' => [
+                ['ntb' => 'AUDIT-MISSING-001', 'amount' => 12500],
+            ],
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.matched', 0)
+            ->assertJsonPath('data.mismatch', 1)
+            ->assertJsonPath('data.details.0.status', 'Tidak Ditemukan');
+
+        $log = PaymentGatewayLog::query()->latest('id')->firstOrFail();
+
+        $this->assertSame('api/bank-h2h/reconcile', $log->endpoint);
+        $this->assertSame('POST', $log->method);
+        $this->assertSame('sultra', $log->payload_in['driver'] ?? null);
+        $this->assertSame('AUDIT-MISSING-001', $log->payload_in['transactions'][0]['ntb'] ?? null);
+        $this->assertSame(1, $log->payload_out['data']['mismatch'] ?? null);
+        $this->assertSame('Tidak Ditemukan', $log->payload_out['data']['details'][0]['status'] ?? null);
     }
 }

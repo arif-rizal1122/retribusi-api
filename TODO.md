@@ -1,5 +1,11 @@
 # API Backlog
 
+## Audit trail rekonsiliasi gateway — 19 September 2026
+
+- [x] AM-BASE-03K: endpoint internal POST /api/bank-h2h/reconcile sekarang mencatat report sukses maupun error ke payment_gateway_logs melalui PaymentAuditService. Response matched/mismatch/details tetap kompatibel dan proses tetap report-only.
+- Validasi terarah BankH2HTest + GenericH2HStillWorksTest lulus 8 test/57 assertion; suite lintas bank/core/DLH/citizen billing/SNAP lulus 108 test/523 assertion. PHP lint dan git diff --check lulus. Audit consumer menemukan admin H2HLogs sebagai pemakai endpoint; mobile/petugas tidak memiliki consumer.
+- Kontrak [AM_BASE_03K_RECONCILIATION_AUDIT_TRAIL.md](docs/05_modul_aplikasi/AM_BASE_03K_RECONCILIATION_AUDIT_TRAIL.md). Parent AM-BASE-03 tetap terbuka untuk reverse inquiry provider, antrean retry/review, dan UAT gateway eksternal.
+
 ## Guard status pada rekonsiliasi gateway — 19 September 2026
 
 - [x] **AM-BASE-03J**: rekonsiliasi Bank Sultra H2H dan QRIS hanya menghitung `matched` bila referensi, nominal, payment `success`, dan bill terminal konsisten. Alias input `ntb`/`rrn`/`reference_number`/`transaction_id` dinormalisasi; response lama dipertahankan dan detail QRIS menambah `ntb` secara additive.
