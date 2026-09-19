@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\V1\Dlh;
 
 use App\Http\Controllers\Controller;
 use App\Models\Bill;
-use Carbon\Carbon;
+use App\Support\CitizenBillStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -19,16 +19,23 @@ class DlhReportController extends Controller
         $month = $request->query('month');
 
         // 1. Realisasi Persampahan Bulanan (Door-to-Door / Bills)
-        $trashBillsQuery = Bill::where('opd_id', 4)->whereYear('created_at', $year);
+        $labBillIds = DB::table('dlh_lab_orders')
+            ->whereNotNull('bill_id')
+            ->select('bill_id');
+        $trashBillsQuery = Bill::where('opd_id', 4)
+            ->whereNotIn('id', $labBillIds)
+            ->whereYear('created_at', $year);
         if ($month) {
             $trashBillsQuery->whereMonth('created_at', $month);
         }
         $trashBills = $trashBillsQuery->get();
 
         $totalTrashBilled = $trashBills->sum('amount');
-        $totalTrashPaid = $trashBills->where('status', 'PAID')->sum('amount');
-        $totalTrashPending = $trashBills->where('status', 'UNPAID')->sum('amount');
-        $totalTrashPenalties = $trashBills->where('status', 'PAID')->sum('penalty_amount');
+        $paidTrashBills = $trashBills->filter(fn (Bill $bill) => $this->isPaidBill($bill));
+        $pendingTrashBills = $trashBills->filter(fn (Bill $bill) => $this->isPendingBill($bill));
+        $totalTrashPaid = $paidTrashBills->sum('amount');
+        $totalTrashPending = $pendingTrashBills->sum('amount');
+        $totalTrashPenalties = $paidTrashBills->sum('penalty_amount');
 
         // 2. Realisasi Karcis Pasar Sampah Harian
         $ticketsQuery = DB::table('dlh_market_trash_tickets')->whereYear('issued_at', $year);
@@ -40,13 +47,18 @@ class DlhReportController extends Controller
         $totalTicketsCount = $tickets->count();
 
         // 3. Realisasi Retribusi Uji Laboratorium Lingkungan
-        $labOrdersQuery = DB::table('dlh_lab_orders')->whereYear('created_at', $year);
+        $labOrdersQuery = DB::table('dlh_lab_orders')->whereYear('dlh_lab_orders.created_at', $year);
         if ($month) {
-            $labOrdersQuery->whereMonth('created_at', $month);
+            $labOrdersQuery->whereMonth('dlh_lab_orders.created_at', $month);
         }
-        $labOrders = $labOrdersQuery->get();
+        $labOrders = $labOrdersQuery
+            ->leftJoin('bills as linked_bills', 'linked_bills.id', '=', 'dlh_lab_orders.bill_id')
+            ->select('dlh_lab_orders.*', 'linked_bills.status as linked_bill_status')
+            ->get();
         $totalLabOrders = $labOrders->count();
-        $totalLabRevenue = $labOrders->where('status', 'PAID')->sum('total_amount');
+        $totalLabRevenue = $labOrders
+            ->filter(fn (object $order) => $this->isPaidLabOrder($order))
+            ->sum('total_amount');
 
         $grandTotalRevenue = $totalTrashPaid + $totalTrashPenalties + $totalTicketsAmount + $totalLabRevenue;
 
@@ -80,6 +92,47 @@ class DlhReportController extends Controller
                 ],
             ],
         ]);
+    }
+
+    private function isPaidBill(Bill $bill): bool
+    {
+        return CitizenBillStatus::normalize(
+            $bill->getRawOriginal('status'),
+            false,
+            false,
+            false,
+        ) === 'paid';
+    }
+
+    private function isPendingBill(Bill $bill): bool
+    {
+        return in_array(
+            CitizenBillStatus::normalize(
+                $bill->getRawOriginal('status'),
+                false,
+                false,
+                false,
+            ),
+            ['pending', 'overdue', 'pending_verification'],
+            true,
+        );
+    }
+
+    private function isPaidLabOrder(object $order): bool
+    {
+        // Once the bill is settled, the lab workflow may still be in sampling,
+        // analysis, or completed. Keep the revenue in the paid ledger for all
+        // of those operational stages, including the legacy linked bill path.
+        if (in_array(strtoupper((string) $order->status), ['PAID', 'SAMPLING', 'ANALYZING', 'COMPLETED'], true)) {
+            return true;
+        }
+
+        return CitizenBillStatus::normalize(
+            $order->linked_bill_status,
+            false,
+            false,
+            false,
+        ) === 'paid';
     }
 
     /**

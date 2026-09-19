@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Dlh;
 
 use App\Http\Controllers\Controller;
 use App\Models\TaxObject;
+use App\Support\CitizenBillStatus;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -22,12 +23,12 @@ class DlhSpatialMonitoringController extends Controller
         $query = TaxObject::with(['taxpayer', 'bills' => function ($q) use ($period) {
             $q->where('period', $period);
         }])
-        ->whereNotNull('latitude')
-        ->whereNotNull('longitude')
-        ->where(function ($q) {
-            $q->where('retribution_classification_id', 198) // Retribusi Persampahan
-              ->orWhere('opd_id', 4);
-        });
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->where(function ($q) {
+                $q->where('retribution_classification_id', 198) // Retribusi Persampahan
+                    ->orWhere('opd_id', 4);
+            });
 
         if ($district) {
             $query->where('district', $district);
@@ -48,10 +49,17 @@ class DlhSpatialMonitoringController extends Controller
             $markerColor = '#9CA3AF'; // Abu-abu (Belum ada tagihan / Pending)
 
             if ($latestBill) {
-                if ($latestBill->status === 'PAID') {
+                $billStatus = CitizenBillStatus::normalize(
+                    $latestBill->getRawOriginal('status'),
+                    false,
+                    false,
+                    false,
+                );
+
+                if ($billStatus === 'paid') {
                     $complianceStatus = 'PAID';
                     $markerColor = '#10B981'; // Hijau (Lunas)
-                } elseif ($latestBill->status === 'UNPAID') {
+                } elseif (in_array($billStatus, ['pending', 'overdue', 'pending_verification'], true)) {
                     $dueDate = $latestBill->due_date ? Carbon::parse($latestBill->due_date) : null;
                     if ($dueDate && $now->gt($dueDate)) {
                         $complianceStatus = 'OVERDUE';

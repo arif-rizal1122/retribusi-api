@@ -3,9 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Bill;
-use App\Models\Opd;
-use App\Models\RetributionClassification;
-use App\Models\RetributionType;
 use App\Models\TaxObject;
 use App\Models\Taxpayer;
 use App\Models\User;
@@ -20,6 +17,7 @@ class DlhSpatialComplianceTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private Taxpayer $taxpayer;
 
     protected function setUp(): void
@@ -171,5 +169,49 @@ class DlhSpatialComplianceTest extends TestCase
             ->assertJsonPath('status', 'success')
             ->assertJsonPath('data.breakdown.retribusi_karcis_pasar.total_tickets_issued', 1)
             ->assertJsonPath('data.breakdown.retribusi_karcis_pasar.total_realized', 3000);
+    }
+
+    public function test_compliance_map_normalizes_h2h_lunas_status(): void
+    {
+        Sanctum::actingAs($this->admin, ['*']);
+
+        $period = Carbon::now()->format('Y-m');
+        $object = TaxObject::create([
+            'nop' => '74.72.010.001.001-0199.0',
+            'taxpayer_id' => $this->taxpayer->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'retribution_classification_id' => 198,
+            'name' => 'Persil H2H Lunas',
+            'address' => 'Jl. H2H',
+            'latitude' => -5.47012300,
+            'longitude' => 122.60523400,
+            'building_category' => 'RUMAH_SEDERHANA',
+            'status_hunian' => 'BERPENGHUNI',
+            'is_active' => true,
+        ]);
+
+        Bill::create([
+            'taxpayer_id' => $this->taxpayer->id,
+            'tax_object_id' => $object->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'retribution_classification_id' => 198,
+            'bill_number' => 'DLH-LUNAS-001',
+            'amount' => 8500,
+            'status' => 'lunas',
+            'period' => $period,
+            'due_date' => Carbon::now()->subDays(5)->toDateString(),
+        ]);
+
+        $response = $this->getJson("/api/v1/dlh/spatial/compliance-map?period={$period}");
+
+        $response->assertOk()
+            ->assertJsonPath('properties.summary.paid', 1);
+
+        $feature = collect($response->json('features'))
+            ->firstWhere('properties.tax_object_id', $object->id);
+        $this->assertSame('PAID', $feature['properties']['compliance_status']);
+        $this->assertSame('#10B981', $feature['properties']['marker_color']);
     }
 }

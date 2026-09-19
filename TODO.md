@@ -1,5 +1,11 @@
 # API Backlog
 
+## Settlement dan rekap DLH — 19 September 2026
+
+- [x] **AM-BASE-03D / AM-SMP-08A / AM-LAB-06A** Normalisasi pembacaan status settlement DLH pada rekap eksekutif dan peta kepatuhan. Status H2H `lunas`/variasi `PAID` dihitung sebagai lunas; piutang dan denda memakai status kanonik. Bill lab yang tertaut tidak dihitung ulang sebagai persampahan; order lab yang bill-nya sudah lunas masuk realisasi satu kali.
+- Validasi: `DlhSpatialComplianceTest` + `DlhBankSultraPaymentIntegrationTest` lulus **5 test/42 assertion**; regresi `DlhTrashBillingTest`, `DlhLabServiceTest`, `CitizenDlhLabOwnershipTest`, dan `CitizenBillingReadTest` lulus **27 test/183 assertion**. Pint test, PHP lint, dan diff check lulus. [Kontrak dan batas](docs/05_modul_aplikasi/AM_BASE_03D_DLH_RECONCILIATION.md).
+- Consumer audit: `retribusi-admin/src/pages/DlhDashboard.tsx` memakai field response yang sama tanpa perubahan; mobile dan petugas tidak menemukan consumer endpoint rekap/peta. Tidak ada perubahan migration, credential, admin, petugas, atau UI. Parent AM-BASE-03/AM-SMP-08/AM-SMP-09/AM-LAB-06 tetap terbuka untuk gateway lain, scheduler, tarif resmi, ekspor dan data eksternal.
+
 ## Snapshot quote sewa aset PUPR - 19 September 2026
 
 - [x] **AM-BASE-05B / AM-PUPR-03B** Setiap pengajuan rental citizen yang berhasil menyimpan `metadata.quote` dengan versi adapter, sumber/master aset, waktu perubahan master, tarif/satuan, kuantitas/hari, tronton, total, requested DP, confirmed DP, dan sisa pembayaran. Snapshot memakai angka server yang sama dengan kolom rental dan tidak membutuhkan migration.

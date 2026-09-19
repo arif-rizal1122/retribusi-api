@@ -6,7 +6,6 @@ use App\Models\Bill;
 use App\Models\Opd;
 use App\Models\Payment;
 use App\Models\PaymentChannel;
-use App\Models\RetributionClassification;
 use App\Models\RetributionType;
 use App\Models\TaxObject;
 use App\Models\Taxpayer;
@@ -23,7 +22,9 @@ class DlhBankSultraPaymentIntegrationTest extends TestCase
     use RefreshDatabase;
 
     protected string $secret = 'secret_sultra_2026';
+
     protected User $adminDlh;
+
     protected Opd $dlhOpd;
 
     protected function setUp(): void
@@ -117,9 +118,10 @@ class DlhBankSultraPaymentIntegrationTest extends TestCase
 
         $period = date('Y-m');
         $bill = Bill::create([
-            'bill_number' => 'SKRD-DLH-' . date('Ym') . '-0088',
+            'bill_number' => 'SKRD-DLH-'.date('Ym').'-0088',
             'taxpayer_id' => $taxpayer->id,
             'tax_object_id' => $taxObject->id,
+            'opd_id' => $this->dlhOpd->id,
             'retribution_type_id' => $retType->id,
             'amount' => 8500.00,
             'penalty_amount' => 0.00,
@@ -132,7 +134,7 @@ class DlhBankSultraPaymentIntegrationTest extends TestCase
 
         // 1. INQUIRY dari Bank Sultra ke sistem M-PAD
         // Signature inquiry = HMAC(bill_number + timestamp + 0)
-        $inquirySig = $this->generateHmacSignature($bill->bill_number . $timestamp . '0');
+        $inquirySig = $this->generateHmacSignature($bill->bill_number.$timestamp.'0');
 
         $inquiryRes = $this->postJson('/api/v1/bank/inquiry', [
             'bill_number' => $bill->bill_number,
@@ -148,8 +150,8 @@ class DlhBankSultraPaymentIntegrationTest extends TestCase
             ->assertJsonPath('data.total_amount', 8500);
 
         // 2. PAYMENT NOTIFICATION dari Bank Sultra (Teller / ATM / Mobile Banking)
-        $ntb = 'NTB-SULTRA-' . time() . '-001';
-        $paySig = $this->generateHmacSignature($bill->bill_number . $timestamp . '8500');
+        $ntb = 'NTB-SULTRA-'.time().'-001';
+        $paySig = $this->generateHmacSignature($bill->bill_number.$timestamp.'8500');
 
         $payRes = $this->postJson('/api/v1/bank/payment', [
             'bill_number' => $bill->bill_number,
@@ -180,7 +182,15 @@ class DlhBankSultraPaymentIntegrationTest extends TestCase
             'channel' => 'TELLER_BANK_SULTRA',
         ]);
 
+        Sanctum::actingAs($this->adminDlh, ['*']);
+        $this->getJson('/api/v1/dlh/reports/executive-summary?year='.now()->year)
+            ->assertOk()
+            ->assertJsonPath('data.breakdown.retribusi_persampahan_bulanan.total_realized', 8500)
+            ->assertJsonPath('data.breakdown.retribusi_persampahan_bulanan.total_pending', 0)
+            ->assertJsonPath('data.grand_total_realization', 8500);
+
         // 3. IDEMPOTENCY: Callback ulang dengan NTB yang sama tidak boleh duplicate
+        // H2H callback tetap idempoten setelah pembacaan rekap.
         $dupRes = $this->postJson('/api/v1/bank/payment', [
             'bill_number' => $bill->bill_number,
             'amount_paid' => 8500,
@@ -226,7 +236,7 @@ class DlhBankSultraPaymentIntegrationTest extends TestCase
 
         // 3. Bank Sultra Inquiry
         $timestamp = Carbon::now()->toDateTimeString();
-        $inquirySig = $this->generateHmacSignature($billNumber . $timestamp . '0');
+        $inquirySig = $this->generateHmacSignature($billNumber.$timestamp.'0');
 
         $inquiryRes = $this->postJson('/api/v1/bank/inquiry', [
             'bill_number' => $billNumber,
@@ -239,8 +249,8 @@ class DlhBankSultraPaymentIntegrationTest extends TestCase
             ->assertJsonPath('data.amount_pokok', (int) $totalAmount);
 
         // 4. Bank Sultra Payment
-        $ntb = 'NTB-LAB-SULTRA-' . time();
-        $paySig = $this->generateHmacSignature($billNumber . $timestamp . (string) $totalAmount);
+        $ntb = 'NTB-LAB-SULTRA-'.time();
+        $paySig = $this->generateHmacSignature($billNumber.$timestamp.(string) $totalAmount);
 
         $payRes = $this->postJson('/api/v1/bank/payment', [
             'bill_number' => $billNumber,
@@ -261,5 +271,10 @@ class DlhBankSultraPaymentIntegrationTest extends TestCase
             'status' => 'lunas',
             'bank_code' => 'SULTRA',
         ]);
+
+        $this->getJson('/api/v1/dlh/reports/executive-summary?year='.now()->year)
+            ->assertOk()
+            ->assertJsonPath('data.breakdown.retribusi_laboratorium_lingkungan.total_realized', (int) $totalAmount)
+            ->assertJsonPath('data.grand_total_realization', (int) $totalAmount);
     }
 }
