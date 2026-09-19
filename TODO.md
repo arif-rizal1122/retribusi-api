@@ -1,5 +1,11 @@
 # API Backlog
 
+## Status bill pada payment request citizen — 19 September 2026
+
+- [x] AM-BASE-03F: Detail data.bills[] pada payment request citizen menerbitkan status, status_label, dan can_pay dari CitizenBillStatus. Request aktif menghasilkan pending_verification; request cancelled/expired tidak mengunci bill pending/overdue; status storage tidak diubah.
+- Validasi: suite DLH/lab/citizen/payment 49 test/346 assertion lulus; Pint, PHP lint, dan diff check lulus. Kontrak: docs/05_modul_aplikasi/AM_BASE_03F_PAYMENT_REQUEST_BILL_STATUS.md.
+- Consumer audit: tipe mobile PaymentRequestBillDetail mengikuti field additive dan normalisasi alias lama tetap defensif; typecheck/build/targeted ESLint lulus. Vitest terhalang spawn EPERM saat memuat config. Admin dan petugas tidak memiliki consumer endpoint citizen ini. Parent AM-BASE-03 tetap terbuka untuk reverse inquiry, rekonsiliasi gateway dan UAT eksternal.
+
 ## Status bill pada riwayat pembayaran citizen — 19 September 2026
 
 - [x] **AM-BASE-03E** Endpoint `GET /api/citizen/payments/history` menormalkan status bill nested dengan `CitizenBillStatus` dan menerbitkan `status_label` additive. Status storage lama (`lunas`, `PAID`, `pending`, dan variasinya) tidak diubah; ownership, pagination, dan status pembayaran top-level tetap kompatibel.

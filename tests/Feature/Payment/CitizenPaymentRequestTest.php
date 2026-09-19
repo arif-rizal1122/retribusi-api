@@ -6,6 +6,7 @@ use App\Models\Bill;
 use App\Models\Opd;
 use App\Models\Payment;
 use App\Models\PaymentRequest;
+use App\Models\PaymentRequestItem;
 use App\Models\RetributionClassification;
 use App\Models\RetributionType;
 use App\Models\TaxObject;
@@ -104,6 +105,48 @@ class CitizenPaymentRequestTest extends TestCase
             ->assertJsonPath('data.status', 'cancelled')
             ->assertJsonPath('data.can_refresh', false)
             ->assertJsonPath('data.can_cancel', false);
+    }
+
+    public function test_payment_request_bill_details_expose_canonical_bill_statuses(): void
+    {
+        Sanctum::actingAs($this->taxpayer);
+
+        $pendingResponse = $this->postJson('/api/citizen/payment-requests', [
+            'bill_ids' => [$this->createBill()->id],
+            'method' => 'bri_va',
+        ])->assertCreated();
+
+        $pendingResponse
+            ->assertJsonPath('data.bills.0.status', 'pending_verification')
+            ->assertJsonPath('data.bills.0.status_label', 'Menunggu pembayaran BRIVA')
+            ->assertJsonPath('data.bills.0.can_pay', false);
+
+        $cancelledBill = $this->createBill(['due_date' => now()->addWeek()]);
+        $cancelledRequest = $this->attachPaymentRequest($cancelledBill, 'cancelled');
+
+        $this->getJson("/api/citizen/payment-requests/{$cancelledRequest->id}")
+            ->assertOk()
+            ->assertJsonPath('data.bills.0.status', 'pending')
+            ->assertJsonPath('data.bills.0.status_label', 'Menunggu pembayaran')
+            ->assertJsonPath('data.bills.0.can_pay', true);
+
+        $paidBill = $this->createBill(['status' => 'lunas']);
+        $paidRequest = $this->attachPaymentRequest($paidBill, 'paid');
+
+        $this->getJson("/api/citizen/payment-requests/{$paidRequest->id}")
+            ->assertOk()
+            ->assertJsonPath('data.bills.0.status', 'paid')
+            ->assertJsonPath('data.bills.0.status_label', 'Lunas')
+            ->assertJsonPath('data.bills.0.can_pay', false);
+
+        $overdueBill = $this->createBill(['due_date' => now()->subDay()]);
+        $overdueRequest = $this->attachPaymentRequest($overdueBill, 'cancelled');
+
+        $this->getJson("/api/citizen/payment-requests/{$overdueRequest->id}")
+            ->assertOk()
+            ->assertJsonPath('data.bills.0.status', 'overdue')
+            ->assertJsonPath('data.bills.0.status_label', 'Jatuh tempo')
+            ->assertJsonPath('data.bills.0.can_pay', true);
     }
 
     public function test_citizen_briva_va_uses_partner_service_id_and_numeric_customer_no(): void
@@ -274,6 +317,33 @@ class CitizenPaymentRequestTest extends TestCase
             'period' => '2026-07',
             'due_date' => now()->addWeek(),
         ], $overrides));
+    }
+
+    private function attachPaymentRequest(Bill $bill, string $status): PaymentRequest
+    {
+        $paymentRequest = PaymentRequest::create([
+            'bill_id' => $bill->id,
+            'tax_object_id' => $bill->tax_object_id,
+            'taxpayer_id' => $this->taxpayer->id,
+            'payment_channel' => 'BRI',
+            'method' => 'VA',
+            'amount_snapshot' => $bill->amount,
+            'admin_fee_snapshot' => $bill->admin_fee,
+            'penalty_snapshot' => $bill->penalty_amount,
+            'expires_at' => now()->addDay(),
+            'external_id' => 'TEST-PR-'.$bill->id,
+            'status' => $status,
+        ]);
+
+        PaymentRequestItem::create([
+            'payment_request_id' => $paymentRequest->id,
+            'bill_id' => $bill->id,
+            'amount_snapshot' => $bill->total_amount,
+            'status' => $status === 'paid' ? 'paid' : 'pending',
+            'paid_at' => $status === 'paid' ? now() : null,
+        ]);
+
+        return $paymentRequest;
     }
 
     public function test_citizen_can_create_bank_sultra_va_payment_request(): void

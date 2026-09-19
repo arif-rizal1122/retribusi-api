@@ -9,11 +9,14 @@ use App\Models\PaymentRequest;
 use App\Models\PaymentRequestItem;
 use App\Models\Taxpayer;
 use App\Services\Payment\Snap\SnapBrivaReadiness;
+use App\Support\CitizenBillStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class CitizenPaymentRequestController extends Controller
 {
@@ -21,7 +24,7 @@ class CitizenPaymentRequestController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        \Illuminate\Support\Facades\Log::info('CitizenPaymentRequest::store incoming', [
+        Log::info('CitizenPaymentRequest::store incoming', [
             'payload' => $request->all(),
             'user_id' => $request->user()?->id,
             'user_class' => $request->user() ? get_class($request->user()) : null,
@@ -33,8 +36,8 @@ class CitizenPaymentRequestController extends Controller
                 'bill_ids.*' => ['integer', 'distinct', 'exists:bills,id'],
                 'method' => ['required', 'in:bri_va,sultra_va'],
             ]);
-        } catch (\Illuminate\Validation\ValidationException $ve) {
-            \Illuminate\Support\Facades\Log::warning('CitizenPaymentRequest::store validation error', [
+        } catch (ValidationException $ve) {
+            Log::warning('CitizenPaymentRequest::store validation error', [
                 'errors' => $ve->errors(),
                 'payload' => $request->all(),
             ]);
@@ -74,7 +77,7 @@ class CitizenPaymentRequestController extends Controller
                 ->values();
 
             if ($bills->count() !== $billIds->count()) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'bill_ids' => 'Satu atau lebih tagihan tidak dapat dibayarkan melalui gateway.',
                 ]);
             }
@@ -84,7 +87,7 @@ class CitizenPaymentRequestController extends Controller
                 ->exists();
 
             if ($hasManualClaim) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'bill_ids' => 'Satu atau lebih tagihan sudah lunas atau sedang menunggu verifikasi pembayaran manual.',
                 ]);
             }
@@ -295,32 +298,43 @@ class CitizenPaymentRequestController extends Controller
             'status_label' => $this->statusLabel($paymentRequest->status, $isSultra),
             'bill_ids' => $items->pluck('bill_id')->values(),
             'bill_numbers' => $items->map(fn (PaymentRequestItem $item) => $item->bill?->bill_number)->filter()->values(),
-            'bills' => $items->map(fn (PaymentRequestItem $item) => [
-                'bill_id' => $item->bill_id,
-                'bill_number' => $item->bill?->bill_number,
-                'label' => $item->bill?->taxObject?->name
-                    ?: $item->bill?->classification?->name
-                    ?: $item->bill?->retributionType?->name
-                    ?: 'Tagihan',
-                'tax_object_name' => $item->bill?->taxObject?->name ?: null,
-                'address' => $item->bill?->taxObject?->address ?: null,
-                'tax_type' => $item->bill?->taxObject?->retributionType?->name
-                    ?: $item->bill?->classification?->name
-                    ?: $item->bill?->retributionType?->name
-                    ?: null,
-                'period_start' => $item->bill?->period_start?->toDateString(),
-                'period_end' => $item->bill?->period_end?->toDateString(),
-                'due_date' => $item->bill?->due_date?->toDateString(),
-                'amount' => (float) $item->amount_snapshot,
-                'penalty' => (float) $item->bill?->penalty_amount,
-                'admin_fee' => (float) $item->bill?->admin_fee,
-                'billing_cycle' => $item->bill?->retributionType?->billing_cycle
-                    ?: $item->bill?->retributionType?->category
-                    ?: null,
-                'unit_name' => $item->bill?->opd?->name
-                    ?: $item->bill?->taxObject?->opd?->name
-                    ?: null,
-            ])->values(),
+            'bills' => $items->map(function (PaymentRequestItem $item) use ($paymentRequest) {
+                $bill = $item->bill;
+                $billStatus = $this->citizenPaymentRequestBillStatus($bill, $paymentRequest);
+
+                return [
+                    'bill_id' => $item->bill_id,
+                    'bill_number' => $bill?->bill_number,
+                    'status' => $billStatus,
+                    'status_label' => CitizenBillStatus::label(
+                        $billStatus,
+                        $this->paymentRequestIsActive($paymentRequest),
+                    ),
+                    'can_pay' => CitizenBillStatus::canPay($billStatus),
+                    'label' => $bill?->taxObject?->name
+                        ?: $bill?->classification?->name
+                        ?: $bill?->retributionType?->name
+                        ?: 'Tagihan',
+                    'tax_object_name' => $bill?->taxObject?->name ?: null,
+                    'address' => $bill?->taxObject?->address ?: null,
+                    'tax_type' => $bill?->taxObject?->retributionType?->name
+                        ?: $bill?->classification?->name
+                        ?: $bill?->retributionType?->name
+                        ?: null,
+                    'period_start' => $bill?->period_start?->toDateString(),
+                    'period_end' => $bill?->period_end?->toDateString(),
+                    'due_date' => $bill?->due_date?->toDateString(),
+                    'amount' => (float) $item->amount_snapshot,
+                    'penalty' => (float) $bill?->penalty_amount,
+                    'admin_fee' => (float) $bill?->admin_fee,
+                    'billing_cycle' => $bill?->retributionType?->billing_cycle
+                        ?: $bill?->retributionType?->category
+                        ?: null,
+                    'unit_name' => $bill?->opd?->name
+                        ?: $bill?->taxObject?->opd?->name
+                        ?: null,
+                ];
+            })->values(),
             'amount' => (float) $paymentRequest->amount_snapshot,
             'admin_fee' => (float) $paymentRequest->admin_fee_snapshot,
             'total_amount' => $totalAmount,
@@ -371,6 +385,25 @@ class CitizenPaymentRequestController extends Controller
                 'file_name' => 'SSPD-'.($item->bill?->bill_number ?? $item->bill_id).'.pdf',
             ];
         })->filter()->values();
+    }
+
+    private function citizenPaymentRequestBillStatus(?Bill $bill, PaymentRequest $paymentRequest): string
+    {
+        if (! $bill) {
+            return 'unknown';
+        }
+
+        return CitizenBillStatus::normalize(
+            $bill->getRawOriginal('status'),
+            false,
+            $this->paymentRequestIsActive($paymentRequest),
+            (bool) $bill->due_date?->isPast(),
+        );
+    }
+
+    private function paymentRequestIsActive(PaymentRequest $paymentRequest): bool
+    {
+        return in_array($paymentRequest->status, ['pending', 'processing', 'processing_receipt'], true);
     }
 
     private function statusLabel(string $status, bool $isSultra = false): string
