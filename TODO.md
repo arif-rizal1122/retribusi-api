@@ -1,5 +1,10 @@
 # API Backlog
 
+## Validasi parameter lab aktif — 20 September 2026
+
+- [x] **AM-LAB-02A**: pembuatan order lab menolak `parameter_ids` duplikat dan parameter nonaktif sebelum order/pivot dibuat. Total dan snapshot tarif hanya berasal dari parameter master aktif.
+- Validasi: `DlhLabServiceTest` lulus **5 test/36 assertion**; PHP lint, Pint, dan `git diff --check` lulus. Tidak ada migration atau perubahan UI; tujuh parameter resmi tetap menunggu verifikasi regulasi/D02.
+
 ## Guard denda bill terminal DLH — 20 September 2026
 
 - [x] **AM-SMP-04B**: `applyOverduePenalty()` memakai `Bill::isSettled()` sehingga alias storage `PAID`/`lunas` dan bill yang sudah memiliki payment sukses tidak menerima denda baru. Bill terbuka tetap dihitung sesuai jatuh tempo dan batas denda existing.

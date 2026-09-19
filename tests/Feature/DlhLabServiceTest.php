@@ -97,6 +97,42 @@ class DlhLabServiceTest extends TestCase
         ]);
     }
 
+    public function test_create_lab_order_rejects_duplicate_parameters(): void
+    {
+        Sanctum::actingAs($this->analyst, ['*']);
+        $parameterId = (int) DB::table('dlh_lab_parameters')->where('code', 'LAB-PH')->value('id');
+
+        $this->postJson('/api/v1/dlh/lab/orders', [
+            'applicant_name' => 'Duplikat Parameter',
+            'contact_phone' => '0812345678',
+            'sample_matrix' => 'AIR_BERSIH',
+            'sampling_date' => '2026-09-11',
+            'parameter_ids' => [$parameterId, $parameterId],
+        ])->assertUnprocessable()->assertJsonValidationErrors([
+            'parameter_ids.0',
+            'parameter_ids.1',
+        ]);
+
+        $this->assertDatabaseCount('dlh_lab_orders', 0);
+    }
+
+    public function test_create_lab_order_rejects_inactive_parameters(): void
+    {
+        Sanctum::actingAs($this->analyst, ['*']);
+        $parameterId = (int) DB::table('dlh_lab_parameters')->where('code', 'LAB-PH')->value('id');
+        DB::table('dlh_lab_parameters')->where('id', $parameterId)->update(['is_active' => false]);
+
+        $this->postJson('/api/v1/dlh/lab/orders', [
+            'applicant_name' => 'Parameter Nonaktif',
+            'contact_phone' => '0812345678',
+            'sample_matrix' => 'AIR_BERSIH',
+            'sampling_date' => '2026-09-11',
+            'parameter_ids' => [$parameterId],
+        ])->assertUnprocessable()->assertJsonValidationErrors('parameter_ids');
+
+        $this->assertDatabaseCount('dlh_lab_orders', 0);
+    }
+
     public function test_generate_billing_skrd_and_record_results(): void
     {
         Sanctum::actingAs($this->analyst, ['*']);

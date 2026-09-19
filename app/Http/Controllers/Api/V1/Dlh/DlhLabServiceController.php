@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class DlhLabServiceController extends Controller
 {
@@ -46,11 +47,21 @@ class DlhLabServiceController extends Controller
             'sampling_location' => 'nullable|string|max:255',
             'sampling_date' => 'required|date',
             'parameter_ids' => 'required|array|min:1',
-            'parameter_ids.*' => 'integer|exists:dlh_lab_parameters,id',
+            'parameter_ids.*' => 'integer|distinct|exists:dlh_lab_parameters,id',
         ]);
 
         return DB::transaction(function () use ($validated, $request) {
-            $parameters = DlhLabParameter::whereIn('id', $validated['parameter_ids'])->get();
+            $parameterIds = collect($validated['parameter_ids'])->map(fn ($id) => (int) $id)->unique()->values();
+            $parameters = DlhLabParameter::whereIn('id', $parameterIds)
+                ->where('is_active', true)
+                ->get();
+
+            if ($parameters->count() !== $parameterIds->count()) {
+                throw ValidationException::withMessages([
+                    'parameter_ids' => 'Semua parameter pengujian harus aktif dan tersedia.',
+                ]);
+            }
+
             $user = $request->user();
 
             $totalAmount = $parameters->sum('tariff');
