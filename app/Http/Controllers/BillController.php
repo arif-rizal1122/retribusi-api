@@ -426,10 +426,7 @@ class BillController extends Controller
      */
     public function exportSKRD(Request $request, Bill $bill, OfficialDocumentService $docService)
     {
-        $user = $request->user();
-        if ($user instanceof Taxpayer && $bill->taxpayer_id !== $user->id) {
-            return abort(403, 'Unauthorized access to this document.');
-        }
+        $this->authorizeBillDocument($request, $bill);
 
         $data = $docService->generateSKRD($bill->load(['retributionType', 'taxpayer']));
 
@@ -441,10 +438,7 @@ class BillController extends Controller
      */
     public function exportSSPD(Request $request, Bill $bill, OfficialDocumentService $docService)
     {
-        $user = $request->user();
-        if ($user instanceof Taxpayer && $bill->taxpayer_id !== $user->id) {
-            return abort(403, 'Unauthorized access to this document.');
-        }
+        $this->authorizeBillDocument($request, $bill);
 
         try {
             $data = $docService->generateSSPD($bill->load(['retributionType', 'taxpayer', 'payments']));
@@ -460,10 +454,7 @@ class BillController extends Controller
      */
     public function exportSPPT(Request $request, Bill $bill, OfficialDocumentService $docService)
     {
-        $user = $request->user();
-        if ($user instanceof Taxpayer && $bill->taxpayer_id !== $user->id) {
-            return abort(403, 'Unauthorized access to this document.');
-        }
+        $this->authorizeBillDocument($request, $bill);
 
         try {
             // Verify if this is actually a PBB bill
@@ -484,6 +475,53 @@ class BillController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message' => 'Gagal generate SPPT: '.$e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Keep bill documents owner-scoped for citizens and OPD-scoped for staff.
+     *
+     * The document routes are shared by the mobile receipt flow and internal
+     * staff. Global oversight roles can inspect any OPD; all other staff must
+     * belong to the bill's OPD.
+     */
+    private function authorizeBillDocument(Request $request, Bill $bill): void
+    {
+        $user = $request->user();
+
+        if ($user instanceof Taxpayer) {
+            abort_unless(
+                (int) $bill->taxpayer_id === (int) $user->id,
+                403,
+                'Unauthorized access to this document.'
+            );
+
+            return;
+        }
+
+        if (! $user instanceof User) {
+            abort(403, 'Unauthorized access to this document.');
+        }
+
+        $globalRoles = [
+            User::ROLE_SUPER_ADMIN,
+            User::ROLE_ADMIN,
+            User::ROLE_WALIKOTA,
+            User::ROLE_KEPALA_BAPENDA,
+            User::ROLE_PENGAWAS,
+            User::ROLE_KABID_PENGAWAS,
+            User::ROLE_KASUBID_PENGAWAS,
+            'viewer',
+        ];
+
+        if (in_array($user->role, $globalRoles, true)) {
+            return;
+        }
+
+        abort_unless(
+            $user->opd_id !== null && (int) $bill->opd_id === (int) $user->opd_id,
+            403,
+            'Unauthorized access to this document.'
+        );
     }
 
     public function signTTE(Request $request, OfficialDocumentService $docService)

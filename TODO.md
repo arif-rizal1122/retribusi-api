@@ -1,5 +1,10 @@
 # API Backlog
 
+## Ownership dokumen tagihan citizen — 19 September 2026
+
+- [x] **AM-BASE-04E**: route `GET /api/bills/{bill}/skrd|sspd|sppt` memakai guard bersama. Taxpayer hanya dapat membaca bill miliknya; User internal non-global dibatasi `opd_id`; role pengawasan global tetap dapat membaca lintas OPD. Route `/api/documents/*` internal dan `/api/public/pdf/*` legacy sengaja tidak diubah pada checkpoint ini.
+- Validasi: `BillDocumentOwnershipTest` + `CitizenBillingReadTest` lulus **14 test/133 assertion**; suite regresi lintas bank/core/DLH/citizen billing/SNAP lulus **112 test/540 assertion**; PHP lint, Pint test, route list dan `git diff --check` lulus. Audit consumer mobile/admin/petugas selesai tanpa perubahan frontend. Kontrak [AM_BASE_04E_BILL_DOCUMENT_OWNERSHIP.md](docs/05_modul_aplikasi/AM_BASE_04E_BILL_DOCUMENT_OWNERSHIP.md). Commit API `17f72e8` (`fix: scope bill document downloads`) dibuat; push `origin/main` ditolak `fetch first` karena remote memiliki commit yang belum ada di checkout. Tidak dilakukan pull, reset, rebase atau force-push. Parent AM-BASE-04 tetap terbuka untuk route dokumen internal lain, hasil layanan dan setoran.
+
 ## Otorisasi monitoring H2H — 19 September 2026
 
 - [x] AM-BASE-04D: GET /api/bank-h2h/logs dan POST /api/bank-h2h/reconcile memakai middleware role:super_admin. Taxpayer dan User internal role admin ditolak sebelum controller; super admin tetap kompatibel dengan consumer admin H2HLogs.
