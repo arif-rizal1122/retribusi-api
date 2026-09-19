@@ -322,6 +322,31 @@ class CitizenPaymentRequestTest extends TestCase
         $this->assertDatabaseCount('payment_requests', 0);
     }
 
+    public function test_uppercase_pending_manual_claim_blocks_briva_payment_request(): void
+    {
+        $bill = $this->createBill();
+        Payment::create([
+            'bill_id' => $bill->id,
+            'taxpayer_id' => $bill->taxpayer_id,
+            'tax_object_id' => $bill->tax_object_id,
+            'transaction_id' => 'PAY-MANUAL-PENDING-UPPER',
+            'payment_method' => 'transfer',
+            'amount' => $bill->total_amount,
+            'status' => 'PENDING',
+            'billing_period' => $bill->period,
+            'proof_url' => 'https://example.test/proof-upper.jpg',
+        ]);
+        Sanctum::actingAs($this->taxpayer);
+
+        $this->postJson('/api/citizen/payment-requests', [
+            'bill_ids' => [$bill->id],
+            'method' => 'bri_va',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('bill_ids');
+
+        $this->assertDatabaseCount('payment_requests', 0);
+    }
+
     public function test_briva_payment_request_is_rejected_when_runtime_gate_is_disabled(): void
     {
         config(['snap.briva.enabled' => false]);

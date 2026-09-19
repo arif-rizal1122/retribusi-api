@@ -283,7 +283,7 @@ class BillController extends Controller
                 ->with(['paymentRequest' => $activePaymentRequest]),
         ])
             ->withExists([
-                'payments as has_pending_payment_claim' => fn ($query) => $query->where('status', 'pending'),
+                'payments as has_pending_payment_claim' => fn ($query) => $query->pending(),
                 'paymentRequestItems as has_active_payment_request' => fn ($query) => $query->whereHas('paymentRequest', $activePaymentRequest),
             ])
             ->where('taxpayer_id', $taxpayer->id)

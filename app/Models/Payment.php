@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\RetributionTypeScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -9,7 +11,7 @@ class Payment extends Model
 {
     protected static function booted()
     {
-        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+        static::addGlobalScope(new RetributionTypeScope);
     }
 
     protected $fillable = [
@@ -59,5 +61,18 @@ class Payment extends Model
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /**
+     * Payment rows that still reserve a bill for settlement.
+     */
+    public function scopeActiveForSettlement(Builder $query): Builder
+    {
+        return $query->whereRaw('LOWER(status) IN (?, ?)', ['pending', 'success']);
+    }
+
+    public function scopePending(Builder $query): Builder
+    {
+        return $query->whereRaw('LOWER(status) = ?', ['pending']);
     }
 }

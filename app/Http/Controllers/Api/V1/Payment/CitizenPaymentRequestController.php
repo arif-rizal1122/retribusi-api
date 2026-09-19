@@ -92,7 +92,7 @@ class CitizenPaymentRequestController extends Controller
             }
 
             $hasManualClaim = Payment::whereIn('bill_id', $billIds)
-                ->whereIn('status', ['pending', 'success'])
+                ->activeForSettlement()
                 ->exists();
 
             if ($hasManualClaim) {

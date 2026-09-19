@@ -1,5 +1,10 @@
 # API Backlog
 
+## Guard klaim pembayaran legacy — 20 September 2026
+
+- [x] **AM-PAY-05B**: payment claim citizen, duplicate check pembayaran petugas, dan daftar bill citizen memakai status payment case-insensitive. `PENDING` uppercase tetap mengunci bill dari payment request/claim kedua; `success` tetap terminal.
+- Validasi: `CitizenPaymentRequestTest` + `CitizenPaymentClaimStillWorksTest` lulus **22 test/128 assertion**; PHP lint, Pint, dan `git diff --check` lulus. Tidak ada perubahan UI petugas atau gateway. Parent AM-PAY-05 tetap terbuka untuk concurrency lintas channel dan UAT.
+
 ## Status payment request legacy — 20 September 2026
 
 - [x] **AM-PAY-03B**: query payment request aktif pada citizen bills, BRIVA, payment request baru, dan klaim transfer memakai status pending case-insensitive. Payload `status`, `can_refresh`, dan `can_cancel` tetap canonical meskipun storage berisi `PENDING` uppercase.

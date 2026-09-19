@@ -218,7 +218,7 @@ class PaymentController extends Controller
             // Check if already paid or pending claim
             $existing = Payment::where('tax_object_id', $taxObject->id)
                 ->where('billing_period', $request->billing_period)
-                ->whereIn('status', ['success', 'pending'])
+                ->activeForSettlement()
                 ->first();
 
             if ($existing) {
@@ -340,7 +340,7 @@ class PaymentController extends Controller
             }
 
             $hasExistingPayment = Payment::whereIn('bill_id', $billIds)
-                ->whereIn('status', ['pending', 'success'])
+                ->activeForSettlement()
                 ->exists();
 
             if ($hasExistingPayment) {
