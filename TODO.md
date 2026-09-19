@@ -1,5 +1,10 @@
 # API Backlog
 
+## Kontrak estimasi rute tronton — 20 September 2026
+
+- [x] **AM-PUPR-05A**: kalkulator bundling tronton mengembalikan basis `straight_line_estimate` dan penanda `route_confirmation_required`; estimasi garis lurus tidak dianggap jarak jalan atau tagihan final. Konfirmasi akses dan tarif akhir tetap di pemeriksaan lapangan/dashboard PUPR.
+- Validasi: `TrontonBundlingTest` lulus **1 test/7 assertion** setelah perubahan; PHP lint, Pint, dan `git diff --check` dijalankan. Tidak ada perubahan mobile/admin/petugas karena tidak ada consumer frontend untuk endpoint kalkulator ini. [Kontrak](docs/05_modul_aplikasi/AM_PUPR_05A_TRONTON_DISTANCE_ESTIMATE.md).
+
 ## Guard katalog aset citizen — 20 September 2026
 
 - [x] **AM-BASE-04G**: kategori, item, availability, dan form template pada prefix `/api/citizen/asset/*` kini mewajibkan `Taxpayer` authenticated sebelum query atau validasi input. Aksi rental yang sudah guarded tetap kompatibel.
@@ -242,4 +247,5 @@ Terakhir diperbarui: 2026-08-03
 
 - Setelah PAY-002 selesai, perbarui `../WORKBOARD.md`, lalu lanjutkan hanya jika pengguna menginstruksikan.
 - Endpoint atau perubahan schema baru wajib menambahkan/menyesuaikan test yang relevan.
+
 

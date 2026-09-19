@@ -9,11 +9,14 @@ class TrontonBundlingController extends Controller
 {
     // Koordinat UPTD Workshop Alat Berat Dinas PUPR Kota Baubau (Palagimata)
     const WORKSHOP_LAT = -5.4715;
+
     const WORKSHOP_LNG = 122.6180;
 
     // Tarif Dasar Mobilisasi Tronton Self-Loader (Perda 1/2024)
     const BASE_MOBILIZATION_FEE = 1500000; // Rp 1.500.000 (zona dalam kota <= 10 km)
+
     const RATE_PER_ADDITIONAL_KM = 50000;  // Rp 50.000/km di atas 10 km
+
     const THRESHOLD_KM = 10.0;
 
     /**
@@ -65,6 +68,8 @@ class TrontonBundlingController extends Controller
                     'longitude' => $projectLng,
                 ],
                 'distance_km' => $distanceKm,
+                'distance_basis' => 'straight_line_estimate',
+                'route_confirmation_required' => true,
                 'is_round_trip' => $isRoundTrip,
                 'breakdown' => [
                     'base_zone_fee' => self::BASE_MOBILIZATION_FEE,
