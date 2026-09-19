@@ -486,6 +486,59 @@ class CitizenServiceController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        // Warga berhak tahu ALASAN penolakan. Tanpa ini, halaman Detail Pengajuan
+        // menampilkan status "Ditolak" tanpa catatan apa pun dari verifikator.
+        // Mobile sudah membaca `latest_verification` + `verification_timeline`
+        // (ServiceDetail.getRejectionNotes), jadi server wajib mengirimkannya.
+        $objectIds = $objects->pluck('id')->all();
+
+        $verificationsByObject = empty($objectIds)
+            ? collect()
+            : \App\Models\Verification::withoutGlobalScopes()
+                ->with(['verifier:id,name'])
+                ->whereIn('tax_object_id', $objectIds)
+                ->orderBy('created_at')
+                ->get()
+                ->groupBy('tax_object_id');
+
+        $objects->each(function (TaxObject $object) use ($verificationsByObject) {
+            $timeline = $verificationsByObject->get($object->id, collect())
+                ->map(fn ($verification) => [
+                    'id' => $verification->id,
+                    'document_number' => $verification->document_number,
+                    'type' => $verification->type,
+                    'status' => $verification->status,
+                    'notes' => $verification->notes,
+                    'submitted_at' => $verification->submitted_at,
+                    'verified_at' => $verification->verified_at,
+                    'verifier_name' => $verification->verifier?->name,
+                ])
+                ->values();
+
+            // `latest_verification` harus = KEPUTUSAN VERIFIKATOR terakhir, bukan
+            // catatan sistem pendaftaran. Catatan pendaftaran ("Pengajuan objek dari
+            // menu Wajib Pajak...") tidak punya verifier dan bisa menutupi alasan
+            // penolakan admin. Prioritas: entri dgn verifier + ada catatan.
+            $withVerifier = $timeline->filter(
+                fn ($item) => !empty($item['notes']) && !empty($item['verifier_name'])
+            );
+            $latest = $withVerifier->last()
+                ?: $timeline->filter(fn ($item) => !empty($item['notes']))->last()
+                ?: $timeline->last();
+
+            // Alasan penolakan terakhir dari verifikator — dikirim eksplisit supaya
+            // tetap terbaca walau status objek sudah berubah (mis. warga sudah
+            // mengajukan ulang sehingga status kembali `pending`).
+            $lastRejection = $timeline
+                ->filter(fn ($item) => $item['status'] === 'rejected' && !empty($item['notes']))
+                ->last();
+
+            $object->setAttribute('verification_timeline', $timeline);
+            $object->setAttribute('latest_verification', $latest);
+            $object->setAttribute('rejection_notes', $lastRejection['notes'] ?? null);
+            $object->setAttribute('rejected_at', $lastRejection['verified_at'] ?? null);
+        });
+
         return response()->json(['data' => $objects]);
     }
 
