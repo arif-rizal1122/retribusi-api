@@ -1,5 +1,10 @@
 # API Backlog
 
+## Normalisasi flag aksi payment request pada bill citizen — 20 September 2026
+
+- [x] **AM-BASE-03P**: payload `GET /api/citizen/bills` menghitung `can_refresh` dan `can_cancel` dari status payment request secara case-insensitive; storage legacy `PENDING` tetap menjadi payment request aktif.
+- Validasi: `CitizenBillingReadTest` lulus **12 test/125 assertion** setelah penambahan kasus uppercase `PENDING`; PHP lint, Pint, dan `git diff --check` dijalankan. Envelope dan endpoint existing tetap kompatibel.
+
 ## Normalisasi status receipt citizen — 20 September 2026
 
 - [x] **AM-PAY-03C**: lookup receipt pada detail payment request citizen menerima payment `SUCCESS`/`success` secara case-insensitive, sehingga bukti settlement legacy tidak hilang dari response.
@@ -252,6 +257,7 @@ Terakhir diperbarui: 2026-08-03
 
 - Setelah PAY-002 selesai, perbarui `../WORKBOARD.md`, lalu lanjutkan hanya jika pengguna menginstruksikan.
 - Endpoint atau perubahan schema baru wajib menambahkan/menyesuaikan test yang relevan.
+
 
 
 

@@ -168,6 +168,26 @@ class CitizenBillingReadTest extends TestCase
         $this->assertTrue($bills[$activeBrivaBill->id]['active_payment_request']['can_cancel']);
     }
 
+    public function test_citizen_bill_payload_keeps_uppercase_pending_request_actions_available(): void
+    {
+        $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);
+        $bill = $this->createBill($taxpayer, [
+            'status' => 'pending',
+            'due_date' => now()->addDay(),
+        ]);
+        $paymentRequest = $this->createPaymentRequest($bill);
+        $paymentRequest->update(['status' => 'PENDING']);
+
+        Sanctum::actingAs($taxpayer);
+
+        $this->getJson('/api/citizen/bills?per_page=100')
+            ->assertOk()
+            ->assertJsonPath('data.0.active_payment_request.id', (string) $paymentRequest->id)
+            ->assertJsonPath('data.0.active_payment_request.status', 'pending')
+            ->assertJsonPath('data.0.active_payment_request.can_refresh', true)
+            ->assertJsonPath('data.0.active_payment_request.can_cancel', true);
+    }
+
     public function test_briva_option_is_advertised_only_when_runtime_config_is_ready(): void
     {
         $taxpayer = Taxpayer::factory()->create(['opd_id' => $this->opd->id]);

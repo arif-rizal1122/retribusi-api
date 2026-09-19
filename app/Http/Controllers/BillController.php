@@ -348,8 +348,8 @@ class BillController extends Controller
             'total_amount' => (float) $paymentRequest->amount_snapshot
                 + (float) $paymentRequest->admin_fee_snapshot
                 + (float) $paymentRequest->penalty_snapshot,
-            'can_refresh' => $rawStatus === 'pending',
-            'can_cancel' => $rawStatus === 'pending',
+            'can_refresh' => strtolower(trim((string) $rawStatus)) === 'pending',
+            'can_cancel' => strtolower(trim((string) $rawStatus)) === 'pending',
         ];
     }
 
