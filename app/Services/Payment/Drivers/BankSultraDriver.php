@@ -413,12 +413,19 @@ class BankSultraDriver implements PaymentGatewayInterface
         ];
 
         foreach ($transactions as $tx) {
-            $ntb = $tx['ntb'] ?? null;
-            $amount = (float) ($tx['amount'] ?? 0);
-            
-            $payment = Payment::where('reference_number', $ntb)->first();
-            
-            if ($payment && abs((float)$payment->amount - $amount) < 0.01) {
+            $ntb = $tx['ntb'] ?? $tx['reference_number'] ?? $tx['transaction_id'] ?? null;
+            $amount = (float) ($tx['amount'] ?? $tx['amount_paid'] ?? 0);
+
+            $payment = $ntb
+                ? Payment::with('bill')->where('reference_number', $ntb)->first()
+                : null;
+            $paymentStatus = $payment
+                ? strtolower(trim((string) $payment->getRawOriginal('status')))
+                : null;
+            $billSettled = $payment?->bill?->isSettled() ?? false;
+            $amountMatches = $payment !== null && abs((float) $payment->amount - $amount) < 0.01;
+
+            if ($payment && $paymentStatus === 'success' && $billSettled && $amountMatches) {
                 $results['matched']++;
             } else {
                 $results['mismatch']++;
@@ -426,7 +433,12 @@ class BankSultraDriver implements PaymentGatewayInterface
                     'ntb' => $ntb,
                     'bank_amount' => $amount,
                     'system_amount' => $payment ? $payment->amount : 0,
-                    'status' => $payment ? 'Nominal Berbeda' : 'Tidak Ditemukan'
+                    'status' => $this->reconciliationMismatchStatus(
+                        $payment,
+                        $paymentStatus,
+                        $billSettled,
+                        $amountMatches,
+                    ),
                 ];
             }
         }
@@ -435,5 +447,26 @@ class BankSultraDriver implements PaymentGatewayInterface
             'status' => 'success',
             'data' => $results
         ];
+    }
+
+    private function reconciliationMismatchStatus(
+        ?Payment $payment,
+        ?string $paymentStatus,
+        bool $billSettled,
+        bool $amountMatches,
+    ): string {
+        if (!$payment) {
+            return 'Tidak Ditemukan';
+        }
+
+        if ($paymentStatus !== 'success') {
+            return 'Status pembayaran bukan success';
+        }
+
+        if (!$billSettled) {
+            return 'Bill belum settled';
+        }
+
+        return $amountMatches ? 'Tidak cocok' : 'Nominal Berbeda';
     }
 }

@@ -1,5 +1,11 @@
 # API Backlog
 
+## Guard status pada rekonsiliasi gateway — 19 September 2026
+
+- [x] **AM-BASE-03J**: rekonsiliasi Bank Sultra H2H dan QRIS hanya menghitung `matched` bila referensi, nominal, payment `success`, dan bill terminal konsisten. Alias input `ntb`/`rrn`/`reference_number`/`transaction_id` dinormalisasi; response lama dipertahankan dan detail QRIS menambah `ntb` secara additive.
+- Rekonsiliasi bersifat report-only: tidak membuat Payment, melunasi bill, atau menjalankan reversal. Validasi terarah **4 test/38 assertion lulus**; suite lintas core/DLH/citizen billing/SNAP lulus **104 test/504 assertion**. PHP lint dan `git diff --check` lulus. Consumer admin `H2HLogs` diperiksa; mobile/petugas tidak memakai endpoint ini. Kontrak [AM_BASE_03J_RECONCILIATION_STATUS_GUARD.md](docs/05_modul_aplikasi/AM_BASE_03J_RECONCILIATION_STATUS_GUARD.md).
+- Parent AM-BASE-03 tetap terbuka untuk reverse inquiry provider, antrean retry/review dan UAT gateway eksternal.
+
 ## Guard settlement pada jalur mutasi — 19 September 2026
 
 - [x] **AM-BASE-03I**: approval klaim manual, create VA Sultra, command pembayaran manual, dan void koreksi memakai `Bill::isSettled()`. Approval manual dapat mengecualikan payment yang sedang diverifikasi agar perilaku idempotent tetap kompatibel; alias storage `PAID` uppercase tidak lagi lolos sebagai bill terbuka.

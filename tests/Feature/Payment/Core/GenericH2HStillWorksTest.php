@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Payment\Core;
 
+use App\Models\Payment;
 use App\Models\PaymentChannel;
 use App\Services\BillingService;
 use App\Services\Payment\Drivers\BankSultraDriver;
+use App\Services\Payment\Drivers\QRISDriver;
 
 class GenericH2HStillWorksTest extends CorePaymentTestCase
 {
@@ -110,5 +112,64 @@ class GenericH2HStillWorksTest extends CorePaymentTestCase
         $this->assertSame('error', $result['status']);
         $this->assertSame(422, $result['code']);
         $this->assertSame('Tagihan sudah lunas', $result['message']);
+    }
+
+    public function test_reconciliation_requires_success_payment_settled_bill_and_reference_aliases(): void
+    {
+        $settledBill = $this->createCoreBill([
+            'bill_number' => 'SKRD-RECON-SETTLED',
+            'amount' => 50000,
+            'status' => 'PAID',
+        ]);
+        Payment::create([
+            'bill_id' => $settledBill->id,
+            'taxpayer_id' => $settledBill->taxpayer_id,
+            'tax_object_id' => $settledBill->tax_object_id,
+            'transaction_id' => 'TX-RECON-SUCCESS',
+            'reference_number' => 'RECON-SUCCESS',
+            'payment_method' => 'va',
+            'amount' => 50000,
+            'status' => 'success',
+            'billing_period' => $settledBill->period,
+            'paid_at' => now(),
+        ]);
+
+        $failedBill = $this->createCoreBill([
+            'bill_number' => 'SKRD-RECON-FAILED',
+            'amount' => 50000,
+        ]);
+        Payment::create([
+            'bill_id' => $failedBill->id,
+            'taxpayer_id' => $failedBill->taxpayer_id,
+            'tax_object_id' => $failedBill->tax_object_id,
+            'transaction_id' => 'TX-RECON-FAILED',
+            'reference_number' => 'RECON-FAILED',
+            'payment_method' => 'va',
+            'amount' => 50000,
+            'status' => 'failed',
+            'billing_period' => $failedBill->period,
+        ]);
+
+        $sultra = new BankSultraDriver(app(BillingService::class));
+        $sultraResult = $sultra->reconcile([
+            ['ntb' => 'RECON-SUCCESS', 'amount' => 50000],
+            ['ntb' => 'RECON-FAILED', 'amount' => 50000],
+            ['ntb' => 'RECON-MISSING', 'amount' => 50000],
+            ['ntb' => 'RECON-SUCCESS', 'amount' => 49000],
+        ]);
+
+        $this->assertSame(1, $sultraResult['data']['matched']);
+        $this->assertSame(3, $sultraResult['data']['mismatch']);
+        $this->assertSame('Status pembayaran bukan success', $sultraResult['data']['details'][0]['status']);
+        $this->assertSame('Tidak Ditemukan', $sultraResult['data']['details'][1]['status']);
+        $this->assertSame('Nominal Berbeda', $sultraResult['data']['details'][2]['status']);
+
+        $qris = new QRISDriver(app(BillingService::class));
+        $qrisResult = $qris->reconcile([
+            ['ntb' => 'RECON-SUCCESS', 'amount' => 50000],
+        ]);
+
+        $this->assertSame(1, $qrisResult['data']['matched']);
+        $this->assertSame(0, $qrisResult['data']['mismatch']);
     }
 }
