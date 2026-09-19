@@ -227,6 +227,7 @@ class CitizenServiceController extends Controller
             }
 
             // Zero-Trust Server Verification (Task 1951): Inquiry langsung dari server
+            $h2hVerified = false;
             try {
                 $inquiry = app(\App\Services\PbbBapendaService::class)->inquiryWithFallback($nop, date('Y'));
                 if (($inquiry['status'] ?? 0) === 200) {
@@ -248,6 +249,9 @@ class CitizenServiceController extends Controller
                     $metadata['luas_bangunan'] = (float) ($inquiry['luas_bangunan'] ?? $metadata['luas_bangunan'] ?? 0);
                     $metadata['data_source'] = $inquiry['source'] ?? 'simpbb';
                     $metadata['h2h_verified_at'] = now()->toISOString();
+                    // Auto-approve: NOP sudah terverifikasi di master Bapenda (inquiry H2H 200 OK).
+                    // Verifikasi admin tidak menambah nilai lagi -> langsung aktif, warga bisa bayar.
+                    $h2hVerified = true;
                 }
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::warning('Zero-trust PBB inquiry lookup skipped/failed: ' . $e->getMessage());
@@ -293,7 +297,10 @@ class CitizenServiceController extends Controller
             }
         }
 
-        [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata, $isPbb) {
+        // NOP terverifikasi H2H (master Bapenda) = auto-approve. Selain itu jalur verifikasi manual.
+        $autoApproved = $isPbb && !empty($metadata['h2h_verified_at']);
+
+        [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata, $isPbb, $autoApproved) {
             // Create the tax object
             // Lengkapi kolom tabel dari metadata — halaman verifikasi admin Bapenda
             // membaca kolom tabel, bukan metadata. Sebelum ini luas/kelurahan/
@@ -326,7 +333,7 @@ class CitizenServiceController extends Controller
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
                 'metadata' => $metadata,
-                'status' => 'pending',
+                'status' => $autoApproved ? 'active' : 'pending',
 
                 // --- Kelengkapan untuk verifikasi admin Bapenda ---
                 'land_size_m2' => $num($pick(['luas_bumi', 'land_size_m2', 'luas_tanah'])),
@@ -358,10 +365,13 @@ class CitizenServiceController extends Controller
                 'taxpayer_name' => $taxpayer->name,
                 'type' => 'Pendaftaran Objek',
                 'amount' => 0,
-                'status' => 'pending',
+                'status' => $autoApproved ? 'approved' : 'pending',
                 'proof_file_url' => $firstFileUrl,
                 'submitted_at' => Carbon::now(),
-                'notes' => 'Pendaftaran unit baru (' . $classification->name . '): ' . $taxObject->name,
+                'verified_at' => $autoApproved ? Carbon::now() : null,
+                'notes' => $autoApproved
+                    ? 'NOP terverifikasi otomatis via inquiry Bapenda (H2H). Objek langsung aktif.'
+                    : 'Pendaftaran unit baru (' . $classification->name . '): ' . $taxObject->name,
             ]);
 
             if (!$taxpayer->opd_id) {
@@ -384,6 +394,24 @@ class CitizenServiceController extends Controller
                             'notes' => 'Otomatis dari pendaftaran layanan PBB (REG-' . strtoupper(uniqid()) . ')',
                         ]
                     );
+
+                    // NOP sudah terverifikasi di master Bapenda -> tidak masuk antrean verifikasi admin.
+                    PbbNopApplication::updateOrCreate(
+                        ['nop' => $nopLink],
+                        [
+                            'user_id' => $taxpayer->user_id ?? null,
+                            'nik' => $taxpayer->nik ?? null,
+                            'name' => $metadata['nama_wp'] ?? $taxpayer->name ?? null,
+                            'address' => $metadata['alamat_wp'] ?? $request->address ?? null,
+                            'status' => $h2hVerified ? 'APPROVED' : 'PENDING',
+                            'registered_for' => 'self',
+                            'metadata' => [
+                                'auto_approved' => $h2hVerified,
+                                'source' => 'layanan_pbb',
+                                'h2h_verified_at' => $metadata['h2h_verified_at'] ?? null,
+                            ],
+                        ]
+                    );
                 }
             }
 
@@ -391,10 +419,13 @@ class CitizenServiceController extends Controller
         });
 
         return response()->json([
-            'message' => 'Pendaftaran unit berhasil dikirim dan menunggu verifikasi',
+            'message' => $autoApproved
+                ? 'NOP berhasil terverifikasi. Objek langsung aktif dan siap dibayar.'
+                : 'Pendaftaran unit berhasil dikirim dan menunggu verifikasi',
             'data' => [
                 'object' => $taxObject,
                 'verification_id' => $verification->id,
+                'auto_approved' => $autoApproved,
             ]
         ], 201);
     }
