@@ -103,6 +103,32 @@ class CitizenServiceController extends Controller
                 ->toArray();
         }
 
+        // ── Audit 20 Sep 2026: apakah layanan ini bisa dihitung warga? ──
+        // Formula `tarif_flat` butuh nominal dari tabel retribution_rates.
+        // Kalau belum ada tarif aktif, kalkulator akan selalu Rp 0 → jangan
+        // tampilkan tombol kalkulator, dan beri tahu warga tarif ditetapkan petugas.
+        $formula = trim((string) $classification->calculation_formula);
+        $isFlatOnly = (bool) preg_match('/^\s*tarif_flat\s*$/i', $formula);
+
+        $flatRates = collect();
+        if ($isFlatOnly) {
+            $flatRates = \DB::table('retribution_rates')
+                ->where('retribution_classification_id', $classification->id)
+                ->where('is_active', 1)
+                ->orderBy('amount')
+                ->get(['name', 'amount', 'unit'])
+                ->map(fn ($r) => [
+                    'name' => $r->name,
+                    'amount' => (float) $r->amount,
+                    'unit' => $r->unit,
+                ])
+                ->values();
+        }
+
+        // true  = warga boleh hitung sendiri (ada tarif, atau formula bukan tarif_flat)
+        // false = tarif ditetapkan petugas, tombol kalkulator disembunyikan
+        $hasFlatTariff = !$isFlatOnly || $flatRates->isNotEmpty();
+
         return response()->json([
             'data' => [
                 'id' => $classification->id,
@@ -117,6 +143,8 @@ class CitizenServiceController extends Controller
                 'form_schema' => $classification->form_schema,
                 'requirements' => $cleanRequirements,
                 'calculation_formula' => $classification->calculation_formula,
+                'has_flat_tariff' => $hasFlatTariff,
+                'flat_tariff_options' => $flatRates,
                 'objects' => $objects,
                 'bills' => $bills,
             ]
@@ -267,6 +295,26 @@ class CitizenServiceController extends Controller
 
         [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata, $isPbb) {
             // Create the tax object
+            // Lengkapi kolom tabel dari metadata — halaman verifikasi admin Bapenda
+            // membaca kolom tabel, bukan metadata. Sebelum ini luas/kelurahan/
+            // penanggung jawab KOSONG walau datanya ada di hasil inquiry H2H,
+            // sehingga verifikator tidak bisa menilai kewajaran objek.
+            $pick = function (array $keys, $default = null) use ($metadata, $request) {
+                foreach ($keys as $k) {
+                    if (!empty($metadata[$k])) return $metadata[$k];
+                }
+                foreach ($keys as $k) {
+                    $v = $request->input($k);
+                    if (!empty($v)) return $v;
+                }
+                return $default;
+            };
+
+            $num = function ($v) {
+                if ($v === null || $v === '') return null;
+                return is_numeric($v) ? (float) $v : (float) preg_replace('/[^0-9.]/', '', (string) $v);
+            };
+
             $taxObject = TaxObject::create([
                 'taxpayer_id' => $taxpayer->id,
                 'retribution_type_id' => $service->id,
@@ -279,6 +327,17 @@ class CitizenServiceController extends Controller
                 'longitude' => $request->longitude,
                 'metadata' => $metadata,
                 'status' => 'pending',
+
+                // --- Kelengkapan untuk verifikasi admin Bapenda ---
+                'land_size_m2' => $num($pick(['luas_bumi', 'land_size_m2', 'luas_tanah'])),
+                'building_size_m2' => $num($pick(['luas_bangunan', 'building_size_m2'])),
+                'sub_district' => $pick(['kelurahan', 'sub_district']),
+                'district' => $pick(['kecamatan', 'kota', 'district']),
+                'penanggung_jawab_nama' => $pick(['nama_wp', 'penanggung_jawab_nama'], $request->name),
+                'penanggung_jawab_kontak' => $pick(['kontak_wp', 'no_hp', 'telepon', 'penanggung_jawab_kontak']),
+                'nama_penandatangan' => $pick(['nama_penandatangan'], $request->name),
+                'tanggal_pernyataan' => $pick(['tanggal_pernyataan']) ?: now()->toDateString(),
+                'nomor_formulir' => $pick(['nomor_formulir']) ?: ('SPOP-' . now()->format('Ymd') . '-' . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT)),
             ]);
 
             // Pick the first available file URL for the primary verification proof

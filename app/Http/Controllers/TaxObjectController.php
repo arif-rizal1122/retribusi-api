@@ -323,8 +323,10 @@ class TaxObjectController extends Controller
         $request->validate([
             'name' => 'sometimes|string|max:255',
             'address' => 'sometimes|string|max:255',
-            'district' => 'sometimes|string|max:255',
-            'sub_district' => 'sometimes|string|max:255',
+            // nullable: data H2H SIMPBB sering tidak mengisi kecamatan/kelurahan.
+            // FE boleh mengirim null/kosong tanpa menggagalkan update objek.
+            'district' => 'sometimes|nullable|string|max:255',
+            'sub_district' => 'sometimes|nullable|string|max:255',
             'metadata' => 'nullable',
         ]);
 

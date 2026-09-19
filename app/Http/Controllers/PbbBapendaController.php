@@ -77,6 +77,14 @@ class PbbBapendaController extends Controller
                         'tarif' => (float) ($data['tarif'] ?? 0),
                         'kelas_bumi' => $data['kelas_bumi'] ?? null,
                         'kelas_bangunan' => $data['kelas_bangunan'] ?? null,
+                        // Kelengkapan verifikasi Bapenda — sebelumnya difilter habis di sini
+                        // walau service sudah menyediakannya, sehingga verifikator tidak
+                        // bisa menilai kewajaran NJOP objek.
+                        'kecamatan' => $data['kecamatan'] ?? null,
+                        'njop_bumi_per_m2' => (float) ($data['njop_bumi_per_m2'] ?? 0),
+                        'njop_bangunan_per_m2' => (float) ($data['njop_bangunan_per_m2'] ?? 0),
+                        'jatuh_tempo' => $data['jatuh_tempo'] ?? null,
+                        'hari_terlambat' => (int) ($data['hari_terlambat'] ?? 0),
                     ],
                 ]);
             }
