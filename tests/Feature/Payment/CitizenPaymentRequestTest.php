@@ -149,6 +149,28 @@ class CitizenPaymentRequestTest extends TestCase
             ->assertJsonPath('data.bills.0.can_pay', true);
     }
 
+    public function test_payment_request_status_aliases_are_canonical_at_the_citizen_boundary(): void
+    {
+        Sanctum::actingAs($this->taxpayer);
+
+        $cases = [
+            'success' => ['paid', 'Pembayaran diterima.'],
+            'processing' => ['processing_receipt', 'Pembayaran sedang diproses.'],
+            'void' => ['cancelled', 'Payment request dibatalkan.'],
+            'unrecognized' => ['unknown', 'Status pembayaran belum dapat dipastikan.'],
+        ];
+
+        foreach ($cases as $storedStatus => [$expectedStatus, $expectedLabel]) {
+            $bill = $this->createBill();
+            $paymentRequest = $this->attachPaymentRequest($bill, $storedStatus);
+
+            $this->getJson("/api/citizen/payment-requests/{$paymentRequest->id}")
+                ->assertOk()
+                ->assertJsonPath('data.status', $expectedStatus)
+                ->assertJsonPath('data.status_label', $expectedLabel);
+        }
+    }
+
     public function test_citizen_briva_va_uses_partner_service_id_and_numeric_customer_no(): void
     {
         config([

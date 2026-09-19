@@ -1,5 +1,11 @@
 # API Backlog
 
+## Status payment request pada batas citizen — 19 September 2026
+
+- [x] AM-BASE-03G: Top-level payment request dan active_payment_request pada citizen bills sekarang memakai CitizenPaymentRequestStatus. Alias success/settled/processing/void dan status tidak dikenal dinormalisasi; label channel BRI/Sultra konsisten. can_refresh/can_cancel tidak diperluas di luar lifecycle storage pending.
+- Validasi: suite lintas DLH/lab/citizen/payment **50 test/360 assertion lulus**; Pint, PHP lint, dan diff check lulus. Kontrak: docs/05_modul_aplikasi/AM_BASE_03G_PAYMENT_REQUEST_STATUS.md.
+- Consumer audit: mobile sudah memiliki PaymentRequestStatus canonical dan tidak membuat keputusan status dari raw database; admin/petugas tidak memiliki consumer endpoint citizen payment request. Parent AM-BASE-03 tetap terbuka untuk reverse inquiry, rekonsiliasi gateway dan UAT eksternal.
+
 ## Status bill pada payment request citizen — 19 September 2026
 
 - [x] AM-BASE-03F: Detail data.bills[] pada payment request citizen menerbitkan status, status_label, dan can_pay dari CitizenBillStatus. Request aktif menghasilkan pending_verification; request cancelled/expired tidak mengunci bill pending/overdue; status storage tidak diubah.

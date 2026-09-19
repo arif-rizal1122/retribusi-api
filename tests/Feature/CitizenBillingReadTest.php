@@ -162,6 +162,8 @@ class CitizenBillingReadTest extends TestCase
         $this->assertArrayNotHasKey('has_active_payment_request', $bills[$activeBrivaBill->id]);
         $this->assertSame((string) $activePaymentRequest->id, $bills[$activeBrivaBill->id]['active_payment_request']['id']);
         $this->assertSame('bri_va', $bills[$activeBrivaBill->id]['active_payment_request']['method']);
+        $this->assertSame('pending', $bills[$activeBrivaBill->id]['active_payment_request']['status']);
+        $this->assertSame('Menunggu pembayaran melalui channel BRI.', $bills[$activeBrivaBill->id]['active_payment_request']['status_label']);
         $this->assertSame('777'.$activeBrivaBill->bill_number, $bills[$activeBrivaBill->id]['active_payment_request']['va_number']);
         $this->assertTrue($bills[$activeBrivaBill->id]['active_payment_request']['can_cancel']);
     }

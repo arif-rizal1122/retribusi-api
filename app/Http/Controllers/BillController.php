@@ -6,12 +6,19 @@ use App\Models\Bill;
 use App\Models\RetributionType;
 use App\Models\TaxObject;
 use App\Models\Taxpayer;
+use App\Models\User;
 use App\Services\BillCreationService;
 use App\Services\BillPeriodService;
+use App\Services\OfficialDocumentService;
 use App\Services\Payment\Snap\SnapBrivaReadiness;
 use App\Support\CitizenBillStatus;
+use App\Support\CitizenPaymentRequestStatus;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class BillController extends Controller
 {
@@ -157,7 +164,7 @@ class BillController extends Controller
                 'period_start' => $periodInfo['period_start'],
                 'period_end' => $periodInfo['period_end'],
                 'metadata' => $metadata,
-                'due_date' => $request->due_date ? \Carbon\Carbon::parse($request->due_date) : $periodInfo['due_date'],
+                'due_date' => $request->due_date ? Carbon::parse($request->due_date) : $periodInfo['due_date'],
             ]);
         }
 
@@ -231,12 +238,12 @@ class BillController extends Controller
         $user = $request->user();
 
         // Ownership / Authorization check
-        if ($user instanceof \App\Models\User) {
+        if ($user instanceof User) {
             // Admin/Petugas: restrict by OPD if not super admin
             if (! $user->isSuperAdmin() && $bill->opd_id !== $user->opd_id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
-        } elseif ($user instanceof \App\Models\Taxpayer) {
+        } elseif ($user instanceof Taxpayer) {
             // Citizen: restrict by their own record
             if ($bill->taxpayer_id !== $user->id) {
                 return response()->json(['message' => 'Forbidden: This is not your bill.'], 403);
@@ -322,33 +329,26 @@ class BillController extends Controller
             return null;
         }
 
+        $rawStatus = $paymentRequest->getRawOriginal('status');
+        $status = CitizenPaymentRequestStatus::normalize($rawStatus);
+        $isSultra = in_array(strtoupper((string) $paymentRequest->payment_channel), ['BANK_SULTRA', 'BANK SULTRA', 'SULTRA'], true);
+
         return [
             'id' => (string) $paymentRequest->id,
             'provider' => $paymentRequest->payment_channel,
             'method' => strtolower($paymentRequest->payment_channel) === 'bri' && strtoupper($paymentRequest->method) === 'VA'
                 ? 'bri_va'
                 : strtolower($paymentRequest->method),
-            'status' => $paymentRequest->status,
-            'status_label' => $this->paymentRequestStatusLabel($paymentRequest->status),
+            'status' => $status,
+            'status_label' => CitizenPaymentRequestStatus::label($status, $isSultra),
             'va_number' => $paymentRequest->va_number,
             'expired_at' => $paymentRequest->expires_at?->toIso8601String(),
             'total_amount' => (float) $paymentRequest->amount_snapshot
                 + (float) $paymentRequest->admin_fee_snapshot
                 + (float) $paymentRequest->penalty_snapshot,
-            'can_refresh' => $paymentRequest->status === 'pending',
-            'can_cancel' => $paymentRequest->status === 'pending',
+            'can_refresh' => $rawStatus === 'pending',
+            'can_cancel' => $rawStatus === 'pending',
         ];
-    }
-
-    private function paymentRequestStatusLabel(string $status): string
-    {
-        return match ($status) {
-            'pending' => 'Menunggu pembayaran melalui channel BRI.',
-            'paid' => 'Pembayaran diterima.',
-            'expired' => 'Payment request kedaluwarsa.',
-            'cancelled' => 'Payment request dibatalkan.',
-            default => 'Payment request sedang diproses.',
-        };
     }
 
     private function citizenPaymentOptions(Bill $bill, bool $canPay): array
@@ -419,10 +419,10 @@ class BillController extends Controller
     /**
      * Export/Preview SKRD
      */
-    public function exportSKRD(Request $request, Bill $bill, \App\Services\OfficialDocumentService $docService)
+    public function exportSKRD(Request $request, Bill $bill, OfficialDocumentService $docService)
     {
         $user = $request->user();
-        if ($user instanceof \App\Models\Taxpayer && $bill->taxpayer_id !== $user->id) {
+        if ($user instanceof Taxpayer && $bill->taxpayer_id !== $user->id) {
             return abort(403, 'Unauthorized access to this document.');
         }
 
@@ -434,10 +434,10 @@ class BillController extends Controller
     /**
      * Export/Preview SSPD
      */
-    public function exportSSPD(Request $request, Bill $bill, \App\Services\OfficialDocumentService $docService)
+    public function exportSSPD(Request $request, Bill $bill, OfficialDocumentService $docService)
     {
         $user = $request->user();
-        if ($user instanceof \App\Models\Taxpayer && $bill->taxpayer_id !== $user->id) {
+        if ($user instanceof Taxpayer && $bill->taxpayer_id !== $user->id) {
             return abort(403, 'Unauthorized access to this document.');
         }
 
@@ -453,10 +453,10 @@ class BillController extends Controller
     /**
      * Export/Preview SPPT (PBB)
      */
-    public function exportSPPT(Request $request, Bill $bill, \App\Services\OfficialDocumentService $docService)
+    public function exportSPPT(Request $request, Bill $bill, OfficialDocumentService $docService)
     {
         $user = $request->user();
-        if ($user instanceof \App\Models\Taxpayer && $bill->taxpayer_id !== $user->id) {
+        if ($user instanceof Taxpayer && $bill->taxpayer_id !== $user->id) {
             return abort(403, 'Unauthorized access to this document.');
         }
 
@@ -470,7 +470,7 @@ class BillController extends Controller
             $data = $docService->generateSPPT($bill);
 
             if ($request->query('download') === 'pdf') {
-                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.sppt', $data);
+                $pdf = Pdf::loadView('pdf.sppt', $data);
 
                 return $pdf->download("SPPT-{$bill->taxObject->nop}-{$data['year']}.pdf");
             }
@@ -481,7 +481,7 @@ class BillController extends Controller
         }
     }
 
-    public function signTTE(Request $request, \App\Services\OfficialDocumentService $docService)
+    public function signTTE(Request $request, OfficialDocumentService $docService)
     {
         $validated = $request->validate([
             'bill_id' => 'required|exists:bills,id',
@@ -504,7 +504,7 @@ class BillController extends Controller
                 'signed_document' => $signedDoc,
             ]);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('TTE Signing Error: '.$e->getMessage(), [
+            Log::error('TTE Signing Error: '.$e->getMessage(), [
                 'exception' => $e,
                 'user_id' => $user->id,
                 'bill_id' => $bill->id,
@@ -532,7 +532,7 @@ class BillController extends Controller
             ->where('status', 'pending');
 
         // If citizen, restrict to their own bills
-        if ($user instanceof \App\Models\Taxpayer) {
+        if ($user instanceof Taxpayer) {
             $query->where('taxpayer_id', $user->id);
         }
 
@@ -577,16 +577,16 @@ class BillController extends Controller
     public function generateQr(Request $request, Bill $bill)
     {
         $base = env('QR_BASE_URL', 'https://apimpad.baubaukota.go.id');
-        $qrUrl = rtrim($base, '/') . '/api/verify/bill/' . $bill->bill_number;
+        $qrUrl = rtrim($base, '/').'/api/verify/bill/'.$bill->bill_number;
 
         // SVG QR — tanpa imagick, selalu tersedia (PHP murni)
         $qrImage = null;
         try {
-            $qrSvg = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+            $qrSvg = QrCode::format('svg')
                 ->size(400)
                 ->margin(2)
                 ->generate($qrUrl);
-            $qrImage = 'data:image/svg+xml;base64,' . base64_encode($qrSvg);
+            $qrImage = 'data:image/svg+xml;base64,'.base64_encode($qrSvg);
         } catch (\Throwable $e) {
             $qrImage = null;
         }

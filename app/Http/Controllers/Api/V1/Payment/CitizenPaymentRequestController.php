@@ -10,6 +10,7 @@ use App\Models\PaymentRequestItem;
 use App\Models\Taxpayer;
 use App\Services\Payment\Snap\SnapBrivaReadiness;
 use App\Support\CitizenBillStatus;
+use App\Support\CitizenPaymentRequestStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -265,6 +266,7 @@ class CitizenPaymentRequestController extends Controller
         $items = $paymentRequest->items;
         $receipts = $this->receipts($paymentRequest, $items);
         $channelUpper = strtoupper((string) $paymentRequest->payment_channel);
+        $status = CitizenPaymentRequestStatus::normalize($paymentRequest->getRawOriginal('status'));
         $isSultra = in_array($channelUpper, ['BANK_SULTRA', 'BANK SULTRA', 'SULTRA'], true);
         $isBri = in_array($channelUpper, ['BRI', 'BANK BRI'], true);
 
@@ -294,8 +296,8 @@ class CitizenPaymentRequestController extends Controller
             'external_id' => $paymentRequest->external_id,
             'provider' => $isSultra ? 'Bank Sultra' : $paymentRequest->payment_channel,
             'method' => $method,
-            'status' => $paymentRequest->status,
-            'status_label' => $this->statusLabel($paymentRequest->status, $isSultra),
+            'status' => $status,
+            'status_label' => CitizenPaymentRequestStatus::label($status, $isSultra),
             'bill_ids' => $items->pluck('bill_id')->values(),
             'bill_numbers' => $items->map(fn (PaymentRequestItem $item) => $item->bill?->bill_number)->filter()->values(),
             'bills' => $items->map(function (PaymentRequestItem $item) use ($paymentRequest) {
@@ -346,14 +348,14 @@ class CitizenPaymentRequestController extends Controller
             'receipt_url' => $receipts->first()['download_path'] ?? null,
             'receipts' => $receipts,
             'instructions' => $instructions,
-            'can_refresh' => $paymentRequest->status === 'pending',
-            'can_cancel' => $paymentRequest->status === 'pending',
+            'can_refresh' => $paymentRequest->getRawOriginal('status') === 'pending',
+            'can_cancel' => $paymentRequest->getRawOriginal('status') === 'pending',
         ];
     }
 
     private function receipts(PaymentRequest $paymentRequest, Collection $items): Collection
     {
-        if ($paymentRequest->status !== 'paid') {
+        if (CitizenPaymentRequestStatus::normalize($paymentRequest->getRawOriginal('status')) !== 'paid') {
             return collect();
         }
 
@@ -403,18 +405,6 @@ class CitizenPaymentRequestController extends Controller
 
     private function paymentRequestIsActive(PaymentRequest $paymentRequest): bool
     {
-        return in_array($paymentRequest->status, ['pending', 'processing', 'processing_receipt'], true);
-    }
-
-    private function statusLabel(string $status, bool $isSultra = false): string
-    {
-        return match ($status) {
-            'paid' => 'Pembayaran diterima.',
-            'expired' => 'Payment request telah kedaluwarsa.',
-            'cancelled' => 'Payment request dibatalkan.',
-            default => $isSultra
-                ? 'Menunggu pembayaran melalui channel Bank Sultra.'
-                : 'Menunggu pembayaran melalui channel BRI.',
-        };
+        return CitizenPaymentRequestStatus::isActive($paymentRequest->getRawOriginal('status'));
     }
 }
