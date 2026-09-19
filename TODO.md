@@ -1,9 +1,14 @@
 # API Backlog
 
+## Status bill inquiry persampahan DLH — 20 September 2026
+
+- [x] **AM-BASE-03M**: response `GET /api/{v1/}dlh/trash/inquiry` menerbitkan `status`, `status_label`, `can_pay`, dan `status_raw` additive melalui `CitizenBillStatus`. `UNPAID`/`PAID`/`lunas`, jatuh tempo, klaim pending, dan payment request aktif dinormalisasi tanpa menulis ulang database; `active_bill` mempertahankan prioritas tagihan yang masih aktif.
+- Validasi: `DlhTrashBillingTest` lulus **11 test/48 assertion**; suite regresi lintas bank/core/DLH/lab/citizen billing/SNAP/dokumen lulus **113 test/557 assertion**; PHP lint, Pint/diff check dan consumer audit lulus. Kontrak [AM_BASE_03M_DLH_TRASH_BILL_STATUS.md](docs/05_modul_aplikasi/AM_BASE_03M_DLH_TRASH_BILL_STATUS.md). Mobile typecheck, lint terarah dan build lulus; test Vitest terhalang `spawn EPERM` sebelum discovery. Parent AM-BASE-03 tetap terbuka untuk reverse inquiry/retry provider dan UAT gateway eksternal.
+
 ## Status bill pada reservasi lab DLH — 20 September 2026
 
 - [x] **AM-BASE-03L**: response `POST /api/{v1/}dlh/lab/orders/{order}/billing`, detail order, dan lookup nomor order menerbitkan `status`, `status_label`, dan `can_pay` melalui `CitizenBillStatus`. Alias storage `UNPAID`/`PAID`/`lunas`, jatuh tempo, klaim pending, dan payment request aktif dinormalisasi tanpa menulis ulang database.
-- Validasi: `DlhLabServiceTest` + `CitizenDlhLabOwnershipTest` + `DlhBankSultraPaymentIntegrationTest` lulus **10 test/76 assertion**; suite regresi lintas bank/core/DLH/citizen billing/SNAP lulus **112 test/547 assertion**; PHP lint, Pint test dan `git diff --check` lulus. Audit consumer mobile/admin/petugas selesai tanpa perubahan frontend. Kontrak [AM_BASE_03L_DLH_LAB_BILL_STATUS.md](docs/05_modul_aplikasi/AM_BASE_03L_DLH_LAB_BILL_STATUS.md). Commit API `058121a` (`fix: normalize dlh lab bill status`) dibuat; push `origin/main` ditolak `fetch first` karena remote memiliki commit yang belum ada di checkout. Tidak dilakukan pull, reset, rebase atau force-push. Parent AM-BASE-03 tetap terbuka untuk reverse inquiry/retry provider dan UAT gateway eksternal.
+- Validasi: `DlhLabServiceTest` + `CitizenDlhLabOwnershipTest` + `DlhBankSultraPaymentIntegrationTest` lulus **10 test/76 assertion**; suite regresi lintas bank/core/DLH/citizen billing/SNAP lulus **112 test/547 assertion**; PHP lint, Pint test dan `git diff --check` lulus. Audit consumer mobile/admin/petugas selesai tanpa perubahan frontend. Kontrak [AM_BASE_03L_DLH_LAB_BILL_STATUS.md](docs/05_modul_aplikasi/AM_BASE_03L_DLH_LAB_BILL_STATUS.md). Commit API `13755b0` (`fix: normalize dlh lab bill status`) dibuat; push `origin/main` ditolak `fetch first` karena remote memiliki commit yang belum ada di checkout. Tidak dilakukan pull, reset, rebase atau force-push. Parent AM-BASE-03 tetap terbuka untuk reverse inquiry/retry provider dan UAT gateway eksternal.
 
 ## Ownership dokumen tagihan citizen — 19 September 2026
 

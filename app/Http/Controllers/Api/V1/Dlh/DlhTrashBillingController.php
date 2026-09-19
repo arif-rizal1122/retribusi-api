@@ -8,6 +8,7 @@ use App\Models\TaxObject;
 use App\Models\Taxpayer;
 use App\Models\User;
 use App\Services\Dlh\DlhTrashBillingService;
+use App\Support\CitizenBillStatus;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -174,26 +175,12 @@ class DlhTrashBillingController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
-        $activeBill = $bills->first(function (Bill $bill) {
-            $status = strtoupper((string) $bill->getRawOriginal('status'));
-
-            return in_array($status, ['UNPAID', 'PENDING', 'OVERDUE'], true);
-        }) ?? $bills->first();
-
-        $billPayload = function (Bill $bill): array {
-            $rawStatus = strtoupper((string) $bill->getRawOriginal('status'));
-
-            return [
-                'id' => $bill->id,
-                'bill_number' => $bill->bill_number,
-                'period' => $bill->period ?? date('Y-m'),
-                'amount' => (float) $bill->amount,
-                'penalty_amount' => (float) $bill->penalty_amount,
-                'total_amount' => (float) $bill->total_amount,
-                'status' => $rawStatus,
-                'due_date' => $bill->due_date?->toDateString(),
-            ];
-        };
+        $billPayloads = $bills
+            ->map(fn (Bill $bill): array => $this->billPayload($bill))
+            ->values();
+        $activeBill = $billPayloads->first(function (array $payload): bool {
+            return in_array($payload['status'], ['pending', 'overdue', 'pending_verification'], true);
+        }) ?? $billPayloads->first();
 
         return response()->json([
             'status' => 'success',
@@ -206,10 +193,49 @@ class DlhTrashBillingController extends Controller
                 'tipe_penghuni' => $taxObject->tipe_penghuni ?? 'PEMILIK',
                 'status_hunian' => $taxObject->status_hunian ?? 'BERPENGHUNI',
                 'taxpayer_name' => $taxObject->penanggung_jawab_nama ?? $taxObject->name,
-                'active_bill' => $activeBill ? $billPayload($activeBill) : null,
-                'bill_history' => $bills->take(5)->map($billPayload)->values(),
+                'active_bill' => $activeBill,
+                'bill_history' => $billPayloads->take(5)->values(),
             ],
         ]);
+    }
+
+    /**
+     * Present a trash bill at the citizen boundary without rewriting storage.
+     * Legacy values such as UNPAID/PAID remain available as status_raw while
+     * status, label and payment permission use the shared canonical contract.
+     */
+    private function billPayload(Bill $bill): array
+    {
+        $hasPendingClaim = $bill->payments()
+            ->whereRaw('LOWER(status) = ?', ['pending'])
+            ->exists();
+        $hasActiveRequest = $bill->paymentRequestItems()
+            ->whereHas('paymentRequest', function ($query) {
+                $query->whereRaw('LOWER(status) = ?', ['pending'])
+                    ->where('expires_at', '>', now());
+            })
+            ->exists();
+        $status = CitizenBillStatus::normalize(
+            (string) $bill->getRawOriginal('status'),
+            $hasPendingClaim,
+            $hasActiveRequest,
+            (bool) $bill->due_date?->isPast(),
+        );
+        $statusRaw = strtoupper(trim((string) $bill->getRawOriginal('status')));
+
+        return [
+            'id' => $bill->id,
+            'bill_number' => $bill->bill_number,
+            'period' => $bill->period ?? date('Y-m'),
+            'amount' => (float) $bill->amount,
+            'penalty_amount' => (float) $bill->penalty_amount,
+            'total_amount' => (float) $bill->total_amount,
+            'status' => $status,
+            'status_raw' => $statusRaw !== '' ? $statusRaw : null,
+            'status_label' => CitizenBillStatus::label($status, $hasActiveRequest),
+            'can_pay' => CitizenBillStatus::canPay($status),
+            'due_date' => $bill->due_date?->toDateString(),
+        ];
     }
 
     private function authorizeDlhOperator(Request $request): void

@@ -289,7 +289,7 @@ class DlhTrashBillingTest extends TestCase
             'penalty_amount' => 0,
             'status' => 'UNPAID',
             'period' => '2026-09',
-            'due_date' => '2026-09-15',
+            'due_date' => now()->subDay(),
         ]);
 
         // Another object under the same citizen must not bleed into this inquiry.
@@ -326,7 +326,50 @@ class DlhTrashBillingTest extends TestCase
             ->assertJsonPath('data.object_code', 'SMP-74-OWNER-001')
             ->assertJsonPath('data.active_bill.bill_number', 'DLH-SMP-OWNER-001')
             ->assertJsonPath('data.active_bill.total_amount', 9000)
+            ->assertJsonPath('data.active_bill.status', 'overdue')
+            ->assertJsonPath('data.active_bill.status_raw', 'UNPAID')
+            ->assertJsonPath('data.active_bill.status_label', 'Jatuh tempo')
+            ->assertJsonPath('data.active_bill.can_pay', true)
             ->assertJsonCount(1, 'data.bill_history');
+    }
+
+    public function test_citizen_inquiry_normalizes_paid_bill_without_making_it_payable(): void
+    {
+        $taxObject = TaxObject::create([
+            'nop' => 'SMP-74-PAID-001',
+            'taxpayer_id' => $this->taxpayer->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'retribution_classification_id' => 198,
+            'name' => 'Rumah Lunas',
+            'address' => 'Jl. Lunas',
+            'building_category' => 'RUMAH_SEDERHANA',
+            'status_hunian' => 'BERPENGHUNI',
+            'penanggung_jawab_nama' => 'La Ode Lunas',
+            'is_active' => true,
+        ]);
+
+        Bill::create([
+            'taxpayer_id' => $this->taxpayer->id,
+            'tax_object_id' => $taxObject->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'bill_number' => 'DLH-SMP-PAID-001',
+            'amount' => 8500,
+            'status' => 'PAID',
+            'period' => '2026-08',
+            'due_date' => now()->subMonth(),
+        ]);
+
+        Sanctum::actingAs($this->taxpayer, ['*']);
+
+        $this->getJson('/api/v1/dlh/trash/inquiry?query=SMP-74-PAID-001')
+            ->assertOk()
+            ->assertJsonPath('data.active_bill.status', 'paid')
+            ->assertJsonPath('data.active_bill.status_raw', 'PAID')
+            ->assertJsonPath('data.active_bill.status_label', 'Lunas')
+            ->assertJsonPath('data.active_bill.can_pay', false)
+            ->assertJsonPath('data.bill_history.0.status', 'paid');
     }
 
     public function test_citizen_cannot_inquire_another_citizens_building_or_by_nik(): void
