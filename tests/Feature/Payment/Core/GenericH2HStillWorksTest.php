@@ -3,6 +3,8 @@
 namespace Tests\Feature\Payment\Core;
 
 use App\Models\PaymentChannel;
+use App\Services\BillingService;
+use App\Services\Payment\Drivers\BankSultraDriver;
 
 class GenericH2HStillWorksTest extends CorePaymentTestCase
 {
@@ -93,5 +95,20 @@ class GenericH2HStillWorksTest extends CorePaymentTestCase
                 'reference_number' => $reference,
             ]);
         }
+    }
+
+    public function test_bank_sultra_create_va_rejects_uppercase_paid_bill_before_external_call(): void
+    {
+        $bill = $this->createCoreBill([
+            'bill_number' => 'SKRD-SULTRA-PAID',
+            'status' => 'PAID',
+        ]);
+
+        $driver = new BankSultraDriver(app(BillingService::class));
+        $result = $driver->createVA($bill->bill_number);
+
+        $this->assertSame('error', $result['status']);
+        $this->assertSame(422, $result['code']);
+        $this->assertSame('Tagihan sudah lunas', $result['message']);
     }
 }

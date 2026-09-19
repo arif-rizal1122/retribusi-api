@@ -37,7 +37,7 @@ class PayBill extends Command
             return 1;
         }
 
-        if ($bill->status === 'lunas') {
+        if ($bill->isSettled()) {
             $this->warn("Bill #{$bill->bill_number} is already paid.");
             return 0;
         }

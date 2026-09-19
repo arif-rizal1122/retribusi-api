@@ -421,11 +421,7 @@ class PaymentController extends Controller
                 }
 
                 if ($bill) {
-                    $alreadySettled = in_array($bill->getRawOriginal('status'), ['lunas', 'paid'], true)
-                        || Payment::where('bill_id', $bill->id)
-                            ->where('status', 'success')
-                            ->where('id', '!=', $lockedPayment->id)
-                            ->exists();
+                    $alreadySettled = $bill->isSettled($lockedPayment->id);
 
                     if ($alreadySettled) {
                         throw ValidationException::withMessages([

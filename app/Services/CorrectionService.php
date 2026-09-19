@@ -85,7 +85,7 @@ class CorrectionService
             // 4. Jika ada bill terkait, batalkan pembayarannya
             if ($originalTransaction->metadata['bill_id'] ?? null) {
                 $bill = \App\Models\Bill::find($originalTransaction->metadata['bill_id']);
-                if ($bill && $bill->status === 'lunas') {
+                if ($bill && $bill->isSettled()) {
                     $bill->update(['status' => 'voided']);
                 }
             }

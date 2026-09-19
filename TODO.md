@@ -1,5 +1,11 @@
 # API Backlog
 
+## Guard settlement pada jalur mutasi — 19 September 2026
+
+- [x] **AM-BASE-03I**: approval klaim manual, create VA Sultra, command pembayaran manual, dan void koreksi memakai `Bill::isSettled()`. Approval manual dapat mengecualikan payment yang sedang diverifikasi agar perilaku idempotent tetap kompatibel; alias storage `PAID` uppercase tidak lagi lolos sebagai bill terbuka.
+- Validasi terarah: **9 test/55 assertion lulus** pada core payment; regression lintas core, DLH, citizen billing dan SNAP lulus **103 test/497 assertion**. PHP lint dan `git diff --check` lulus. Audit consumer menemukan admin `PaymentVerification` memakai endpoint existing; mobile/petugas tidak memakai endpoint approval. Kontrak [AM_BASE_03I_SETTLEMENT_GUARD_MUTATIONS.md](docs/05_modul_aplikasi/AM_BASE_03I_SETTLEMENT_GUARD_MUTATIONS.md).
+- Parent AM-BASE-03 tetap terbuka untuk reverse inquiry, rekonsiliasi provider, dan UAT gateway eksternal.
+
 ## Guard status settlement gateway — 19 September 2026
 
 - [x] **AM-BASE-03H**: `Bill::isSettled()` menjadi guard terminal bersama untuk inquiry/callback Bank Sultra H2H, BRI legacy, Mandiri QRIS, QRIS, BRIVA SNAP, dan callback VA Sultra. Status storage `PAID`, `paid`, `lunas`, `success`, dan `settled`, serta `Payment` berstatus `success`, diperlakukan sebagai sudah lunas sehingga callback tidak menerbitkan pembayaran kedua.

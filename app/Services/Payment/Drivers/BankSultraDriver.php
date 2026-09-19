@@ -250,7 +250,7 @@ class BankSultraDriver implements PaymentGatewayInterface
         if (!$bill) {
             return ['status' => 'error', 'message' => 'Tagihan tidak ditemukan', 'code' => 404];
         }
-        if ($bill->status === 'lunas') {
+        if ($bill->isSettled()) {
             return ['status' => 'error', 'message' => 'Tagihan sudah lunas', 'code' => 422];
         }
 

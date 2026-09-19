@@ -197,4 +197,38 @@ class CitizenPaymentClaimStillWorksTest extends CorePaymentTestCase
             'status' => 'pending',
         ]);
     }
+
+    public function test_manual_claim_approval_rejects_uppercase_paid_bill_status(): void
+    {
+        $bill = $this->createCoreBill(['status' => 'PAID']);
+        $pendingClaim = Payment::create([
+            'bill_id' => $bill->id,
+            'taxpayer_id' => $bill->taxpayer_id,
+            'tax_object_id' => $bill->tax_object_id,
+            'transaction_id' => 'PAY-PENDING-UPPERCASE-PAID',
+            'payment_method' => 'transfer',
+            'amount' => $bill->total_amount,
+            'status' => 'pending',
+            'billing_period' => $bill->period,
+            'proof_url' => 'https://example.test/uppercase-paid.jpg',
+        ]);
+        $admin = User::factory()->create([
+            'role' => 'super_admin',
+            'opd_id' => $bill->opd_id,
+        ]);
+
+        $response = $this->actingAs($admin)->putJson("/api/payments/{$pendingClaim->id}/status", [
+            'status' => 'success',
+        ]);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors('status');
+        $this->assertDatabaseHas('payments', [
+            'id' => $pendingClaim->id,
+            'status' => 'pending',
+        ]);
+        $this->assertDatabaseHas('bills', [
+            'id' => $bill->id,
+            'status' => 'PAID',
+        ]);
+    }
 }

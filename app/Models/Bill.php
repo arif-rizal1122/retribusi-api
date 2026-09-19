@@ -99,13 +99,14 @@ class Bill extends Model
     }
 
     /**
-     * Settlement guard shared by gateway callbacks and inquiry drivers.
+     * Settlement guard shared by gateway callbacks, inquiry and mutation paths.
      *
      * Storage contains legacy variants such as PAID, paid, lunas and settled.
      * A successful payment record is also terminal even when an older callback
-     * left the bill status stale.
+     * left the bill status stale. An optional payment ID can be excluded when
+     * verifying the payment record currently being approved.
      */
-    public function isSettled(): bool
+    public function isSettled(?int $exceptPaymentId = null): bool
     {
         $storedStatus = strtolower(trim((string) $this->getRawOriginal('status')));
 
@@ -114,12 +115,22 @@ class Bill extends Model
         }
 
         if ($this->relationLoaded('payments')) {
-            return $this->payments->contains(function (Payment $payment): bool {
+            return $this->payments->contains(function (Payment $payment) use ($exceptPaymentId): bool {
+                if ($exceptPaymentId !== null && (int) $payment->getKey() === $exceptPaymentId) {
+                    return false;
+                }
+
                 return strtolower(trim((string) $payment->getRawOriginal('status'))) === 'success';
             });
         }
 
-        return $this->payments()->whereRaw('LOWER(status) = ?', ['success'])->exists();
+        $successfulPayments = $this->payments()->whereRaw('LOWER(status) = ?', ['success']);
+
+        if ($exceptPaymentId !== null) {
+            $successfulPayments->where('payments.id', '<>', $exceptPaymentId);
+        }
+
+        return $successfulPayments->exists();
     }
 
     public function taxpayer(): BelongsTo
