@@ -48,6 +48,9 @@ Route::group(['middleware' => 'throttle:10,1'], function () {
 Route::get('/opds', [OpdController::class, 'index']); // Public access
 Route::get('/verify/bill/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyBill']);
 Route::get('/verify/payment/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyPayment']);
+// Verifikasi publik dokumen lain (SPP, teguran, WAIVER, SKT, SPMP, LKOK).
+// Sebelumnya QR dokumen-dokumen ini mengarah ke route yang TIDAK ADA (404).
+Route::get('/verify/doc/{type}/{number}', [\App\Http\Controllers\PublicVerificationController::class, 'verifyDocument']);
 Route::get('/verify/dlh-lab/{orderNumber}', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'verifyPublic']);
 
 // Public: Documents (PDF)
@@ -55,6 +58,8 @@ Route::get('/public/pdf/npwpd/{id}', [\App\Http\Controllers\PdfController::class
 Route::get('/public/pdf/skrd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skrd']);
 Route::get('/public/pdf/skpd/{billId}', [\App\Http\Controllers\DocumentController::class, 'skpd']);
 Route::get('/public/pdf/sspd/{billId}', [\App\Http\Controllers\DocumentController::class, 'sspd']);
+Route::get('/public/pdf/ssrd/{billId}', [\App\Http\Controllers\DocumentController::class, 'ssrd']);
+Route::get('/public/pdf/sipab/{billId}', [\App\Http\Controllers\DocumentController::class, 'sipab']);
 Route::get('/public/pdf/sppt/{billId}', [\App\Http\Controllers\DocumentController::class, 'sppt']);
 Route::get('/public/pdf/surat-teguran/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'suratTeguran']);
 
@@ -70,6 +75,14 @@ Route::post('/public/nib/candidate', [\App\Http\Controllers\NibPublicController:
 
 // Public: Banner beranda mobile
 Route::get('/public/banners', [\App\Http\Controllers\BannerController::class, 'indexPublic']);
+
+// Public: Zero-Login Stiker QR Persil & Pembayaran Mandiri
+$publicObjectRoutes = function () {
+    Route::get('/objects/{code}/bill', [\App\Http\Controllers\Api\V1\Public\PublicTaxObjectBillController::class, 'showBill']);
+    Route::post('/objects/{code}/pay', [\App\Http\Controllers\Api\V1\Public\PublicTaxObjectBillController::class, 'generatePayInstructions']);
+};
+Route::prefix('public')->group($publicObjectRoutes);
+Route::prefix('v1/public')->group($publicObjectRoutes);
 
 // Public self-registration portal (pendaftaran warga)
 Route::prefix('public')->group(function () {
@@ -268,6 +281,12 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/asset/rentals', [\App\Http\Controllers\CitizenAssetController::class, 'myRentals']);
         Route::get('/asset/rentals/{id}', [\App\Http\Controllers\CitizenAssetController::class, 'showRental']);
 
+        // Rusunawa Hierarchical Selector
+        Route::get('/rusun/complexes', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'complexes']);
+        Route::get('/rusun/floors', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'floors']);
+        Route::get('/rusun/rooms', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'availableRooms']);
+        Route::get('/rusun/available-rooms', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'availableRooms']);
+
         // Pembayaran
         Route::get('/payments/history', [PaymentController::class, 'history']);
         Route::post('/payments', [PaymentController::class, 'store']);
@@ -450,6 +469,22 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/asset/items', [\App\Http\Controllers\AdminAssetController::class, 'storeItem']);
         Route::put('/asset/items/{id}', [\App\Http\Controllers\AdminAssetController::class, 'updateItem']);
         Route::delete('/asset/items/{id}', [\App\Http\Controllers\AdminAssetController::class, 'deleteItem']);
+
+        // Rusunawa Room Management (Disperkim) - Admin Endpoints
+        Route::prefix('admin/rusun')->group(function () {
+            Route::get('/rooms', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'adminRooms']);
+            Route::post('/rooms/{id}/maintenance', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setMaintenance']);
+            Route::post('/rooms/{id}/available', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setAvailable']);
+            Route::post('/rooms/{id}/set-maintenance', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setMaintenance']);
+            Route::post('/rooms/{id}/set-available', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setAvailable']);
+        });
+
+        // Rusunawa Room Management (Disperkim) - Legacy / Direct alias
+        Route::get('/rusun/rooms', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'adminRooms']);
+        Route::post('/rusun/rooms/{id}/maintenance', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setMaintenance']);
+        Route::post('/rusun/rooms/{id}/available', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setAvailable']);
+        Route::post('/rusun/rooms/{id}/set-maintenance', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setMaintenance']);
+        Route::post('/rusun/rooms/{id}/set-available', [\App\Http\Controllers\Api\V1\Rusun\RusunRoomController::class, 'setAvailable']);
 
         // DINAS PUPR (Aset Alat Berat, Tronton Bundling, & Inspeksi Hour Meter)
         Route::prefix('pupr')->group(function () {
@@ -640,15 +675,41 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/reports/collector-audit', [\App\Http\Controllers\Api\V1\Dlh\DlhReportController::class, 'getCollectorAuditReport']);
 
         // Persampahan Property-Centric Billing & Occupant Transfer
+        Route::get('/trash/accounts', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'indexAccounts']);
+        Route::get('/trash/tarif-categories', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'listTarifCategories']);
         Route::post('/trash/calculate', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'calculateTariff']);
         Route::post('/trash/transfer-occupant/{taxObjectId}', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'transferOccupant']);
         Route::post('/trash/generate-bills', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'generateMonthlyBills']);
         Route::get('/trash/inquiry', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'inquiry'])
             ->middleware('throttle:30,1');
+        Route::post('/trash/empty-house-notice/{taxObjectId}', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'reportEmptyHouse']);
     };
 
     Route::prefix('dlh')->group($dlhRoutes);
     Route::prefix('v1/dlh')->group($dlhRoutes);
+
+});
+
+// ------------------------------------------------------------------------
+// MODUL DINAS PARIWISATA & KEBUDAYAAN (OPD 16) — Perda Kota Baubau 1/2024
+// Top-level: katalog & portal WNA harus publik (tanpa auth:sanctum).
+// Endpoint tulis tetap dilindungi auth:sanctum di dalam blok.
+// ------------------------------------------------------------------------
+Route::prefix('tourism')->group(function () {
+    // Katalog publik: destinasi, kuota, matriks tarif, add-on sewa alat
+    Route::get('/catalog', [\App\Http\Controllers\Api\V1\Pariwisata\TourismTicketController::class, 'getCatalog']);
+
+    // Portal wisatawan asing — guest checkout tanpa NIK/login
+    Route::post('/guest-checkout', [\App\Http\Controllers\Api\V1\Pariwisata\ForeignTouristController::class, 'guestCheckout']);
+    Route::get('/ticket-status', [\App\Http\Controllers\Api\V1\Pariwisata\ForeignTouristController::class, 'checkTicketStatus']);
+
+    // Butuh login: pemesanan domestik, check-in gerbang, keringanan, link mitra
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/order', [\App\Http\Controllers\Api\V1\Pariwisata\TourismTicketController::class, 'order']);
+        Route::post('/check-in', [\App\Http\Controllers\Api\V1\Pariwisata\TourismTicketController::class, 'scanCheckIn']);
+        Route::post('/kiosk-relief', [\App\Http\Controllers\Api\V1\Pariwisata\TourismTicketController::class, 'applyKioskRelief']);
+        Route::post('/partner-link', [\App\Http\Controllers\Api\V1\Pariwisata\ForeignTouristController::class, 'generateBookingLink']);
+    });
 });
 
 // ------------------------------------------------------------------------

@@ -68,7 +68,7 @@ class SnapBrivaService
                     'bank_code' => $bankCode,
                 ]);
 
-                Payment::create([
+                $payment = Payment::create([
                     'bill_id' => $lockedBill->id,
                     'tax_object_id' => $lockedBill->tax_object_id,
                     'taxpayer_id' => $lockedBill->taxpayer_id,
@@ -83,6 +83,13 @@ class SnapBrivaService
                     'paid_at' => now(),
                     'raw_callback_data' => $this->masker->mask($request->all()),
                 ]);
+
+                // Auto-TTE Hook
+                try {
+                    app(\App\Services\AutoTteHookService::class)->handlePaidBill($lockedBill, 'va', $payment->receipt_number);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("AutoTteHook failed in SnapBrivaService: {$e->getMessage()}");
+                }
 
                 if ($item->id) {
                     $item->update(['status' => 'paid', 'paid_at' => now()]);

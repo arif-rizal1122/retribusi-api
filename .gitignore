@@ -47,3 +47,8 @@ check_va_bootstrap.php
 !.env.example
 database/seeders/ProductionMainCredentialsSeeder.php
 *CredentialsSeeder*
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*

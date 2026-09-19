@@ -86,11 +86,40 @@ return [
 
     'bapenda' => [
         'penagihan_wa' => env('BAPENDA_PENAGIHAN_WA', '6281234567890'),
+
+        /*
+        | Tanda tangan dokumen resmi (blok TTE).
+        | Nilai di bawah adalah PLACEHOLDER yang jelas — WAJIB diisi lewat .env
+        | dengan pejabat yang benar sebelum dokumen dipakai sebagai dasar hukum.
+        | JANGAN mengisi NIP karangan.
+        */
+        'kepala_nama'    => env('BAPENDA_KEPALA_NAMA', '[Nama Kepala Bapenda — set BAPENDA_KEPALA_NAMA di .env]'),
+        'kepala_nip'     => env('BAPENDA_KEPALA_NIP', '[NIP belum diisi — set BAPENDA_KEPALA_NIP di .env]'),
+        'kepala_jabatan' => env('BAPENDA_KEPALA_JABATAN', 'Kepala Badan Pendapatan Daerah Kota Baubau'),
+        'signature_city' => env('BAPENDA_SIGNATURE_CITY', 'Baubau'),
+
+        /*
+        | Status TTE sebenarnya. BSrE/BSSN BELUM aktif (tte_logs = 0).
+        | Set BAPENDA_BSRE_AKTIF=true HANYA setelah integrasi BSrE benar-benar live,
+        | supaya dokumen berhenti mencetak keterangan "belum tersertifikasi BSrE".
+        */
+        'bsre_aktif' => filter_var(env('BAPENDA_BSRE_AKTIF', false), FILTER_VALIDATE_BOOLEAN),
         'dpmptsp' => [
             'base_url' => env('DPMPTSP_API_BASE_URL', ''),
             'api_key' => env('DPMPTSP_API_KEY', ''),
             'enabled' => env('DPMPTSP_VALIDATION_ENABLED', false),
         ],
+    ],
+
+    // TTE BSrE (Badan Siber dan Sandi Negara) — Sertifikat Elektronik
+    // Mode: kalau url kosong/placeholder → fallback segel lokal (jangan klaim sah BSrE)
+    'bsre' => [
+        'url' => env('BSRE_API_URL', ''),
+        'username' => env('BSRE_USERNAME', ''),
+        'password' => env('BSRE_PASSWORD', ''),
+        'timeout' => env('BSRE_TIMEOUT', 3000),
+        // URL verifikasi publik yang dicetak di QR Code dokumen
+        'verify_base_url' => env('BSRE_VERIFY_URL', 'https://mpad.baubaukota.go.id/verify'),
     ],
 
 ];

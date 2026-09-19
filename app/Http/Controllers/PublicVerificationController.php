@@ -9,13 +9,43 @@ use Illuminate\Http\Request;
 class PublicVerificationController extends Controller
 {
     /**
+     * Cari tagihan berdasarkan bill_number ATAU receipt_number (NTPD).
+     *
+     * Warga memegang struk termal dari bank yang isinya NTPD, sedangkan
+     * QR dokumen berisi bill_number. Keduanya harus bisa diverifikasi.
+     */
+    protected function findBillByAnyNumber(string $number, bool $withPayments = false)
+    {
+        $with = ['retributionType', 'opd', 'taxObject', 'taxpayer'];
+        if ($withPayments) {
+            $with[] = 'payments';
+        }
+
+        // 1) coba bill_number dulu (kasus normal QR dokumen)
+        $bill = Bill::with($with)->where('bill_number', $number)->first();
+        if ($bill) {
+            return $bill;
+        }
+
+        // 2) fallback: cari lewat receipt_number / NTPD (struk bank/termal)
+        $payment = Payment::where('receipt_number', $number)
+            ->orWhere('reference_number', $number)
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $payment) {
+            return null;
+        }
+
+        return Bill::with($with)->where('id', $payment->bill_id)->first();
+    }
+
+    /**
      * Publicly verify a bill via QR code
      */
     public function verifyBill($number)
     {
-        $bill = Bill::with(['retributionType', 'opd', 'taxObject', 'taxpayer'])
-            ->where('bill_number', $number)
-            ->first();
+        $bill = $this->findBillByAnyNumber($number);
 
         if (!$bill) {
             return view('verification.invalid', ['number' => $number, 'title' => 'Dokumen Tidak Ditemukan']);
@@ -28,14 +58,26 @@ class PublicVerificationController extends Controller
             $matchingPeriod = $periods->firstWhere('period', $bill->period);
             
             if ($matchingPeriod) {
+                // READ-ONLY: jangan tulis DB dari endpoint publik.
+                // Nilai denda dipakai untuk tampilan saja; penyimpanan dilakukan
+                // oleh job/scheduler internal, bukan saat warga membuka halaman.
                 $bill->penalty_amount = $matchingPeriod['penalty_amount'];
-                // Persist sync result so other platforms (Admin Dashboard) see updated data
-                $bill->save(); 
             }
+        }
+
+        // Ambil bukti pembayaran (kalau ada) supaya status yang ditampilkan JUJUR.
+        // Tanpa ini, halaman selalu bilang "MENUNGGU PEMBAYARAN" walau sudah lunas.
+        $bill->loadMissing('payments');
+        $payment = null;
+        if ($bill->status === 'lunas' || $bill->status === 'paid') {
+            $payment = $bill->payments
+                ->sortByDesc(fn($p) => $p->paid_at ?? $p->created_at)
+                ->first();
         }
 
         return view('verification.bill', [
             'bill' => $bill,
+            'payment' => $payment,
             'title' => 'Verifikasi Tagihan (SKRD)',
             'is_valid' => true,
         ]);
@@ -46,9 +88,7 @@ class PublicVerificationController extends Controller
      */
     public function verifyPayment($number)
     {
-        $bill = Bill::with(['retributionType', 'opd', 'taxObject', 'taxpayer', 'payments'])
-            ->where('bill_number', $number)
-            ->first();
+        $bill = $this->findBillByAnyNumber($number, withPayments: true);
 
         if (!$bill || $bill->status !== 'lunas' && $bill->status !== 'paid') {
             return view('verification.invalid', ['number' => $number, 'title' => 'Dokumen Tidak Ditemukan']);
@@ -61,4 +101,41 @@ class PublicVerificationController extends Controller
             'is_valid' => true,
         ]);
     }
+
+    /**
+     * Verifikasi publik untuk dokumen selain tagihan (SPP, teguran, WAIVER,
+     * SKT, SPMP, LKOK). Menampilkan halaman verifikasi generik yang jujur.
+     */
+    public function verifyDocument(string $type, string $number)
+    {
+        $label = [
+            'spp'     => 'Surat Pemberitahuan Pajak (SPP)',
+            'teguran' => 'Surat Teguran',
+            'waiver'  => 'SK Penghapusan Denda',
+            'skt'     => 'Surat Keterangan Terdaftar (SKT)',
+            'spmp'    => 'Surat Pemberitahuan Pajak Masa (SPMP)',
+            'lkok'    => 'Laporan Kondisi Objek Pajak (LKOK)',
+        ][strtolower($type)] ?? 'Dokumen Resmi';
+
+        // Coba telusuri apakah nomor ini terkait tagihan yang dikenal.
+        $bill = $this->findBillByAnyNumber($number, withPayments: true);
+
+        $payment = null;
+        if ($bill && in_array(strtolower((string) $bill->status), ['lunas', 'paid'], true)) {
+            $payment = $bill->payments
+                ->sortByDesc(fn($p) => $p->paid_at ?? $p->created_at)
+                ->first();
+        }
+
+        return view('verification.document', [
+            'doc_type'  => strtolower($type),
+            'doc_label' => $label,
+            'number'    => $number,
+            'bill'      => $bill,
+            'payment'   => $payment,
+            'is_valid'  => (bool) $bill,
+            'title'     => 'Verifikasi ' . $label,
+        ]);
+    }
+
 }

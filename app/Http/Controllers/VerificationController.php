@@ -154,7 +154,7 @@ class VerificationController extends Controller
 
             $request->validate([
                 'status' => 'required|in:approved,rejected,in_review',
-                'notes' => 'required_if:status,approved,rejected|nullable|string',
+                'notes' => 'required_if:status,rejected|nullable|string',
             ]);
 
             $updatedVerification = $this->registrationVerificationService->updateStatus(

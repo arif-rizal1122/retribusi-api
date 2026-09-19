@@ -93,6 +93,14 @@ class Taxpayer extends Authenticatable
     }
 
     /**
+     * Get all bills issued for this taxpayer
+     */
+    public function bills(): HasMany
+    {
+        return $this->hasMany(Bill::class);
+    }
+
+    /**
      * Get all PBB NOPs owned by this taxpayer
      */
     public function nops(): HasMany

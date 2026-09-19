@@ -13,6 +13,23 @@
         .status-badge { background: #dcfce7; color: #166534; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; display: inline-block; }
         .footer { margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 9px; color: #999; text-align: center; }
     </style>
+<style>
+    /* Compact layout — margin kertas dipertahankan agar hasil print rapi.
+       CATATAN: jangan set html/body margin:0, karena dompdf akan
+       mengabaikan @page margin dan konten mentok ke tepi kertas. */
+    @page { margin: 34px 40px 34px 40px; }
+    html, body { font-size: 9px !important; line-height: 1.28 !important; }
+    body { margin: 0 !important; padding: 0 !important; }
+    table { border-collapse: collapse; }
+    td, th { padding: 2px 4px !important; font-size: 9px; }
+    h1 { font-size: 13px !important; margin: 3px 0 !important; }
+    h2 { font-size: 11px !important; margin: 3px 0 !important; }
+    h3 { font-size: 10px !important; margin: 2px 0 !important; }
+    p { margin: 2px 0 !important; }
+    .footer { font-size: 7px !important; margin-top: 6px !important; }
+    .signature-section, .tte-block { page-break-inside: avoid !important; }
+    img.qr-code, .qr-code { width: 70px !important; height: 70px !important; }
+</style>
 </head>
 <body>
     @include('pdf.header')
@@ -88,16 +105,40 @@
     </div>
 
     <div class="qr-box">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data={{ urlencode($qr_url) }}" alt="QR Code">
+        <img src="{{ $qr_data_uri ?? app(\App\Services\OfficialDocumentService::class)->qrImageDataUri($qr_url, 80) }}" alt="QR Code">
         <p style="font-size: 8px;">VERIFIKASI PEMBAYARAN</p>
     </div>
 
+        <div class="tte-block" style="margin-top:12px;">
+        <table style="width:100%; border:none; border-collapse:collapse;">
+            <tr>
+                <td style="width:50%; text-align:center; vertical-align:top; border:none; padding:0;">
+                    @if(!empty($signature['tte_qr']))
+                    <img src="{{ $signature['tte_qr'] }}" alt="QR TTE" style="width:62px; height:62px;">
+                    <p style="font-size:6px; margin:1px 0 0 0; line-height:1.1;">Tanda Tangan Elektronik</p>
+                    @endif
+                </td>
+                <td style="width:50%; text-align:center; vertical-align:top; border:none; padding:0;">
+                    <p style="margin:0; font-size:8px; line-height:1.25;">{{ $signature['kota'] ?? 'Baubau' }}, {{ date('d F Y') }}</p>
+                    <p style="margin:0; font-size:8px; line-height:1.25;"><strong>{{ $signature['jabatan'] ?? 'Kepala Badan Pendapatan Daerah' }}</strong></p>
+                    <div style="height:46px;"></div>
+                    <p style="margin:0; font-size:8px; line-height:1.25; text-decoration:underline; font-weight:bold;">{{ $signature['nama'] ?? '[Nama Pejabat]' }}</p>
+                    <p style="margin:0; font-size:8px; line-height:1.25;">NIP. {{ $signature['nip'] ?? '-' }}</p>
+                </td>
+            </tr>
+        </table>
+        @if(!empty($signature['tte_keterangan']))
+        <p style="font-size:6px; font-style:italic; text-align:center; margin:3px 0 0 0; line-height:1.15;">{{ $signature['tte_keterangan'] }}</p>
+        @endif
+    </div>
+
     <div class="footer">
-        <p>Kendari, {{ date('d F Y') }}</p>
+        <p>Baubau, {{ date('d F Y') }}</p>
         <p>BENDAHARA PENERIMA,</p>
         <br><br><br>
         <p>( ________________________ )</p>
         <p style="font-size: 10px;">Dokumen ini diterbitkan secara elektronik oleh sistem M-PAD.</p>
     </div>
+
 </body>
 </html>

@@ -87,6 +87,44 @@ class CitizenServiceController extends Controller
             ->latest()
             ->get();
 
+        $cleanRequirements = is_array($classification->requirements)
+            ? $classification->requirements
+            : (json_decode($classification->requirements, true) ?: []);
+
+        // Sanitasi blanko persampahan (DLH) — buang requirement usang kartu pelanggan/kontrak
+        if ($classification->id == 198 || $classification->code === 'RET-SMP' || ($classification->opd_id == 4) || stripos($classification->name, 'sampah') !== false) {
+            $cleanRequirements = collect($cleanRequirements)
+                ->reject(fn ($r) => preg_match('/pelanggan|kontrak/i', $r['key'] ?? '') || preg_match('/pelanggan|kontrak/i', $r['name'] ?? '') || preg_match('/pelanggan|kontrak/i', $r['label'] ?? ''))
+                ->values()
+                ->toArray();
+        }
+
+        // ── Audit 20 Sep 2026: apakah layanan ini bisa dihitung warga? ──
+        // Formula `tarif_flat` butuh nominal dari tabel retribution_rates.
+        // Kalau belum ada tarif aktif, kalkulator akan selalu Rp 0 → jangan
+        // tampilkan tombol kalkulator, dan beri tahu warga tarif ditetapkan petugas.
+        $formula = trim((string) $classification->calculation_formula);
+        $isFlatOnly = (bool) preg_match('/^\s*tarif_flat\s*$/i', $formula);
+
+        $flatRates = collect();
+        if ($isFlatOnly) {
+            $flatRates = \DB::table('retribution_rates')
+                ->where('retribution_classification_id', $classification->id)
+                ->where('is_active', 1)
+                ->orderBy('amount')
+                ->get(['name', 'amount', 'unit'])
+                ->map(fn ($r) => [
+                    'name' => $r->name,
+                    'amount' => (float) $r->amount,
+                    'unit' => $r->unit,
+                ])
+                ->values();
+        }
+
+        // true  = warga boleh hitung sendiri (ada tarif, atau formula bukan tarif_flat)
+        // false = tarif ditetapkan petugas, tombol kalkulator disembunyikan
+        $hasFlatTariff = ! $isFlatOnly || $flatRates->isNotEmpty();
+
         return response()->json([
             'data' => [
                 'id' => $classification->id,
@@ -99,8 +137,10 @@ class CitizenServiceController extends Controller
                 'unit' => $service->unit,
                 'opd' => $service->opd,
                 'form_schema' => $classification->form_schema,
-                'requirements' => $classification->requirements,
+                'requirements' => $cleanRequirements,
                 'calculation_formula' => $classification->calculation_formula,
+                'has_flat_tariff' => $hasFlatTariff,
+                'flat_tariff_options' => $flatRates,
                 'objects' => $objects,
                 'bills' => $bills,
             ],
@@ -181,6 +221,7 @@ class CitizenServiceController extends Controller
             }
 
             // Zero-Trust Server Verification (Task 1951): Inquiry langsung dari server
+            $h2hVerified = false;
             try {
                 $inquiry = app(PbbBapendaService::class)->inquiryWithFallback($nop, date('Y'));
                 if (($inquiry['status'] ?? 0) === 200) {
@@ -202,6 +243,9 @@ class CitizenServiceController extends Controller
                     $metadata['luas_bangunan'] = (float) ($inquiry['luas_bangunan'] ?? $metadata['luas_bangunan'] ?? 0);
                     $metadata['data_source'] = $inquiry['source'] ?? 'simpbb';
                     $metadata['h2h_verified_at'] = now()->toISOString();
+                    // Auto-approve: NOP sudah terverifikasi di master Bapenda (inquiry H2H 200 OK).
+                    // Verifikasi admin tidak menambah nilai lagi -> langsung aktif, warga bisa bayar.
+                    $h2hVerified = true;
                 }
             } catch (\Exception $e) {
                 Log::warning('Zero-trust PBB inquiry lookup skipped/failed: '.$e->getMessage());
@@ -247,8 +291,39 @@ class CitizenServiceController extends Controller
             }
         }
 
-        [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata, $isPbb) {
+        // NOP terverifikasi H2H (master Bapenda) = auto-approve. Selain itu jalur verifikasi manual.
+        $autoApproved = $isPbb && ! empty($metadata['h2h_verified_at']);
+
+        [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata, $isPbb, $autoApproved) {
             // Create the tax object
+            // Lengkapi kolom tabel dari metadata — halaman verifikasi admin Bapenda
+            // membaca kolom tabel, bukan metadata. Sebelum ini luas/kelurahan/
+            // penanggung jawab KOSONG walau datanya ada di hasil inquiry H2H,
+            // sehingga verifikator tidak bisa menilai kewajaran objek.
+            $pick = function (array $keys, $default = null) use ($metadata, $request) {
+                foreach ($keys as $k) {
+                    if (! empty($metadata[$k])) {
+                        return $metadata[$k];
+                    }
+                }
+                foreach ($keys as $k) {
+                    $v = $request->input($k);
+                    if (! empty($v)) {
+                        return $v;
+                    }
+                }
+
+                return $default;
+            };
+
+            $num = function ($v) {
+                if ($v === null || $v === '') {
+                    return null;
+                }
+
+                return is_numeric($v) ? (float) $v : (float) preg_replace('/[^0-9.]/', '', (string) $v);
+            };
+
             $taxObject = TaxObject::create([
                 'taxpayer_id' => $taxpayer->id,
                 'retribution_type_id' => $service->id,
@@ -260,7 +335,18 @@ class CitizenServiceController extends Controller
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
                 'metadata' => $metadata,
-                'status' => 'pending',
+                'status' => $autoApproved ? 'active' : 'pending',
+
+                // --- Kelengkapan untuk verifikasi admin Bapenda ---
+                'land_size_m2' => $num($pick(['luas_bumi', 'land_size_m2', 'luas_tanah'])),
+                'building_size_m2' => $num($pick(['luas_bangunan', 'building_size_m2'])),
+                'sub_district' => $pick(['kelurahan', 'sub_district']),
+                'district' => $pick(['kecamatan', 'kota', 'district']),
+                'penanggung_jawab_nama' => $pick(['nama_wp', 'penanggung_jawab_nama'], $request->name),
+                'penanggung_jawab_kontak' => $pick(['kontak_wp', 'no_hp', 'telepon', 'penanggung_jawab_kontak']),
+                'nama_penandatangan' => $pick(['nama_penandatangan'], $request->name),
+                'tanggal_pernyataan' => $pick(['tanggal_pernyataan']) ?: now()->toDateString(),
+                'nomor_formulir' => $pick(['nomor_formulir']) ?: ('SPOP-'.now()->format('Ymd').'-'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT)),
             ]);
 
             // Pick the first available file URL for the primary verification proof
@@ -281,10 +367,13 @@ class CitizenServiceController extends Controller
                 'taxpayer_name' => $taxpayer->name,
                 'type' => 'Pendaftaran Objek',
                 'amount' => 0,
-                'status' => 'pending',
+                'status' => $autoApproved ? 'approved' : 'pending',
                 'proof_file_url' => $firstFileUrl,
                 'submitted_at' => Carbon::now(),
-                'notes' => 'Pendaftaran unit baru ('.$classification->name.'): '.$taxObject->name,
+                'verified_at' => $autoApproved ? Carbon::now() : null,
+                'notes' => $autoApproved
+                    ? 'NOP terverifikasi otomatis via inquiry Bapenda (H2H). Objek langsung aktif.'
+                    : 'Pendaftaran unit baru ('.$classification->name.'): '.$taxObject->name,
             ]);
 
             if (! $taxpayer->opd_id) {
@@ -307,6 +396,24 @@ class CitizenServiceController extends Controller
                             'notes' => 'Otomatis dari pendaftaran layanan PBB (REG-'.strtoupper(uniqid()).')',
                         ]
                     );
+
+                    // NOP sudah terverifikasi di master Bapenda -> tidak masuk antrean verifikasi admin.
+                    PbbNopApplication::updateOrCreate(
+                        ['nop' => $nopLink],
+                        [
+                            'user_id' => $taxpayer->user_id ?? null,
+                            'nik' => $taxpayer->nik ?? null,
+                            'name' => $metadata['nama_wp'] ?? $taxpayer->name ?? null,
+                            'address' => $metadata['alamat_wp'] ?? $request->address ?? null,
+                            'status' => $h2hVerified ? 'APPROVED' : 'PENDING',
+                            'registered_for' => 'self',
+                            'metadata' => [
+                                'auto_approved' => $h2hVerified,
+                                'source' => 'layanan_pbb',
+                                'h2h_verified_at' => $metadata['h2h_verified_at'] ?? null,
+                            ],
+                        ]
+                    );
                 }
             }
 
@@ -314,10 +421,13 @@ class CitizenServiceController extends Controller
         });
 
         return response()->json([
-            'message' => 'Pendaftaran unit berhasil dikirim dan menunggu verifikasi',
+            'message' => $autoApproved
+                ? 'NOP berhasil terverifikasi. Objek langsung aktif dan siap dibayar.'
+                : 'Pendaftaran unit berhasil dikirim dan menunggu verifikasi',
             'data' => [
                 'object' => $taxObject,
                 'verification_id' => $verification->id,
+                'auto_approved' => $autoApproved,
             ],
         ], 201);
     }
@@ -404,6 +514,59 @@ class CitizenServiceController extends Controller
             ->where('taxpayer_id', $taxpayer->id)
             ->orderByDesc('created_at')
             ->get();
+
+        // Warga berhak tahu ALASAN penolakan. Tanpa ini, halaman Detail Pengajuan
+        // menampilkan status "Ditolak" tanpa catatan apa pun dari verifikator.
+        // Mobile sudah membaca `latest_verification` + `verification_timeline`
+        // (ServiceDetail.getRejectionNotes), jadi server wajib mengirimkannya.
+        $objectIds = $objects->pluck('id')->all();
+
+        $verificationsByObject = empty($objectIds)
+            ? collect()
+            : Verification::withoutGlobalScopes()
+                ->with(['verifier:id,name'])
+                ->whereIn('tax_object_id', $objectIds)
+                ->orderBy('created_at')
+                ->get()
+                ->groupBy('tax_object_id');
+
+        $objects->each(function (TaxObject $object) use ($verificationsByObject) {
+            $timeline = $verificationsByObject->get($object->id, collect())
+                ->map(fn ($verification) => [
+                    'id' => $verification->id,
+                    'document_number' => $verification->document_number,
+                    'type' => $verification->type,
+                    'status' => $verification->status,
+                    'notes' => $verification->notes,
+                    'submitted_at' => $verification->submitted_at,
+                    'verified_at' => $verification->verified_at,
+                    'verifier_name' => $verification->verifier?->name,
+                ])
+                ->values();
+
+            // `latest_verification` harus = KEPUTUSAN VERIFIKATOR terakhir, bukan
+            // catatan sistem pendaftaran. Catatan pendaftaran ("Pengajuan objek dari
+            // menu Wajib Pajak...") tidak punya verifier dan bisa menutupi alasan
+            // penolakan admin. Prioritas: entri dgn verifier + ada catatan.
+            $withVerifier = $timeline->filter(
+                fn ($item) => ! empty($item['notes']) && ! empty($item['verifier_name'])
+            );
+            $latest = $withVerifier->last()
+                ?: $timeline->filter(fn ($item) => ! empty($item['notes']))->last()
+                ?: $timeline->last();
+
+            // Alasan penolakan terakhir dari verifikator — dikirim eksplisit supaya
+            // tetap terbaca walau status objek sudah berubah (mis. warga sudah
+            // mengajukan ulang sehingga status kembali `pending`).
+            $lastRejection = $timeline
+                ->filter(fn ($item) => $item['status'] === 'rejected' && ! empty($item['notes']))
+                ->last();
+
+            $object->setAttribute('verification_timeline', $timeline);
+            $object->setAttribute('latest_verification', $latest);
+            $object->setAttribute('rejection_notes', $lastRejection['notes'] ?? null);
+            $object->setAttribute('rejected_at', $lastRejection['verified_at'] ?? null);
+        });
 
         return response()->json(['data' => $objects]);
     }

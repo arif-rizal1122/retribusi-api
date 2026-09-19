@@ -19,6 +19,96 @@ class OfficialDocumentService
     /**
      * Render data to PDF
      */
+    /**
+     * Tentukan URL QR yang tepat sesuai STATUS tagihan.
+     * - Sudah lunas / paid -> halaman BUKTI PELUNASAN publik (verify/payment)
+     * - Belum lunas        -> halaman verifikasi tagihan (verify/bill)
+     *
+     * Ini memastikan QR pada struk termal / dokumen yang sudah dibayar
+     * selalu mengarah ke bukti pelunasan, bukan surat tagihan.
+     */
+    public function qrUrlFor(Bill $bill): string
+    {
+        $lunas = in_array(strtolower((string) $bill->status), ['lunas', 'paid'], true);
+        $path  = $lunas ? 'payment' : 'bill';
+
+        return url("/api/verify/{$path}/{$bill->bill_number}");
+    }
+
+    /**
+     * Sama seperti qrUrlFor(), tapi menerima nomor dokumen apa pun
+     * (bill_number ATAU receipt_number/NTPD) supaya warga yang mengetik
+     * NTPD dari struk bank tetap bisa verifikasi.
+     */
+    public function qrUrlForNumber(string $number): string
+    {
+        if (preg_match('/^NTPD-/i', $number)) {
+            return url("/api/verify/payment/{$number}");
+        }
+
+        return url("/api/verify/bill/{$number}");
+    }
+
+    /**
+     * QR code LOKAL (data URI SVG) — tanpa layanan pihak ketiga.
+     *
+     * CSP produksi: img-src 'self' data: → data URI DIIZINKAN.
+     * Dipakai semua template PDF supaya dokumen tetap bisa dicetak
+     * walau server tidak punya akses internet ke api.qrserver.com.
+     */
+    public function qrImageDataUri(string $url, int $size = 120): string
+    {
+        return 'data:image/svg+xml;base64,' . base64_encode(
+            \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+                ->size($size)
+                ->margin(0)
+                ->generate($url)
+        );
+    }
+
+    /**
+     * Blok tanda tangan pejabat + QR TTE.
+     *
+     * Nama/NIP/Jabatan diambil dari config (JANGAN hardcode).
+     * Status TTE jujur: BSrE/BSSN BELUM aktif, jadi dokumen TIDAK boleh
+     * diklaim tersertifikasi BSrE — hanya "disegel elektronik oleh M-PAD".
+     *
+     * @param  string|null  $number  nomor dokumen (untuk URL verifikasi TTE)
+     * @param  int          $qrSize  ukuran QR dalam px
+     */
+    public function signatureBlock(?string $number = null, int $qrSize = 100): array
+    {
+        $bapenda = config('services.bapenda', []);
+
+        $nama    = $bapenda['kepala_nama']    ?? '[Nama Kepala Bapenda — set BAPENDA_KEPALA_NAMA di .env]';
+        $nip     = $bapenda['kepala_nip']     ?? '[NIP belum diisi — set BAPENDA_KEPALA_NIP di .env]';
+        $jabatan = $bapenda['kepala_jabatan'] ?? 'Kepala Badan Pendapatan Daerah Kota Baubau';
+
+        // BSrE aktif hanya kalau URL & kredensial benar-benar diisi.
+        $bsreAktif = !empty($bapenda['bsre_aktif']);
+
+        $tteUrl = $number
+            ? url("/api/tte/verify/{$number}")
+            : url('/api/tte/verify');
+
+        $tteQrDataUri = $this->qrImageDataUri($tteUrl, $qrSize);
+
+        // Keterangan JUJUR sesuai status TTE sebenarnya.
+        $tteKeterangan = $bsreAktif
+            ? 'Dokumen ini ditandatangani secara elektronik tersertifikasi BSrE (BSSN).'
+            : 'Dokumen ini disegel secara elektronik oleh sistem M-PAD dan belum tersertifikasi BSrE BSSN.';
+
+        return [
+            'nama'          => $nama,
+            'nip'           => $nip,
+            'jabatan'       => $jabatan,
+            'bsre_aktif'    => $bsreAktif,
+            'tte_url'       => $tteUrl,
+            'tte_qr'        => $tteQrDataUri,
+            'tte_keterangan'=> $tteKeterangan,
+            'kota'          => config('services.bapenda.signature_city', 'Baubau'),
+        ];
+    }
     public function renderPDF(string $viewPath, array $data, string $filename = 'document.pdf')
     {
         // Sanitize filename to prevent HeaderUtils error
@@ -38,7 +128,8 @@ class OfficialDocumentService
             'address' => $notice->taxObject->address ?? 'Kota Baubau',
             'notes' => $notice->notes,
             'date' => $notice->created_at->translatedFormat('d F Y'),
-            'qr_url' => url("/verify/spp/{$notice->number}"),
+            'qr_url' => url("/api/verify/doc/spp/{$notice->number}"),
+            'signature' => $this->signatureBlock($notice->number),
         ];
     }
 
@@ -69,7 +160,8 @@ class OfficialDocumentService
             'total' => $total,
             'terbilang' => self::terbilang($total) . " Rupiah",
             'date' => $notice->created_at->translatedFormat('d F Y'),
-            'qr_url' => url("/verify/notice/{$notice->number}"),
+            'qr_url' => url("/api/verify/doc/teguran/{$notice->number}"),
+            'signature' => $this->signatureBlock($notice->number),
         ];
     }
 
@@ -87,7 +179,8 @@ class OfficialDocumentService
             'tax_object_name' => $notice->taxObject->name,
             'period' => $notice->notes ?? now()->isoFormat('MMMM YYYY'),
             'date' => $notice->created_at->translatedFormat('d F Y'),
-            'qr_url' => url("/verify/notice/{$notice->number}"),
+            'qr_url' => url("/api/verify/doc/teguran/{$notice->number}"),
+            'signature' => $this->signatureBlock($notice->number),
         ];
     }
 
@@ -112,7 +205,9 @@ class OfficialDocumentService
             'terbilang' => self::terbilang($total) . " Rupiah",
             'period' => $bill->period,
             'due_date' => $bill->due_date,
-            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
             'billing' => $bill,
         ];
     }
@@ -138,7 +233,9 @@ class OfficialDocumentService
             'terbilang' => self::terbilang($total) . " Rupiah",
             'period' => $bill->period,
             'due_date' => $bill->due_date,
-            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
             'billing' => $bill,
         ];
     }
@@ -183,7 +280,9 @@ class OfficialDocumentService
             'payment_reference' => $payment?->receipt_number ?? $payment?->reference_number ?? null,
             'unit_name' => $bill->opd?->name ?? ($bill->taxObject?->opd?->name ?? 'BAPENDA Kota Baubau'),
             'object_name' => $bill->taxObject?->name ?? null,
-            'qr_url' => url("/api/verify/payment/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
         ];
     }
 
@@ -228,7 +327,7 @@ class OfficialDocumentService
 
         $totalPbb = (float) $calc['pbb_terhutang'];
 
-        $qrBase64 = base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(200)->generate(url("/api/verify/bill/{$bill->bill_number}")));
+        $qrBase64 = base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(200)->generate($this->qrUrlFor($bill)));
 
         return [
             'nop' => $bill->taxObject->nop ?? 'BELUM ADA NOP',
@@ -250,8 +349,12 @@ class OfficialDocumentService
             'pbb_terhutang' => $totalPbb,
             'terbilang' => self::terbilang($totalPbb),
             'due_date' => $bill->due_date ? $bill->due_date->isoFormat('D MMMM YYYY') : '-',
-            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
             'qr_base64' => $qrBase64,
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
         ];
     }
 
@@ -300,7 +403,8 @@ class OfficialDocumentService
             'terbilang_waived' => self::terbilang($waivedAmount) . ' Rupiah',
             'total_after_waiver' => (float) $bill->amount + $remainingPenalty,
             'terbilang_total' => self::terbilang((float) $bill->amount + $remainingPenalty) . ' Rupiah',
-            'qr_url' => url("/api/verify/waiver/{$skNumber}"),
+            'qr_url' => url("/api/verify/doc/waiver/{$skNumber}"),
+            'signature' => $this->signatureBlock($skNumber),
         ];
     }
 
@@ -324,7 +428,8 @@ class OfficialDocumentService
             'opd_name' => $taxpayer->opd->name ?? 'BAPENDA Kota Baubau',
             'registered_at' => $taxpayer->created_at->translatedFormat('d F Y'),
             'tax_objects_count' => $taxpayer->taxObjects()->count(),
-            'qr_url' => url("/api/verify/skt/{$sktNumber}"),
+            'qr_url' => url("/api/verify/doc/skt/{$sktNumber}"),
+            'signature' => $this->signatureBlock($sktNumber),
         ];
     }
 
@@ -352,7 +457,9 @@ class OfficialDocumentService
             'terbilang' => self::terbilang($total) . ' Rupiah',
             'audit_notes' => $auditNotes,
             'due_date' => now()->addDays(30)->translatedFormat('d F Y'),
-            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
         ];
     }
 
@@ -377,7 +484,9 @@ class OfficialDocumentService
             'status' => 'NIHIL',
             'audit_notes' => $auditNotes,
             'issued_at' => now()->translatedFormat('d F Y'),
-            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
         ];
     }
 
@@ -409,7 +518,9 @@ class OfficialDocumentService
             'period' => $bill->period,
             'paid_at' => $bill->payments->first()->paid_at ?? now(),
             'payment_method' => $bill->payments->first()->payment_method ?? 'CASH',
-            'qr_url' => url("/api/verify/payment/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
         ];
     }
 
@@ -440,7 +551,54 @@ class OfficialDocumentService
             'due_date' => $bill->due_date?->translatedFormat('d F Y') ?? '-',
             'months_late' => $monthsLate,
             'payment_deadline' => now()->addDays(14)->translatedFormat('d F Y'),
-            'qr_url' => url("/api/verify/bill/{$bill->bill_number}"),
+            'qr_url' => $this->qrUrlFor($bill),
+            'qr_data_uri' => $this->qrImageDataUri($this->qrUrlFor($bill)),
+            'signature' => $this->signatureBlock($bill->bill_number),
+        ];
+    }
+
+    /**
+     * Generate SIPAB (Surat Izin Pemakaian Alat Berat & Pemanfaatan Aset Daerah)
+     */
+    public function generateSIPAB(Bill $bill)
+    {
+        $bill->load(['taxpayer', 'retributionType', 'payments', 'opd']);
+        $rental = \App\Models\AssetRental::with(['assetItem', 'room'])->find($bill->asset_rental_id);
+        $signedDoc = \App\Models\SignedDocument::where('document_type', get_class($bill))
+            ->where('document_id', $bill->id)
+            ->first();
+        $tokenRecord = \App\Models\AssetToken::where('bill_id', $bill->id)->first();
+
+        $total = (float) $bill->amount + (float) $bill->penalty_amount + (float) $bill->fixed_fine_amount + (float) $bill->surcharge_amount;
+        $opdName = $bill->opd?->name ?? 'DINAS PEKERJAAN UMUM DAN PENATAAN RUANG';
+
+        return [
+            'document_title' => 'SURAT IZIN PEMAKAIAN ALAT BERAT & UTILITAS (SIPAB)',
+            'document_number' => $signedDoc?->document_number ?? ('SIPAB/' . date('Y') . '/' . $bill->bill_number),
+            'number' => $bill->bill_number,
+            'taxpayer' => $bill->taxpayer?->name ?? 'N/A',
+            'taxpayer_nik' => $bill->taxpayer?->nik ?? '-',
+            'address' => $bill->taxpayer?->address ?? 'Kota Baubau',
+            'opd_name' => $opdName,
+            'asset_name' => $rental?->assetItem?->name ?? $bill->retributionType?->name ?? 'Unit Alat Berat',
+            'bmd_code' => $rental?->assetItem?->code ?? '-',
+            'lokasi_penggunaan' => $rental?->lokasi_penggunaan ?? 'Kota Baubau',
+            'valid_from' => $rental?->tanggal_mulai ? date('d/m/Y', strtotime($rental->tanggal_mulai)) : date('d/m/Y'),
+            'valid_until' => $rental?->tanggal_selesai ? date('d/m/Y', strtotime($rental->tanggal_selesai)) : date('d/m/Y', strtotime('+3 days')),
+            'duration' => $rental?->lama_sewa ?? 1,
+            'operator_name' => $rental?->operator_nama ?? 'Operator Resmi Ditugaskan',
+            'amount' => (float) $bill->amount,
+            'biaya_tronton' => (float) ($rental?->biaya_tronton ?? 0),
+            'total_amount' => $total,
+            'terbilang' => self::terbilang($total) . ' Rupiah',
+            'ntpd' => $bill->payments->first()?->receipt_number ?? $bill->payments->first()?->reference_number ?? 'NTPD-LUNAS',
+            'token_code' => $tokenRecord?->token_code ?? $signedDoc?->signer_nip,
+            'signer_title' => 'KEPALA ' . strtoupper($opdName),
+            'signer_name' => $signedDoc?->signer_name ?? 'Kepala Dinas PUPR Kota Baubau',
+            'signer_nip' => $signedDoc?->signer_nip ?? '-',
+            'qr_url' => url("/api/tte/verify/{$bill->bill_number}"),
+            'qr_data_uri' => $this->qrImageDataUri(url("/api/tte/verify/{$bill->bill_number}")),
+            'signature' => $this->signatureBlock($bill->bill_number),
         ];
     }
 
@@ -469,7 +627,8 @@ class OfficialDocumentService
             'notes' => $notice->notes,
             'auditor_name' => $notice->creator->name ?? 'N/A',
             'issued_at' => now()->translatedFormat('d F Y'),
-            'qr_url' => url("/api/verify/spmp/{$spmpNumber}"),
+            'qr_url' => url("/api/verify/doc/spmp/{$spmpNumber}"),
+            'signature' => $this->signatureBlock($spmpNumber),
         ];
     }
 
@@ -501,7 +660,8 @@ class OfficialDocumentService
             'audit_status' => $taxObject->audit_status ?? 'pending',
             'registered_at' => $taxObject->created_at->translatedFormat('d F Y'),
             'assessed_at' => now()->translatedFormat('d F Y'),
-            'qr_url' => url("/api/verify/lkok/{$lkokNumber}"),
+            'qr_url' => url("/api/verify/doc/lkok/{$lkokNumber}"),
+            'signature' => $this->signatureBlock($lkokNumber),
         ];
     }
 
@@ -529,7 +689,7 @@ class OfficialDocumentService
      */
     public static function terbilang($angka)
     {
-        $angka = abs($angka);
+        $angka = (int) floor(abs((float) $angka));
         $baca = array("", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas");
         $terbilang = "";
         

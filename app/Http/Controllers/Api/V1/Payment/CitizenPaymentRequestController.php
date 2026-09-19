@@ -101,6 +101,12 @@ class CitizenPaymentRequestController extends Controller
                 ]);
             }
 
+            // Validasi FIFO untuk tagihan rusunawa (Disperkim, opd_id: 11)
+            $rusunBills = $bills->filter(fn (Bill $b) => (int) $b->opd_id === 11);
+            if ($rusunBills->isNotEmpty()) {
+                app(\App\Services\RusunBillingService::class)->validateFifoPayment($taxpayer, $billIds);
+            }
+
             $activePaymentRequests = PaymentRequest::with('items.bill')
                 ->where('taxpayer_id', $taxpayer->id)
                 ->where('method', 'VA')
@@ -152,7 +158,7 @@ class CitizenPaymentRequestController extends Controller
             ]);
 
             $vaNumber = $isSultra
-                ? $this->buildSultraVaNumber($paymentRequest->id)
+                ? $this->buildSultraVaNumber($paymentRequest->id, $bills->first())
                 : $this->buildVaNumber(
                     $paymentRequest->id,
                     $partnerServiceId,
@@ -180,9 +186,23 @@ class CitizenPaymentRequestController extends Controller
         return response()->json(['data' => $this->payload($paymentRequest)], $reused ? 200 : 201);
     }
 
-    private function buildSultraVaNumber(int $paymentRequestId): string
+    private function buildSultraVaNumber(int $paymentRequestId, ?Bill $primaryBill = null): string
     {
-        $partnerId = preg_replace('/\D/', '', (string) config('snap.partners.BANK_SULTRA.partner_id', '7472')) ?: '7472';
+        $prefix = (string) config('snap.partners.BANK_SULTRA.partner_id', '7472');
+
+        if ($primaryBill && (int) $primaryBill->opd_id === 11) {
+            $metadata = is_array($primaryBill->metadata) ? $primaryBill->metadata : json_decode((string) $primaryBill->metadata, true);
+            $complexCode = $metadata['complex_code'] ?? null;
+            $prefix = match ($complexCode) {
+                'mahasiswa' => '7401',
+                'wameo'     => '7402',
+                'asn'       => '7403',
+                'kotamara'  => '7404',
+                default     => $prefix,
+            };
+        }
+
+        $partnerId = preg_replace('/\D/', '', $prefix) ?: '7472';
         $partnerServiceId = str_pad(substr($partnerId, 0, 8), 8, '0', STR_PAD_LEFT);
         $customerNo = str_pad((string) $paymentRequestId, 8, '0', STR_PAD_LEFT);
 

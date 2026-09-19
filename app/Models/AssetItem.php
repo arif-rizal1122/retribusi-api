@@ -53,6 +53,11 @@ class AssetItem extends Model
         return $this->hasMany(AssetRental::class, 'asset_item_id');
     }
 
+    public function rooms(): HasMany
+    {
+        return $this->hasMany(RusunRoom::class, 'asset_item_id');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

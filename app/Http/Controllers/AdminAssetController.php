@@ -217,18 +217,23 @@ class AdminAssetController extends Controller
      */
     public function approve(Request $request, $id)
     {
-        $rental = AssetRental::findOrFail($id);
+        $rental = AssetRental::with(['assetItem', 'room'])->findOrFail($id);
         $this->authorizeAssetScope($rental);
         if (!in_array($rental->status, ['Diajukan', 'Diverifikasi'])) {
             return response()->json(['message' => 'Hanya pengajuan Diajukan/Diverifikasi yang bisa disetujui.'], 422);
         }
 
-        $rental->update([
-            'status' => 'Disetujui',
-            'tanggal_approval' => now(),
-            'catatan_approval' => $request->input('catatan'),
-            'approved_by_user_id' => auth()->id(),
-        ]);
+        if ($rental->room_id && $rental->room) {
+            app(\App\Services\RusunBillingService::class)->checkInRoom($rental, $rental->room, auth()->user());
+            $rental->refresh();
+        } else {
+            $rental->update([
+                'status' => 'Disetujui',
+                'tanggal_approval' => now(),
+                'catatan_approval' => $request->input('catatan'),
+                'approved_by_user_id' => auth()->id(),
+            ]);
+        }
 
         return response()->json(['message' => 'Pengajuan disetujui.', 'data' => $rental]);
     }
@@ -265,10 +270,16 @@ class AdminAssetController extends Controller
             'actual_hours' => 'nullable|numeric|min:0',
         ]);
 
-        $rental = AssetRental::findOrFail($id);
+        $rental = AssetRental::with(['assetItem', 'room'])->findOrFail($id);
         $this->authorizeAssetScope($rental);
         if (!in_array($rental->status, ['Disetujui', 'Diverifikasi'])) {
             return response()->json(['message' => 'Pengajuan belum disetujui, tidak bisa dicatat pengembalian.'], 422);
+        }
+
+        $isRusunawa = $rental->room_id !== null || str_starts_with($rental->assetItem?->code ?? '', 'RUSUN-');
+        if ($isRusunawa) {
+            app(\App\Services\RusunBillingService::class)->checkOutRoom($rental, auth()->user());
+            $rental->refresh();
         }
 
         $rental->update([
@@ -476,6 +487,14 @@ class AdminAssetController extends Controller
             ->get()
             ->map(fn ($i) => ['category' => $i->category?->name, 'total' => $i->total]);
 
+        $roomMatrix = null;
+        if ($isGlobal || (int) $opdId === 11) {
+            $roomMatrix = \App\Models\RusunRoom::with([
+                'assetItem:id,name,code,tarif_default',
+                'currentRental.taxpayer:id,name,phone,nik',
+            ])->get()->groupBy(['complex_code', 'floor']);
+        }
+
         return response()->json([
             'items' => [
                 'total' => $totalItems,
@@ -493,6 +512,7 @@ class AdminAssetController extends Controller
                 'pendapatan_terkumpul' => $pendapatan,
                 'pendapatan_pipeline' => $pendapatanPending,
             ],
+            'room_matrix' => $roomMatrix,
         ]);
     }
 

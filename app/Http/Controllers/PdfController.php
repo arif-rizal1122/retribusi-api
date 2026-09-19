@@ -24,17 +24,6 @@ class PdfController extends Controller
         return $pdf->stream('NPWPD_' . $taxpayer->npwpd . '.pdf');
     }
 
-    /**
-     * Generate NOPD (Kartu Objek Pajak/Retribusi Daerah)
-     */
-    public function generateNopd($id)
-    {
-        $taxObject = TaxObject::with(['taxpayer', 'opd', 'retributionTypes', 'retributionClassifications'])->findOrFail($id);
-
-        $pdf = Pdf::loadView('pdf.nopd', ['taxObject' => $taxObject])
-            ->setPaper('A4', 'portrait'); // Letter/A4 for Certificate of Object
-        return $pdf->download('NOPD-' . $taxObject->id . '.pdf');
-    }
 
     public function generateSkpd($billing_id)
     {

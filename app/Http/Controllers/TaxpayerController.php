@@ -21,18 +21,33 @@ class TaxpayerController extends Controller
         $user = $request->user();
         $query = Taxpayer::with(['opd', 'retributionTypes', 'retributionClassifications', 'creator', 'taxObjects']);
 
-        // Admin OPD and Petugas see their own OPD's taxpayers, unassigned taxpayers, or taxpayers who have objects/retributions in their OPD
+        // Admin OPD and Petugas: filter taxpayers by OPD context
         if ($user && in_array($user->role, ['opd', 'petugas'])) {
-            $query->where(function ($q) use ($user) {
-                $q->where('opd_id', $user->opd_id)
-                  ->orWhereNull('opd_id')
-                  ->orWhereHas('taxObjects', function ($to) use ($user) {
-                      $to->where('opd_id', $user->opd_id);
-                  })
-                  ->orWhereHas('retributionTypes', function ($rt) use ($user) {
-                      $rt->where('retribution_types.opd_id', $user->opd_id);
-                  });
-            });
+            $isBapenda = ($user->opd_id == 1 || $user->opd_id == 5
+                || in_array(strtoupper($user->opd?->code ?? ''), ['BAPENDA', 'DISPENDA'], true)
+                || ($user->opd && str_contains(strtolower($user->opd->name), 'pendapatan'))
+                || str_contains(strtolower($user->email ?? ''), 'bapenda'));
+
+            if (!$isBapenda) {
+                // Sesuai regulasi: OPD selain Bapenda HANYA melihat Wajib Pajak yang SUDAH MEMILIKI OBJEK PAJAK/RETRIBUSI!
+                // Warga/calon WP yang belum memiliki objek pajak terfilter sehingga HANYA BISA DILIHAT DI BAPENDA.
+                $query->has('taxObjects');
+
+                if ($user->opd_id) {
+                    $query->where(function ($q) use ($user) {
+                        $q->where('opd_id', $user->opd_id)
+                          ->orWhereHas('taxObjects', function ($to) use ($user) {
+                              $to->where('opd_id', $user->opd_id);
+                          })
+                          ->orWhereHas('retributionTypes', function ($rt) use ($user) {
+                              $rt->where('retribution_types.opd_id', $user->opd_id);
+                          })
+                          ->orWhereHas('bills', function ($b) use ($user) {
+                              $b->where('opd_id', $user->opd_id);
+                          });
+                    });
+                }
+            }
 
             // If petugas, further filter by assigned retribution types and created_by
             if ($user->role === 'petugas') {
@@ -56,6 +71,17 @@ class TaxpayerController extends Controller
                 } else {
                     $query->where('created_by', $user->id);
                 }
+            }
+        }
+
+        // Server-side filter: WP tanpa objek (BAPENDA only)
+        if ($request->boolean('orphans_only') || $request->boolean('without_objects')) {
+            $query->doesntHave('taxObjects');
+        } elseif ($request->has('has_objects')) {
+            if ($request->boolean('has_objects')) {
+                $query->has('taxObjects');
+            } else {
+                $query->doesntHave('taxObjects');
             }
         }
 

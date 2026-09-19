@@ -32,6 +32,23 @@
         
         .watermark { position: fixed; top: 40%; left: 15%; font-size: 80pt; color: rgba(0,0,0,0.05); transform: rotate(-45deg); z-index: -1; }
     </style>
+<style>
+    /* Compact layout — margin kertas dipertahankan agar hasil print rapi.
+       CATATAN: jangan set html/body margin:0, karena dompdf akan
+       mengabaikan @page margin dan konten mentok ke tepi kertas. */
+    @page { margin: 34px 40px 34px 40px; }
+    html, body { font-size: 9px !important; line-height: 1.28 !important; }
+    body { margin: 0 !important; padding: 0 !important; }
+    table { border-collapse: collapse; }
+    td, th { padding: 2px 4px !important; font-size: 9px; }
+    h1 { font-size: 13px !important; margin: 3px 0 !important; }
+    h2 { font-size: 11px !important; margin: 3px 0 !important; }
+    h3 { font-size: 10px !important; margin: 2px 0 !important; }
+    p { margin: 2px 0 !important; }
+    .footer { font-size: 7px !important; margin-top: 6px !important; }
+    .signature-section, .tte-block { page-break-inside: avoid !important; }
+    img.qr-code, .qr-code { width: 70px !important; height: 70px !important; }
+</style>
 </head>
 <body>
     <div class="watermark">V-TAX VERIFIED</div>
@@ -128,12 +145,35 @@
             </div>
         </div>
 
-        <div class="footer">
+            <div class="tte-block" style="margin-top:12px;">
+        <table style="width:100%; border:none; border-collapse:collapse;">
+            <tr>
+                <td style="width:50%; text-align:center; vertical-align:top; border:none; padding:0;">
+                    @if(!empty($signature['tte_qr']))
+                    <img src="{{ $signature['tte_qr'] }}" alt="QR TTE" style="width:62px; height:62px;">
+                    <p style="font-size:6px; margin:1px 0 0 0; line-height:1.1;">Tanda Tangan Elektronik</p>
+                    @endif
+                </td>
+                <td style="width:50%; text-align:center; vertical-align:top; border:none; padding:0;">
+                    <p style="margin:0; font-size:8px; line-height:1.25;">{{ $signature['kota'] ?? 'Baubau' }}, {{ date('d F Y') }}</p>
+                    <p style="margin:0; font-size:8px; line-height:1.25;"><strong>{{ $signature['jabatan'] ?? 'Kepala Badan Pendapatan Daerah' }}</strong></p>
+                    <div style="height:46px;"></div>
+                    <p style="margin:0; font-size:8px; line-height:1.25; text-decoration:underline; font-weight:bold;">{{ $signature['nama'] ?? '[Nama Pejabat]' }}</p>
+                    <p style="margin:0; font-size:8px; line-height:1.25;">NIP. {{ $signature['nip'] ?? '-' }}</p>
+                </td>
+            </tr>
+        </table>
+        @if(!empty($signature['tte_keterangan']))
+        <p style="font-size:6px; font-style:italic; text-align:center; margin:3px 0 0 0; line-height:1.15;">{{ $signature['tte_keterangan'] }}</p>
+        @endif
+    </div>
+
+    <div class="footer">
             <table class="signature-table">
                 <tr>
                     <td class="signature-cell">
                         <p>Scan untuk Verifikasi:</p>
-                        <img src="data:image/png;base64,{{ $qr_base64 ?? '' }}" class="qr-code" alt="QR Code">
+                        <img src="{{ $qr_data_uri ?? ('data:image/svg+xml;base64,' . ($qr_base64 ?? '')) }}" class="qr-code" alt="QR Code">
                     </td>
                     <td class="signature-cell">
                         <p>Baubau, {{ date('d F Y') }}</p>
@@ -146,5 +186,6 @@
             </table>
         </div>
     </div>
+
 </body>
 </html>

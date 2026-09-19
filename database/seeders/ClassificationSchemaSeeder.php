@@ -89,7 +89,7 @@ class ClassificationSchemaSeeder extends Seeder
             ['key' => 'foto_titik', 'name' => 'Foto Titik Pemasangan', 'required' => true],
         ]);
 
-        // 5. MBLB (Mineral Bukan Logam dan Batuan)
+        // 5. MBLB (Mineral Bukan Logam dan Batuan) — Objek adalah pengambilan material, bukan izin
         $this->updateSchema('Pajak MBLB', [
             ['key' => 'jenis_mineral', 'label' => 'Jenis Komoditas Mineral', 'type' => 'select', 'required' => true, 'options' => [
                 ['label' => 'Batu Gamping (Kapur)', 'value' => 'gamping'],
@@ -99,17 +99,17 @@ class ClassificationSchemaSeeder extends Seeder
                 ['label' => 'Kerikil / Sirtu', 'value' => 'sirtu'],
                 ['label' => 'Batu Andesit / Belah', 'value' => 'andesit'],
             ]],
-            ['key' => 'nomor_izin', 'label' => 'Nomor IUP / SIPB', 'type' => 'text', 'required' => true],
-            ['key' => 'tanggal_izin', 'label' => 'Masa Berlaku Izin (s.d. Tanggal)', 'type' => 'date', 'required' => true],
-            ['key' => 'luas_wip', 'label' => 'Luas Wilayah Tambang (Ha)', 'type' => 'number', 'required' => true],
             ['key' => 'volume', 'label' => 'Estimasi Volume per Bulan', 'type' => 'number', 'required' => true],
             ['key' => 'satuan_volume', 'label' => 'Satuan', 'type' => 'select', 'required' => true, 'options' => [
                 ['label' => 'Meter Kubik (m3)', 'value' => 'm3'],
                 ['label' => 'Ton', 'value' => 'ton'],
             ]],
+            ['key' => 'nomor_izin', 'label' => 'Nomor IUP / SIPB', 'type' => 'text', 'required' => false, 'helper' => 'Opsional jika ada'],
+            ['key' => 'tanggal_izin', 'label' => 'Masa Berlaku Izin', 'type' => 'date', 'required' => false, 'helper' => 'Opsional jika ada'],
+            ['key' => 'luas_wip', 'label' => 'Luas Wilayah Tambang (Ha)', 'type' => 'number', 'required' => false, 'helper' => 'Opsional jika ada'],
         ], [
-            ['key' => 'dokumen_iup', 'name' => 'Salinan Dokumen IUP / SIPB', 'required' => true],
-            ['key' => 'foto_titik', 'name' => 'Foto Lokasi Penambangan', 'required' => true],
+            ['key' => 'foto_titik', 'name' => 'Foto Lokasi Penambangan / Titik Galian', 'required' => true],
+            ['key' => 'dokumen_iup', 'name' => 'Salinan Dokumen IUP / SIPB (Jika Ada)', 'required' => false],
         ]);
 
         // 6. Pajak Air Tanah
@@ -218,11 +218,12 @@ class ClassificationSchemaSeeder extends Seeder
         // 12. Retribusi PKD / Sewa Lapak Pasar
         $this->updateSchema('PKD', [
             ['key' => 'nama_pasar', 'label' => 'Nama Pasar', 'type' => 'select', 'required' => true, 'options' => [
-                ['label' => 'Pasar Wameo', 'value' => 'wameo'],
-                ['label' => 'Pasar Karya Nugraha', 'value' => 'karya_nugraha'],
-                ['label' => 'Pasar Laelangi', 'value' => 'laelangi'],
-                ['label' => 'Pasar Moko', 'value' => 'moko'],
-                ['label' => 'Pasar Baruga', 'value' => 'baruga'],
+                ['label' => 'Pasar Wameo', 'value' => 'Pasar Wameo'],
+                ['label' => 'Pasar Karya Nugraha', 'value' => 'Pasar Karya Nugraha'],
+                ['label' => 'Pasar Laelangi', 'value' => 'Pasar Laelangi'],
+                ['label' => 'Pasar Moko', 'value' => 'Pasar Moko'],
+                ['label' => 'Pasar Baruga', 'value' => 'Pasar Baruga'],
+                ['label' => 'Pasar Modern Ngkari-ngkari', 'value' => 'Pasar Modern Ngkari-ngkari'],
             ]],
             ['key' => 'blok_kios', 'label' => 'Blok Kios / Los', 'type' => 'text', 'required' => true],
             ['key' => 'nomor_kios', 'label' => 'Nomor Kios / Lapak', 'type' => 'text', 'required' => true],
@@ -239,6 +240,28 @@ class ClassificationSchemaSeeder extends Seeder
         ], [
             ['key' => 'ktp_pedagang', 'name' => 'KTP Pedagang', 'required' => true],
             ['key' => 'foto_kios', 'name' => 'Foto Kios / Lapak', 'required' => true],
+        ]);
+
+        // 13. Retribusi Pelayanan Pasar (ID 202 / RET-PSR) — Perda 1/2024
+        $this->updateSchema('Pelayanan Pasar', [
+            ['key' => 'nama_pasar', 'label' => 'Nama Pasar', 'type' => 'select', 'required' => true, 'options' => [
+                ['label' => 'Pasar Wameo', 'value' => 'Pasar Wameo'],
+                ['label' => 'Pasar Karya Nugraha', 'value' => 'Pasar Karya Nugraha'],
+                ['label' => 'Pasar Laelangi', 'value' => 'Pasar Laelangi'],
+                ['label' => 'Pasar Moko', 'value' => 'Pasar Moko'],
+                ['label' => 'Pasar Baruga', 'value' => 'Pasar Baruga'],
+                ['label' => 'Pasar Modern Ngkari-ngkari', 'value' => 'Pasar Modern Ngkari-ngkari'],
+            ]],
+            ['key' => 'jenis_fasilitas', 'label' => 'Jenis Fasilitas', 'type' => 'select', 'required' => true, 'options' => [
+                ['label' => 'Kios', 'value' => 'kios'],
+                ['label' => 'Los', 'value' => 'los'],
+                ['label' => 'Pelataran', 'value' => 'pelataran'],
+                ['label' => 'Gudang', 'value' => 'gudang'],
+                ['label' => 'Toilet / Sarana Penunjang', 'value' => 'toilet'],
+            ]],
+            ['key' => 'luas', 'label' => 'Luas Lapak / Kios (m2)', 'type' => 'number', 'required' => true],
+        ], [
+            ['key' => 'foto_lokasi', 'name' => 'Foto Kios / Los / Lapak', 'required' => true],
         ]);
 
         // 13. Persetujuan Bangunan Gedung (PBG) - 19 Parameter SIMBG

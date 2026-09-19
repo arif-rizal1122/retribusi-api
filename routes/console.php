@@ -15,3 +15,8 @@ Schedule::command('auto-deduct:remind-bills --days=7 --overdue')->dailyAt('07:00
 // Rekonsiliasi harian pembayaran PBB M-PAD vs SIMPBB
 Schedule::command('pbb:reconcile')->dailyAt('01:00')->withoutOverlapping();
 Schedule::job(new \App\Jobs\AnomalyDetectionJob)->dailyAt('02:00');
+// Penagihan e-SKRD bulanan Rusunawa Disperkim setiap tanggal 1 pukul 00:01 WITA
+Schedule::command('rusun:generate-bills')
+    ->monthlyOn(1, '00:01')
+    ->timezone('Asia/Makassar')
+    ->withoutOverlapping();
