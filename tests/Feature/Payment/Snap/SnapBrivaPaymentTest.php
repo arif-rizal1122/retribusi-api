@@ -60,4 +60,32 @@ class SnapBrivaPaymentTest extends SnapFeatureTestCase
             'status' => 'success',
         ]);
     }
+
+    public function test_late_briva_payment_callback_after_expiry_does_not_settle_the_bill(): void
+    {
+        $bill = $this->createOpenBill(['amount' => 125000]);
+        $vaNumber = '777'.$bill->bill_number;
+        $paymentRequest = $this->createPaymentRequest($bill, $vaNumber);
+        $paymentRequest->update(['expires_at' => now()->subMinute()]);
+        $body = $this->paymentBody($bill, $vaNumber);
+        $path = '/api/snap/v1.0/transfer-va/payment';
+
+        $this->postJson($path, $body, $this->transactionHeaders($path, $body))
+            ->assertForbidden()
+            ->assertJsonPath('responseCode', '4032500')
+            ->assertJsonPath('responseMessage', 'Transaction Expired');
+
+        $this->assertDatabaseHas('bills', [
+            'id' => $bill->id,
+            'status' => 'pending',
+        ]);
+        $this->assertDatabaseHas('payment_requests', [
+            'id' => $paymentRequest->id,
+            'status' => 'pending',
+        ]);
+        $this->assertDatabaseMissing('payments', [
+            'bill_id' => $bill->id,
+            'status' => 'success',
+        ]);
+    }
 }

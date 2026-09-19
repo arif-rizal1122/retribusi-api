@@ -1,5 +1,11 @@
 # API Backlog
 
+## Lifecycle callback BRIVA terlambat — 19 September 2026
+
+- [x] **AM-PAY-03A** Callback pembayaran BRIVA yang tiba setelah \`expires_at\` ditolak dengan response SNAP \`4032500\` dan tidak mengubah Bill, PaymentRequest, atau menerbitkan Payment/receipt. Skenario cancel, amount snapshot, multi-bill, inquiry, receipt dan idempotensi existing tetap diregresikan pada suite SNAP.
+- Validasi: \`php artisan test tests/Feature/Payment/Snap tests/Unit/Payment/Snap --do-not-cache-result\` lulus **58 test/197 assertion**. Kontrak [AM_PAY_03_BRIVA_LIFECYCLE_CHECKPOINT.md](docs/05_modul_aplikasi/AM_PAY_03_BRIVA_LIFECYCLE_CHECKPOINT.md). Ini uji aplikasi lokal/SQLite; bukan bukti UAT bank.
+- Parent AM-PAY-03 tetap terbuka untuk bukti create/reuse citizen end-to-end, lifecycle/status bank, rekonsiliasi dan receipt pada environment bank yang disetujui.
+
 ## Isolasi resolver BRIVA antar-channel — 19 September 2026
 
 - [x] **AM-PAY-05A** \`SnapBrivaService\` kini hanya resolve \`PaymentRequest\` dengan \`payment_channel=BRI\` dan \`method=VA\` untuk VA maupun external ID. Inquiry/payment BRIVA tidak dapat mengambil request channel Bank Sultra atau produk lain yang kebetulan memiliki nomor sama.
