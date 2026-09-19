@@ -200,6 +200,17 @@ class CitizenAssetRentalTest extends TestCase
         $this->assertDatabaseCount('asset_rentals', 1);
     }
 
+    public function test_internal_user_cannot_read_citizen_asset_catalog(): void
+    {
+        $internal = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+        $this->actingAs($internal);
+
+        $this->getJson('/api/citizen/asset/categories')->assertForbidden();
+        $this->getJson('/api/citizen/asset/items')->assertForbidden();
+        $this->getJson('/api/citizen/asset/items/'.$this->asset->id.'/availability?month=2026-09')->assertForbidden();
+        $this->getJson('/api/citizen/asset/form-template/'.$this->asset->category_id)->assertForbidden();
+    }
+
     public function test_other_citizen_cannot_read_rental_even_with_owner_id_in_query(): void
     {
         $rental = $this->rental();

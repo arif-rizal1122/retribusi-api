@@ -1,5 +1,10 @@
 # API Backlog
 
+## Guard katalog aset citizen — 20 September 2026
+
+- [x] **AM-BASE-04G**: kategori, item, availability, dan form template pada prefix `/api/citizen/asset/*` kini mewajibkan `Taxpayer` authenticated sebelum query atau validasi input. Aksi rental yang sudah guarded tetap kompatibel.
+- Validasi: `CitizenAssetRentalTest` lulus **39 test/223 assertion**; PHP lint, Pint, dan `git diff --check` lulus. Tidak ada perubahan payload warga, dashboard admin/PUPR, migration, atau tarif.
+
 ## Guard klaim pembayaran legacy — 20 September 2026
 
 - [x] **AM-PAY-05B**: payment claim citizen, duplicate check pembayaran petugas, dan daftar bill citizen memakai status payment case-insensitive. `PENDING` uppercase tetap mengunci bill dari payment request/claim kedua; `success` tetap terminal.
@@ -237,3 +242,4 @@ Terakhir diperbarui: 2026-08-03
 
 - Setelah PAY-002 selesai, perbarui `../WORKBOARD.md`, lalu lanjutkan hanya jika pengguna menginstruksikan.
 - Endpoint atau perubahan schema baru wajib menambahkan/menyesuaikan test yang relevan.
+

@@ -25,8 +25,10 @@ class CitizenAssetController extends Controller
     /**
      * Daftar kategori aset (1 layanan JU-ASET, field pertama = dropdown kategori).
      */
-    public function categories()
+    public function categories(Request $request)
     {
+        $this->citizenTaxpayer($request);
+
         $categories = AssetCategory::withCount('items')
             ->where('is_active', true)
             ->orderBy('sort_order')
@@ -47,6 +49,8 @@ class CitizenAssetController extends Controller
      */
     public function items(Request $request)
     {
+        $this->citizenTaxpayer($request);
+
         $query = AssetItem::with('category:id,name,slug')
             ->where('is_active', true);
 
@@ -86,6 +90,8 @@ class CitizenAssetController extends Controller
      */
     public function formTemplate(Request $request, $categoryId)
     {
+        $this->citizenTaxpayer($request);
+
         $category = AssetCategory::findOrFail($categoryId);
 
         // Template form default — disimpan real-time, bisa diedit admin tanpa deploy.
@@ -104,6 +110,8 @@ class CitizenAssetController extends Controller
      */
     public function availability(Request $request, $id)
     {
+        $this->citizenTaxpayer($request);
+
         $request->validate([
             'month' => 'required|date_format:Y-m',
         ]);
