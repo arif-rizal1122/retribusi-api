@@ -151,6 +151,21 @@ class PbbBapendaService
         $alamat      = $record->taxpayer_address ?: $record->object_address;
         $pokok       = (float) $record->tax_amount;
 
+        // Denda nyata + umur tunggakan. Sebelum ini `denda => 0` dipatok mati,
+        // sehingga verifikator bisa melihat "Denda Rp 0" padahal SPPT sudah lewat jatuh tempo.
+        $denda = 0.0;
+        $hariTerlambat = 0;
+        if ($statusBayar !== 'LUNAS' && !empty($record->due_date)) {
+            $jatuhTempo = \Carbon\Carbon::parse($record->due_date)->startOfDay();
+            $hariTerlambat = $jatuhTempo->isPast() ? (int) $jatuhTempo->diffInDays(now()->startOfDay()) : 0;
+            if ($hariTerlambat > 0) {
+                // Denda PBB-P2: 2% per bulan keterlambatan, maksimal 24 bulan (48%).
+                $bulanTerlambat = min((int) ceil($hariTerlambat / 30), 24);
+                $denda = round($pokok * 0.02 * $bulanTerlambat, 2);
+            }
+        }
+        $totalHarusDibayar = $pokok + $denda;
+
         $data = [
             'status'              => 200,
             'nop'                 => $nop,
@@ -158,10 +173,10 @@ class PbbBapendaService
             'nama_wp'             => $record->taxpayer_name,
             'alamat_wp'           => $alamat,
             'kelurahan'           => $record->kelurahan,
-            'kota'                => '-',
+            'kota'                => $record->kecamatan ?: 'Kota Baubau',
             'pbb_pokok'           => $pokok,
-            'denda'               => 0,
-            'total_harus_dibayar' => $pokok,
+            'denda'               => $denda,
+            'total_harus_dibayar' => $totalHarusDibayar,
             'status_bayar'        => $statusBayar,
             'luas_bumi'           => (float) $record->land_area_m2,
             'luas_bangunan'       => (float) $record->building_area_m2,
@@ -173,16 +188,22 @@ class PbbBapendaService
             'tarif'               => (float) $record->tax_rate,
             'kelas_bumi'          => $record->land_class,
             'kelas_bangunan'      => $record->building_class,
+            // Tambahan verifikasi Bapenda — sebelumnya tidak pernah dikirim ke FE.
+            'njop_bumi_per_m2'     => (float) $record->land_njop_per_m2,
+            'njop_bangunan_per_m2' => (float) $record->building_njop_per_m2,
+            'kecamatan'            => $record->kecamatan,
+            'jatuh_tempo'          => $record->due_date ? (string) $record->due_date : null,
+            'hari_terlambat'       => $hariTerlambat,
             'data'                => [
                 'nop'                 => $nop,
                 'tahun'               => $tahun,
                 'nama_wp'             => $record->taxpayer_name,
                 'alamat_wp'           => $alamat,
                 'kelurahan'           => $record->kelurahan,
-                'kota'                => '-',
+                'kota'                => $record->kecamatan ?: 'Kota Baubau',
                 'pbb_pokok'           => $pokok,
-                'denda'               => 0,
-                'total_harus_dibayar' => $pokok,
+                'denda'               => $denda,
+                'total_harus_dibayar' => $totalHarusDibayar,
                 'status_bayar'        => $statusBayar,
                 'luas_bumi'           => (float) $record->land_area_m2,
                 'luas_bangunan'       => (float) $record->building_area_m2,
@@ -194,6 +215,11 @@ class PbbBapendaService
                 'tarif'               => (float) $record->tax_rate,
                 'kelas_bumi'          => $record->land_class,
                 'kelas_bangunan'      => $record->building_class,
+                'njop_bumi_per_m2'     => (float) $record->land_njop_per_m2,
+                'njop_bangunan_per_m2' => (float) $record->building_njop_per_m2,
+                'kecamatan'            => $record->kecamatan,
+                'jatuh_tempo'          => $record->due_date ? (string) $record->due_date : null,
+                'hari_terlambat'       => $hariTerlambat,
             ],
             'source'        => 'sppt_local',
             'fallback_used' => true,

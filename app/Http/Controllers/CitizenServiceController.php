@@ -295,6 +295,26 @@ class CitizenServiceController extends Controller
 
         [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata, $isPbb) {
             // Create the tax object
+            // Lengkapi kolom tabel dari metadata — halaman verifikasi admin Bapenda
+            // membaca kolom tabel, bukan metadata. Sebelum ini luas/kelurahan/
+            // penanggung jawab KOSONG walau datanya ada di hasil inquiry H2H,
+            // sehingga verifikator tidak bisa menilai kewajaran objek.
+            $pick = function (array $keys, $default = null) use ($metadata, $request) {
+                foreach ($keys as $k) {
+                    if (!empty($metadata[$k])) return $metadata[$k];
+                }
+                foreach ($keys as $k) {
+                    $v = $request->input($k);
+                    if (!empty($v)) return $v;
+                }
+                return $default;
+            };
+
+            $num = function ($v) {
+                if ($v === null || $v === '') return null;
+                return is_numeric($v) ? (float) $v : (float) preg_replace('/[^0-9.]/', '', (string) $v);
+            };
+
             $taxObject = TaxObject::create([
                 'taxpayer_id' => $taxpayer->id,
                 'retribution_type_id' => $service->id,
@@ -307,6 +327,17 @@ class CitizenServiceController extends Controller
                 'longitude' => $request->longitude,
                 'metadata' => $metadata,
                 'status' => 'pending',
+
+                // --- Kelengkapan untuk verifikasi admin Bapenda ---
+                'land_size_m2' => $num($pick(['luas_bumi', 'land_size_m2', 'luas_tanah'])),
+                'building_size_m2' => $num($pick(['luas_bangunan', 'building_size_m2'])),
+                'sub_district' => $pick(['kelurahan', 'sub_district']),
+                'district' => $pick(['kecamatan', 'kota', 'district']),
+                'penanggung_jawab_nama' => $pick(['nama_wp', 'penanggung_jawab_nama'], $request->name),
+                'penanggung_jawab_kontak' => $pick(['kontak_wp', 'no_hp', 'telepon', 'penanggung_jawab_kontak']),
+                'nama_penandatangan' => $pick(['nama_penandatangan'], $request->name),
+                'tanggal_pernyataan' => $pick(['tanggal_pernyataan']) ?: now()->toDateString(),
+                'nomor_formulir' => $pick(['nomor_formulir']) ?: ('SPOP-' . now()->format('Ymd') . '-' . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT)),
             ]);
 
             // Pick the first available file URL for the primary verification proof
