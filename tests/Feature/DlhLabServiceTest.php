@@ -2,9 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Bill;
-use App\Models\Opd;
-use App\Models\RetributionType;
 use App\Models\User;
 use Database\Seeders\DlhMasterTariffSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -124,7 +121,19 @@ class DlhLabServiceTest extends TestCase
         $billingRes->assertStatus(200)
             ->assertJsonPath('status', 'success')
             ->assertJsonPath('data.amount', 30000) // Tarif pH Rp 30.000 (Perda 1/2024)
-            ->assertJsonPath('data.opd_id', 4);
+            ->assertJsonPath('data.opd_id', 4)
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonPath('data.status_label', 'Menunggu pembayaran')
+            ->assertJsonPath('data.can_pay', true);
+
+        $billId = $billingRes->json('data.id');
+        DB::table('bills')->where('id', $billId)->update(['status' => 'PAID']);
+
+        $this->getJson("/api/v1/dlh/lab/orders/{$orderId}")
+            ->assertOk()
+            ->assertJsonPath('data.bill.status', 'paid')
+            ->assertJsonPath('data.bill.status_label', 'Lunas')
+            ->assertJsonPath('data.bill.can_pay', false);
 
         $this->assertDatabaseHas('dlh_lab_orders', [
             'id' => $orderId,

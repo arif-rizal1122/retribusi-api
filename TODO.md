@@ -1,5 +1,10 @@
 # API Backlog
 
+## Status bill pada reservasi lab DLH — 20 September 2026
+
+- [x] **AM-BASE-03L**: response `POST /api/{v1/}dlh/lab/orders/{order}/billing`, detail order, dan lookup nomor order menerbitkan `status`, `status_label`, dan `can_pay` melalui `CitizenBillStatus`. Alias storage `UNPAID`/`PAID`/`lunas`, jatuh tempo, klaim pending, dan payment request aktif dinormalisasi tanpa menulis ulang database.
+- Validasi: `DlhLabServiceTest` + `CitizenDlhLabOwnershipTest` + `DlhBankSultraPaymentIntegrationTest` lulus **10 test/76 assertion**; suite regresi lintas bank/core/DLH/citizen billing/SNAP lulus **112 test/547 assertion**; PHP lint, Pint test dan `git diff --check` lulus. Audit consumer mobile/admin/petugas selesai tanpa perubahan frontend. Kontrak [AM_BASE_03L_DLH_LAB_BILL_STATUS.md](docs/05_modul_aplikasi/AM_BASE_03L_DLH_LAB_BILL_STATUS.md). Commit API `058121a` (`fix: normalize dlh lab bill status`) dibuat; push `origin/main` ditolak `fetch first` karena remote memiliki commit yang belum ada di checkout. Tidak dilakukan pull, reset, rebase atau force-push. Parent AM-BASE-03 tetap terbuka untuk reverse inquiry/retry provider dan UAT gateway eksternal.
+
 ## Ownership dokumen tagihan citizen — 19 September 2026
 
 - [x] **AM-BASE-04E**: route `GET /api/bills/{bill}/skrd|sspd|sppt` memakai guard bersama. Taxpayer hanya dapat membaca bill miliknya; User internal non-global dibatasi `opd_id`; role pengawasan global tetap dapat membaca lintas OPD. Route `/api/documents/*` internal dan `/api/public/pdf/*` legacy sengaja tidak diubah pada checkpoint ini.

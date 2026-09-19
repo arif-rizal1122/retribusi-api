@@ -9,6 +9,7 @@ use App\Models\DlhLabOrderParameter;
 use App\Models\DlhLabParameter;
 use App\Models\Taxpayer;
 use App\Models\User;
+use App\Support\CitizenBillStatus;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -111,7 +112,7 @@ class DlhLabServiceController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Tagihan sudah pernah diterbitkan.',
-                'data' => $existingBill,
+                'data' => $this->billPayload($existingBill),
             ]);
         }
 
@@ -163,13 +164,10 @@ class DlhLabServiceController extends Controller
                 'status' => 'BILLING_ISSUED',
             ]);
 
-            $billArray = $bill->toArray();
-            $billArray['amount'] = (float) $bill->amount;
-
             return response()->json([
                 'status' => 'success',
                 'message' => 'Tagihan SKRD Laboratorium berhasil diterbitkan.',
-                'data' => $billArray,
+                'data' => $this->billPayload($bill),
             ]);
         });
     }
@@ -264,10 +262,48 @@ class DlhLabServiceController extends Controller
             'status' => 'success',
             'data' => [
                 'order' => $order,
-                'bill' => $order->bill,
+                'bill' => $this->billPayload($order->bill),
                 'parameters' => $parameters,
             ],
         ]);
+    }
+
+    /**
+     * Expose the shared citizen bill status contract without rewriting storage.
+     *
+     * Lab billing historically returned raw values such as UNPAID/PAID. Keep
+     * the existing bill fields and add the canonical status presentation used
+     * by the mobile payment flow.
+     */
+    private function billPayload(?Bill $bill): ?array
+    {
+        if (! $bill) {
+            return null;
+        }
+
+        $hasPendingClaim = $bill->payments()
+            ->whereRaw('LOWER(status) = ?', ['pending'])
+            ->exists();
+        $hasActiveRequest = $bill->paymentRequestItems()
+            ->whereHas('paymentRequest', function ($query) {
+                $query->whereRaw('LOWER(status) = ?', ['pending'])
+                    ->where('expires_at', '>', now());
+            })
+            ->exists();
+        $status = CitizenBillStatus::normalize(
+            (string) $bill->getRawOriginal('status'),
+            $hasPendingClaim,
+            $hasActiveRequest,
+            (bool) $bill->due_date?->isPast(),
+        );
+
+        $payload = $bill->toArray();
+        $payload['amount'] = (float) $bill->amount;
+        $payload['status'] = $status;
+        $payload['status_label'] = CitizenBillStatus::label($status, $hasActiveRequest);
+        $payload['can_pay'] = CitizenBillStatus::canPay($status);
+
+        return $payload;
     }
 
     /**
