@@ -8,6 +8,7 @@ use App\Models\DlhLabOrder;
 use App\Models\DlhLabOrderParameter;
 use App\Models\DlhLabParameter;
 use App\Models\Taxpayer;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -49,13 +50,16 @@ class DlhLabServiceController extends Controller
 
         return DB::transaction(function () use ($validated, $request) {
             $parameters = DlhLabParameter::whereIn('id', $validated['parameter_ids'])->get();
+            $user = $request->user();
 
             $totalAmount = $parameters->sum('tariff');
-            $orderNumber = 'LAB-DLH-' . date('ymd') . '-' . strtoupper(Str::random(5));
+            $orderNumber = 'LAB-DLH-'.date('ymd').'-'.strtoupper(Str::random(5));
 
             $order = DlhLabOrder::create([
                 'order_number' => $orderNumber,
-                'taxpayer_id' => $request->user()?->taxpayer_id ?? null,
+                // Taxpayer is the citizen auth model. Internal users may still
+                // create operational orders, but they must not impersonate a taxpayer.
+                'taxpayer_id' => $user instanceof Taxpayer ? $user->getKey() : null,
                 'applicant_name' => $validated['applicant_name'],
                 'institution_name' => $validated['institution_name'] ?? null,
                 'contact_phone' => $validated['contact_phone'],
@@ -94,15 +98,16 @@ class DlhLabServiceController extends Controller
     /**
      * Terbitkan tagihan (Billing/SKRD) untuk permohonan laboratorium
      */
-    public function generateBilling($orderId)
+    public function generateBilling(Request $request, $orderId)
     {
-        $order = DlhLabOrder::find($orderId);
-        if (!$order) {
+        $order = $this->findOrderForRequest($request, $orderId);
+        if (! $order) {
             return response()->json(['status' => 'error', 'message' => 'Order tidak ditemukan.'], 404);
         }
 
         if ($order->bill_id) {
             $existingBill = Bill::find($order->bill_id);
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Tagihan sudah pernah diterbitkan.',
@@ -112,7 +117,7 @@ class DlhLabServiceController extends Controller
 
         return DB::transaction(function () use ($order) {
             $taxpayerId = $order->taxpayer_id;
-            if (!$taxpayerId) {
+            if (! $taxpayerId) {
                 $taxpayer = Taxpayer::withoutGlobalScopes()->firstOrCreate(
                     [
                         'opd_id' => 4,
@@ -128,7 +133,7 @@ class DlhLabServiceController extends Controller
                 $order->update(['taxpayer_id' => $taxpayerId]);
             }
 
-            $billNumber = 'SKRD-LAB-' . date('ymd') . '-' . strtoupper(Str::random(5));
+            $billNumber = 'SKRD-LAB-'.date('ymd').'-'.strtoupper(Str::random(5));
             $dueDate = Carbon::now()->addDays(7)->toDateString();
 
             $bill = Bill::create([
@@ -174,6 +179,8 @@ class DlhLabServiceController extends Controller
      */
     public function uploadResult(Request $request, $orderId)
     {
+        abort_unless($request->user() instanceof User, 403, 'Input hasil hanya dapat dilakukan oleh petugas laboratorium.');
+
         $validated = $request->validate([
             'results' => 'required|array|min:1',
             'results.*.parameter_id' => 'required|integer',
@@ -182,8 +189,8 @@ class DlhLabServiceController extends Controller
             'lhu_document_url' => 'nullable|string',
         ]);
 
-        $order = DlhLabOrder::find($orderId);
-        if (!$order) {
+        $order = $this->findOrderForRequest($request, $orderId);
+        if (! $order) {
             return response()->json(['status' => 'error', 'message' => 'Order tidak ditemukan.'], 404);
         }
 
@@ -215,10 +222,10 @@ class DlhLabServiceController extends Controller
     /**
      * Tampilkan detail order laboratorium
      */
-    public function showOrder($orderId)
+    public function showOrder(Request $request, $orderId)
     {
-        $order = DlhLabOrder::with(['bill', 'orderParameters.parameter'])->find($orderId);
-        if (!$order) {
+        $order = $this->findOrderForRequest($request, $orderId, ['bill', 'orderParameters.parameter']);
+        if (! $order) {
             return response()->json(['status' => 'error', 'message' => 'Order tidak ditemukan.'], 404);
         }
 
@@ -254,7 +261,7 @@ class DlhLabServiceController extends Controller
             ->where('order_number', $orderNumber)
             ->first();
 
-        if (!$order) {
+        if (! $order) {
             return response()->json(['status' => 'error', 'message' => 'Dokumen LHU tidak ditemukan.'], 404);
         }
 
@@ -284,5 +291,21 @@ class DlhLabServiceController extends Controller
                 'parameters' => $parameters,
             ],
         ]);
+    }
+
+    /**
+     * Citizen orders are owner-scoped; internal users retain the existing
+     * operational access used by the laboratory workflow.
+     */
+    private function findOrderForRequest(Request $request, $orderId, array $relations = []): ?DlhLabOrder
+    {
+        $query = DlhLabOrder::query()->with($relations)->whereKey($orderId);
+        $user = $request->user();
+
+        if ($user instanceof Taxpayer) {
+            $query->where('taxpayer_id', $user->getKey());
+        }
+
+        return $query->first();
     }
 }
