@@ -127,7 +127,7 @@ class DlhTrashBillingService
      */
     public function applyOverduePenalty(Bill $bill): Bill
     {
-        if ($bill->status === 'PAID' || $bill->amount <= 0) {
+        if ($bill->isSettled() || $bill->amount <= 0) {
             return $bill;
         }
 

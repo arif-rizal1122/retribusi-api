@@ -1,5 +1,10 @@
 # API Backlog
 
+## Guard denda bill terminal DLH — 20 September 2026
+
+- [x] **AM-SMP-04B**: `applyOverduePenalty()` memakai `Bill::isSettled()` sehingga alias storage `PAID`/`lunas` dan bill yang sudah memiliki payment sukses tidak menerima denda baru. Bill terbuka tetap dihitung sesuai jatuh tempo dan batas denda existing.
+- Validasi: `DlhTrashBillingTest` lulus **12 test/53 assertion**; PHP lint, Pint, dan `git diff --check` lulus. Tidak ada perubahan migration, endpoint, atau UI. Parent AM-SMP-04 tetap terbuka untuk scheduler, kalender penagihan, dan kebijakan cakupan.
+
 ## Billing sampah atomik per objek — 20 September 2026
 
 - [x] **AM-SMP-04A**: `DlhTrashBillingService::generateMonthlyBill()` mengunci `TaxObject` sebelum memeriksa periode, menghitung tarif dari row terkunci, dan mengembalikan bill existing tanpa mengganti status terminal. Retry scheduler/admin tidak membuat bill periode yang sama menjadi ganda.

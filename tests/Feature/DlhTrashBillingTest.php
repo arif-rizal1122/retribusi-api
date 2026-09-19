@@ -177,6 +177,40 @@ class DlhTrashBillingTest extends TestCase
         Carbon::setTestNow(); // Reset mock waktu
     }
 
+    public function test_paid_status_alias_does_not_receive_overdue_penalty(): void
+    {
+        $taxObject = TaxObject::create([
+            'taxpayer_id' => $this->taxpayer->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'building_category' => 'RUMAH_SEDERHANA',
+            'status_hunian' => 'BERPENGHUNI',
+            'name' => 'Rumah Sudah Lunas',
+            'address' => 'Jl. Lunas',
+            'is_active' => true,
+        ]);
+        $bill = Bill::create([
+            'taxpayer_id' => $this->taxpayer->id,
+            'tax_object_id' => $taxObject->id,
+            'opd_id' => 4,
+            'retribution_type_id' => 17,
+            'bill_number' => 'DLH-SMP-PAID-PENALTY-001',
+            'amount' => 8500,
+            'status' => 'PAID',
+            'period' => '2026-07',
+            'due_date' => '2026-07-15',
+        ]);
+
+        Carbon::setTestNow(Carbon::create(2026, 9, 20));
+
+        $updatedBill = $this->service->applyOverduePenalty($bill);
+
+        $this->assertSame('PAID', $updatedBill->getRawOriginal('status'));
+        $this->assertEquals(0.0, (float) $updatedBill->penalty_amount);
+
+        Carbon::setTestNow();
+    }
+
     public function test_api_transfer_occupant(): void
     {
         Sanctum::actingAs($this->admin, ['*']);
