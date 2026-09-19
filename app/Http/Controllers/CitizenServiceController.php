@@ -103,6 +103,32 @@ class CitizenServiceController extends Controller
                 ->toArray();
         }
 
+        // ── Audit 20 Sep 2026: apakah layanan ini bisa dihitung warga? ──
+        // Formula `tarif_flat` butuh nominal dari tabel retribution_rates.
+        // Kalau belum ada tarif aktif, kalkulator akan selalu Rp 0 → jangan
+        // tampilkan tombol kalkulator, dan beri tahu warga tarif ditetapkan petugas.
+        $formula = trim((string) $classification->calculation_formula);
+        $isFlatOnly = (bool) preg_match('/^\s*tarif_flat\s*$/i', $formula);
+
+        $flatRates = collect();
+        if ($isFlatOnly) {
+            $flatRates = \DB::table('retribution_rates')
+                ->where('retribution_classification_id', $classification->id)
+                ->where('is_active', 1)
+                ->orderBy('amount')
+                ->get(['name', 'amount', 'unit'])
+                ->map(fn ($r) => [
+                    'name' => $r->name,
+                    'amount' => (float) $r->amount,
+                    'unit' => $r->unit,
+                ])
+                ->values();
+        }
+
+        // true  = warga boleh hitung sendiri (ada tarif, atau formula bukan tarif_flat)
+        // false = tarif ditetapkan petugas, tombol kalkulator disembunyikan
+        $hasFlatTariff = !$isFlatOnly || $flatRates->isNotEmpty();
+
         return response()->json([
             'data' => [
                 'id' => $classification->id,
@@ -117,6 +143,8 @@ class CitizenServiceController extends Controller
                 'form_schema' => $classification->form_schema,
                 'requirements' => $cleanRequirements,
                 'calculation_formula' => $classification->calculation_formula,
+                'has_flat_tariff' => $hasFlatTariff,
+                'flat_tariff_options' => $flatRates,
                 'objects' => $objects,
                 'bills' => $bills,
             ]

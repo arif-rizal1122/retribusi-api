@@ -122,9 +122,19 @@ class PbbBapendaService
                 'nop' => $nop, 'tahun' => $tahun,
             ]);
 
+            // Bedakan sebabnya supaya pesan tidak menyalahkan pihak yang salah.
+            // Audit 20 Sep 2026: sebelumnya semua kasus berbunyi "Layanan Bapenda
+            // tidak tersedia", padahal kasus tersering adalah NOP salah ketik.
+            $isTimeout = (bool) preg_match('/timeout|timed out|cURL error 28|Connection refused|Could not resolve/i', $reason);
+
+            $msg = $isTimeout
+                ? 'Layanan Bapenda sedang tidak dapat dihubungi. Coba lagi beberapa saat lagi.'
+                : 'NOP tidak ditemukan. Periksa kembali 18 digit NOP dan tahun pajak Anda.';
+
             return [
                 'status'        => 503,
-                'msg'           => 'Layanan Bapenda tidak tersedia dan tidak ada data SPPT lokal.',
+                'error_code'    => $isTimeout ? 'service_unavailable' : 'nop_not_found',
+                'msg'           => $msg,
                 'source'        => 'sppt_local',
                 'fallback_used' => true,
             ];
