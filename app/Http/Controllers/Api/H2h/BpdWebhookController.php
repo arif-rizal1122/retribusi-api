@@ -176,7 +176,7 @@ class BpdWebhookController extends Controller
                     }
 
                     // Re-check status setelah lock (jangan double-settle)
-                    if ($lockedBill->status === 'lunas') {
+                    if ($lockedBill->isSettled()) {
                         return false;
                     }
 

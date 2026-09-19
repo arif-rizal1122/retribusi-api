@@ -41,7 +41,7 @@ class BankSultraDriver implements PaymentGatewayInterface
             ];
         }
 
-        if ($bill->status === 'lunas') {
+        if ($bill->isSettled()) {
             return [
                 'status' => 'error',
                 'message' => 'Tagihan sudah lunas',
@@ -121,7 +121,7 @@ class BankSultraDriver implements PaymentGatewayInterface
             }
 
             // Status check bill (re-check setelah lock — kalau sudah lunas, jangan double update)
-            if ($lockedBill->status === 'lunas') {
+            if ($lockedBill->isSettled()) {
                 return ['status' => 'error', 'message' => 'Tagihan sudah lunas', 'code' => 422];
             }
 

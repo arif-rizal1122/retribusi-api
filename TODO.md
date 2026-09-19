@@ -1,5 +1,11 @@
 # API Backlog
 
+## Guard status settlement gateway — 19 September 2026
+
+- [x] **AM-BASE-03H**: `Bill::isSettled()` menjadi guard terminal bersama untuk inquiry/callback Bank Sultra H2H, BRI legacy, Mandiri QRIS, QRIS, BRIVA SNAP, dan callback VA Sultra. Status storage `PAID`, `paid`, `lunas`, `success`, dan `settled`, serta `Payment` berstatus `success`, diperlakukan sebagai sudah lunas sehingga callback tidak menerbitkan pembayaran kedua.
+- Validasi: suite lintas core/DLH/SNAP **101 test/489 assertion lulus**; PHP lint seluruh file berubah dan `git diff --check` lulus. Consumer audit tiga frontend tidak menemukan pemakai endpoint inbound H2H/SNAP; tidak ada perubahan mobile, admin, atau petugas. Kontrak [AM_BASE_03H_SETTLEMENT_STATUS_GUARD.md](docs/05_modul_aplikasi/AM_BASE_03H_SETTLEMENT_STATUS_GUARD.md).
+- Parent AM-BASE-03 tetap terbuka untuk reverse inquiry, rekonsiliasi provider, dan UAT gateway eksternal.
+
 ## Lifecycle callback BRIVA terlambat — 19 September 2026
 
 - [x] **AM-PAY-03A** Callback pembayaran BRIVA yang tiba setelah \`expires_at\` ditolak dengan response SNAP \`4032500\` dan tidak mengubah Bill, PaymentRequest, atau menerbitkan Payment/receipt. Skenario cancel, amount snapshot, multi-bill, inquiry, receipt dan idempotensi existing tetap diregresikan pada suite SNAP.

@@ -33,7 +33,7 @@ class QRISDriver implements PaymentGatewayInterface
             return ['status' => 'error', 'message' => 'Tagihan tidak ditemukan', 'code' => 404];
         }
 
-        if ($bill->status === 'lunas') {
+        if ($bill->isSettled()) {
             return ['status' => 'error', 'message' => 'Tagihan sudah lunas', 'code' => 422];
         }
 
@@ -98,7 +98,7 @@ class QRISDriver implements PaymentGatewayInterface
             }
 
             // Re-check status setelah lock
-            if ($lockedBill->status === 'lunas') {
+            if ($lockedBill->isSettled()) {
                 return ['status' => 'success', 'message' => 'Tagihan sudah lunas (Idempotent)', 'code' => 200];
             }
 

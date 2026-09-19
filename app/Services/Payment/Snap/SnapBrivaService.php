@@ -322,8 +322,7 @@ class SnapBrivaService
 
     private function isPaid(Bill $bill): bool
     {
-        return in_array($bill->getRawOriginal('status'), ['lunas', 'paid'], true)
-            || $bill->payments()->where('status', 'success')->exists();
+        return $bill->isSettled();
     }
 
     private function money(float $amount): string

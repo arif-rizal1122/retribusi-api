@@ -45,4 +45,53 @@ class GenericH2HStillWorksTest extends CorePaymentTestCase
             'status' => 'lunas',
         ]);
     }
+
+    public function test_h2h_rejects_every_terminal_bill_status_alias(): void
+    {
+        config([
+            'payment.default' => 'sultra',
+            'payment.drivers.sultra.secret' => 'secret_sultra_2026',
+            'payment.drivers.sultra.allowed_ips' => ['127.0.0.1'],
+        ]);
+
+        PaymentChannel::create([
+            'name' => 'Bank Sultra',
+            'code' => 'sultra',
+            'is_active' => true,
+        ]);
+
+        foreach (['PAID', 'paid', 'lunas', 'success', 'settled'] as $index => $status) {
+            $bill = $this->createCoreBill([
+                'bill_number' => 'SKRD-H2H-PAID-'.$index,
+                'amount' => 60000,
+                'status' => $status,
+            ]);
+            $timestamp = now()->toDateTimeString();
+            $reference = 'NTB-PAID-ALIAS-'.$index;
+            $signature = hash_hmac('sha256', $bill->bill_number.$timestamp.'60000', 'secret_sultra_2026');
+
+            $response = $this->postJson('/api/v1/bank/payment', [
+                'bill_number' => $bill->bill_number,
+                'amount_paid' => 60000,
+                'transaction_id' => $reference,
+                'channel' => 'ATM',
+            ], [
+                'X-Signature' => $signature,
+                'X-Timestamp' => $timestamp,
+            ]);
+
+            $response->assertStatus(422)
+                ->assertJsonPath('status', 'error')
+                ->assertJsonPath('message', 'Tagihan sudah lunas');
+
+            $this->assertDatabaseHas('bills', [
+                'id' => $bill->id,
+                'status' => $status,
+            ]);
+            $this->assertDatabaseMissing('payments', [
+                'bill_id' => $bill->id,
+                'reference_number' => $reference,
+            ]);
+        }
+    }
 }

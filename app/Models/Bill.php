@@ -98,6 +98,30 @@ class Bill extends Model
         return (float) $this->amount + (float) $this->admin_fee + $effectivePenalty;
     }
 
+    /**
+     * Settlement guard shared by gateway callbacks and inquiry drivers.
+     *
+     * Storage contains legacy variants such as PAID, paid, lunas and settled.
+     * A successful payment record is also terminal even when an older callback
+     * left the bill status stale.
+     */
+    public function isSettled(): bool
+    {
+        $storedStatus = strtolower(trim((string) $this->getRawOriginal('status')));
+
+        if (in_array($storedStatus, ['paid', 'lunas', 'success', 'settled'], true)) {
+            return true;
+        }
+
+        if ($this->relationLoaded('payments')) {
+            return $this->payments->contains(function (Payment $payment): bool {
+                return strtolower(trim((string) $payment->getRawOriginal('status'))) === 'success';
+            });
+        }
+
+        return $this->payments()->whereRaw('LOWER(status) = ?', ['success'])->exists();
+    }
+
     public function taxpayer(): BelongsTo
     {
         return $this->belongsTo(Taxpayer::class);
