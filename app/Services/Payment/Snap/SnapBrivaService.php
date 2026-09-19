@@ -166,11 +166,13 @@ class SnapBrivaService
             throw new SnapPaymentException("404{$serviceCode}12", 'Invalid Bill/Virtual Account [Reason]', 404);
         }
 
-        if ($paymentRequest->status === 'expired' || ($paymentRequest->expires_at && $paymentRequest->expires_at->isPast())) {
+        $storedPaymentRequestStatus = strtolower(trim((string) $paymentRequest->getRawOriginal('status')));
+
+        if ($storedPaymentRequestStatus === 'expired' || ($paymentRequest->expires_at && $paymentRequest->expires_at->isPast())) {
             throw new SnapPaymentException("403{$serviceCode}00", 'Transaction Expired', 403);
         }
 
-        if ($paymentRequest->status !== 'pending') {
+        if ($storedPaymentRequestStatus !== 'pending') {
             throw new SnapPaymentException("404{$serviceCode}12", 'Invalid Bill/Virtual Account [Reason]', 404);
         }
 

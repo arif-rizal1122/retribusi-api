@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -57,5 +58,13 @@ class PaymentRequest extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PaymentRequestItem::class);
+    }
+
+    /**
+     * Match pending requests regardless of legacy storage casing.
+     */
+    public function scopePending(Builder $query): Builder
+    {
+        return $query->whereRaw('LOWER(status) = ?', ['pending']);
     }
 }

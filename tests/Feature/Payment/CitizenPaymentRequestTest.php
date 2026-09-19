@@ -124,6 +124,25 @@ class CitizenPaymentRequestTest extends TestCase
         $this->assertSame('UNPAID', $bill->fresh()->getRawOriginal('status'));
     }
 
+    public function test_active_uppercase_payment_request_is_reused_at_citizen_boundary(): void
+    {
+        $bill = $this->createBill();
+        $existing = $this->attachPaymentRequest($bill, 'PENDING');
+        Sanctum::actingAs($this->taxpayer);
+
+        $response = $this->postJson('/api/citizen/payment-requests', [
+            'bill_ids' => [$bill->id],
+            'method' => 'bri_va',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.id', (string) $existing->id)
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonPath('data.can_refresh', true)
+            ->assertJsonPath('data.can_cancel', true);
+        $this->assertDatabaseCount('payment_requests', 1);
+    }
+
     public function test_payment_request_bill_details_expose_canonical_bill_statuses(): void
     {
         Sanctum::actingAs($this->taxpayer);

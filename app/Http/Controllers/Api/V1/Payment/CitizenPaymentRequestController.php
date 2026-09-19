@@ -71,7 +71,7 @@ class CitizenPaymentRequestController extends Controller
             PaymentRequest::where('taxpayer_id', $taxpayer->id)
                 ->where('payment_channel', $channel)
                 ->where('method', 'VA')
-                ->where('status', 'pending')
+                ->pending()
                 ->whereNotNull('expires_at')
                 ->where('expires_at', '<=', now())
                 ->update(['status' => 'expired']);
@@ -104,7 +104,7 @@ class CitizenPaymentRequestController extends Controller
             $activePaymentRequests = PaymentRequest::with('items.bill')
                 ->where('taxpayer_id', $taxpayer->id)
                 ->where('method', 'VA')
-                ->where('status', 'pending')
+                ->pending()
                 ->where('expires_at', '>', now())
                 ->whereHas('items', fn ($query) => $query->whereIn('bill_id', $billIds))
                 ->lockForUpdate()
@@ -356,8 +356,8 @@ class CitizenPaymentRequestController extends Controller
             'receipt_url' => $receipts->first()['download_path'] ?? null,
             'receipts' => $receipts,
             'instructions' => $instructions,
-            'can_refresh' => $paymentRequest->getRawOriginal('status') === 'pending',
-            'can_cancel' => $paymentRequest->getRawOriginal('status') === 'pending',
+            'can_refresh' => strtolower(trim((string) $paymentRequest->getRawOriginal('status'))) === 'pending',
+            'can_cancel' => strtolower(trim((string) $paymentRequest->getRawOriginal('status'))) === 'pending',
         ];
     }
 

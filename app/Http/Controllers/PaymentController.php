@@ -349,7 +349,7 @@ class PaymentController extends Controller
                 ]);
             }
 
-            $hasActivePaymentRequest = PaymentRequest::where('status', 'pending')
+            $hasActivePaymentRequest = PaymentRequest::pending()
                 ->where('expires_at', '>', now())
                 ->whereHas('items', fn ($query) => $query->whereIn('bill_id', $billIds))
                 ->exists();

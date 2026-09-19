@@ -27,6 +27,21 @@ class SnapBrivaInquiryTest extends SnapFeatureTestCase
             ->assertJsonPath('virtualAccountData.inquiryReason.indonesia', 'Sukses');
     }
 
+    public function test_bank_can_inquiry_uppercase_pending_briva_request(): void
+    {
+        $bill = $this->createOpenBill();
+        $vaNumber = '777'.$bill->bill_number;
+        $paymentRequest = $this->createPaymentRequest($bill, $vaNumber);
+        $paymentRequest->update(['status' => 'PENDING']);
+        $body = $this->inquiryBody($bill, $vaNumber);
+        $path = '/api/snap/v1.0/transfer-va/inquiry';
+
+        $this->postJson($path, $body, $this->transactionHeaders($path, $body))
+            ->assertOk()
+            ->assertJsonPath('responseCode', '2002400')
+            ->assertJsonPath('virtualAccountData.inquiryStatus', '00');
+    }
+
     public function test_cancelled_briva_payment_request_cannot_be_inquired(): void
     {
         $bill = $this->createOpenBill();

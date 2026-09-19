@@ -270,7 +270,7 @@ class BillController extends Controller
         ]);
 
         $activePaymentRequest = fn ($paymentRequestQuery) => $paymentRequestQuery
-            ->where('status', 'pending')
+            ->pending()
             ->where('expires_at', '>', now());
 
         $bills = Bill::with([

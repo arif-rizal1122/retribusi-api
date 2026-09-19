@@ -1,5 +1,10 @@
 # API Backlog
 
+## Status payment request legacy — 20 September 2026
+
+- [x] **AM-PAY-03B**: query payment request aktif pada citizen bills, BRIVA, payment request baru, dan klaim transfer memakai status pending case-insensitive. Payload `status`, `can_refresh`, dan `can_cancel` tetap canonical meskipun storage berisi `PENDING` uppercase.
+- Validasi: `CitizenPaymentRequestTest` + `SnapBrivaInquiryTest` lulus **19 test/117 assertion**; PHP lint, Pint, dan `git diff --check` lulus. Tidak ada perubahan credential/gateway atau frontend. Parent AM-PAY-03 tetap terbuka untuk UAT bank dan lifecycle eksternal.
+
 ## Billing order lab atomik — 20 September 2026
 
 - [x] **AM-LAB-05A**: penerbitan SKRD lab mengunci `DlhLabOrder` sebelum membaca `bill_id`; retry order yang sudah memiliki bill mengembalikan bill yang sama tanpa insert kedua. Pembuatan taxpayer fallback dan status order tetap kompatibel.
