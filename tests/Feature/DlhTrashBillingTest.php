@@ -126,6 +126,14 @@ class DlhTrashBillingTest extends TestCase
         $billDuplicate = $this->service->generateMonthlyBill($taxObject, $periodDate);
         $this->assertEquals($bill->id, $billDuplicate->id);
         $this->assertEquals(1, Bill::where('tax_object_id', $taxObject->id)->count());
+
+        // A retry after settlement must reuse the same period row and preserve
+        // the terminal status instead of issuing a replacement bill.
+        $bill->update(['status' => 'PAID']);
+        $billAfterSettlement = $this->service->generateMonthlyBill($taxObject, $periodDate);
+        $this->assertSame($bill->id, $billAfterSettlement->id);
+        $this->assertSame('PAID', $billAfterSettlement->getRawOriginal('status'));
+        $this->assertEquals(1, Bill::where('tax_object_id', $taxObject->id)->count());
     }
 
     public function test_overdue_penalty_calculation_1_percent_per_month(): void

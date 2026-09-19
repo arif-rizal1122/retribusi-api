@@ -3,8 +3,8 @@
 namespace App\Services\Dlh;
 
 use App\Models\Bill;
-use App\Models\TaxObject;
 use App\Models\RetributionRate;
+use App\Models\TaxObject;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -15,13 +15,13 @@ class DlhTrashBillingService
      * Tarif acuan berdasarkan building_category sesuai Perda No. 1 Tahun 2024
      */
     protected array $rateCategoryMap = [
-        'SOSIAL_IBADAH'     => 0.00,
-        'RUMAH_SEDERHANA'   => 8500.00,
-        'RUMAH_MENENGAH'    => 15000.00,
-        'RUKO_NIAGA'        => 22000.00,
-        'RESTORAN'          => 45000.00,
-        'PASAR'             => 22000.00,
-        'INDUSTRI'          => 50000.00,
+        'SOSIAL_IBADAH' => 0.00,
+        'RUMAH_SEDERHANA' => 8500.00,
+        'RUMAH_MENENGAH' => 15000.00,
+        'RUKO_NIAGA' => 22000.00,
+        'RESTORAN' => 45000.00,
+        'PASAR' => 22000.00,
+        'INDUSTRI' => 50000.00,
     ];
 
     /**
@@ -72,26 +72,32 @@ class DlhTrashBillingService
         $periodEnd = $date->copy()->endOfMonth()->toDateString();
         $dueDate = $date->copy()->startOfMonth()->addDays(14)->toDateString(); // Jatuh tempo tanggal 15
 
-        // Cek apakah tagihan periode ini sudah pernah terbit
-        $existing = Bill::where('tax_object_id', $taxObject->id)
-            ->where('period', $periodString)
-            ->first();
+        return DB::transaction(function () use ($taxObject, $periodString, $periodStart, $periodEnd, $dueDate) {
+            // Serialize generation per object. The duplicate check must happen
+            // after this lock so concurrent scheduler/admin retries cannot both
+            // observe an empty period and insert two bills.
+            $lockedTaxObject = TaxObject::withoutGlobalScopes()
+                ->whereKey($taxObject->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if ($existing) {
-            return $existing;
-        }
+            $existing = Bill::where('tax_object_id', $lockedTaxObject->id)
+                ->where('period', $periodString)
+                ->first();
 
-        $amount = $this->calculateMonthlyAmount($taxObject);
+            if ($existing) {
+                return $existing;
+            }
 
-        return DB::transaction(function () use ($taxObject, $amount, $periodString, $periodStart, $periodEnd, $dueDate) {
-            $billNumber = 'DLH-SMP-' . date('ymd') . '-' . strtoupper(Str::random(6));
+            $amount = $this->calculateMonthlyAmount($lockedTaxObject);
+            $billNumber = 'DLH-SMP-'.date('ymd').'-'.strtoupper(Str::random(6));
 
             $bill = Bill::create([
-                'taxpayer_id' => $taxObject->taxpayer_id,
-                'tax_object_id' => $taxObject->id,
+                'taxpayer_id' => $lockedTaxObject->taxpayer_id,
+                'tax_object_id' => $lockedTaxObject->id,
                 'opd_id' => 4, // DLH
-                'retribution_type_id' => $taxObject->retribution_type_id ?? 17,
-                'retribution_classification_id' => $taxObject->retribution_classification_id ?? 198,
+                'retribution_type_id' => $lockedTaxObject->retribution_type_id ?? 17,
+                'retribution_classification_id' => $lockedTaxObject->retribution_classification_id ?? 198,
                 'bill_number' => $billNumber,
                 'amount' => $amount,
                 'admin_fee' => 0.00,
@@ -102,13 +108,13 @@ class DlhTrashBillingService
                 'period_end' => $periodEnd,
                 'due_date' => $dueDate,
                 'metadata' => json_encode([
-                    'building_category' => $taxObject->building_category,
-                    'tipe_penghuni' => $taxObject->tipe_penghuni,
-                    'status_hunian' => $taxObject->status_hunian,
-                    'penanggung_jawab_nama' => $taxObject->penanggung_jawab_nama,
-                    'penanggung_jawab_kontak' => $taxObject->penanggung_jawab_kontak,
-                    'district' => $taxObject->district,
-                    'sub_district' => $taxObject->sub_district,
+                    'building_category' => $lockedTaxObject->building_category,
+                    'tipe_penghuni' => $lockedTaxObject->tipe_penghuni,
+                    'status_hunian' => $lockedTaxObject->status_hunian,
+                    'penanggung_jawab_nama' => $lockedTaxObject->penanggung_jawab_nama,
+                    'penanggung_jawab_kontak' => $lockedTaxObject->penanggung_jawab_kontak,
+                    'district' => $lockedTaxObject->district,
+                    'sub_district' => $lockedTaxObject->sub_district,
                 ]),
             ]);
 

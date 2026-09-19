@@ -1,5 +1,10 @@
 # API Backlog
 
+## Billing sampah atomik per objek — 20 September 2026
+
+- [x] **AM-SMP-04A**: `DlhTrashBillingService::generateMonthlyBill()` mengunci `TaxObject` sebelum memeriksa periode, menghitung tarif dari row terkunci, dan mengembalikan bill existing tanpa mengganti status terminal. Retry scheduler/admin tidak membuat bill periode yang sama menjadi ganda.
+- Validasi: `DlhTrashBillingTest` lulus **11 test/51 assertion**; PHP lint, Pint, dan `git diff --check` lulus. Tidak ada migration, perubahan endpoint, atau perubahan UI. Parent AM-SMP-04 tetap terbuka untuk scheduler resmi, kalender harian/bulanan, dan kebijakan cakupan.
+
 ## Otorisasi endpoint citizen service — 20 September 2026
 
 - [x] **AM-BASE-04F**: `CitizenServiceController` mewajibkan sesi `Taxpayer` pada katalog, detail, pendaftaran objek, daftar bill, periode pending, dan tax objects. Guest tetap 401 dari auth; akun internal menerima 403 sebelum query atau mutasi citizen dijalankan.
