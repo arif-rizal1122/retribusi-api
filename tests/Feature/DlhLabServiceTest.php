@@ -163,6 +163,13 @@ class DlhLabServiceTest extends TestCase
             ->assertJsonPath('data.can_pay', true);
 
         $billId = $billingRes->json('data.id');
+
+        $retryBillingRes = $this->postJson("/api/v1/dlh/lab/orders/{$orderId}/billing");
+        $retryBillingRes->assertOk()
+            ->assertJsonPath('data.id', $billId)
+            ->assertJsonPath('data.status', 'pending');
+        $this->assertDatabaseCount('bills', 1);
+
         DB::table('bills')->where('id', $billId)->update(['status' => 'PAID']);
 
         $this->getJson("/api/v1/dlh/lab/orders/{$orderId}")

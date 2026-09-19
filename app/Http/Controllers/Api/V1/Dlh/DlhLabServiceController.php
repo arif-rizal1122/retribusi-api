@@ -117,32 +117,38 @@ class DlhLabServiceController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Order tidak ditemukan.'], 404);
         }
 
-        if ($order->bill_id) {
-            $existingBill = Bill::find($order->bill_id);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Tagihan sudah pernah diterbitkan.',
-                'data' => $this->billPayload($existingBill),
-            ]);
-        }
-
         return DB::transaction(function () use ($order) {
-            $taxpayerId = $order->taxpayer_id;
+            // Serialize billing per order. The bill_id check must happen after
+            // this lock so two retries cannot both create a SKRD.
+            $lockedOrder = DlhLabOrder::whereKey($order->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($lockedOrder->bill_id) {
+                $existingBill = Bill::find($lockedOrder->bill_id);
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Tagihan sudah pernah diterbitkan.',
+                    'data' => $this->billPayload($existingBill),
+                ]);
+            }
+
+            $taxpayerId = $lockedOrder->taxpayer_id;
             if (! $taxpayerId) {
                 $taxpayer = Taxpayer::withoutGlobalScopes()->firstOrCreate(
                     [
                         'opd_id' => 4,
-                        'name' => $order->applicant_name,
+                        'name' => $lockedOrder->applicant_name,
                     ],
                     [
-                        'phone' => $order->contact_phone,
-                        'address' => $order->applicant_address ?? 'Kota Baubau',
+                        'phone' => $lockedOrder->contact_phone,
+                        'address' => $lockedOrder->applicant_address ?? 'Kota Baubau',
                         'is_active' => true,
                     ]
                 );
                 $taxpayerId = $taxpayer->id;
-                $order->update(['taxpayer_id' => $taxpayerId]);
+                $lockedOrder->update(['taxpayer_id' => $taxpayerId]);
             }
 
             $billNumber = 'SKRD-LAB-'.date('ymd').'-'.strtoupper(Str::random(5));
@@ -153,7 +159,7 @@ class DlhLabServiceController extends Controller
                 'opd_id' => 4, // DLH
                 'retribution_type_id' => 17, // Retribusi
                 'bill_number' => $billNumber,
-                'amount' => $order->total_amount,
+                'amount' => $lockedOrder->total_amount,
                 'admin_fee' => 0.00,
                 'penalty_amount' => 0.00,
                 'status' => 'UNPAID',
@@ -163,14 +169,14 @@ class DlhLabServiceController extends Controller
                 'due_date' => $dueDate,
                 'metadata' => json_encode([
                     'type' => 'LAB_ENVIRONMENTAL',
-                    'order_number' => $order->order_number,
-                    'applicant_name' => $order->applicant_name,
-                    'institution' => $order->institution_name,
-                    'matrix' => $order->sample_matrix,
+                    'order_number' => $lockedOrder->order_number,
+                    'applicant_name' => $lockedOrder->applicant_name,
+                    'institution' => $lockedOrder->institution_name,
+                    'matrix' => $lockedOrder->sample_matrix,
                 ]),
             ]);
 
-            $order->update([
+            $lockedOrder->update([
                 'bill_id' => $bill->id,
                 'status' => 'BILLING_ISSUED',
             ]);

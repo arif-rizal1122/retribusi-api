@@ -1,5 +1,10 @@
 # API Backlog
 
+## Billing order lab atomik — 20 September 2026
+
+- [x] **AM-LAB-05A**: penerbitan SKRD lab mengunci `DlhLabOrder` sebelum membaca `bill_id`; retry order yang sudah memiliki bill mengembalikan bill yang sama tanpa insert kedua. Pembuatan taxpayer fallback dan status order tetap kompatibel.
+- Validasi: `DlhLabServiceTest` lulus **5 test/40 assertion**; PHP lint, Pint, dan `git diff --check` lulus. Tidak ada migration atau perubahan UI. Parent AM-LAB-05 tetap terbuka untuk payment confirmation dan receipt final.
+
 ## Validasi parameter lab aktif — 20 September 2026
 
 - [x] **AM-LAB-02A**: pembuatan order lab menolak `parameter_ids` duplikat dan parameter nonaktif sebelum order/pivot dibuat. Total dan snapshot tarif hanya berasal dari parameter master aktif.
