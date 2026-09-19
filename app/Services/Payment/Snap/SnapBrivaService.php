@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment\Snap;
 
+use App\Jobs\NotifyBpnSplpPaymentJob;
 use App\Models\Bill;
 use App\Models\BphtbSubmission;
 use App\Models\Payment;
@@ -9,8 +10,10 @@ use App\Models\PaymentRequest;
 use App\Models\TransactionPbb;
 use App\Services\Payment\Snap\Exceptions\SnapPaymentException;
 use App\Services\Payment\Snap\Exceptions\SnapValidationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class SnapBrivaService
@@ -137,10 +140,10 @@ class SnapBrivaService
                     try {
                         $paidSubmission = BphtbSubmission::where('bill_id', $lockedBill->id)->latest('id')->first();
                         if ($paidSubmission) {
-                            \App\Jobs\NotifyBpnSplpPaymentJob::dispatch($paidSubmission->id);
+                            NotifyBpnSplpPaymentJob::dispatch($paidSubmission->id);
                         }
                     } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::warning('SPLP async dispatch skipped', ['error' => $e->getMessage()]);
+                        Log::warning('SPLP async dispatch skipped', ['error' => $e->getMessage()]);
                     }
                 }
             }
@@ -186,20 +189,33 @@ class SnapBrivaService
 
         $paymentRequest = null;
         if ($virtualAccountNo !== '') {
-            $paymentRequest = PaymentRequest::where('va_number', $virtualAccountNo)->first();
+            $paymentRequest = $this->brivaPaymentRequestQuery()
+                ->where('va_number', $virtualAccountNo)
+                ->first();
         }
 
         if (! $paymentRequest && $customerNo !== '') {
-            $paymentRequest = PaymentRequest::where('external_id', $customerNo)->first();
+            $paymentRequest = $this->brivaPaymentRequestQuery()
+                ->where('external_id', $customerNo)
+                ->first();
             // fallback: customerNo bisa jadi bagian VA yang kita simpan (tanpa padding)
             if (! $paymentRequest) {
-                $paymentRequest = PaymentRequest::where('va_number', $customerNo)->first();
+                $paymentRequest = $this->brivaPaymentRequestQuery()
+                    ->where('va_number', $customerNo)
+                    ->first();
             }
         }
 
         $bill = $paymentRequest?->bill;
 
         return [$bill, $paymentRequest];
+    }
+
+    private function brivaPaymentRequestQuery(): Builder
+    {
+        return PaymentRequest::query()
+            ->where('payment_channel', 'BRI')
+            ->where('method', 'VA');
     }
 
     private function normalizeVa(string $value): string

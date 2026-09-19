@@ -1,5 +1,11 @@
 # API Backlog
 
+## Isolasi resolver BRIVA antar-channel — 19 September 2026
+
+- [x] **AM-PAY-05A** \`SnapBrivaService\` kini hanya resolve \`PaymentRequest\` dengan \`payment_channel=BRI\` dan \`method=VA\` untuk VA maupun external ID. Inquiry/payment BRIVA tidak dapat mengambil request channel Bank Sultra atau produk lain yang kebetulan memiliki nomor sama.
+- Validasi: \`SnapBrivaInquiryTest\` lulus 4 test/17 assertion; kontrak [AM_PAY_05_BRIVA_CHANNEL_ISOLATION.md](docs/05_modul_aplikasi/AM_PAY_05_BRIVA_CHANNEL_ISOLATION.md). Consumer audit mobile/admin/petugas tidak menemukan endpoint SNAP inbound yang dipakai frontend; tidak ada perubahan frontend.
+- Parent AM-PAY-05 tetap terbuka untuk lock/idempotensi paralel, amount/fee lintas channel, dan uji callback bersama.
+
 ## Kesiapan payment option citizen — 19 September 2026
 
 - [x] AM-PAY-02: payment_options API sekarang memakai gate readiness per produk. BRIVA tetap melalui SnapBrivaReadiness; transfer manual hanya tersedia bila rekening klasifikasi valid; Sultra VA citizen default-off dan baru boleh dibuat/diiklankan setelah BANK_SULTRA_CITIZEN_VA_ENABLED serta BANK_SULTRA_CITIZEN_VA_CONTRACT_CONFIRMED dikonfirmasi.

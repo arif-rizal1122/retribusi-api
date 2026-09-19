@@ -55,4 +55,20 @@ class SnapBrivaInquiryTest extends SnapFeatureTestCase
             ->assertJsonPath('responseCode', '4042412')
             ->assertJsonPath('responseMessage', 'Invalid Bill/Virtual Account [Reason]');
     }
+
+    public function test_briva_does_not_resolve_a_virtual_account_owned_by_another_payment_channel(): void
+    {
+        $bill = $this->createOpenBill();
+        $vaNumber = '777'.$bill->bill_number;
+        $paymentRequest = $this->createPaymentRequest($bill, $vaNumber);
+        $paymentRequest->update(['payment_channel' => 'Bank Sultra']);
+        $body = $this->inquiryBody($bill, $vaNumber);
+        $path = '/api/snap/v1.0/transfer-va/inquiry';
+
+        $response = $this->postJson($path, $body, $this->transactionHeaders($path, $body));
+
+        $response->assertNotFound()
+            ->assertJsonPath('responseCode', '4042412')
+            ->assertJsonPath('responseMessage', 'Invalid Bill/Virtual Account [Reason]');
+    }
 }
