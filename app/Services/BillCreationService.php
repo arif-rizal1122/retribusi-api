@@ -5,16 +5,15 @@ namespace App\Services;
 use App\Models\Bill;
 use App\Models\TaxObject;
 use Carbon\Carbon;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class BillCreationService
 {
     public function __construct(
         private TaxCalculationService $taxCalculationService,
         private BillPeriodService $periodService
-    ) {
-    }
+    ) {}
 
     public function createForTaxObject(
         TaxObject $taxObject,
@@ -90,7 +89,7 @@ class BillCreationService
             'opd_id' => $taxObject->opd_id,
             'retribution_type_id' => $taxObject->retribution_type_id,
             'retribution_classification_id' => $taxObject->retribution_classification_id,
-            'bill_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
+            'bill_number' => 'INV-'.date('Ymd').'-'.strtoupper(Str::random(6)),
             'amount' => (float) $calculation['amount'],
             'status' => 'pending',
             'period' => $periodInfo['period'],
@@ -106,7 +105,13 @@ class BillCreationService
         return Bill::withoutGlobalScopes()
             ->where('tax_object_id', $taxObject->id)
             ->where('period', $period)
-            ->whereIn('status', ['pending', 'overdue', 'unpaid', 'lunas', 'paid'])
+            ->whereRaw('LOWER(status) IN (?, ?, ?, ?, ?)', [
+                'pending',
+                'overdue',
+                'unpaid',
+                'lunas',
+                'paid',
+            ])
             ->first();
     }
 

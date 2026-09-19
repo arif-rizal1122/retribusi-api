@@ -107,6 +107,23 @@ class CitizenPaymentRequestTest extends TestCase
             ->assertJsonPath('data.can_cancel', false);
     }
 
+    public function test_citizen_can_create_payment_request_for_legacy_uppercase_unpaid_bill(): void
+    {
+        $bill = $this->createBill(['status' => 'UNPAID']);
+        Sanctum::actingAs($this->taxpayer);
+
+        $response = $this->postJson('/api/citizen/payment-requests', [
+            'bill_ids' => [$bill->id],
+            'method' => 'bri_va',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonPath('data.bills.0.status', 'pending_verification')
+            ->assertJsonPath('data.bills.0.can_pay', false);
+        $this->assertSame('UNPAID', $bill->fresh()->getRawOriginal('status'));
+    }
+
     public function test_payment_request_bill_details_expose_canonical_bill_statuses(): void
     {
         Sanctum::actingAs($this->taxpayer);

@@ -10,6 +10,7 @@ use App\Models\TaxObject;
 use App\Models\Taxpayer;
 use App\Models\User;
 use App\Models\Verification;
+use App\Services\BillCreationService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -99,6 +100,42 @@ class RegistrationBillingFlowTest extends TestCase
         $this->assertDatabaseCount('bills', 1);
 
         Carbon::setTestNow();
+    }
+
+    public function test_bill_creation_reuses_legacy_uppercase_unpaid_bill_for_same_period(): void
+    {
+        $opd = Opd::factory()->create();
+        $type = RetributionType::factory()->create([
+            'opd_id' => $opd->id,
+            'billing_cycle' => 'monthly',
+        ]);
+        $classification = RetributionClassification::factory()->create([
+            'opd_id' => $opd->id,
+            'retribution_type_id' => $type->id,
+        ]);
+        $taxpayer = Taxpayer::factory()->create(['opd_id' => $opd->id]);
+        $taxObject = TaxObject::factory()->create([
+            'opd_id' => $opd->id,
+            'taxpayer_id' => $taxpayer->id,
+            'retribution_type_id' => $type->id,
+            'retribution_classification_id' => $classification->id,
+            'status' => 'active',
+        ]);
+        $existing = Bill::factory()->create([
+            'taxpayer_id' => $taxpayer->id,
+            'tax_object_id' => $taxObject->id,
+            'opd_id' => $opd->id,
+            'retribution_type_id' => $type->id,
+            'retribution_classification_id' => $classification->id,
+            'period' => '2026-09',
+            'status' => 'UNPAID',
+        ]);
+
+        $result = app(BillCreationService::class)->createForTaxObject($taxObject, null, '2026-09');
+
+        $this->assertSame($existing->id, $result->id);
+        $this->assertSame('UNPAID', $result->fresh()->getRawOriginal('status'));
+        $this->assertSame(1, Bill::where('tax_object_id', $taxObject->id)->where('period', '2026-09')->count());
     }
 
     public function test_incomplete_registration_object_cannot_be_approved(): void

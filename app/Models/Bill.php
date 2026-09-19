@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\RetributionTypeScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +15,7 @@ class Bill extends Model
 
     protected static function booted()
     {
-        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+        static::addGlobalScope(new RetributionTypeScope);
     }
 
     protected $fillable = [
@@ -96,6 +98,20 @@ class Bill extends Model
         $effectivePenalty = max(0, $basePenalty - (float) $this->waived_penalty_amount);
 
         return (float) $this->amount + (float) $this->admin_fee + $effectivePenalty;
+    }
+
+    /**
+     * Storage-compatible open bill filter for citizen payment entry points.
+     * Legacy DLH/imported bills may use uppercase UNPAID; status presentation
+     * remains handled by CitizenBillStatus at the response boundary.
+     */
+    public function scopeOpenForPayment(Builder $query): Builder
+    {
+        return $query->whereRaw('LOWER(status) IN (?, ?, ?)', [
+            'pending',
+            'overdue',
+            'unpaid',
+        ]);
     }
 
     /**

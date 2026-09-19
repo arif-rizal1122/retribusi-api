@@ -30,6 +30,25 @@ class CitizenPaymentClaimStillWorksTest extends CorePaymentTestCase
         ]);
     }
 
+    public function test_citizen_can_submit_claim_for_legacy_uppercase_unpaid_bill(): void
+    {
+        $bill = $this->createCoreBill(['status' => 'UNPAID']);
+
+        $response = $this->actingAs($bill->taxpayer)->postJson('/api/citizen/payments', [
+            'bill_ids' => [$bill->id],
+            'payment_method' => 'transfer',
+            'proof_url' => 'https://example.test/legacy-unpaid-proof.jpg',
+        ]);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('payments', [
+            'bill_id' => $bill->id,
+            'status' => 'pending',
+            'channel' => 'MOBILE_CLAIM',
+        ]);
+        $this->assertSame('UNPAID', $bill->fresh()->getRawOriginal('status'));
+    }
+
     public function test_citizen_can_submit_multiple_bill_claims_atomically_with_backend_amounts(): void
     {
         $firstBill = $this->createCoreBill([

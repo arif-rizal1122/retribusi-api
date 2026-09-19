@@ -327,7 +327,7 @@ class PaymentController extends Controller
         $payments = DB::transaction(function () use ($billIds, $taxpayer, $validated) {
             $bills = Bill::where('taxpayer_id', $taxpayer->id)
                 ->whereIn('id', $billIds)
-                ->whereIn('status', ['pending', 'overdue', 'unpaid'])
+                ->openForPayment()
                 ->lockForUpdate()
                 ->get()
                 ->sortBy('id')
