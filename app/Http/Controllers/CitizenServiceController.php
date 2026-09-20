@@ -162,6 +162,23 @@ class CitizenServiceController extends Controller
 
         $service = $classification->retributionType;
 
+        // Ekstrak NIB dari metadata jika tidak dikirim sebagai parameter top-level
+        if (! $request->has('nib') || empty($request->input('nib'))) {
+            $rawMeta = $request->input('metadata');
+            if (is_string($rawMeta)) {
+                $decoded = json_decode($rawMeta, true) ?: [];
+                $foundNib = $decoded['nib'] ?? $decoded['nib_usaha'] ?? null;
+                if (! empty($foundNib) && is_string($foundNib)) {
+                    $request->merge(['nib' => $foundNib]);
+                }
+            } elseif (is_array($rawMeta)) {
+                $foundNib = $rawMeta['nib'] ?? $rawMeta['nib_usaha'] ?? null;
+                if (! empty($foundNib) && is_string($foundNib)) {
+                    $request->merge(['nib' => $foundNib]);
+                }
+            }
+        }
+
         // GATE NIB (PTSP-13): layanan usaha wajib NIB
         NibPublicController::enforceNibGate($request, $classification, $taxpayer);
 
@@ -199,6 +216,32 @@ class CitizenServiceController extends Controller
             }
         }
 
+        // Auto-calculate field readonly / turunan jika input sumbernya tersedia
+        if (empty($metadata['luas']) && ! empty($metadata['panjang']) && ! empty($metadata['lebar'])) {
+            $p = (float) $metadata['panjang'];
+            $l = (float) $metadata['lebar'];
+            $s = (float) ($metadata['sisi'] ?? 1);
+            if ($p > 0 && $l > 0) {
+                $metadata['luas'] = round($p * $l * $s, 2);
+            }
+        }
+        if (empty($metadata['penjualan']) && ! empty($metadata['volume']) && ! empty($metadata['harga'])) {
+            $v = (float) $metadata['volume'];
+            $h = (float) $metadata['harga'];
+            if ($v > 0 && $h > 0) {
+                $metadata['penjualan'] = round($v * $h);
+            }
+        }
+        if (empty($metadata['hda']) && ! empty($metadata['tujuan_pengambilan'])) {
+            $hdaTarifMap = [
+                'niaga_kecil' => 2500,
+                'niaga_besar' => 4000,
+                'industri' => 5000,
+                'wisata' => 6000,
+            ];
+            $metadata['hda'] = $hdaTarifMap[$metadata['tujuan_pengambilan']] ?? 2500;
+        }
+
         $metadata = $this->applySchemaDefaults($classification->form_schema ?? [], $metadata);
         $missingMetadata = $this->missingRequiredMetadata($classification->form_schema ?? [], $metadata);
         if (! empty($missingMetadata)) {
@@ -207,6 +250,7 @@ class CitizenServiceController extends Controller
 
         $isPbb = (stripos($classification->name ?? '', 'pbb') !== false) || ($classification->id == 186);
         $nop = $metadata['nop_pbb'] ?? null;
+        $h2hVerified = false;
         if ($isPbb && ! empty($nop)) {
             if (TaxObject::where('metadata->nop_pbb', $nop)->exists()) {
                 throw ValidationException::withMessages([
@@ -470,6 +514,19 @@ class CitizenServiceController extends Controller
             $key = $field['key'] ?? null;
             if (! $key) {
                 continue;
+            }
+
+            // Field readonly seperti HDA, luas reklame, penjualan walet tidak boleh ditolak jika sudah ada atau dihitung
+            if (! empty($field['readonly']) && ! empty($metadata[$key])) {
+                continue;
+            }
+
+            // Pengecualian diameter_pipa & kapasitas_pompa (hanya wajib jika meter rusak / tanpa meter)
+            if (in_array($key, ['diameter_pipa', 'kapasitas_pompa'], true)) {
+                $meterStatus = $metadata['status_meter'] ?? null;
+                if ($meterStatus !== 'tanpa_meter' && $meterStatus !== 'rusak') {
+                    continue;
+                }
             }
 
             $value = $metadata[$key] ?? null;

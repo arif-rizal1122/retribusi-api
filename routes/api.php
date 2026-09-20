@@ -76,6 +76,9 @@ Route::post('/public/nib/candidate', [\App\Http\Controllers\NibPublicController:
 // Public: Banner beranda mobile
 Route::get('/public/banners', [\App\Http\Controllers\BannerController::class, 'indexPublic']);
 
+// Public: Resolve lokasi (reverse geocode & spatial engine) — map picker mobile
+Route::post('/location/resolve', [\App\Http\Controllers\LocationController::class, 'resolve']);
+
 // Public: Zero-Login Stiker QR Persil & Pembayaran Mandiri
 $publicObjectRoutes = function () {
     Route::get('/objects/{code}/bill', [\App\Http\Controllers\Api\V1\Public\PublicTaxObjectBillController::class, 'showBill']);
@@ -351,9 +354,6 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     // Citizen can edit/cancel their own pending service registration objects.
     Route::match(['put', 'patch', 'post'], '/tax-objects/{taxObject}', [TaxObjectController::class, 'update']);
     Route::delete('/tax-objects/{taxObject}', [TaxObjectController::class, 'destroy']);
-
-    // Resolve lokasi (reverse geocode) — map picker mobile
-    Route::post('/location/resolve', [\App\Http\Controllers\LocationController::class, 'resolve']);
 
     // ------------------------------------------------------------------------
     // Admin & Petugas ONLY (Restricted by EnsureAdmin middleware)

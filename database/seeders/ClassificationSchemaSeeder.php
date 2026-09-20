@@ -37,7 +37,7 @@ class ClassificationSchemaSeeder extends Seeder
             ['key' => 'jumlah_karyawan', 'label' => 'Jumlah Karyawan', 'type' => 'number'],
             ['key' => 'jam_operasional', 'label' => 'Jam Operasional (Contoh: 09:00 - 22:00)', 'type' => 'text'],
         ], [
-            ['key' => 'nib_usaha', 'name' => 'NIB / Izin Usaha', 'required' => true],
+            ['key' => 'nib_usaha', 'name' => 'NIB / Izin Usaha', 'required' => false],
             ['key' => 'daftar_menu', 'name' => 'Daftar Menu & Price List', 'required' => true],
             ['key' => 'foto_tempat_usaha', 'name' => 'Foto Fasad & Area Usaha', 'required' => true],
         ]);
@@ -59,7 +59,7 @@ class ClassificationSchemaSeeder extends Seeder
             ['key' => 'tarif_kamar_max', 'label' => 'Tarif Kamar Tertinggi (Rp / Malam)', 'type' => 'number'],
             ['key' => 'occupancy_rate', 'label' => 'Estimasi Okupansi Rata-rata (%)', 'type' => 'number'],
         ], [
-            ['key' => 'izin_tdup', 'name' => 'NIB / TDUP Hotel', 'required' => true],
+            ['key' => 'izin_tdup', 'name' => 'NIB / TDUP Hotel', 'required' => false],
             ['key' => 'foto_bangunan_hotel', 'name' => 'Foto Bangunan & Fasilitas Hotel', 'required' => true],
         ]);
 
@@ -120,6 +120,7 @@ class ClassificationSchemaSeeder extends Seeder
                 ['label' => 'Industri / Pabrik', 'value' => 'industri'],
                 ['label' => 'Pariwisata / Kolam Renang', 'value' => 'wisata'],
             ]],
+            ['key' => 'hda', 'label' => 'Harga Dasar Air / HDA (Rp/m3)', 'type' => 'money', 'readonly' => true, 'helper' => 'Otomatis terkunci sesuai Perda Kota Baubau No. 1/2024'],
             ['key' => 'jenis_sumur', 'label' => 'Jenis Sumur', 'type' => 'select', 'required' => true, 'options' => [
                 ['label' => 'Sumur Bor / Artesis', 'value' => 'sumur_bor'],
                 ['label' => 'Sumur Gali / Dangkal', 'value' => 'sumur_gali'],
@@ -131,6 +132,8 @@ class ClassificationSchemaSeeder extends Seeder
                 ['label' => 'Rusak / Dalam Perbaikan', 'value' => 'rusak'],
                 ['label' => 'Belum Terpasang Meteran', 'value' => 'tanpa_meter'],
             ]],
+            ['key' => 'diameter_pipa', 'label' => 'Diameter Pipa Sedot (Inci)', 'type' => 'number', 'required' => false, 'helper' => 'Wajib jika meteran rusak / belum terpasang untuk estimasi debit'],
+            ['key' => 'kapasitas_pompa', 'label' => 'Kapasitas Pompa (Liter/Detik)', 'type' => 'number', 'required' => false, 'helper' => 'Wajib jika meteran rusak / belum terpasang'],
         ], [
             ['key' => 'izin_sipa', 'name' => 'Izin SIPA (Jika Ada)', 'required' => false],
             ['key' => 'foto_sumur', 'name' => 'Foto Titik Sumur & Meteran Air', 'required' => true],
@@ -167,7 +170,7 @@ class ClassificationSchemaSeeder extends Seeder
             ['key' => 'omset', 'label' => 'Estimasi Omzet Bulanan (Rp)', 'type' => 'number', 'required' => true],
             ['key' => 'kapasitas_pengunjung', 'label' => 'Kapasitas Pengunjung (Orang)', 'type' => 'number'],
         ], [
-            ['key' => 'nib_usaha', 'name' => 'NIB / Izin Usaha', 'required' => true],
+            ['key' => 'nib_usaha', 'name' => 'NIB / Izin Usaha', 'required' => false],
             ['key' => 'foto_tempat_hiburan', 'name' => 'Foto Tempat Hiburan', 'required' => true],
         ]);
 
@@ -190,7 +193,7 @@ class ClassificationSchemaSeeder extends Seeder
             ['key' => 'luas_parkir', 'label' => 'Luas Lahan Parkir (m2)', 'type' => 'number'],
             ['key' => 'kapasitas_kendaraan', 'label' => 'Kapasitas Kendaraan (Unit)', 'type' => 'number'],
         ], [
-            ['key' => 'nib_usaha', 'name' => 'NIB / Izin Usaha', 'required' => true],
+            ['key' => 'nib_usaha', 'name' => 'NIB / Izin Usaha', 'required' => false],
             ['key' => 'foto_lahan_parkir', 'name' => 'Foto Lahan Parkir', 'required' => true],
         ]);
 

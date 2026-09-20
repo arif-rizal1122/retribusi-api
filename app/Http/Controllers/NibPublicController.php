@@ -116,36 +116,49 @@ class NibPublicController extends Controller
 
     /**
      * Enforce gate NIB saat pendaftaran layanan (dipanggil dari CitizenServiceController@register).
-     * Layanan wajib NIB (18 usaha + 2 izin PTSP) tanpa NIB → 422 NIB_REQUIRED + info PTSP.
+     * Jika tidak ada indikator NIB di blanko (form_schema atau requirements), verifikasi NIB tidak perlu muncul.
      */
     public static function enforceNibGate(Request $request, $classification, $taxpayer): void
     {
-        if (!in_array((int) $classification->id, self::WAJIB_NIB_IDS, true)) {
-            return; // layanan non-wajib NIB (PBB, BPHTB, dll) bebas
+        // 1. Cek apakah ada indikator/inputan NIB di blanko (form_schema atau requirements)
+        $hasNibIndicator = false;
+
+        foreach ($classification->form_schema ?? [] as $field) {
+            $key = strtolower((string) ($field['key'] ?? ''));
+            $label = strtolower((string) ($field['label'] ?? ''));
+            if (str_contains($key, 'nib') || str_contains($label, 'nib')) {
+                $hasNibIndicator = true;
+                break;
+            }
+        }
+
+        if (! $hasNibIndicator) {
+            foreach ($classification->requirements ?? [] as $req) {
+                $key = strtolower((string) ($req['key'] ?? ''));
+                $name = strtolower((string) ($req['name'] ?? $req['label'] ?? ''));
+                if (str_contains($key, 'nib') || str_contains($name, 'nib')) {
+                    $hasNibIndicator = true;
+                    break;
+                }
+            }
+        }
+
+        // Jika di blanko tidak ada indikator/inputan NIB, verifikasi NIB tidak perlu muncul
+        if (! $hasNibIndicator) {
+            return;
         }
 
         $nib = trim((string) $request->input('nib', ''));
         $taxpayerNib = $taxpayer->nib ?? null;
 
-        // Cek: input nib valid & terdaftar, ATAU taxpayer sudah punya nib
+        // NIB bersifat opsional bagi warga: jika diinput dan valid, tautkan ke data taxpayer.
+        // Tidak pernah melempar pengecualian 422 yang memblokir pendaftaran.
         if ($nib !== '' && strlen($nib) === 16 && Schema::hasTable('nib_nop_mappings')) {
             $found = DB::table('nib_nop_mappings')->where('nib', $nib)->exists();
-            if ($found) {
-                // Simpan nib ke taxpayer kalau belum ada
-                if (!$taxpayerNib) {
-                    $taxpayer->update(['nib' => $nib]);
-                }
-                return;
+            if ($found && ! $taxpayerNib) {
+                $taxpayer->update(['nib' => $nib]);
             }
         }
-
-        if ($taxpayerNib && strlen((string) $taxpayerNib) === 16) {
-            return; // taxpayer sudah punya NIB — lanjut
-        }
-
-        throw \Illuminate\Validation\ValidationException::withMessages([
-            'nib' => 'Anda belum memiliki NIB. NIB wajib untuk layanan ini. Silakan urus NIB di DPMPTSP Kota Baubau.',
-        ])->status(422)->errorBag('nib');
     }
 
     /**
