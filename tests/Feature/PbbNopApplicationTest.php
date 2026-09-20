@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Taxpayer;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
@@ -168,5 +169,103 @@ class PbbNopApplicationTest extends TestCase
                     ],
                 ]);
         }
+    }
+
+    public function test_admin_can_view_submitted_nop_applications_and_approve(): void
+    {
+        // 1. Citizen registers an application for someone else with PBG
+        $citizen = Taxpayer::factory()->create([
+            'nik' => '7472010101010001',
+            'name' => 'Warga Kuasa',
+            'address' => 'Jl. Kuasa No. 1, Baubau',
+        ]);
+
+        Sanctum::actingAs($citizen, ['*']);
+
+        $akteFile = UploadedFile::fake()->create('akte.pdf', 150, 'application/pdf');
+        $ktpFile = UploadedFile::fake()->create('ktp.pdf', 150, 'application/pdf');
+        $suratKuasaFile = UploadedFile::fake()->create('surat_kuasa.pdf', 150, 'application/pdf');
+        $pbgFile = UploadedFile::fake()->create('pbg.pdf', 150, 'application/pdf');
+
+        $submitRes = $this->post('/api/citizen/pbb/nop-applications', [
+            'nik' => $citizen->nik,
+            'name' => $citizen->name,
+            'address' => 'Jl. Diponegoro No. 88, Kel. Batupoaro',
+            'land_area' => '250',
+            'has_building' => 1,
+            'building_area' => '120',
+            'building_floors' => 2,
+            'building_usage' => 'Rumah Tinggal',
+            'pbg_number' => 'PBG-747201-20260920-0099',
+            'pbg_date' => '2026-09-18',
+            'registered_for' => 'other',
+            'owner_nik' => '7472010101010009',
+            'owner_name' => 'Haji Mansyur',
+            'akte_file' => $akteFile,
+            'ktp_file' => $ktpFile,
+            'surat_kuasa_file' => $suratKuasaFile,
+            'imb_file' => $pbgFile,
+        ], [
+            'Accept' => 'application/json',
+        ]);
+
+        $submitRes->assertStatus(201);
+        $appId = $submitRes->json('data.id');
+
+        // 2. Admin logs in and views incoming applications on admin endpoint
+        $admin = User::factory()->create([
+            'role' => 'admin',
+        ]);
+
+        Sanctum::actingAs($admin, ['*']);
+
+        $adminListRes = $this->get('/api/pbb/bapenda/nop-applications', [
+            'Accept' => 'application/json',
+        ]);
+
+        $adminListRes->assertStatus(200)
+            ->assertJsonFragment([
+                'id' => $appId,
+                'name' => 'Warga Kuasa',
+                'owner_name' => 'Haji Mansyur',
+                'registered_for' => 'other',
+                'building_area' => 120,
+            ]);
+
+        // Verify metadata has PBG number and owner nik
+        $item = collect($adminListRes->json('data'))->firstWhere('id', $appId);
+        $this->assertNotNull($item);
+        $this->assertEquals('7472010101010009', $item['metadata']['owner_nik'] ?? null);
+        $this->assertEquals('PBG-747201-20260920-0099', $item['metadata']['pbg_number'] ?? null);
+
+        // 3. Admin approves and sets the official 18-digit NOP
+        $officialNop = '747201000100100880';
+        $approveRes = $this->post("/api/pbb/bapenda/nop-applications/{$appId}/status", [
+            'status' => 'APPROVED',
+            'nop' => $officialNop,
+        ], [
+            'Accept' => 'application/json',
+        ]);
+
+        $approveRes->assertStatus(200);
+
+        $this->assertDatabaseHas('pbb_nop_applications', [
+            'id' => $appId,
+            'status' => 'APPROVED',
+            'nop' => $officialNop,
+        ]);
+
+        // 4. Citizen checks history and sees the new NOP has been issued!
+        Sanctum::actingAs($citizen, ['*']);
+        $citizenHistoryRes = $this->get('/api/citizen/pbb/nop-applications', [
+            'Accept' => 'application/json',
+        ]);
+
+        $citizenHistoryRes->assertStatus(200)
+            ->assertJsonFragment([
+                'id' => $appId,
+                'status' => 'APPROVED',
+                'nop' => $officialNop,
+            ]);
     }
 }
