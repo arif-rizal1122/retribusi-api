@@ -70,6 +70,147 @@ class PbbNopApplicationController extends Controller
         }
     }
 
+    /**
+     * Endpoint pembacaan cerdas berkas Sertifikat Tanah BPN (SHM / HGB)
+     * POST /api/citizen/pbb/parse-certificate-document
+     */
+    public function parseCertificateDocument(Request $request, \App\Services\PbbCertificateParserService $parser)
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120',
+        ], [
+            'file.required' => 'Silakan pilih berkas sertifikat tanah untuk dibaca.',
+            'file.mimes' => 'Format berkas harus PDF, JPG, PNG, atau WEBP.',
+            'file.max' => 'Ukuran berkas maksimal 5 MB.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $parsed = $parser->parse($request->file('file'));
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Dokumen sertifikat tanah berhasil dibaca.',
+                'data' => $parsed,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error parsing Certificate document: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal membaca dokumen sertifikat: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Endpoint pembacaan cerdas berkas e-KTP Pemilik Asli
+     * POST /api/citizen/pbb/parse-ktp-document
+     */
+    public function parseKtpDocument(Request $request, \App\Services\PbbKtpParserService $parser)
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120',
+        ], [
+            'file.required' => 'Silakan pilih berkas e-KTP untuk dibaca.',
+            'file.mimes' => 'Format berkas harus PDF, JPG, PNG, atau WEBP.',
+            'file.max' => 'Ukuran berkas maksimal 5 MB.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $parsed = $parser->parse($request->file('file'));
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Dokumen e-KTP berhasil dibaca.',
+                'data' => $parsed,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error parsing KTP document: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal membaca dokumen KTP: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Endpoint integrasi ATR/BPN BHUMI untuk pencarian data tanah
+     * GET /api/citizen/pbb/bpn-lookup
+     */
+    public function bpnLookup(Request $request, \App\Services\BhumiService $bhumiService)
+    {
+        $nib = $request->query('nib');
+        $lat = $request->query('latitude');
+        $lng = $request->query('longitude');
+
+        $result = [
+            'is_matched' => false,
+            'nib' => $nib,
+            'nop' => null,
+            'land_area' => null,
+            'znt' => null,
+            'nir' => null,
+            'verification_badge' => 'Pendaftaran Mandiri',
+            'message' => 'Data bidang tanah belum terpetakan di ATR/BPN BHUMI.',
+        ];
+
+        // 1. Cek NibNopMapping lokal jika ada NIB
+        if ($nib) {
+            $cleanNib = preg_replace('/[^0-9]/', '', $nib);
+            $mapping = \App\Models\NibNopMapping::where('nib', $cleanNib)->first();
+            if ($mapping) {
+                $result['is_matched'] = true;
+                $result['nib'] = $mapping->nib;
+                $result['nop'] = $mapping->nop;
+                $result['land_area'] = $mapping->land_area_m2 ? (float) $mapping->land_area_m2 : null;
+                $result['znt'] = $mapping->znt;
+                $result['taxpayer_name'] = $mapping->taxpayer_name;
+                $result['verification_badge'] = '✓ Terverifikasi ATR/BPN BHUMI';
+                $result['message'] = 'Data bidang tanah terverifikasi dari sinkronisasi BPN BHUMI.';
+
+                return response()->json(['status' => 'success', 'data' => $result]);
+            }
+        }
+
+        // 2. Spatial lookup via BhumiService jika ada titik koordinat
+        if ($lat && $lng && is_numeric($lat) && is_numeric($lng)) {
+            $spatial = $bhumiService->reverseLookupSpatial((float) $lat, (float) $lng);
+            if (!empty($spatial['is_matched'])) {
+                $result['is_matched'] = true;
+                $result['nib'] = $spatial['nib'] ?? $nib;
+                $result['nop'] = $spatial['nop_bpn'] ?? null;
+                $result['land_area'] = $spatial['legal_land_area'] ?? null;
+                $result['znt'] = $spatial['zona_znt'] ?? null;
+                $result['nir'] = $spatial['nir_value'] ?? null;
+                $result['verification_badge'] = $spatial['verification_badge'] ?? '✓ Terverifikasi ATR/BPN BHUMI';
+                $result['message'] = 'Bidang tanah terverifikasi dari koordinat spasial BPN.';
+
+                return response()->json(['status' => 'success', 'data' => $result]);
+            }
+        }
+
+        return response()->json(['status' => 'success', 'data' => $result]);
+    }
+
     public function store(Request $request)
     {
         $isOther = $request->input('registered_for') === 'other';

@@ -311,8 +311,11 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/ratings', [RatingController::class, 'store']);
         Route::get('/ratings', [RatingController::class, 'citizenIndex']);
 
-        // Pendaftaran NOP Mandiri (Warga) & PBG Parser
+        // Pendaftaran NOP Mandiri (Warga), Document Parsers & Integrasi BPN
         Route::post('/pbb/parse-pbg-document', [\App\Http\Controllers\PbbNopApplicationController::class, 'parsePbgDocument']);
+        Route::post('/pbb/parse-certificate-document', [\App\Http\Controllers\PbbNopApplicationController::class, 'parseCertificateDocument']);
+        Route::post('/pbb/parse-ktp-document', [\App\Http\Controllers\PbbNopApplicationController::class, 'parseKtpDocument']);
+        Route::get('/pbb/bpn-lookup', [\App\Http\Controllers\PbbNopApplicationController::class, 'bpnLookup']);
         Route::post('/pbb/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'store']);
         Route::get('/pbb/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'index']);
 
