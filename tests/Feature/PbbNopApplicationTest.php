@@ -214,6 +214,7 @@ class PbbNopApplicationTest extends TestCase
 
         // 2. Admin logs in and views incoming applications on admin endpoint
         $admin = User::factory()->create([
+            'id' => 999,
             'role' => 'admin',
         ]);
 
