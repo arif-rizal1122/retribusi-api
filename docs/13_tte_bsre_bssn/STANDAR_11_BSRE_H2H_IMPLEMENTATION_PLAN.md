@@ -8,7 +8,7 @@
 
 ## 1. Latar Belakang & Analisis 11 Standar BSrE
 
-Berdasarkan telaah 19 slide presentasi teknis resmi BSrE pada folder `docs/10_payment_gateway_h2h/BSRE`, Balai Sertifikasi Elektronik (BSrE) menetapkan **11 Standar Kesiapan Integrasi Sistem** yang diuji secara ketat sebelum suatu sistem informasi instansi pemerintah diizinkan menerbitkan dokumen ber-TTE resmi yang diakui secara hukum nasional.
+Berdasarkan telaah 19 slide presentasi teknis resmi BSrE pada folder `docs/13_tte_bsre_bssn`, Balai Sertifikasi Elektronik (BSrE) menetapkan **11 Standar Kesiapan Integrasi Sistem** yang diuji secara ketat sebelum suatu sistem informasi instansi pemerintah diizinkan menerbitkan dokumen ber-TTE resmi yang diakui secara hukum nasional.
 
 Di ekosistem **M-PAD Kota Baubau**, TTE terbagi menjadi dua skema implementasi:
 1. **Skema A (Otomatis / Segel Elektronik Institusi H2H)**:

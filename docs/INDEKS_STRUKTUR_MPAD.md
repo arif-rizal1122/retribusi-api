@@ -65,7 +65,7 @@ Arsitektur terpadu Host-to-Host (H2H), payment gateway, dan interkoneksi ekstern
   - **Terisolasi & Terlindungi**: Sertifikat private key (`.pem`), public certificate, token client credentials sandbox/production untuk SNAP BI.
 - **`07_KOMDIGI_DAN_BPN/`**: Integrasi H2H BPHTB - Kantah ATR/BPN dan integrasi Web Service Komdigi/Inaproc.
 - **`08_PKS_DAN_KERJASAMA/`**: Draft & final Perjanjian Kerjasama (PKS) teknis perbankan.
-- **`09_BSRE/`**: Dokumentasi integrasi TTE BSrE BSSN, arsitektur server Esign Client lokal (Ubuntu 24), dan pemenuhan 11 standar kesiapan sistem.
+- **`09_BSRE/`**: Dokumentasi integrasi TTE BSrE BSSN, arsitektur server Esign Client lokal (Ubuntu 24), dan pemenuhan 11 standar kesiapan sistem (pada repositori API: `docs/13_tte_bsre_bssn/`).
 
 ---
 

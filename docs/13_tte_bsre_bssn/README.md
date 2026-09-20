@@ -1,6 +1,6 @@
 # 🏛️ INDEKS DOKUMENTASI INTEGRASI TTE BSRE BSSN
 ## Badan Pendapatan Daerah & Diskominfo Kota Baubau — Sistem M-PAD
-*Folder: `docs/10_payment_gateway_h2h/BSRE/` | Status: Siap Audit & Uji Penerapan Modul*
+*Folder: `docs/13_tte_bsre_bssn/` | Status: Siap Audit & Uji Penerapan Modul*
 
 ---
 
@@ -10,6 +10,7 @@ Seluruh pembahasan, arsitektur, dan materi slide presentasi resmi Balai Sertifik
 
 | No | Berkas Dokumentasi (.md) | Deskripsi & Ruang Lingkup |
 |:---|:---|:---|
+| **00** | [`00_MASTER_KONTEKS_TTE_DAN_EVIDENCE.md`](./00_MASTER_KONTEKS_TTE_DAN_EVIDENCE.md) | Naskah master konteks integrasi TTE BSrE, bukti lunas resmi M-PAD, payung hukum yuridis (UU ITE), matriks 10 sektor layanan OPD, dan bukti 31 assertions test otomasi. |
 | **01** | [`01_NOTULENSI_DAN_RINGKASAN_PEMBAHASAN_BSRE.md`](./01_NOTULENSI_DAN_RINGKASAN_PEMBAHASAN_BSRE.md) | Notulensi lengkap pembahasan pra-integrasi, 4 tahapan siklus integrasi, spesifikasi server, whitelist egress, fitur modul v2.3.3, dan kontak center resmi. |
 | **02** | [`02_SPESIFIKASI_INFRASTRUKTUR_DAN_JARINGAN_ESIGN.md`](./02_SPESIFIKASI_INFRASTRUKTUR_DAN_JARINGAN_ESIGN.md) | Standar spesifikasi server Esign Client lokal (Ubuntu 24 LTS, 8 GB RAM, 4 Core vCPU, 50 GB Storage), konfigurasi port privat (80, 443, 22), dan isolasi jaringan non-publik. |
 | **03** | [`03_JARINGAN_INTERNET_DAN_EGRESS_WHITELIST.md`](./03_JARINGAN_INTERNET_DAN_EGRESS_WHITELIST.md) | Panduan firewall egress dan 4 domain resmi BSSN yang wajib dibuka (Production, Development/Sandbox, Registry CA, Mail OTP). |

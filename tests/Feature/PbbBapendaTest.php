@@ -80,7 +80,7 @@ class PbbBapendaTest extends TestCase
         $response->assertStatus(503)
             ->assertJson([
                 'status' => 'error',
-                'message' => 'Layanan Bapenda tidak tersedia dan tidak ada data SPPT lokal.'
+                'message' => 'NOP tidak ditemukan. Periksa kembali 18 digit NOP dan tahun pajak Anda.'
             ]);
     }
 
@@ -104,7 +104,7 @@ class PbbBapendaTest extends TestCase
         $response->assertStatus(503)
             ->assertJsonFragment([
                 'status' => 'error',
-                'message' => 'Layanan Bapenda tidak tersedia dan tidak ada data SPPT lokal.'
+                'message' => 'NOP tidak ditemukan. Periksa kembali 18 digit NOP dan tahun pajak Anda.'
             ]);
     }
 

@@ -92,13 +92,16 @@ Spesifikasi integrasi perbankan multi-bank:
 - `/docs/10_payment_gateway_h2h/BPD/`
 - `/docs/10_payment_gateway_h2h/BTN/`
 - `/docs/10_payment_gateway_h2h/BPN/`
-- `/docs/10_payment_gateway_h2h/BSRE/` (Dokumentasi TTE BSrE, spesifikasi server Esign, dan pemenuhan 11 standar)
 - `/docs/10_payment_gateway_h2h/mPaD_H2H_API_Specification.md`
 
 ## 🚀 11. Kesiapan Launching & Materi Rapat
 - `/docs/11_pre_launch_readiness/MATERI_RAPAT_KADIS_PTSP_MPAD.md`
 - `/docs/11_pre_launch_readiness/M-PAD_READINESS_GUIDE.md`
 - `/docs/11_pre_launch_readiness/WA_E2E_TEST_RESULT.md`
+
+## 🔒 13. Tanda Tangan Elektronik & Sertifikasi Digital (BSrE - BSSN)
+Dokumentasi teknis TTE, Segel Elektronik, spesifikasi server Esign Client v2.3.3, dan audit 11 standar BSSN:
+- `/docs/13_tte_bsre_bssn/` (Termasuk `00_MASTER_KONTEKS_TTE_DAN_EVIDENCE.md`, notulensi, arsitektur, 19 slide presentasi BSSN, dan implementation plan)
 
 ## 🌐 99. Master Index & System Overview
 - `/docs/99_umum_system/MEGA_DOCUMENTATION.md` (Executive Index & Single Entry Point)
