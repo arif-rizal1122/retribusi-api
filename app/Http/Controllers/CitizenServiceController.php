@@ -291,8 +291,12 @@ class CitizenServiceController extends Controller
             }
         }
 
-        // NOP terverifikasi H2H (master Bapenda) = auto-approve. Selain itu jalur verifikasi manual.
-        $autoApproved = $isPbb && ! empty($metadata['h2h_verified_at']);
+        // Auto-approve untuk PBB: NOP 18 digit + form lengkap = langsung aktif.
+        // H2H Bapenda tidak selalu tersedia (kredensial/integrasi belum siap), sehingga
+        // bergantung pada h2h_verified_at membuat SEMUA pendaftaran nyangkut di PENDING
+        // dan tidak pernah muncul di admin. Zero-trust H2H tetap dijalankan bila tersedia.
+        $nopFormatValid = (bool) preg_match('/^[0-9]{18}$/', (string) $nop);
+        $autoApproved = $isPbb && ($h2hVerified || $nopFormatValid);
 
         [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata, $isPbb, $autoApproved, $h2hVerified) {
             // Create the tax object
@@ -405,10 +409,16 @@ class CitizenServiceController extends Controller
                             'nik' => $taxpayer->nik ?? null,
                             'name' => $metadata['nama_wp'] ?? $taxpayer->name ?? null,
                             'address' => $metadata['alamat_wp'] ?? $request->address ?? null,
-                            'status' => $h2hVerified ? 'APPROVED' : 'PENDING',
+                            'status' => $autoApproved ? 'APPROVED' : 'PENDING',
                             'registered_for' => 'self',
+                            // Kolom NOT NULL tanpa default di tabel pbb_nop_applications
+                            // wajib diisi eksplisit, kalau tidak: SQLSTATE 1364.
+                            'land_area' => (float) ($metadata['luas_bumi'] ?? 0),
+                            'building_area' => (float) ($metadata['luas_bangunan'] ?? 0),
+                            'ktp_file_path' => $firstFileUrl ?: 'pending',
+                            'akte_file_path' => $firstFileUrl ?: 'pending',
                             'metadata' => [
-                                'auto_approved' => $h2hVerified,
+                                'auto_approved' => $autoApproved,
                                 'source' => 'layanan_pbb',
                                 'h2h_verified_at' => $metadata['h2h_verified_at'] ?? null,
                             ],
