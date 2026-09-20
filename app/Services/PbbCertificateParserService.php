@@ -114,7 +114,8 @@ class PbbCertificateParserService
 
         // 4. Luas Tanah (m2)
         // Contoh: "Luas : 250 M2" atau "Luas Tanah 1.500 m2" atau "seluas 345 m2"
-        if (preg_match('/(?:Luas\s*(?:Tanah)?|seluas)\s*[:=]?\s*([0-9\.,]+)\s*(?:m2|M2|m²|Meter\s*Persegi)?/i', $text, $m)) {
+        // OCR sering membaca separator sebagai =: atau := atau = : dst
+        if (preg_match('/(?:Luas\s*(?:Tanah)?|seluas)\s*[=:\s]*\s*([0-9\.,]+)\s*(?:m2|M2|m²|Meter\s*Persegi)?/i', $text, $m)) {
             $cleanArea = str_replace('.', '', $m[1]);
             $cleanArea = str_replace(',', '.', $cleanArea);
             $areaFloat = (float) $cleanArea;
