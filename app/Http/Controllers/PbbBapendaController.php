@@ -11,6 +11,7 @@ use App\Models\TaxObject;
 use App\Services\BillCreationService;
 use App\Services\PbbBapendaService;
 use App\Services\Payment\Snap\SnapBrivaReadiness;
+use App\Services\Payment\Snap\BankSultraCitizenVaReadiness;
 use App\Support\SqlDate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -636,7 +637,14 @@ class PbbBapendaController extends Controller
         $request->validate([
             'nop' => 'required|string|size:18',
             'tahun' => 'required|string|size:4',
+            'method' => 'nullable|string|in:bri_va,sultra_va',
+            'channel' => 'nullable|string',
         ]);
+
+        $requestedMethod = $request->input('method');
+        $requestedChannel = strtoupper((string) $request->input('channel'));
+        $isSultra = ($requestedMethod === 'sultra_va' || in_array($requestedChannel, ['BANK_SULTRA', 'BANK SULTRA', 'SULTRA'], true));
+        $channel = $isSultra ? 'Bank Sultra' : 'BRI';
 
         // --- Tentukan user & taxpayer ---
         $user = Auth::guard('sanctum')->user();
@@ -719,17 +727,24 @@ class PbbBapendaController extends Controller
             return response()->json(['message' => 'Tagihan sudah lunas.'], 422);
         }
 
-        // --- 3. Cek kesiapan BRIVA ---
-        $brivaReadiness = app(SnapBrivaReadiness::class);
-        if (! $brivaReadiness->available()) {
-            return response()->json(['message' => $brivaReadiness->publicMessage()], 422);
+        // --- 3. Cek kesiapan Gateway (BRI utama, Bank Sultra alternatif) ---
+        if ($isSultra) {
+            $sultraReadiness = app(BankSultraCitizenVaReadiness::class);
+            if (! $sultraReadiness->available()) {
+                return response()->json(['message' => $sultraReadiness->publicMessage()], 422);
+            }
+        } else {
+            $brivaReadiness = app(SnapBrivaReadiness::class);
+            if (! $brivaReadiness->available()) {
+                return response()->json(['message' => $brivaReadiness->publicMessage()], 422);
+            }
         }
 
-        // --- 4. Buat PaymentRequest BRIVA ---
-        $paymentRequest = DB::transaction(function () use ($bill, $taxpayerId, $totalTagihan, $request) {
-            // Expire PR lama yang kedaluwarsa
+        // --- 4. Buat PaymentRequest ---
+        $paymentRequest = DB::transaction(function () use ($bill, $taxpayerId, $totalTagihan, $request, $channel, $isSultra) {
+            // Expire PR lama yang kedaluwarsa untuk channel ini
             PaymentRequest::where('taxpayer_id', $taxpayerId)
-                ->where('payment_channel', 'BRI')
+                ->where('payment_channel', $channel)
                 ->where('method', 'VA')
                 ->where('status', 'pending')
                 ->whereNotNull('expires_at')
@@ -742,18 +757,22 @@ class PbbBapendaController extends Controller
                 'bill_id' => $bill->id,
                 'tax_object_id' => $bill->tax_object_id,
                 'taxpayer_id' => $taxpayerId,
-                'payment_channel' => 'BRI',
+                'payment_channel' => $channel,
                 'method' => 'VA',
                 'amount_snapshot' => (float) $bill->amount,
                 'admin_fee_snapshot' => (float) $bill->admin_fee,
                 'penalty_snapshot' => 0,
                 'expires_at' => $expiresAt,
-                'external_id' => 'PBB-'.Str::upper(Str::random(16)),
+                'external_id' => ($isSultra ? 'PBB-SULTRA-' : 'PBB-BRI-').Str::upper(Str::random(16)),
                 'status' => 'pending',
             ]);
 
+            $vaNumber = $isSultra
+                ? $this->buildSultraVaNumber($paymentRequest->id, $bill)
+                : $this->buildVaNumber($paymentRequest->id);
+
             $paymentRequest->update([
-                'va_number' => $this->buildVaNumber($paymentRequest->id),
+                'va_number' => $vaNumber,
             ]);
 
             PaymentRequestItem::create([
@@ -768,10 +787,14 @@ class PbbBapendaController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Virtual account berhasil dibuat. Silakan bayar melalui BRIVA.',
+            'message' => $isSultra
+                ? 'Virtual account Bank Sultra berhasil dibuat. Silakan selesaikan pembayaran.'
+                : 'Virtual account berhasil dibuat. Silakan bayar melalui BRIVA.',
             'data' => [
                 'payment_request_id' => $paymentRequest->id,
                 'va_number' => $paymentRequest->va_number,
+                'provider' => $channel,
+                'method' => $isSultra ? 'sultra_va' : 'bri_va',
                 'amount' => (float) $paymentRequest->amount_snapshot,
                 'total_bayar' => (float) ($paymentRequest->items->first()->amount_snapshot ?? $paymentRequest->amount_snapshot),
                 'expires_at' => $paymentRequest->expires_at?->toISOString(),
@@ -805,6 +828,16 @@ class PbbBapendaController extends Controller
             '0',
             STR_PAD_LEFT
         );
+    }
+
+    /**
+     * Bangun nomor VA Bank Sultra.
+     */
+    private function buildSultraVaNumber(int $paymentRequestId, ?Bill $primaryBill = null): string
+    {
+        $prefix = (string) config('snap.partners.BANK_SULTRA.partner_id', '7472');
+
+        return $prefix.str_pad((string) $paymentRequestId, 8, '0', STR_PAD_LEFT);
     }
 
     // ─── Rekonsiliasi Harian (M20 task 1455) ────────────────────────────

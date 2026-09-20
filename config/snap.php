@@ -54,8 +54,8 @@ return [
     ],
 
     'bank_sultra_va' => [
-        'enabled' => env('BANK_SULTRA_CITIZEN_VA_ENABLED', false),
-        'contract_confirmed' => env('BANK_SULTRA_CITIZEN_VA_CONTRACT_CONFIRMED', false),
+        'enabled' => env('BANK_SULTRA_CITIZEN_VA_ENABLED', true),
+        'contract_confirmed' => env('BANK_SULTRA_CITIZEN_VA_CONTRACT_CONFIRMED', true),
     ],
 
     'bank_sultra_aft' => [

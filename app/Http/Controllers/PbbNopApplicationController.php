@@ -6,7 +6,14 @@ use Illuminate\Http\Request;
 
 use App\Models\PbbNopApplication;
 use App\Models\TaxObject;
+use App\Models\Taxpayer;
+use App\Models\TaxpayerPbbObject;
+use App\Models\SpptRecord;
+use App\Models\Bill;
+use App\Services\BillCreationService;
+use App\Services\PbbCalculationService;
 use App\Services\DukcapilNikService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -495,25 +502,174 @@ class PbbNopApplicationController extends Controller
             }
         }
 
-        $application->status = $request->status;
-        
-        if ($request->has('survey_notes')) {
-            $application->survey_notes = $request->survey_notes;
-        }
+        DB::transaction(function () use ($application, $nop, $request) {
+            $application->status = $request->status;
 
-        if ($request->hasFile('survey_photo')) {
-            if ($application->survey_photo_path) {
-                Storage::disk('public')->delete($application->survey_photo_path);
+            if ($request->has('survey_notes')) {
+                $application->survey_notes = $request->survey_notes;
             }
-            $application->survey_photo_path = $request->file('survey_photo')->store('pbb_applications/survey', 'public');
+
+            if ($request->hasFile('survey_photo')) {
+                if ($application->survey_photo_path) {
+                    Storage::disk('public')->delete($application->survey_photo_path);
+                }
+                $application->survey_photo_path = $request->file('survey_photo')->store('pbb_applications/survey', 'public');
+            }
+
+            if ($request->status === 'APPROVED' && $nop) {
+                $application->nop = $nop;
+            }
+
+            $application->save();
+
+            if ($request->status === 'APPROVED' && $nop) {
+                $this->autoLinkAndGeneratePbbBill($application, $nop);
+            }
+        });
+
+        return response()->json(['message' => 'Status updated successfully', 'data' => $application->fresh()]);
+    }
+
+    /**
+     * Otomatis menautkan NOP ke akun Wajib Pajak, mendaftarkan Objek Pajak (TaxObject),
+     * sinkronisasi SpptRecord, dan menerbitkan Tagihan (Bill) SPPT PBB tahun berjalan.
+     */
+    private function autoLinkAndGeneratePbbBill(PbbNopApplication $application, string $nop): void
+    {
+        // 1. Tentukan / Cari Wajib Pajak
+        $bapendaOpd = \App\Models\Opd::where('id', 5)->orWhere('name', 'like', '%Bapenda%')->first()
+            ?? \App\Models\Opd::first();
+        $opdId = $bapendaOpd?->id;
+
+        $pbbType = \App\Models\RetributionType::where('id', 16)->orWhere('name', 'like', '%PBB%')->first()
+            ?? \App\Models\RetributionType::first();
+        $retributionTypeId = $pbbType?->id;
+
+        $taxpayer = null;
+        if ($application->user_id) {
+            $taxpayer = Taxpayer::where('user_id', $application->user_id)->first();
+        }
+        if (! $taxpayer && $application->nik) {
+            $taxpayer = Taxpayer::where('nik', $application->nik)->first();
+        }
+        if (! $taxpayer) {
+            $taxpayer = Taxpayer::create([
+                'user_id' => $application->user_id,
+                'nik' => $application->nik,
+                'name' => $application->name,
+                'address' => $application->address,
+                'opd_id' => $opdId,
+            ]);
         }
 
-        if ($request->status === 'APPROVED' && $nop) {
-            $application->nop = $nop;
+        // 2. Link ke TaxpayerPbbObject (agar langsung muncul di Objek Saya warga)
+        TaxpayerPbbObject::firstOrCreate(
+            ['taxpayer_id' => $taxpayer->id, 'nop' => $nop],
+            [
+                'name_on_sppt' => $application->name,
+                'address_on_sppt' => $application->address,
+                'kelurahan' => $application->metadata['kelurahan'] ?? null,
+                'kota' => $application->metadata['kota'] ?? 'Kota Baubau',
+                'is_verified' => true,
+                'notes' => 'Otomatis dari persetujuan permohonan NOP #'.$application->id,
+            ]
+        );
+
+        if (! $opdId || ! $retributionTypeId) {
+            return;
         }
 
-        $application->save();
+        // 3. Daftarkan TaxObject (Objek Pajak PBB-P2)
+        $taxObject = TaxObject::firstOrCreate(
+            ['nop' => $nop, 'taxpayer_id' => $taxpayer->id],
+            [
+                'retribution_type_id' => $retributionTypeId,
+                'opd_id' => $opdId,
+                'name' => 'Objek PBB '.$nop.' - '.$application->name,
+                'address' => $application->address,
+                'latitude' => $application->latitude,
+                'longitude' => $application->longitude,
+                'status' => 'active',
+                'metadata' => [
+                    'nop_pbb' => $nop,
+                    'tahun_pajak' => (string) date('Y'),
+                    'nama_wp' => $application->name,
+                    'alamat_wp' => $application->address,
+                    'land_area' => (float) $application->land_area,
+                    'building_area' => (float) $application->building_area,
+                    'nib' => $application->nib,
+                    'znt' => $application->znt_applied,
+                    'nir' => $application->nir_applied,
+                    'is_fasum' => (bool) ($application->metadata['is_fasum'] ?? false),
+                    'source' => 'pbb_nop_application',
+                    'application_id' => $application->id,
+                ],
+            ]
+        );
 
-        return response()->json(['message' => 'Status updated successfully', 'data' => $application]);
+        // 4. Hitung NJOP & PBB terhutang dengan PbbCalculationService
+        $pbbService = app(PbbCalculationService::class);
+        $nir = (float) ($application->nir_applied ?? 500000);
+        $buildingRate = (float) ($application->building_area > 0 ? 1200000 : 0);
+        $calc = $pbbService->calculateAuto(
+            (float) $application->land_area,
+            $nir,
+            (float) $application->building_area,
+            $buildingRate
+        );
+
+        $isFasum = (bool) ($application->metadata['is_fasum'] ?? false);
+        $pbbAmount = $isFasum ? 0 : max(25000, (float) ($calc['pbb_terhutang'] ?? 0));
+        $currentYear = (string) date('Y');
+
+        // 5. Simpan / Sinkronisasi ke SpptRecord
+        SpptRecord::updateOrCreate(
+            ['nop' => $nop, 'tax_year' => (int) $currentYear],
+            [
+                'taxpayer_name' => $application->name,
+                'taxpayer_address' => $application->address,
+                'object_address' => $application->address,
+                'kelurahan' => $application->metadata['kelurahan'] ?? null,
+                'kecamatan' => $application->metadata['kecamatan'] ?? null,
+                'land_area_m2' => (float) $application->land_area,
+                'building_area_m2' => (float) $application->building_area,
+                'land_class' => $calc['kelas_bumi'] ?? '-',
+                'building_class' => $calc['kelas_bangunan'] ?? '-',
+                'land_njop_per_m2' => (float) ($calc['njop_bumi_per_m2'] ?? 0),
+                'building_njop_per_m2' => (float) ($calc['njop_bangunan_per_m2'] ?? 0),
+                'total_land_njop' => (float) ($calc['total_njop_bumi'] ?? 0),
+                'total_building_njop' => (float) ($calc['total_njop_bangunan'] ?? 0),
+                'njoptkp' => (float) ($calc['njoptkp'] ?? 10000000),
+                'taxable_njop' => (float) ($calc['njop_kena_pajak'] ?? 0),
+                'tax_rate' => (float) ($calc['tariff'] ?? 0.001),
+                'tax_amount' => $pbbAmount,
+                'payment_status' => $pbbAmount == 0 ? 'LUNAS' : 'BELUM LUNAS',
+                'data_source' => 'mpad_auto_billing',
+            ]
+        );
+
+        // 6. Terbitkan Tagihan (Bill) SPPT internal tahun berjalan bila belum ada dan pbbAmount > 0
+        $existingBill = Bill::where('tax_object_id', $taxObject->id)
+            ->where('period', $currentYear)
+            ->first();
+
+        if (! $existingBill && $pbbAmount > 0) {
+            $billService = app(BillCreationService::class);
+            $billService->createForTaxObject(
+                $taxObject,
+                null,
+                $currentYear,
+                [],
+                [
+                    'source' => 'pbb_auto_billing',
+                    'application_id' => $application->id,
+                    'nop' => $nop,
+                    'calculated_pbb' => $calc,
+                ],
+                null,
+                'pbb_auto_billing',
+                $pbbAmount
+            );
+        }
     }
 }

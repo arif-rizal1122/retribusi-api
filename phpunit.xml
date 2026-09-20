@@ -29,5 +29,7 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="BANK_SULTRA_CITIZEN_VA_ENABLED" value="false"/>
+        <env name="BANK_SULTRA_CITIZEN_VA_CONTRACT_CONFIRMED" value="false"/>
     </php>
 </phpunit>

@@ -397,7 +397,9 @@ class BillController extends Controller
             'provider' => $paymentRequest->payment_channel,
             'method' => strtolower($paymentRequest->payment_channel) === 'bri' && strtoupper($paymentRequest->method) === 'VA'
                 ? 'bri_va'
-                : strtolower($paymentRequest->method),
+                : (($isSultra && strtoupper($paymentRequest->method) === 'VA')
+                    ? 'sultra_va'
+                    : strtolower($paymentRequest->method)),
             'status' => $status,
             'status_label' => CitizenPaymentRequestStatus::label($status, $isSultra),
             'va_number' => $paymentRequest->va_number,
@@ -443,6 +445,16 @@ class BillController extends Controller
         $sultraVaAvailable = $canPay && $this->sultraVaReadiness->available();
 
         return [
+            'bri_va' => [
+                'available' => $brivaAvailable,
+                'message' => $brivaAvailable ? null : $this->brivaReadiness->publicMessage(),
+            ],
+            'sultra_va' => [
+                'available' => $sultraVaAvailable,
+                'message' => $sultraVaAvailable
+                    ? null
+                    : $this->sultraVaReadiness->publicMessage(),
+            ],
             'manual_transfer' => [
                 'available' => $canPay && $bankAccounts->isNotEmpty(),
                 'bank_accounts' => $bankAccounts,
@@ -454,16 +466,6 @@ class BillController extends Controller
                     'Pastikan nominal transfer sama dengan total tagihan.',
                     'Unggah bukti transfer untuk diverifikasi petugas.',
                 ],
-            ],
-            'sultra_va' => [
-                'available' => $sultraVaAvailable,
-                'message' => $sultraVaAvailable
-                    ? null
-                    : $this->sultraVaReadiness->publicMessage(),
-            ],
-            'bri_va' => [
-                'available' => $brivaAvailable,
-                'message' => $brivaAvailable ? null : $this->brivaReadiness->publicMessage(),
             ],
         ];
     }
