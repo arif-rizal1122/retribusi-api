@@ -294,7 +294,7 @@ class CitizenServiceController extends Controller
         // NOP terverifikasi H2H (master Bapenda) = auto-approve. Selain itu jalur verifikasi manual.
         $autoApproved = $isPbb && ! empty($metadata['h2h_verified_at']);
 
-        [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata, $isPbb, $autoApproved) {
+        [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata, $isPbb, $autoApproved, $h2hVerified) {
             // Create the tax object
             // Lengkapi kolom tabel dari metadata — halaman verifikasi admin Bapenda
             // membaca kolom tabel, bukan metadata. Sebelum ini luas/kelurahan/
