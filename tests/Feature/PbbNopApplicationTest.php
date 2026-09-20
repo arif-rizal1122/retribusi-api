@@ -269,4 +269,61 @@ class PbbNopApplicationTest extends TestCase
                 'nop' => $officialNop,
             ]);
     }
+
+    public function test_certificate_and_ktp_parser_and_bpn_lookup(): void
+    {
+        $taxpayer = Taxpayer::factory()->create();
+        Sanctum::actingAs($taxpayer, ['*']);
+
+        // 1. Test BPN Lookup with Local Mapping
+        \App\Models\NibNopMapping::create([
+            'nib' => '2105010100999',
+            'nop' => '747201000100100999',
+            'taxpayer_name' => 'Pemilik Tanah Sah',
+            'land_area_m2' => 350.00,
+            'znt' => 'AA',
+            'match_status' => 'matched',
+            'source' => 'bhumi',
+        ]);
+
+        $bpnRes = $this->get('/api/citizen/pbb/bpn-lookup?nib=2105010100999', [
+            'Accept' => 'application/json',
+        ]);
+
+        $bpnRes->assertStatus(200)
+            ->assertJson([
+                'status' => 'success',
+                'data' => [
+                    'is_matched' => true,
+                    'nib' => '2105010100999',
+                    'nop' => '747201000100100999',
+                    'land_area' => 350,
+                    'znt' => 'AA',
+                ],
+            ]);
+
+        // 2. Test Certificate Parser Service unit extraction
+        $certParser = app(\App\Services\PbbCertificateParserService::class);
+        $sampleText = "KEMENTERIAN AGRARIA DAN TATA RUANG / BPN\nSERTIPIKAT HAK MILIK No. 04512\nNIB: 21.05.01.01.00999\nKelurahan Katobengke Kecamatan Betoambari\nSurat Ukur Luas 350 M2\nNama Pemegang Hak: La Ode Hasan";
+        $extracted = $certParser->extractAttributesFromText($sampleText);
+
+        $this->assertEquals('SHM', $extracted['certificate_type']);
+        $this->assertEquals('04512', $extracted['certificate_number']);
+        $this->assertEquals('2105010100999', $extracted['nib']);
+        $this->assertEquals(350, $extracted['land_area']);
+        $this->assertEquals('Betoambari', $extracted['district']);
+        $this->assertEquals('Katobengke', $extracted['sub_district']);
+        $this->assertEquals('La Ode Hasan', $extracted['owner_name']);
+
+        // 3. Test KTP Parser Service unit extraction
+        $ktpParser = app(\App\Services\PbbKtpParserService::class);
+        $sampleKtpText = "PROVINSI SULAWESI TENGGARA\nKOTA BAUBAU\nNIK : 7472011508850002\nNama : WA ODE SITI\nAlamat : JL. GAJAH MADA NO. 12\nRT/RW : 002/001\nKel/Desa : BATARAGURU\nKecamatan : WOLIO";
+        $extractedKtp = $ktpParser->extractAttributesFromText($sampleKtpText);
+
+        $this->assertEquals('7472011508850002', $extractedKtp['nik']);
+        $this->assertEquals('Wa Ode Siti', $extractedKtp['name']);
+        $this->assertEquals('Jl. Gajah Mada No. 12', $extractedKtp['address']);
+        $this->assertEquals('Wolio', $extractedKtp['district']);
+    }
 }
+

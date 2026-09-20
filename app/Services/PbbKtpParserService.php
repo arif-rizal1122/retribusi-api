@@ -109,11 +109,12 @@ class PbbKtpParserService
             }
         }
 
-        // 3. Alamat
-        if (preg_match('/(?:Alamat|ALAMAT)\s*[:\.]?\s*([A-Z0-9\s\.\,\/\-]{5,80})(?:\n|\r|RT|RW|Kel|Desa|$)/i', $text, $m)) {
+        // 3. Alamat (berhenti di akhir baris atau sebelum RT/RW)
+        if (preg_match('/(?:Alamat|ALAMAT)\s*[:\.]?\s*([^\r\n]{3,60}?)(?:\r?\n|RT[\/\s]|RW[\/\s]|$)/i', $text, $m)) {
             $addr = trim($m[1]);
+            $addr = preg_replace('/\s+(RT|RW|KEL|DESA).*$/i', '', $addr);
             if (!preg_match('/(AGAMA|STATUS|PEKERJAAN)/i', $addr)) {
-                $data['address'] = ucwords(strtolower($addr));
+                $data['address'] = ucwords(strtolower(trim($addr)));
                 $data['confidence'] += 15;
             }
         }
@@ -126,13 +127,13 @@ class PbbKtpParserService
 
         // 5. Kelurahan / Desa
         if (preg_match('/(?:Kel\/Desa|Kelurahan|Desa)\s*[:\.]?\s*([A-Z\s]{3,30})/i', $text, $m)) {
-            $data['sub_district'] = trim($m[1]);
+            $data['sub_district'] = ucwords(strtolower(trim($m[1])));
             $data['confidence'] += 10;
         }
 
         // 6. Kecamatan
         if (preg_match('/(?:Kecamatan)\s*[:\.]?\s*([A-Z\s]{3,30})/i', $text, $m)) {
-            $data['district'] = trim($m[1]);
+            $data['district'] = ucwords(strtolower(trim($m[1])));
             $data['confidence'] += 10;
         }
 
