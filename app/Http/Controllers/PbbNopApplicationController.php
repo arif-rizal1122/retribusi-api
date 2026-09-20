@@ -17,8 +17,21 @@ class PbbNopApplicationController extends Controller
     {
         $query = PbbNopApplication::query();
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        if ($request->filled('status')) {
+            $query->where('status', strtoupper($request->status));
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('nib', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%")
+                    ->orWhere('nop', 'like', "%{$search}%")
+                    ->orWhere('metadata->certificate_number', 'like', "%{$search}%")
+                    ->orWhere('metadata->pbg_number', 'like', "%{$search}%");
+            });
         }
 
         // Warga (Taxpayer) hanya melihat aplikasi miliknya; admin/bapenda melihat semua
@@ -26,7 +39,7 @@ class PbbNopApplicationController extends Controller
             $query->where('user_id', $request->user()->id);
         }
 
-        return response()->json($query->latest()->paginate(15));
+        return response()->json($query->latest()->paginate(25));
     }
 
     /**
@@ -440,8 +453,8 @@ class PbbNopApplicationController extends Controller
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:PENDING,SURVEY,APPROVED,REJECTED',
             'survey_notes' => 'nullable|string',
-            'survey_photo' => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
-            'nop' => 'nullable|required_if:status,APPROVED|string|max:20'
+            'survey_photo' => 'nullable|file|mimes:jpg,jpeg,png|max:4096',
+            'nop' => 'nullable|required_if:status,APPROVED|string|max:30'
         ]);
 
         if ($validator->fails()) {
@@ -457,18 +470,25 @@ class PbbNopApplicationController extends Controller
             ], 403);
         }
 
+        $nop = null;
         if ($request->status === 'APPROVED' && $request->filled('nop')) {
-            $nop = $request->nop;
+            $digitsOnly = preg_replace('/[^0-9]/', '', (string) $request->nop);
+            $nop = (strlen($digitsOnly) === 18) ? $digitsOnly : trim($request->nop);
 
-            if (TaxObject::where(function ($q) use ($nop) {
-                $q->where('nop', $nop)->orWhere('metadata->nop_pbb', $nop);
+            if (TaxObject::where(function ($q) use ($nop, $digitsOnly) {
+                $q->where('nop', $nop)
+                    ->orWhere('nop', $digitsOnly)
+                    ->orWhere('metadata->nop_pbb', $nop)
+                    ->orWhere('metadata->nop_pbb', $digitsOnly);
             })->exists()) {
                 return response()->json([
                     'errors' => ['nop' => ['NOP sudah digunakan pada objek pajak lain.']],
                 ], 422);
             }
 
-            if (PbbNopApplication::where('nop', $nop)->where('id', '!=', $id)->exists()) {
+            if (PbbNopApplication::where(function ($q) use ($nop, $digitsOnly) {
+                $q->where('nop', $nop)->orWhere('nop', $digitsOnly);
+            })->where('id', '!=', $id)->exists()) {
                 return response()->json([
                     'errors' => ['nop' => ['NOP sudah digunakan pada aplikasi lain.']],
                 ], 422);
@@ -488,8 +508,8 @@ class PbbNopApplicationController extends Controller
             $application->survey_photo_path = $request->file('survey_photo')->store('pbb_applications/survey', 'public');
         }
 
-        if ($request->status === 'APPROVED' && $request->has('nop')) {
-            $application->nop = $request->nop;
+        if ($request->status === 'APPROVED' && $nop) {
+            $application->nop = $nop;
         }
 
         $application->save();
