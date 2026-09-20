@@ -29,27 +29,67 @@ class PbbNopApplicationController extends Controller
         return response()->json($query->latest()->paginate(15));
     }
 
+    /**
+     * Endpoint pembacaan cerdas berkas PBG / IMB (Smart Document Reader)
+     * POST /api/citizen/pbb/parse-pbg-document
+     */
+    public function parsePbgDocument(Request $request, \App\Services\PbgDocumentParserService $parser)
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120',
+        ], [
+            'file.required' => 'Silakan pilih berkas dokumen PBG atau IMB untuk dibaca.',
+            'file.mimes' => 'Format berkas harus PDF, JPG, PNG, atau WEBP.',
+            'file.max' => 'Ukuran berkas maksimal 5 MB.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $parsed = $parser->parse($request->file('file'));
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Dokumen PBG/IMB berhasil dibaca.',
+                'data' => $parsed,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error parsing PBG document: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal membaca dokumen: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         $isOther = $request->input('registered_for') === 'other';
+        $hasBuilding = $request->boolean('has_building') || (float) $request->input('building_area', 0) > 0;
 
-        $validator = Validator::make($request->all(), [
+        $rules = [
             'nik' => 'required|string|max:16',
             'name' => 'required|string|max:255',
             'address' => 'required|string',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'land_area' => 'required|numeric|min:1',
-            'building_area' => 'nullable|numeric|min:0',
-            'ktp_file' => $isOther
-                ? 'required|file|mimes:pdf,jpg,jpeg,png|max:2048'
-                : 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'akte_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'imb_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'has_building' => 'nullable|boolean',
+            'building_area' => $hasBuilding ? 'required|numeric|min:1' : 'nullable|numeric|min:0',
+            'building_floors' => 'nullable|integer|min:1',
+            'building_usage' => 'nullable|string|max:100',
+            'pbg_number' => 'nullable|string|max:100',
+            'pbg_date' => 'nullable|string|max:50',
+            'akte_file' => 'required|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120',
             'registered_for' => 'sometimes|in:self,other',
-            'owner_nik' => 'nullable|string|max:16',
-            'owner_name' => 'required_if:registered_for,other|nullable|string|max:255',
-            'owner_address' => 'nullable|string',
             'nop' => 'nullable|string|max:20',
             'metadata' => 'nullable',
             'nib' => 'nullable|string|max:50',
@@ -57,12 +97,88 @@ class PbbNopApplicationController extends Controller
             'nir_applied' => 'nullable|numeric',
             'is_bpn_verified' => 'nullable|boolean',
             'polygon_coordinates' => 'nullable',
-        ]);
+        ];
+
+        // Validasi khusus tab "Untuk Orang Lain"
+        if ($isOther) {
+            $rules['owner_nik'] = 'required|string|size:16';
+            $rules['owner_name'] = 'required|string|max:255';
+            $rules['owner_address'] = 'nullable|string';
+            $rules['ktp_file'] = 'required|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120';
+            $rules['surat_kuasa_file'] = 'required|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120';
+        } else {
+            $rules['owner_nik'] = 'nullable|string|max:16';
+            $rules['owner_name'] = 'nullable|string|max:255';
+            $rules['owner_address'] = 'nullable|string';
+            $rules['ktp_file'] = 'nullable|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120';
+            $rules['surat_kuasa_file'] = 'nullable|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120';
+        }
+
+        // Dokumen PBG/IMB wajib jika ada bangunan (kecuali fasilitas umum)
+        $isFasum = $request->boolean('is_fasum');
+        if ($hasBuilding && ! $isFasum) {
+            $rules['imb_file'] = 'required|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120';
+        } else {
+            $rules['imb_file'] = 'nullable|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
+            $errors = $validator->errors()->toArray();
+            $friendly = [];
+            $maxMb = 5;
+
+            $fileFields = ['ktp_file', 'akte_file', 'imb_file', 'pbg_file', 'surat_kuasa_file'];
+            $labels = [
+                'ktp_file' => 'Foto KTP Pemilik Asli',
+                'surat_kuasa_file' => 'Surat Kuasa / Keterangan Waris',
+                'akte_file' => 'Dokumen Akte / Sertifikat Tanah',
+                'imb_file' => 'Dokumen PBG / IMB',
+                'nik' => 'NIK Pemohon',
+                'name' => 'Nama Pemohon',
+                'address' => 'Alamat Objek Pajak',
+                'land_area' => 'Luas Tanah',
+                'building_area' => 'Luas Bangunan',
+                'owner_nik' => 'NIK Pemilik Asli',
+                'owner_name' => 'Nama Pemilik Asli',
+                'owner_address' => 'Alamat Pemilik Asli',
+                'pbg_number' => 'Nomor PBG / IMB',
+            ];
+
+            foreach ($errors as $field => $msgs) {
+                $fname = $labels[$field] ?? $field;
+                $isFile = in_array($field, $fileFields, true);
+                $msg = $msgs[0] ?? 'tidak valid';
+
+                if ($isFile) {
+                    $ext = $request->hasFile($field)
+                        ? strtolower((string) $request->file($field)->getClientOriginalExtension())
+                        : '';
+                    if (str_contains($msg, 'mimes') || str_contains($msg, 'mime') || str_contains($msg, 'of type')) {
+                        $friendly[$field] = $fname.' formatnya '.($ext ? strtoupper($ext) : 'tidak dikenal').
+                            '. Format yang diterima: PDF, JPG, JPEG, PNG, WEBP, HEIC, HEIF.';
+                    } elseif (str_contains($msg, 'required')) {
+                        $friendly[$field] = $fname.' wajib diunggah. Silakan pilih file (PDF/JPG/PNG, maksimal '.$maxMb.' MB).';
+                    } elseif (str_contains($msg, 'max') || str_contains($msg, 'upload')) {
+                        $friendly[$field] = $fname.' terlalu besar. Maksimal '.$maxMb.' MB. Silakan kompres file.';
+                    } else {
+                        $friendly[$field] = $fname.' '.$msg;
+                    }
+                } else {
+                    if (str_contains($msg, 'required')) {
+                        $friendly[$field] = $fname.' wajib diisi.';
+                    } elseif (str_contains($msg, 'size')) {
+                        $friendly[$field] = $fname.' harus berjumlah 16 digit angka.';
+                    } else {
+                        $friendly[$field] = $fname.' '.$msg;
+                    }
+                }
+            }
+
             return response()->json([
-                'message' => $validator->errors()->first(),
-                'errors' => $validator->errors(),
+                'message' => 'Ada '.count($friendly).' data yang perlu diperbaiki.',
+                'errors' => $friendly,
             ], 422);
         }
 
@@ -94,6 +210,9 @@ class PbbNopApplicationController extends Controller
         $ktpPath = $request->hasFile('ktp_file')
             ? $request->file('ktp_file')->store('pbb_applications/ktp', 'public')
             : 'verified_via_account';
+        $suratKuasaPath = $request->hasFile('surat_kuasa_file')
+            ? $request->file('surat_kuasa_file')->store('pbb_applications/surat_kuasa', 'public')
+            : null;
         $aktePath = $request->file('akte_file')->store('pbb_applications/akte', 'public');
         $imbPath = $request->hasFile('imb_file') ? $request->file('imb_file')->store('pbb_applications/imb', 'public') : null;
 
@@ -107,6 +226,16 @@ class PbbNopApplicationController extends Controller
         if ($request->filled('owner_nik')) {
             $metadata['owner_nik'] = $request->input('owner_nik');
         }
+        if ($suratKuasaPath) {
+            $metadata['surat_kuasa_file_path'] = $suratKuasaPath;
+        }
+        if ($request->filled('pbg_number')) {
+            $metadata['pbg_number'] = $request->input('pbg_number');
+        }
+        if ($request->filled('pbg_date')) {
+            $metadata['pbg_date'] = $request->input('pbg_date');
+        }
+        $metadata['has_building'] = $hasBuilding;
         if ($request->filled('building_floors')) {
             $metadata['building_floors'] = $request->input('building_floors');
         }
@@ -133,7 +262,7 @@ class PbbNopApplicationController extends Controller
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
             'land_area' => $request->land_area,
-            'building_area' => $request->building_area,
+            'building_area' => $hasBuilding ? $request->building_area : 0,
             'ktp_file_path' => $ktpPath,
             'akte_file_path' => $aktePath,
             'imb_file_path' => $imbPath,

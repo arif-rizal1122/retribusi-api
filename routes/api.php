@@ -311,7 +311,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/ratings', [RatingController::class, 'store']);
         Route::get('/ratings', [RatingController::class, 'citizenIndex']);
 
-        // Pendaftaran NOP Mandiri (Warga)
+        // Pendaftaran NOP Mandiri (Warga) & PBG Parser
+        Route::post('/pbb/parse-pbg-document', [\App\Http\Controllers\PbbNopApplicationController::class, 'parsePbgDocument']);
         Route::post('/pbb/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'store']);
         Route::get('/pbb/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'index']);
 
