@@ -31,6 +31,8 @@ class PbbNopApplicationController extends Controller
 
     public function store(Request $request)
     {
+        $isOther = $request->input('registered_for') === 'other';
+
         $validator = Validator::make($request->all(), [
             'nik' => 'required|string|max:16',
             'name' => 'required|string|max:255',
@@ -38,35 +40,49 @@ class PbbNopApplicationController extends Controller
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'land_area' => 'required|numeric|min:1',
-            'building_area' => 'nullable|numeric|min:1',
-            'ktp_file' => ($request->input('registered_for') === 'other')
+            'building_area' => 'nullable|numeric|min:0',
+            'ktp_file' => $isOther
                 ? 'required|file|mimes:pdf,jpg,jpeg,png|max:2048'
                 : 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'akte_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'imb_file' => 'nullable|required_with:building_area|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'imb_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'registered_for' => 'sometimes|in:self,other',
-            'owner_name' => 'required_if:registered_for,other|string|max:255',
-            'owner_address' => 'required_if:registered_for,other|string',
+            'owner_nik' => 'nullable|string|max:16',
+            'owner_name' => 'required_if:registered_for,other|nullable|string|max:255',
+            'owner_address' => 'nullable|string',
             'nop' => 'nullable|string|max:20',
-            'metadata' => 'nullable|array',
+            'metadata' => 'nullable',
+            'nib' => 'nullable|string|max:50',
+            'znt_applied' => 'nullable|string|max:20',
+            'nir_applied' => 'nullable|numeric',
+            'is_bpn_verified' => 'nullable|boolean',
+            'polygon_coordinates' => 'nullable',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
         // Validasi format NIK 16 digit + H2H Dukcapil (default not_configured → tidak memblokir)
         $dukcapilService = app(DukcapilNikService::class);
 
         if (! $dukcapilService->validateFormat($request->nik)) {
-            return response()->json(['errors' => ['nik' => ['Format NIK tidak valid.']]], 422);
+            return response()->json([
+                'message' => 'Format NIK tidak valid.',
+                'errors' => ['nik' => ['Format NIK tidak valid.']],
+            ], 422);
         }
 
         if ($dukcapilService->available()) {
             $dukcapil = $dukcapilService->validate($request->nik, $request->name);
             if (($dukcapil['valid'] ?? false) !== true) {
+                $reason = $dukcapil['reason'] ?? 'NIK tidak valid menurut Dukcapil.';
                 return response()->json([
-                    'errors' => ['nik' => [$dukcapil['reason'] ?? 'NIK tidak valid menurut Dukcapil.']],
+                    'message' => $reason,
+                    'errors' => ['nik' => [$reason]],
                 ], 422);
             }
         } else {
@@ -83,6 +99,32 @@ class PbbNopApplicationController extends Controller
 
         $registeredFor = $request->input('registered_for', 'self');
 
+        // Prepare metadata
+        $metadata = $request->input('metadata', []);
+        if (! is_array($metadata)) {
+            $metadata = json_decode((string) $metadata, true) ?? [];
+        }
+        if ($request->filled('owner_nik')) {
+            $metadata['owner_nik'] = $request->input('owner_nik');
+        }
+        if ($request->filled('building_floors')) {
+            $metadata['building_floors'] = $request->input('building_floors');
+        }
+        if ($request->filled('building_usage')) {
+            $metadata['building_usage'] = $request->input('building_usage');
+        }
+        if ($request->has('is_fasum')) {
+            $metadata['is_fasum'] = $request->boolean('is_fasum');
+        }
+
+        $polyCoords = $request->input('polygon_coordinates');
+        if (is_string($polyCoords)) {
+            $decoded = json_decode($polyCoords, true);
+            if (is_array($decoded)) {
+                $polyCoords = $decoded;
+            }
+        }
+
         $application = PbbNopApplication::create([
             'user_id' => $request->user() ? $request->user()->id : null,
             'nik' => $request->nik,
@@ -98,12 +140,21 @@ class PbbNopApplicationController extends Controller
             'status' => 'PENDING',
             'registered_for' => $registeredFor,
             'owner_name' => $registeredFor === 'other' ? $request->owner_name : null,
-            'owner_address' => $registeredFor === 'other' ? $request->owner_address : null,
+            'owner_address' => $registeredFor === 'other' ? ($request->owner_address ?? $request->address) : null,
             'nop' => $request->input('nop'),
-            'metadata' => $request->input('metadata'),
+            'metadata' => ! empty($metadata) ? $metadata : null,
+            'nib' => $request->input('nib'),
+            'znt_applied' => $request->input('znt_applied'),
+            'nir_applied' => $request->input('nir_applied'),
+            'polygon_coordinates' => $polyCoords,
+            'is_bpn_verified' => $request->boolean('is_bpn_verified'),
         ]);
 
-        return response()->json(['message' => 'Application submitted successfully', 'data' => $application], 201);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Application submitted successfully',
+            'data' => $application,
+        ], 201);
     }
 
     public function show($id)
