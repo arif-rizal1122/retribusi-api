@@ -277,9 +277,14 @@ class CitizenServiceController extends Controller
         if (empty($metadata['koordinat_usaha']) && $request->filled('latitude') && $request->filled('longitude')) {
             $metadata['koordinat_usaha'] = $request->input('latitude') . ',' . $request->input('longitude');
         }
-        if (empty($metadata['legal_consent'])) {
-            $metadata['legal_consent'] = 'Ya';
-        }
+        // Pencatatan Yuridis Pakta Integritas / Pernyataan Hukum
+        $metadata['legal_consent'] = true;
+        $metadata['legal_consent_audit'] = [
+            'agreed' => true,
+            'timestamp' => now()->toIso8601String(),
+            'ip_address' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ];
 
         // Auto-kalkulasi parameter teknis PBJT Tenaga Listrik Non-PLN (Pembangkit Mandiri)
         if ($classification->id == 196 || ($classification->code ?? '') === 'PBJT-NON-PLN') {

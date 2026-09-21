@@ -154,7 +154,8 @@ class ClassificationSchemaSeeder extends Seeder
             ['key' => 'harga', 'label' => 'Harga Pasar Berlaku (Rp / Kg)', 'type' => 'number', 'required' => true],
             ['key' => 'penjualan', 'label' => 'Estimasi Omzet Panen (Rp)', 'type' => 'number', 'readonly' => true, 'helper' => 'Otomatis dihitung: Volume × Harga'],
         ], [
-            ['key' => 'foto_bangunan', 'name' => 'Foto Gedung Walet', 'required' => true],
+            ['key' => 'foto_bangunan', 'name' => 'Foto Fisik Gedung Walet', 'required' => true],
+            ['key' => 'bukti_lahan', 'name' => 'Bukti Hak / Penguasaan Lahan atau Bangunan', 'required' => true],
         ]);
 
         // 8. PBJT Jasa Kesenian dan Hiburan
