@@ -174,17 +174,18 @@ class ClassificationSchemaSeeder extends Seeder
             ['key' => 'foto_tempat_hiburan', 'name' => 'Foto Tempat Hiburan', 'required' => true],
         ]);
 
-        // 9. PBJT Tenaga Listrik
+        // 9. PBJT Tenaga Listrik (Non-PLN / Dihasilkan Sendiri)
         $this->updateSchema('PBJT - Tenaga Listrik', [
-            ['key' => 'sumber_listrik', 'label' => 'Sumber Tenaga Listrik', 'type' => 'select', 'required' => true, 'options' => [
-                ['label' => 'PLN', 'value' => 'pln'],
-                ['label' => 'Non-PLN (Genset / Pembangkit Sendiri)', 'value' => 'non_pln'],
-            ]],
-            ['key' => 'id_pelanggan', 'label' => 'ID Pelanggan / Nomor Kontrak (PLN)', 'type' => 'text'],
-            ['key' => 'daya_terpasang', 'label' => 'Kapasitas Daya (VA / kVA)', 'type' => 'number', 'required' => true],
-            ['key' => 'tagihan', 'label' => 'Nilai Tagihan Listrik per Bulan (Rp)', 'type' => 'number', 'required' => true],
+            ['key' => 'jenis_pembangkit', 'label' => 'Jenis Pembangkit Listrik Mandiri', 'type' => 'select', 'required' => true, 'options' => [
+                ['label' => 'Genset Diesel / Solar (Industri / Usaha)', 'value' => 'genset_diesel'],
+                ['label' => 'Pembangkit Listrik Tenaga Surya (PLTS) Mandiri', 'value' => 'plts'],
+                ['label' => 'Turbin / Pembangkit Lainnya', 'value' => 'lainnya'],
+            ], 'helper' => 'Pilih jenis sumber pembangkitan tenaga listrik mandiri'],
+            ['key' => 'kapasitas_daya_kva', 'label' => 'Kapasitas Daya Pembangkit (kVA)', 'type' => 'number', 'required' => true, 'helper' => 'Kapasitas total genset / pembangkit mandiri (kVA)'],
+            ['key' => 'jam_operasional_per_hari', 'label' => 'Estimasi Jam Nyala per Hari (Jam)', 'type' => 'number', 'required' => false, 'default_value' => 8, 'helper' => 'Estimasi jam nyala operasional per hari (default: 8 jam)'],
+            ['key' => 'nomor_slo_atau_iuptl', 'label' => 'Nomor Sertifikat Laik Operasi (SLO) / IUPTLS', 'type' => 'text', 'required' => false, 'helper' => 'Nomor SLO / Izin Operasi Pembangkit Mandiri (jika ada)'],
         ], [
-            ['key' => 'rekening_listrik', 'name' => 'Salinan Rekening Listrik', 'required' => false],
+            ['key' => 'foto_nameplate', 'name' => 'Foto Nameplate Spesifikasi Genset / Pembangkit', 'required' => false],
         ]);
 
         // 10. PBJT Jasa Parkir

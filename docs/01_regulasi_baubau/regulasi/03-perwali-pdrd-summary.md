@@ -27,74 +27,86 @@
 ---
 
 ## 2. JENIS PAJAK DAERAH DAN TARIF
+## 2. JENIS PAJAK DAERAH DAN TARIF (PERDA 1/2024 & UU 1/2022 HKPD)
 
-### 2.1 Pajak Hotel
+### 2.1 PBJT Makanan dan/atau Minuman (Eks Pajak Restoran)
 | Komponen | Keterangan |
 |----------|------------|
-| Objek Pajak | Pelayanan yang disediakan hotel |
-| Subjek Pajak | Orang pribadi atau badan yang melakukan pembayaran kepada hotel |
-| Dasar Pengenaan | Jumlah pembayaran/seharusnya dibayar kepada hotel |
+| Objek Pajak | Penjualan makanan dan/atau minuman yang disediakan restoran, rumah makan, kafe, katering |
+| Subjek Pajak | Konsumen yang membeli makanan dan/atau minuman |
+| Dasar Pengenaan | Jumlah pembayaran yang diterima penyedia makanan dan/atau minuman |
+| Batasan (Threshold) | Omzet usaha di atas **Rp 3.000.000 / bulan** |
 | Tarif | **10%** |
 
-### 2.2 Pajak Restoran
+### 2.2 PBJT Jasa Perhotelan (Eks Pajak Hotel)
 | Komponen | Keterangan |
 |----------|------------|
-| Objek Pajak | Pelayanan penjualan makanan/minuman yang dikonsumsi di tempat |
-| Subjek Pajak | Orang pribadi atau badan yang membeli makanan/minuman |
-| Dasar Pengenaan | Jumlah pembayaran yang diterima restoran |
+| Objek Pajak | Pelayanan penyediaan akomodasi hotel, motel, losmen, wisma pariwisata, villa, dan indekos > 10 kamar |
+| Subjek Pajak | Konsumen yang menyewa akomodasi |
+| Dasar Pengenaan | Jumlah pembayaran yang seharusnya dibayar kepada hotel |
 | Tarif | **10%** |
 
-### 2.3 Pajak Hiburan
-| Jenis Hiburan | Tarif |
-|---------------|-------|
-| Tontonan film/bioskop | 10% |
-| Pagelaran kesenian/musik | 10% |
-| Pameran | 10% |
-| **Diskotik/Klub Malam/Karaoke** | **40%** |
-| Sirkus/akrobat | 10% |
-| Permainan bilyard | 10% |
-| Permainan ketangkasan | 10% |
-| Pacuan kuda/kendaraan bermotor | 10% |
-| Panti pijat/refleksi | 10% |
+### 2.3 PBJT Jasa Kesenian dan Hiburan (Eks Pajak Hiburan)
+| Jenis Hiburan | Dasar Hukum | Tarif |
+|---------------|-------------|-------|
+| Tontonan film / bioskop, konser, pameran, bowling | Perda 1/2024 | **10%** |
+| Sirkus, permainan ketangkasan, pacuan kuda/motor | Perda 1/2024 | **10%** |
+| Panti pijat / refleksi / mandi uap standar | Perda 1/2024 | **10%** |
+| **Hiburan Khusus (Diskotik, Karaoke, Klub Malam, Bar, Spa)** | **Pasal 58 UU HKPD & Perda 1/2024** | **40%** |
 
-### 2.4 Pajak Parkir
+### 2.4 PBJT Jasa Parkir (Eks Pajak Parkir)
 | Komponen | Keterangan |
 |----------|------------|
-| Objek Pajak | Penyelenggaraan tempat parkir di luar badan jalan |
-| Subjek Pajak | Orang pribadi atau badan yang melakukan parkir |
-| Dasar Pengenaan | Jumlah pembayaran/seharusnya dibayar untuk penggunaan tempat parkir |
-| Tarif | **30%** |
+| Objek Pajak | Penyediaan atau penyelenggaraan tempat parkir di luar badan jalan |
+| Subjek Pajak | Pengguna fasilitas tempat parkir |
+| Dasar Pengenaan | Jumlah pembayaran atau yang seharusnya dibayar |
+| Tarif | **10%** *(diselaraskan dari tarif lama 30% per UU HKPD)* |
 
-### 2.5 Pajak Air Tanah
+### 2.5 PBJT Tenaga Listrik
+| Kategori Penggunaan | Tarif |
+|---------------------|-------|
+| Konsumsi Rumah Tangga & Bisnis Umum | **10%** |
+| Industri, Pertambangan Minyak Bumi dan Gas Alam | **3%** |
+| Tenaga Listrik yang Dihasilkan Sendiri (Non-PLN) | **1,5%** |
+
+### 2.6 Pajak Air Tanah (PAT)
 | Komponen | Keterangan |
 |----------|------------|
 | Objek Pajak | Pengambilan dan/atau pemanfaatan air tanah |
-| Subjek Pajak | Orang pribadi atau badan yang melakukan pengambilan air tanah |
-| Dasar Pengenaan | Nilai Perolehan Air Tanah |
+| Dasar Pengenaan | Nilai Perolehan Air Tanah (Volume Ekstraksi m³ × HDA) |
 | Tarif | **20%** |
 
-### 2.6 PBJT Tenaga Listrik
+### 2.7 Pajak Reklame
 | Komponen | Keterangan |
 |----------|------------|
-| Objek Pajak | Tenaga listrik yang dihasilkan sendiri |
-| Subjek Pajak | Pengguna tenaga listrik |
-| Dasar Pengenaan | Nilai jual tenaga listrik |
-| Tarif | Sesuai ketentuan |
+| Objek Pajak | Semua penyelenggaraan reklame (billboard, videotron, spanduk, baliho, dll.) |
+| Dasar Pengenaan | Nilai Sewa Reklame (NSR = NSPR + NJOPR) berdasarkan zonasi jalan A, B, C |
+| Tarif | **25%** *(Official Assessment)* |
+
+### 2.8 Pajak MBLB & Sarang Burung Walet
+- **Pajak MBLB (Mineral Bukan Logam dan Batuan)**: **15%** dari Nilai Jual Hasil Pengambilan MBLB.
+- **Pajak Sarang Burung Walet**: **10%** dari Nilai Jual Sarang Burung Walet.
+
+### 2.9 PBB-P2 & BPHTB
+- **PBB-P2**: NJOPTKP **Rp 10.000.000**, tarif progresif **0,15% s.d. 0,30%** (Lahan Pangan **0,25%**).
+- **BPHTB**: Tarif **5%**, NPOPTKP Pertama **Rp 80.000.000**, Hibah Wasiat/Waris **Rp 300.000.000**.
+
+### 2.10 Opsen Pajak Provinsi (Mulai Berlaku 5 Januari 2025)
+- **Opsen PKB**: **66%** dari pokok PKB terutang provinsi.
+- **Opsen BBNKB**: **66%** dari pokok BBNKB terutang provinsi.
 
 ---
 
 ## 3. TATA CARA PENDAFTARAN
 
 ### 3.1 Pendaftaran Wajib Pajak
-1. Wajib Pajak mengisi formulir SPOPD (Surat Pendaftaran Objek Pajak Daerah)
-2. Melampirkan dokumen persyaratan:
-   - Fotokopi KTP pemilik/pengelola
-   - Fotokopi NPWP (jika ada)
-   - Fotokopi izin usaha
-   - Dokumen pendukung lainnya
-3. Menyerahkan formulir ke Badan Pendapatan Daerah
-4. Verifikasi oleh petugas pendata
-5. Penerbitan NPWPD
+1. Wajib Pajak mengisi formulir SPOPD / SPOP digital via aplikasi M-PAD.
+2. Melampirkan dokumen persyaratan digital:
+   - KTP / IKD terintegrasi Dukcapil
+   - NPWPD / NIB (dari sistem OSS H2H)
+   - Dokumen teknis pendukung sesuai jenis layanan
+3. Verifikasi oleh petugas Bapenda / tim teknis OPD terkait.
+4. Penerbitan NPWPD dan Nomor Objek Pajak (NOP/Formulir).
 
 ### 3.2 Jenis Transaksi
 | Kode | Jenis | Keterangan |
@@ -108,8 +120,8 @@
 ## 4. TATA CARA PENETAPAN
 
 ### 4.1 Penetapan Pajak
-1. **Self Assessment**: WP menghitung sendiri pajak terutang
-2. **Official Assessment**: Penetapan oleh Fiskus/petugas pajak
+1. **Self Assessment**: WP menghitung, memperhitungkan, membayar, dan melaporkan sendiri pajak terutang menggunakan SPTPD (PBJT, MBLB, Walet).
+2. **Official Assessment**: Penetapan besaran pajak terutang oleh Fiskus melalui penerbitan SKPD (Pajak Reklame, PBB-P2, PAT).
 
 ### 4.2 Dokumen Penetapan
 - SKPD (Surat Ketetapan Pajak Daerah)
@@ -122,36 +134,38 @@
 
 ## 5. TATA CARA PEMBAYARAN
 
-### 5.1 Tempat Pembayaran
-- Kas Daerah
-- Bank yang ditunjuk
-- Tempat lain yang ditentukan
+### 5.1 Tempat & Saluran Pembayaran
+- Rekening Kas Umum Daerah (RKUD) Kota Baubau di Bank Sultra.
+- Layanan H2H SNAP BI: BRIVA BRI, Virtual Account Bank Sultra, dan QRIS Dinamis.
+- Teller bank dan kanal digital terdaftar.
 
 ### 5.2 Jatuh Tempo
-- Pajak harus dibayar paling lambat **15 hari** setelah saat terutangnya pajak
-- Atau sesuai tanggal yang tercantum dalam SKPD
+- Pembayaran pajak *self-assessment* (SPTPD): Paling lambat **tanggal 15 bulan berikutnya**.
+- Pembayaran pajak *official assessment* (SKPD): Paling lambat **30 hari kerja** setelah SKPD diterima.
 
-### 5.3 Sanksi Keterlambatan
-| Jenis Sanksi | Besaran |
-|--------------|---------|
-| Bunga keterlambatan | 2% per bulan (maksimal 24 bulan) |
-| Denda administrasi | Sesuai ketentuan |
+### 5.3 Sanksi Keterlambatan (Sesuai PP 35/2023 & Perda 1/2024)
+| Jenis Sanksi | Besaran | Dasar Hukum |
+|--------------|---------|-------------|
+| Bunga keterlambatan pembayaran | **1% per bulan** (maksimal 24 bulan) | PP No. 35/2023 Pasal 69 & Perda 1/2024 |
+| Denda keterlambatan SPTPD | Rp 100.000 (Orang Pribadi) / Rp 500.000 (Badan) | Perda No. 1/2024 |
 
 ---
 
 ## 6. TATA CARA PELAPORAN
 
 ### 6.1 Kewajiban Pelaporan
-- Wajib Pajak wajib menyampaikan SPTPD (Surat Pemberitahuan Pajak Daerah)
-- Pelaporan dilakukan secara berkala (bulanan/triwulan)
+- Wajib Pajak untuk jenis pajak *Self Assessment* wajib menyampaikan SPTPD secara daring melalui aplikasi M-PAD.
+- Pelaporan dilakukan secara bulanan.
 
-### 6.2 Batas Waktu Pelaporan
-| Jenis Pajak | Batas Waktu |
-|-------------|-------------|
-| Pajak Hotel | Tanggal 15 bulan berikutnya |
-| Pajak Restoran | Tanggal 15 bulan berikutnya |
-| Pajak Hiburan | Tanggal 15 bulan berikutnya |
-| Pajak Parkir | Tanggal 15 bulan berikutnya |
+### 6.2 Batas Waktu Pelaporan SPTPD
+| Jenis Pajak | Batas Waktu Pelaporan |
+|-------------|-----------------------|
+| PBJT Makanan dan/atau Minuman | Tanggal 15 bulan berikutnya |
+| PBJT Jasa Perhotelan | Tanggal 15 bulan berikutnya |
+| PBJT Jasa Kesenian dan Hiburan | Tanggal 15 bulan berikutnya |
+| PBJT Jasa Parkir | Tanggal 15 bulan berikutnya |
+| PBJT Tenaga Listrik (Non-PLN) | Tanggal 15 bulan berikutnya |
+| Pajak MBLB & Walet | Tanggal 15 bulan berikutnya |
 
 ---
 

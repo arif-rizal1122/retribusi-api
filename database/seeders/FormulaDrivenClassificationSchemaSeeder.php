@@ -99,9 +99,9 @@ class FormulaDrivenClassificationSchemaSeeder extends Seeder
                 ],
             ],
             'PBJT-LIS' => [
-                'name' => 'PBJT - Tenaga Listrik',
+                'name' => 'PBJT - Tenaga Listrik (Non-PLN / Dihasilkan Sendiri)',
                 'fields' => [
-                    $this->money('tagihan', 'Nilai Tagihan Listrik (Rp)'),
+                    $this->number('kapasitas_daya_kva', 'Kapasitas Daya Pembangkit (kVA)'),
                 ],
             ],
             'AIR-TANAH' => [

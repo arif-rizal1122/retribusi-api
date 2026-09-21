@@ -170,3 +170,36 @@ Tunggakan        ──► STPD / STRD (Tagihan Bunga 1%) ──► Surat Tegura
 | **Admin OPD (e.g., DPMPTSP, Damkar, DLH)** | OPD Terkait | Verifikasi teknis berkas, persetujuan rekomendasi teknis (e.g., Damkar = verifikator proteksi gedung). |
 | **Petugas Lapangan (Officer)** | Assigned Territory | Koleksi tagihan tunai/QRIS lapangan, cetak struk thermal BLE 58mm, audit LKOK. |
 | **Wajib Pajak (Citizen)** | Data Milik Sendiri | Pendaftaran NOP SPOP mandiri, pembayaran multi-bill SNAP BRIVA/QRIS, unduh SSPD sah. |
+
+---
+
+## 6. Matriks 13 Layanan Pajak Daerah Aktif (Kesesuaian Perda 1/2024)
+
+| ID | Kode | Nama Layanan Pajak | Jenis Asesmen | Dasar Pengenaan Pajak (DPP) | Tarif Perda 1/2024 | Formula Database Engine | Dasar Hukum Spesifik |
+|:--:|:----:|:-------------------|:-------------:|:----------------------------|:------------------:|:------------------------|:---------------------|
+| **172** | `PBJT-PRK` | **PBJT - Jasa Parkir** | *Self Assessment* | Jumlah pembayaran tempat parkir | **10%** | `omzet * 0.1` | Perda 1/2024 Pasal 48 |
+| **186** | `PBB-P2` | **Pajak Bumi & Bangunan** | *Official Assessment* | NJOP dikurangi NJOPTKP (Rp 10 Juta) | **0,15% - 0,30%** | `(njop - 10000000) * 0.003` | Perda 1/2024 Pasal 3 & Perwali 43/2025 |
+| **187** | `BPHTB` | **Bea Perolehan Hak Tanah & Bangunan** | *Self Assessment* | NPOP dikurangi NPOPTKP | **5%** | `(npop - 80000000) * 0.05` | Perda 1/2024 Pasal 24 |
+| **188** | `REKLAME` | **Pajak Reklame** | *Official Assessment* | NSR (NSPR Zonasi + NJOPR) × Ukuran | **25%** | `((njopr + nspr) * luas * sisi) * 0.25` | Perda 1/2024 Pasal 34 & Perwali 11/2025 |
+| **189** | `MBLB` | **Pajak MBLB (Galian C)** | *Self Assessment* | Nilai Jual Hasil Ekstraksi Tonase/m³ | **15%** | `(volume * harga) * 0.15` | Perda 1/2024 Pasal 42 & Perwali 42/2025 |
+| **190** | `WALET` | **Sarang Burung Walet** | *Self Assessment* | Nilai Jual Pasar Hasil Panen | **10%** | `(volume * harga) * 0.10` | Perda 1/2024 Pasal 68 |
+| **191** | `OPSEN` | **Opsen PKB & BBNKB** | *Sistem H2H* | Pokok Pajak PKB/BBNKB Provinsi Sultra | **66%** | `pokok_provinsi * 0.66` | UU 1/2022 Pasal 83 & Perda 1/2024 |
+| **192** | `PBJT-FOOD` | **PBJT Makanan & Minuman** | *Self Assessment* | Omzet penjualan (Restoran, Kafe, Katering) | **10%** | `omzet * 0.1` | Perda 1/2024 Pasal 48 |
+| **193** | `PBJT-HTL` | **PBJT Jasa Perhotelan** | *Self Assessment* | Omzet pembayaran sewa kamar/akomodasi | **10%** | `omzet * 0.1` | Perda 1/2024 Pasal 48 |
+| **194** | `PBJT-HBR` | **PBJT Hiburan Standar** | *Self Assessment* | Omzet tiket/jasa (Bioskop, Rekreasi, Pijat) | **10%** | `omzet * 0.1` | Perda 1/2024 Pasal 50 ayat (1) |
+| **195** | `PBJT-HBR-SP` | **PBJT Hiburan Khusus** | *Self Assessment* | Omzet (Diskotik, Karaoke, Bar, Spa) | **40%** | `omzet * 0.4` | Perda 1/2024 Pasal 50 ayat (2) |
+| **196** | `PBJT-NON-PLN`| **PBJT Tenaga Listrik Sendiri** | *Self Assessment* | Nilai Jual Tenaga Listrik (NJTL) | **1,5%** | `(estimasi_kwh * njtl) * 0.015` | Perda 1/2024 Pasal 51 |
+| **197** | `AIR-TANAH` | **Pajak Air Tanah (PAT)** | *Official Assessment* | Volume ekstraksi m³ × HDA resmi | **20%** | `(volume * hda) * 0.2` | Perda 1/2024 Pasal 60 |
+
+---
+
+## 7. Penyelarasan Nomenklatur Perizinan (PP 16/2021 & DPMPTSP)
+
+1. **Transformasi IMB ke PBG**:
+   * Sesuai ketentuan PP No. 16 Tahun 2021, istilah IMB (*Izin Mendirikan Bangunan*) telah dihapuskan dan digantikan dengan **PBG (Persetujuan Bangunan Gedung)**.
+   * Untuk konstruksi reklame permanen (Billboard, Megatron), izin konstruksi fisik diterbitkan oleh Dinas PUPR/DPMPTSP melalui sistem SIMBG/PBG.
+2. **Izin Penyelenggaraan Reklame (DPMPTSP)**:
+   * Izin penyelenggaraan reklame diterbitkan oleh DPMPTSP Kota Baubau setelah memperoleh rekomendasi teknis titik dari Bapenda (terkait sempadan jalan dan zonasi).
+3. **Pembebasan PBG bagi MBR (Perwali 3/2024 & Perwali 63/2024)**:
+   * Bangunan hunian bagi Masyarakat Berpenghasilan Rendah (MBR) mendapatkan fasilitas pembebasan retribusi PBG sebesar 100% dengan melampirkan surat pernyataan MBR resmi.
+

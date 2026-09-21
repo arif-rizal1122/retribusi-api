@@ -242,6 +242,59 @@ class CitizenServiceController extends Controller
             $metadata['hda'] = $hdaTarifMap[$metadata['tujuan_pengambilan']] ?? 2500;
         }
 
+        // Auto-set Harga Patokan MBLB resmi Perda 1/2024 jika belum diisi
+        if (isset($metadata['jenis_mineral']) && empty($metadata['harga'])) {
+            $mblbTarifMap = [
+                'gamping' => 35000,
+                'pasir' => 50000,
+                'tanah_urug' => 25000,
+                'tanah_liat' => 30000,
+                'sirtu' => 45000,
+                'andesit' => 60000,
+            ];
+            $metadata['harga'] = $mblbTarifMap[$metadata['jenis_mineral']] ?? 35000;
+        }
+
+        // Sinkronisasi alias omset <-> omzet dan fallback 0 untuk registrasi profil awal objek
+        if (!isset($metadata['omzet']) && isset($metadata['omset'])) {
+            $metadata['omzet'] = $metadata['omset'];
+        }
+        if (!isset($metadata['omset']) && isset($metadata['omzet'])) {
+            $metadata['omset'] = $metadata['omzet'];
+        }
+        if (!isset($metadata['omset']) && !isset($metadata['omzet'])) {
+            $metadata['omset'] = 0;
+            $metadata['omzet'] = 0;
+        }
+
+        // Auto-sinkronkan field redundan (nama_usaha, alamat_usaha, koordinat_usaha, legal_consent) dari payload pendaftaran utama
+        if (empty($metadata['nama_usaha']) && $request->filled('name')) {
+            $metadata['nama_usaha'] = $request->input('name');
+        }
+        if (empty($metadata['alamat_usaha']) && $request->filled('address')) {
+            $metadata['alamat_usaha'] = $request->input('address');
+        }
+        if (empty($metadata['koordinat_usaha']) && $request->filled('latitude') && $request->filled('longitude')) {
+            $metadata['koordinat_usaha'] = $request->input('latitude') . ',' . $request->input('longitude');
+        }
+        if (empty($metadata['legal_consent'])) {
+            $metadata['legal_consent'] = 'Ya';
+        }
+
+        // Auto-kalkulasi parameter teknis PBJT Tenaga Listrik Non-PLN (Pembangkit Mandiri)
+        if ($classification->id == 196 || ($classification->code ?? '') === 'PBJT-NON-PLN') {
+            $kva = (float) ($metadata['kapasitas_daya_kva'] ?? 0);
+            $jamPerHari = (float) ($metadata['jam_operasional_per_hari'] ?? 8);
+            if ($jamPerHari <= 0) {
+                $jamPerHari = 8;
+            }
+            $metadata['jam_nyala_sebulan'] = $jamPerHari * 30;
+            // Standar estimasi kWh = kVA * cos phi (0.8) * jam nyala sebulan
+            $metadata['estimasi_kwh_bulanan'] = round($kva * 0.8 * $metadata['jam_nyala_sebulan'], 2);
+            $metadata['harga_satuan_njtl'] = 1444; // Standar NJTL tarif acuan listrik
+        }
+
+
         $metadata = $this->applySchemaDefaults($classification->form_schema ?? [], $metadata);
         $missingMetadata = $this->missingRequiredMetadata($classification->form_schema ?? [], $metadata);
         if (! empty($missingMetadata)) {
