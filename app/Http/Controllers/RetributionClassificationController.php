@@ -51,6 +51,7 @@ class RetributionClassificationController extends Controller
             'bank_accounts' => 'nullable',
             'calculation_formula' => 'nullable|string',
             'is_self_assessment' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
         ]);
 
         $cloudinary = app(\App\Services\CloudinaryService::class);
@@ -89,6 +90,7 @@ class RetributionClassificationController extends Controller
                 'bank_accounts' => $bankAccounts,
                 'calculation_formula' => $request->calculation_formula,
                 'is_self_assessment' => $request->boolean('is_self_assessment', false),
+                'is_active' => $request->has('is_active') ? $request->boolean('is_active') : true,
             ]);
 
             return response()->json([
@@ -130,6 +132,7 @@ class RetributionClassificationController extends Controller
                 'bank_accounts' => 'nullable',
                 'calculation_formula' => 'nullable|string',
                 'is_self_assessment' => 'nullable|boolean',
+                'is_active' => 'nullable|boolean',
             ]);
 
             if ($request->hasFile('icon')) {
@@ -140,6 +143,10 @@ class RetributionClassificationController extends Controller
         }
 
         $data = $request->all();
+
+        if ($request->has('is_active')) {
+            $data['is_active'] = $request->boolean('is_active');
+        }
 
         if ($request->hasFile('icon')) {
             $cloudinary = app(\App\Services\CloudinaryService::class);
