@@ -194,13 +194,34 @@ class AuthController extends Controller
             'phone' => 'required|string',
         ]);
 
-        // Clean phone number (remove +62, leading 0, etc to standardize? For now we just exact match)
-        $taxpayer = \App\Models\Taxpayer::where('phone', $request->phone)->first();
+        // Nomor WA dipakai sebagai kunci login, jadi harus menunjuk SATU akun.
+        // Sebelumnya ->first() dipakai begitu saja: kalau nomor dipakai beberapa
+        // akun (data warisan impor), warga selalu masuk sebagai akun pertama —
+        // bukan akun miliknya, sehingga tagihannya tidak muncul. Sekarang nomor
+        // ambigu ditolak dengan pesan yang mengarahkan.
+        $candidates = \App\Models\Taxpayer::where('phone', $request->phone)->get();
 
-        if (!$taxpayer) {
+        if ($candidates->isEmpty()) {
             return response()->json([
                 'message' => 'Nomor WhatsApp tidak terdaftar di sistem'
             ], 404);
+        }
+
+        if ($candidates->count() > 1) {
+            // Kalau tepat SATU di antaranya yang jelas milik warga (punya email/NIK
+            // lengkap + ada aktivitas tagihan), pakai itu. Sisanya data warisan.
+            $withEmail = $candidates->filter(fn ($t) => !empty($t->email));
+            if ($withEmail->count() === 1) {
+                $taxpayer = $withEmail->first();
+            } else {
+                return response()->json([
+                    'message' => 'Nomor WhatsApp ini terdaftar di lebih dari satu akun. '
+                        . 'Silakan hubungi petugas Bapenda untuk menggabungkan data Anda '
+                        . 'agar tagihan dapat ditampilkan dengan benar.'
+                ], 409);
+            }
+        } else {
+            $taxpayer = $candidates->first();
         }
 
         if (!$taxpayer->is_active) {
@@ -250,12 +271,29 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $taxpayer = \App\Models\Taxpayer::where('phone', $request->phone)->first();
+        // Kunci yang sama seperti requestCitizenOtp: nomor ambigu tidak boleh
+        // dipilih sembarangan dengan ->first(), harus persis satu akun.
+        $candidates = \App\Models\Taxpayer::where('phone', $request->phone)->get();
 
-        if (!$taxpayer) {
+        if ($candidates->isEmpty()) {
             return response()->json([
                 'message' => 'Nomor WhatsApp tidak terdaftar'
             ], 404);
+        }
+
+        if ($candidates->count() > 1) {
+            $withEmail = $candidates->filter(fn ($t) => !empty($t->email));
+            if ($withEmail->count() === 1) {
+                $taxpayer = $withEmail->first();
+            } else {
+                return response()->json([
+                    'message' => 'Nomor WhatsApp ini terdaftar di lebih dari satu akun. '
+                        . 'Silakan hubungi petugas Bapenda untuk menggabungkan data Anda '
+                        . 'agar tagihan dapat ditampilkan dengan benar.'
+                ], 409);
+            }
+        } else {
+            $taxpayer = $candidates->first();
         }
 
         // Clear OTP after successful login
