@@ -11,6 +11,8 @@ use App\Models\TaxObject;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use App\Models\MarketDailyTicket;
 
 class MarketController extends Controller
 {
@@ -523,6 +525,130 @@ class MarketController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Gedung {$validated['building_name']} beserta {$count} unit lapak berhasil dihapus.",
+        ]);
+    }
+
+    /**
+     * Penerbitan karcis harian PKL/pelataran pasar secara instan oleh petugas lapangan.
+     */
+    public function issueDailyTicket(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'market_name' => 'required|string',
+            'building_name' => 'nullable|string',
+            'merchant_name' => 'nullable|string|max:255',
+            'quantity' => 'nullable|integer|min:1|max:50',
+            'unit_amount' => 'nullable|numeric|min:500',
+            'payment_method' => 'nullable|string|in:TUNAI,QRIS',
+        ]);
+
+        $qty = $validated['quantity'] ?? 1;
+        $unitAmount = $validated['unit_amount'] ?? 1000;
+        $totalAmount = $qty * $unitAmount;
+        $user = $request->user();
+
+        $ticketCode = 'TKT-PSR-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+        $qrToken = 'QR-TKT-' . Str::uuid();
+
+        $ticket = MarketDailyTicket::create([
+            'ticket_code' => $ticketCode,
+            'collector_user_id' => $user?->id,
+            'collector_name' => $user?->name ?? 'Petugas Pasar Disperindag',
+            'market_name' => $validated['market_name'],
+            'building_name' => $validated['building_name'] ?? 'Pelataran PKL',
+            'merchant_name' => $validated['merchant_name'] ?? 'Pedagang Harian',
+            'quantity' => $qty,
+            'unit_amount' => $unitAmount,
+            'total_amount' => $totalAmount,
+            'payment_method' => $validated['payment_method'] ?? 'TUNAI',
+            'qr_token' => $qrToken,
+            'issued_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Karcis berhasil diterbitkan: {$ticketCode}",
+            'data' => $ticket,
+        ]);
+    }
+
+    /**
+     * Terima setoran / pembayaran langsung di tempat untuk lapak kios/los oleh petugas lapangan.
+     */
+    public function payStall(Request $request, int $id): JsonResponse
+    {
+        $stall = MarketStall::findOrFail($id);
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:1000',
+            'payment_method' => 'nullable|string|in:TUNAI,QRIS,TRANSFER',
+            'period' => 'nullable|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        $user = $request->user();
+        $ntpd = 'NTPD-PSR-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+
+        // Update status stall menjadi aktif
+        $stall->update([
+            'status' => 'aktif',
+            'notes' => $validated['notes'] ?? $stall->notes,
+        ]);
+
+        $receiptData = [
+            'stall_id' => $stall->id,
+            'full_code' => $stall->full_code,
+            'stall_number' => $stall->stall_number,
+            'stall_type' => $stall->stall_type,
+            'market_name' => $stall->market_name,
+            'building_name' => $stall->building_name,
+            'merchant_name' => $stall->merchant_name,
+            'amount' => (float) $validated['amount'],
+            'payment_method' => $validated['payment_method'] ?? 'TUNAI',
+            'period' => $validated['period'] ?? ($stall->billing_cycle === 'yearly' ? date('Y') : date('F Y')),
+            'ntpd' => $ntpd,
+            'officer_name' => $user?->name ?? 'Petugas Penagih Pasar',
+            'paid_at' => now()->toIso8601String(),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'message' => "Pembayaran lapak {$stall->full_code} berhasil dicatat.",
+            'data' => $receiptData,
+        ]);
+    }
+
+    /**
+     * Ringkasan harian penarikan retribusi petugas pasar yang login.
+     */
+    public function officerStats(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $today = now()->toDateString();
+
+        $ticketsQuery = MarketDailyTicket::whereDate('created_at', $today);
+        if ($user && $user->role !== 'super_admin') {
+            $ticketsQuery->where('collector_user_id', $user->id);
+        }
+
+        $todayTicketsCount = (clone $ticketsQuery)->sum('quantity') ?: 0;
+        $todayTicketsAmount = (clone $ticketsQuery)->sum('total_amount') ?: 0;
+
+        // Cari penugasan wilayah petugas
+        $assignment = null;
+        if ($user) {
+            $assignment = MarketOfficerAssignment::where('user_id', $user->id)
+                ->orWhere('officer_name', 'like', '%' . $user->name . '%')
+                ->first();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'today_tickets_count' => (int) $todayTicketsCount,
+                'today_tickets_amount' => (float) $todayTicketsAmount,
+                'assignment' => $assignment,
+            ],
         ]);
     }
 }

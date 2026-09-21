@@ -735,6 +735,12 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::post('/v1/disperindag/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'createBuilding']);
     Route::delete('/disperindag/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'deleteBuilding']);
     Route::delete('/v1/disperindag/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'deleteBuilding']);
+    Route::post('/disperindag/tickets/daily', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'issueDailyTicket']);
+    Route::post('/v1/disperindag/tickets/daily', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'issueDailyTicket']);
+    Route::post('/disperindag/stalls/{id}/pay', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'payStall']);
+    Route::post('/v1/disperindag/stalls/{id}/pay', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'payStall']);
+    Route::get('/disperindag/officer-stats', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'officerStats']);
+    Route::get('/v1/disperindag/officer-stats', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'officerStats']);
 
 });
 
