@@ -721,7 +721,39 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::prefix('dlh')->group($dlhRoutes);
     Route::prefix('v1/dlh')->group($dlhRoutes);
 
+    // ----------------------------------------------------------------
+    // Operasi tulis Disperindag Pasar (wajib auth)
+    Route::match(['put', 'patch', 'post'], '/disperindag/stalls/{id}/status', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateStallStatus']);
+    Route::match(['put', 'patch', 'post'], '/v1/disperindag/stalls/{id}/status', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateStallStatus']);
+    Route::match(['put', 'patch', 'post'], '/disperindag/stalls/{id}', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateStall']);
+    Route::match(['put', 'patch', 'post'], '/v1/disperindag/stalls/{id}', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateStall']);
+    Route::post('/disperindag/stalls', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'createStall']);
+    Route::post('/v1/disperindag/stalls', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'createStall']);
+    Route::post('/disperindag/buildings/tariff', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateBuildingTariff']);
+    Route::post('/v1/disperindag/buildings/tariff', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateBuildingTariff']);
+    Route::post('/disperindag/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'createBuilding']);
+    Route::post('/v1/disperindag/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'createBuilding']);
+    Route::delete('/disperindag/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'deleteBuilding']);
+    Route::delete('/v1/disperindag/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'deleteBuilding']);
+
 });
+
+// ------------------------------------------------------------------------
+// MODUL DINAS PERDAGANGAN & PERINDUSTRIAN (DISPERINDAG) — Perda 1/2024
+// Data pasar, kios, los, juru pungut, dan KPI summary (dapat diakses dashboard & publik)
+// ------------------------------------------------------------------------
+$disperindagPublicRoutes = function () {
+    Route::get('/summary', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'summary']);
+    Route::get('/kpi', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'summary']);
+    Route::get('/markets', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'markets']);
+    Route::get('/zones', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'zones']);
+    Route::get('/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'buildings']);
+    Route::get('/stalls', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'stalls']);
+    Route::get('/officers', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'officers']);
+};
+
+Route::prefix('disperindag')->group($disperindagPublicRoutes);
+Route::prefix('v1/disperindag')->group($disperindagPublicRoutes);
 
 // ------------------------------------------------------------------------
 // MODUL DINAS PARIWISATA & KEBUDAYAAN (OPD 16) — Perda Kota Baubau 1/2024

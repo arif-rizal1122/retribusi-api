@@ -100,12 +100,21 @@ class OpdAccess
             || (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'PZ-'))
         );
 
+        $isDisperindag = ! $isBapenda && (
+            in_array($opdCode, ['DISPERINDAG', 'PERINDAG', 'DINAS_PERDAGANGAN', 'DISPERINDAGKOP', 'PERDAGINKOP'], true)
+            || str_contains($opdName, 'perdagangan')
+            || str_contains($opdName, 'perindustrian')
+            || str_contains($email, 'disperindag')
+            || in_array('RET-PSR', $codes, true)
+            || in_array('JU-TKU', $codes, true)
+        );
+
         $hasAset = (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'JU-ASET') || $startsWith($c, 'AS-') || $c === 'JU-PROD') || $isDishubAset || $isPuprAset || $isPupr;
 
         return [
             'opd_id' => $opdId,
             'is_bapenda' => $isBapenda,
-            'has_owned_service' => count($codes) > 0 || $isDishubAset || $isPuprAset,
+            'has_owned_service' => count($codes) > 0 || $isDishubAset || $isPuprAset || $isDisperindag,
             'codes' => $codes,
             'has_sector_mapping' => $hasSectorMapping,
             'flags' => [
@@ -119,6 +128,8 @@ class OpdAccess
                 'dishub_aset' => $isDishubAset,
                 'pupr'        => $isPupr,
                 'pupr_aset'   => $isPuprAset,
+                'disperindag' => $isDisperindag,
+                'pasar'       => $isDisperindag,
             ],
         ];
     }

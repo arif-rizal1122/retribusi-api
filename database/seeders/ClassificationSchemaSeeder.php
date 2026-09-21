@@ -223,11 +223,7 @@ class ClassificationSchemaSeeder extends Seeder
         $this->updateSchema('PKD', [
             ['key' => 'nama_pasar', 'label' => 'Nama Pasar', 'type' => 'select', 'required' => true, 'options' => [
                 ['label' => 'Pasar Wameo', 'value' => 'Pasar Wameo'],
-                ['label' => 'Pasar Karya Nugraha', 'value' => 'Pasar Karya Nugraha'],
-                ['label' => 'Pasar Laelangi', 'value' => 'Pasar Laelangi'],
-                ['label' => 'Pasar Moko', 'value' => 'Pasar Moko'],
-                ['label' => 'Pasar Baruga', 'value' => 'Pasar Baruga'],
-                ['label' => 'Pasar Modern Ngkari-ngkari', 'value' => 'Pasar Modern Ngkari-ngkari'],
+                ['label' => 'Pasar Karya Baru', 'value' => 'Pasar Karya Baru'],
             ]],
             ['key' => 'blok_kios', 'label' => 'Blok Kios / Los', 'type' => 'text', 'required' => true],
             ['key' => 'nomor_kios', 'label' => 'Nomor Kios / Lapak', 'type' => 'text', 'required' => true],
@@ -250,11 +246,7 @@ class ClassificationSchemaSeeder extends Seeder
         $this->updateSchema('Pelayanan Pasar', [
             ['key' => 'nama_pasar', 'label' => 'Nama Pasar', 'type' => 'select', 'required' => true, 'options' => [
                 ['label' => 'Pasar Wameo', 'value' => 'Pasar Wameo'],
-                ['label' => 'Pasar Karya Nugraha', 'value' => 'Pasar Karya Nugraha'],
-                ['label' => 'Pasar Laelangi', 'value' => 'Pasar Laelangi'],
-                ['label' => 'Pasar Moko', 'value' => 'Pasar Moko'],
-                ['label' => 'Pasar Baruga', 'value' => 'Pasar Baruga'],
-                ['label' => 'Pasar Modern Ngkari-ngkari', 'value' => 'Pasar Modern Ngkari-ngkari'],
+                ['label' => 'Pasar Karya Baru', 'value' => 'Pasar Karya Baru'],
             ]],
             ['key' => 'jenis_fasilitas', 'label' => 'Jenis Fasilitas', 'type' => 'select', 'required' => true, 'options' => [
                 ['label' => 'Kios', 'value' => 'kios'],

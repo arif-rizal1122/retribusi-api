@@ -38,11 +38,17 @@ class RetributionTypeController extends Controller
             $query->where('is_active', $request->boolean('is_active', true));
         }
 
-        // Admin OPD and Petugas only see their own retribution types
+        // Admin OPD and Petugas only see retribution types relevant to their OPD (owned directly or via classifications)
         if ($user && $user->role === 'opd') {
-            $query->where('opd_id', $user->opd_id);
+            $query->where(function ($q) use ($user) {
+                $q->where('opd_id', $user->opd_id)
+                  ->orWhereHas('classifications', fn($sq) => $sq->where('opd_id', $user->opd_id));
+            });
         } elseif ($user && $user->role === 'petugas') {
-            $query->where('opd_id', $user->opd_id);
+            $query->where(function ($q) use ($user) {
+                $q->where('opd_id', $user->opd_id)
+                  ->orWhereHas('classifications', fn($sq) => $sq->where('opd_id', $user->opd_id));
+            });
             // Filter by assigned types only if petugas has active assignments
             $assignedTypeIds = $user->assignments->pluck('retribution_type_id')->filter()->unique()->toArray();
             if (!empty($assignedTypeIds)) {

@@ -207,6 +207,37 @@ class CitizenServiceController extends Controller
             $metadata = json_decode($metadata, true) ?: [];
         }
 
+        // Smart Demarcation Disperindag Pasar (Perda Kota Baubau No. 1 Tahun 2024):
+        // Warga dapat mendaftar dari pintu "Pasar". Sistem secara otomatis memetakan klasifikasi & rekening PAD:
+        // - Jika lapak bertipe KIOS -> otomatis dialihkan ke ID 203 (JU-TKU / Retribusi Jasa Usaha Sewa Kios Tahunan)
+        // - Jika lapak bertipe LOS / Pelataran -> otomatis dialihkan ke ID 202 (RET-PSR / Retribusi Jasa Umum Bulanan/Harian)
+        if (in_array((int) $classification->id, [200, 202, 203])) {
+            $buildingName = $metadata['nama_gedung'] ?? null;
+            $facilityType = strtolower((string) ($metadata['jenis_fasilitas'] ?? ''));
+
+            if ($buildingName && empty($facilityType)) {
+                $sampleStall = \App\Models\MarketStall::where('building_name', $buildingName)->first();
+                if ($sampleStall) {
+                    $facilityType = strtolower((string) $sampleStall->stall_type);
+                    $metadata['jenis_fasilitas'] = $facilityType;
+                }
+            }
+
+            if ($facilityType === 'kios' && (int) $classification->id !== 203) {
+                $targetClass = RetributionClassification::with('retributionType')->find(203);
+                if ($targetClass) {
+                    $classification = $targetClass;
+                    $service = $classification->retributionType;
+                }
+            } elseif (in_array($facilityType, ['los', 'pelataran']) && (int) $classification->id !== 202) {
+                $targetClass = RetributionClassification::with('retributionType')->find(202);
+                if ($targetClass) {
+                    $classification = $targetClass;
+                    $service = $classification->retributionType;
+                }
+            }
+        }
+
         // Upload field bertipe 'upload'/'file' dari form_schema (foto_lokasi, foto_usaha, KTP, dll)
         // Fix 28 Agu 2026: sebelumnya field ini dirender textbox & tidak pernah diproses sebagai file.
         foreach ($classification->form_schema ?? [] as $schemaField) {
@@ -470,6 +501,25 @@ class CitizenServiceController extends Controller
                 'tanggal_pernyataan' => $pick(['tanggal_pernyataan']) ?: now()->toDateString(),
                 'nomor_formulir' => $pick(['nomor_formulir']) ?: ('SPOP-'.now()->format('Ymd').'-'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT)),
             ]);
+
+            // Auto-link ke unit lapak MarketStall jika terdapat kecocokan data pasar Disperindag
+            $stallNumber = $metadata['nomor_kios'] ?? $metadata['nomor_unit'] ?? null;
+            $marketBuilding = $metadata['nama_gedung'] ?? null;
+            if ($stallNumber && $marketBuilding && class_exists(\App\Models\MarketStall::class)) {
+                $matchedStall = \App\Models\MarketStall::where('building_name', $marketBuilding)
+                    ->where('stall_number', (string) $stallNumber)
+                    ->first();
+                if ($matchedStall) {
+                    $matchedStall->update([
+                        'tax_object_id' => $taxObject->id,
+                        'taxpayer_id' => $taxpayer->id,
+                        'merchant_name' => $taxpayer->name,
+                        'status' => 'aktif',
+                    ]);
+                    $metadata['market_stall_id'] = $matchedStall->id;
+                    $taxObject->update(['metadata' => $metadata]);
+                }
+            }
 
             // Pick the first available file URL for the primary verification proof
             $firstFileUrl = null;
