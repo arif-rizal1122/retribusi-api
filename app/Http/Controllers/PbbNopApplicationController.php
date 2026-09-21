@@ -25,7 +25,15 @@ class PbbNopApplicationController extends Controller
         $query = PbbNopApplication::query();
 
         if ($request->filled('status')) {
-            $query->where('status', strtoupper($request->status));
+            if (is_array($request->status)) {
+                $statuses = array_map('strtoupper', $request->status);
+                $query->whereIn('status', $statuses);
+            } elseif (str_contains($request->status, ',')) {
+                $statuses = array_map('strtoupper', explode(',', $request->status));
+                $query->whereIn('status', $statuses);
+            } else {
+                $query->where('status', strtoupper($request->status));
+            }
         }
 
         if ($request->filled('search')) {
@@ -46,7 +54,8 @@ class PbbNopApplicationController extends Controller
             $query->where('user_id', $request->user()->id);
         }
 
-        return response()->json($query->latest()->paginate(25));
+        $perPage = (int) $request->get('per_page', 25);
+        return response()->json($query->latest()->paginate($perPage));
     }
 
     /**

@@ -86,7 +86,6 @@ class ClassificationSchemaSeeder extends Seeder
             ['key' => 'masa_tayang_selesai', 'label' => 'Masa Tayang Selesai', 'type' => 'date', 'required' => true],
         ], [
             ['key' => 'materi_reklame', 'name' => 'Desain / Materi Reklame', 'required' => true],
-            ['key' => 'foto_titik', 'name' => 'Foto Lokasi / Lingkungan Tempat Pasang Reklame', 'required' => true, 'helper' => 'Foto sudut pandang dari arah jalan tempat reklame akan dipasang.'],
         ]);
 
         // 5. MBLB (Mineral Bukan Logam dan Batuan) — Objek adalah pengambilan material, bukan izin

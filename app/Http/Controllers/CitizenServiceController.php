@@ -99,6 +99,14 @@ class CitizenServiceController extends Controller
                 ->toArray();
         }
 
+        // Sanitasi Pajak Reklame — hapus requirement foto lokasi/titik pemasangan reklame
+        if ($classification->id == 188 || ($classification->code ?? '') === 'REKLAME' || stripos($classification->name, 'reklame') !== false) {
+            $cleanRequirements = collect($cleanRequirements)
+                ->reject(fn ($r) => ($r['key'] ?? '') === 'foto_titik' || ($r['key'] ?? '') === 'foto_titik_reklame' || preg_match('/foto lokasi|lingkungan tempat pasang reklame/i', ($r['name'] ?? '').' '.($r['label'] ?? '')))
+                ->values()
+                ->toArray();
+        }
+
         // ── Audit 20 Sep 2026: apakah layanan ini bisa dihitung warga? ──
         // Formula `tarif_flat` butuh nominal dari tabel retribution_rates.
         // Kalau belum ada tarif aktif, kalkulator akan selalu Rp 0 → jangan
@@ -128,10 +136,12 @@ class CitizenServiceController extends Controller
         return response()->json([
             'data' => [
                 'id' => $classification->id,
+                'code' => $classification->code,
                 'name' => $classification->name,
                 'type_id' => $service->id,
                 'type_name' => $service->name,
                 'category' => $service->category,
+                'billing_cycle' => $service->billing_cycle ?? 'monthly',
                 'icon' => $classification->icon ?: $service->icon,
                 'base_amount' => $service->base_amount,
                 'unit' => $service->unit,
@@ -356,6 +366,12 @@ class CitizenServiceController extends Controller
 
         // Handle dynamic document uploads based on requirements from this classification
         $requirements = $classification->requirements ?? [];
+        if ($classification->id == 188 || ($classification->code ?? '') === 'REKLAME' || stripos($classification->name, 'reklame') !== false) {
+            $requirements = collect($requirements)
+                ->reject(fn ($r) => ($r['key'] ?? '') === 'foto_titik' || ($r['key'] ?? '') === 'foto_titik_reklame' || preg_match('/foto lokasi|lingkungan tempat pasang reklame/i', ($r['name'] ?? '').' '.($r['label'] ?? '')))
+                ->values()
+                ->toArray();
+        }
         $missingFiles = $this->missingRequiredFiles($request, $requirements);
         if (! empty($missingFiles)) {
             throw ValidationException::withMessages($missingFiles);
@@ -464,6 +480,15 @@ class CitizenServiceController extends Controller
                 }
             }
 
+            // Calculate initial estimated amount for verification record
+            $estimatedAmount = 0;
+            try {
+                $calcService = app(\App\Services\TaxCalculationService::class);
+                $estimatedAmount = (float) $calcService->calculateAmount($taxObject);
+            } catch (\Throwable $e) {
+                \Log::warning('Failed calculating estimated amount for verification: '.$e->getMessage());
+            }
+
             // Create a verification record for the admin to review
             $verification = Verification::create([
                 'opd_id' => $service->opd_id,
@@ -472,7 +497,7 @@ class CitizenServiceController extends Controller
                 'document_number' => 'REG-'.strtoupper(uniqid()),
                 'taxpayer_name' => $taxpayer->name,
                 'type' => 'Pendaftaran Objek',
-                'amount' => 0,
+                'amount' => $estimatedAmount,
                 'status' => $autoApproved ? 'approved' : 'pending',
                 'proof_file_url' => $firstFileUrl,
                 'submitted_at' => Carbon::now(),

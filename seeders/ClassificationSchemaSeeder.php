@@ -64,7 +64,6 @@ class ClassificationSchemaSeeder extends Seeder
         ], [
             ['key' => 'desain_reklame', 'name' => 'Desain Reklame', 'required' => true],
             ['key' => 'ipr_dokumen', 'name' => 'Izin Penyelenggaraan Reklame (IPR)', 'required' => true],
-            ['key' => 'foto_titik_reklame', 'name' => 'Foto Lokasi Titik Reklame', 'required' => true],
         ]);
 
         // 5. MBLB

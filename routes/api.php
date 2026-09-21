@@ -160,14 +160,43 @@ Route::post('/simulate-tax', function (Request $request) {
     if (!$formula) {
         return response()->json(['error' => 'Rumus perhitungan tidak ditemukan.'], 422);
     }
+
+    // Auto-inject default official parameters for Reklame per Perwali 11/2025
+    $isReklame = ($request->classification_id == 188) 
+        || (isset($classCode) && str_contains($classCode, 'reklame')) 
+        || (isset($name) && str_contains(strtolower($name), 'reklame'));
+
+    if ($isReklame) {
+        $kat = strtolower($vars['kategori_reklame'] ?? 'videotron');
+        $njoprMap = [
+            'videotron' => 100000,
+            'megatron' => 100000,
+            'billboard' => 50000,
+            'neon_box' => 30000,
+            'baliho' => 25000,
+            'spanduk' => 15000,
+            'kendaraan' => 20000,
+        ];
+        if (empty($vars['njopr'])) {
+            $vars['njopr'] = $njoprMap[$kat] ?? 30000;
+        }
+        if (empty($vars['nspr'])) {
+            $vars['nspr'] = 35000;
+        }
+        $p = (float)($vars['panjang'] ?? 0);
+        $l = (float)($vars['lebar'] ?? 0);
+        if ($p > 0 && $l > 0) {
+            $vars['luas'] = $p * $l;
+        }
+    }
     
     $parser = new \App\Services\FormulaParserService();
-    $result = $parser->calculate($formula, $request->variables);
+    $result = $parser->calculate($formula, $vars);
     
     return response()->json([
         'classification' => $name,
         'formula' => $formula,
-        'variables' => $request->variables,
+        'variables' => $vars,
         'result' => $result,
         'formatted' => 'Rp ' . number_format($result, 0, ',', '.'),
     ]);

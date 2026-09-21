@@ -113,7 +113,13 @@ class VerificationController extends Controller
         }
 
         if ($request->has('status')) {
-            $query->where('status', $request->status);
+            if (is_array($request->status)) {
+                $query->whereIn('status', $request->status);
+            } elseif (str_contains($request->status, ',')) {
+                $query->whereIn('status', explode(',', $request->status));
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         if ($request->has('search')) {
@@ -234,6 +240,19 @@ class VerificationController extends Controller
         $verifications->each(function (Verification $verification) use ($timelineByObject, $surveyTasksByObject) {
             if (!$verification->taxObject) {
                 return;
+            }
+
+            // Fallback kalkulasi estimasi jika amount masih 0
+            if ((float) $verification->amount <= 0) {
+                try {
+                    $calcService = app(\App\Services\TaxCalculationService::class);
+                    $estimated = (float) $calcService->calculateAmount($verification->taxObject);
+                    if ($estimated > 0) {
+                        $verification->amount = $estimated;
+                    }
+                } catch (\Throwable $e) {
+                    // Abaikan jika objek belum memiliki formula yang valid
+                }
             }
 
             $timeline = ($timelineByObject->get($verification->tax_object_id) ?? collect())
