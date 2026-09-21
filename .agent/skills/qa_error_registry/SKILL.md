@@ -73,6 +73,16 @@ Ketika mencatatkan error baru ke `Mitigation_Registry.md`, gunakan format standa
 - **Penyebab**: Nginx dan Laravel keduanya mengirim header CORS.
 - **Mitigasi**: Nginx hanya menangani `OPTIONS`, Laravel menangani sisanya.
 
+### 10. React Fast Refresh (HMR) State & Hook Mismatch
+- **Indikator**: `@sentry_react.js... The above error occurred in the <Component> component: at Component ...` saat file komponen diubah di lingkungan local Vite, padahal `npm run typecheck` dan `npm run build` lolos tanpa error.
+- **Penyebab**: Vite Fast Refresh mempertahankan state lama komponen sementara urutan deklarasi hook berubah/bertambah di latar belakang saat browser sedang terbuka.
+- **Mitigasi**: Lakukan Hard Refresh browser (`Cmd+Shift+R` di Mac atau `Ctrl+F5` di Windows) untuk menginisialisasi ulang fiber React hook tree dari awal.
+
+### 11. Unsafe Date Parsing (`RangeError: Invalid time value`)
+- **Indikator**: Crash runtime browser saat warga mengedit atau mengosongkan input tanggal (`<input type="date">`).
+- **Penyebab**: Memanggil `.toISOString()` langsung pada `new Date(rawVal)` saat `rawVal` bernilai kosong atau parsial (misal saat mengetik `2026-`).
+- **Mitigasi**: Gunakan selalu fungsi pembantu murni `calculateEndDateStr(startDateStr, months)` yang memvalidasi `isNaN(d.getTime())` sebelum memanggil `.toISOString()`, dan gunakan *optional chaining* pada seluruh akses `formData.metadata?.[key]`.
+
 ## 🧠 Aturan Penanganan Masalah Saat Testing
 1. **Identifikasi Dini:** Jika hasil `run_command` dari script QA mengembalikan gagal/error tak terduga (contoh: status HTTP 500, exception di CLI), JANGAN langsung menerka. Dump exception ke STDERR untuk membaca detail baris kode.
 2. **Lihat Registri Sejarah:** Sebelum memperbaiki bug, rujuklah (view_file) `testing/results/Mitigation_Registry.md` (if any) barangkali error tersebut adalah bug regresi yang solusinya sudah pernah dipetakan sebelumnya.

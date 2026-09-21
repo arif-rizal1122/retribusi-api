@@ -54,3 +54,25 @@ Beberapa kategori memiliki faktor pengali terhadap NSR sebelum dikalikan tarif p
 - `produk_khusus`: [umum, rokok_alkohol, mall_indoor]
 - `kelas_jalan`: [`RD-CL-A`, `RD-CL-B`, `RD-CL-C`]
 - `njop_reklame_id`: 188
+
+## 6. Standarisasi Formulir Warga (Citizen-Centric Standard)
+
+### A. Field Input Kasat Mata & Otomasi
+1. `kategori_reklame`: Dropdown (Videotron, Billboard, Neon Box, Baliho, Spanduk, Reklame Kendaraan).
+2. `judul_reklame`: Teks tema/naskah utama iklan.
+3. `panjang` & `lebar`: Dimensi media (Meter).
+4. `sisi`: Dropdown pilihan muka/sisi (1 Sisi, 2 Sisi Bolak-Balik, 3 Sisi Segitiga).
+5. `luas`: **Read-Only** otomatis terhitung (`Panjang × Lebar × Sisi`).
+6. `masa_tayang_mulai` & `masa_tayang_selesai`:
+   - Tombol **Quick Preset**: 1 Bulan, 3 Bulan, 6 Bulan, 1 Tahun.
+   - `masa_tayang_selesai` otomatis terkunci **Read-Only** saat preset aktif, dengan tombol **"Ubah manual"** jika membutuhkan tanggal spesifik.
+
+### B. Berkas Persyaratan Terpangkas
+1. `materi_reklame`: Desain / Materi Reklame (`required: true`).
+2. `foto_titik`: Foto Lokasi / Lingkungan Tempat Pasang Reklame (`required: true`, helper: *"Foto sudut pandang dari arah jalan tempat reklame akan dipasang"*).
+*(KTP otomatis menggunakan profil IKD/akun warga terverifikasi)*.
+
+### C. Pakta Integritas & Yuridis
+- Checkbox persetujuan wajib bernilai boolean eksplisit (`true`/`false`).
+- Sistem mencatat `legal_consent_at`, `legal_consent_ip`, dan `legal_consent_user_agent` di backend.
+
