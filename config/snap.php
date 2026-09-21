@@ -24,6 +24,17 @@ return [
             'public_key' => env('BTN_SNAP_PUBLIC_KEY', ''),
             'public_key_path' => env('BTN_SNAP_PUBLIC_KEY_PATH', ''),
         ],
+        'BNI' => [
+            'partner_id' => env('BNI_SNAP_PARTNER_ID', ''),
+            'client_key' => env('BNI_SNAP_CLIENT_KEY', ''),
+            'client_secret' => env('BNI_SNAP_CLIENT_SECRET', ''),
+            'signature_algorithm' => env('BNI_SNAP_SIGNATURE_ALGORITHM', 'rsa_sha256'),
+            'signature_secret' => env('BNI_SNAP_SIGNATURE_SECRET', ''),
+            'public_key' => env('BNI_SNAP_PUBLIC_KEY', ''),
+            'public_key_path' => env('BNI_SNAP_PUBLIC_KEY_PATH', ''),
+            'base_url' => env('BNI_SNAP_BASE_URL', ''),
+            'private_key_path' => env('BNI_SNAP_PRIVATE_KEY_PATH', storage_path('app/keys/mpad_bni_private.pem')),
+        ],
         'BANK_SULTRA' => [
             'partner_id' => env('BANK_SULTRA_SNAP_PARTNER_ID', ''),
             'client_key' => env('BANK_SULTRA_SNAP_CLIENT_KEY', ''),
