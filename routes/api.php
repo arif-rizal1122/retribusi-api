@@ -351,6 +351,16 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/pbb/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'store']);
         Route::get('/pbb/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'index']);
 
+        // Layanan Mutasi PBB (Skenario 1, 4, 5, 6, 7)
+        Route::get('/pbb/calculator/proportional-debt', [\App\Http\Controllers\PbbMutationController::class, 'calculateProportionalDebt']);
+        Route::post('/pbb/mutations/split-kavling', [\App\Http\Controllers\PbbMutationController::class, 'storeSplitKavling']);
+        Route::post('/pbb/mutations/rectification', [\App\Http\Controllers\PbbMutationController::class, 'storeRectification']);
+        Route::post('/pbb/mutations/transfer-ownership', [\App\Http\Controllers\PbbMutationController::class, 'storeTransferOwnership']);
+        Route::post('/pbb/mutations/amalgamation', [\App\Http\Controllers\PbbMutationController::class, 'storeAmalgamation']);
+        Route::post('/pbb/mutations/cancellation', [\App\Http\Controllers\PbbMutationController::class, 'storeCancellation']);
+        Route::get('/pbb/mutations/my-applications', [\App\Http\Controllers\PbbMutationController::class, 'myApplications']);
+        Route::get('/pbb/mutations/{id}', [\App\Http\Controllers\PbbMutationController::class, 'show']);
+
         // QR Wajib Pajak
         Route::get('/my-qr', [\App\Http\Controllers\QrController::class, 'citizenMyQr']);
 
@@ -383,6 +393,16 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     // Citizen can edit/cancel their own pending service registration objects.
     Route::match(['put', 'patch', 'post'], '/tax-objects/{taxObject}', [TaxObjectController::class, 'update']);
     Route::delete('/tax-objects/{taxObject}', [TaxObjectController::class, 'destroy']);
+
+    // Layanan Mutasi PBB (Direct Aliases)
+    Route::get('/pbb/calculator/proportional-debt', [\App\Http\Controllers\PbbMutationController::class, 'calculateProportionalDebt']);
+    Route::post('/pbb/mutations/split-kavling', [\App\Http\Controllers\PbbMutationController::class, 'storeSplitKavling']);
+    Route::post('/pbb/mutations/rectification', [\App\Http\Controllers\PbbMutationController::class, 'storeRectification']);
+    Route::post('/pbb/mutations/transfer-ownership', [\App\Http\Controllers\PbbMutationController::class, 'storeTransferOwnership']);
+    Route::post('/pbb/mutations/amalgamation', [\App\Http\Controllers\PbbMutationController::class, 'storeAmalgamation']);
+    Route::post('/pbb/mutations/cancellation', [\App\Http\Controllers\PbbMutationController::class, 'storeCancellation']);
+    Route::get('/pbb/mutations/my-applications', [\App\Http\Controllers\PbbMutationController::class, 'myApplications']);
+    Route::get('/pbb/mutations/{id}', [\App\Http\Controllers\PbbMutationController::class, 'show']);
 
     // ------------------------------------------------------------------------
     // Admin & Petugas ONLY (Restricted by EnsureAdmin middleware)
@@ -464,6 +484,12 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         // Pendaftaran NOP alias (tab admin PBB)
         Route::get('/pbb/bapenda/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'index']);
         Route::post('/pbb/bapenda/nop-applications/{id}/status', [\App\Http\Controllers\PbbNopApplicationController::class, 'updateStatus'])
+            ->middleware('role:admin,kepala_bapenda,petugas,opd');
+
+        // Mutasi PBB (Admin: 3-Tier Governance Matrix)
+        Route::get('/pbb/mutations', [\App\Http\Controllers\PbbMutationController::class, 'index']);
+        Route::get('/pbb/mutations/{id}', [\App\Http\Controllers\PbbMutationController::class, 'show']);
+        Route::post('/pbb/mutations/{id}/status', [\App\Http\Controllers\PbbMutationController::class, 'updateStatus'])
             ->middleware('role:admin,kepala_bapenda,petugas,opd');
 
         // Pelaporan E-SPTPD
@@ -881,6 +907,9 @@ Route::middleware('auth:sanctum')->prefix('tpi')->group(function () {
     Route::get('/daily-summary', [\App\Http\Controllers\Api\TpiTransactionController::class, 'dailySummary']);
     Route::get('/cross-pbjt-stats', [\App\Http\Controllers\Api\TpiTransactionController::class, 'crossPbjtStats']);
 });
+
+// PBB Auto-Mutation Webhook (e-BPHTB Settlement)
+Route::post('/pbb/callbacks/bphtb-paid', [\App\Http\Controllers\PbbMutationController::class, 'bphtbPaidCallback']);
 
 // ------------------------------------------------------------------------
 // DEPLOY HOOK (Staging only - protected by X-Deploy-Secret header)
