@@ -546,6 +546,35 @@ class PbbNopApplicationController extends Controller
                 $application->nop = $nop;
             }
 
+            // Simpan audit trail metadata: Rekomendasi survei, penugasan petugas, dan alasan penolakan
+            $metadata = is_array($application->metadata) ? $application->metadata : [];
+            
+            if ($request->filled('survey_recommendation')) {
+                $metadata['survey_recommendation'] = $request->input('survey_recommendation');
+                $metadata['surveyed_at'] = now()->toIso8601String();
+                $metadata['surveyor_id'] = $request->user()?->id;
+                $metadata['surveyor_name'] = $request->user()?->name;
+            }
+            if ($request->filled('survey_physical_condition')) {
+                $metadata['survey_physical_condition'] = $request->input('survey_physical_condition');
+            }
+            if ($request->has('survey_location_match')) {
+                $metadata['survey_location_match'] = filter_var($request->input('survey_location_match'), FILTER_VALIDATE_BOOLEAN);
+            }
+            if ($request->filled('assigned_petugas_id')) {
+                $metadata['assigned_petugas_id'] = $request->input('assigned_petugas_id');
+                $metadata['assigned_petugas_name'] = $request->input('assigned_petugas_name');
+                $metadata['assigned_at'] = now()->toIso8601String();
+            }
+            if ($request->filled('rejection_reason')) {
+                $metadata['rejection_reason'] = $request->input('rejection_reason');
+            }
+            if ($request->filled('verification_checklist')) {
+                $checklist = $request->input('verification_checklist');
+                $metadata['verification_checklist'] = is_array($checklist) ? $checklist : json_decode((string)$checklist, true);
+            }
+
+            $application->metadata = !empty($metadata) ? $metadata : null;
             $application->save();
 
             if ($request->status === 'APPROVED' && $nop) {
