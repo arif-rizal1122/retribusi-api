@@ -330,6 +330,62 @@ class MarketController extends Controller
     }
 
     /**
+     * Update nominal retribusi dan siklus penagihan massal berdasarkan kategori tarif untuk banyak gedung sekaligus.
+     */
+    public function batchAssignTariff(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'tariff_amount' => 'required|numeric|min:0',
+            'billing_cycle' => 'required|in:daily,weekly,monthly,yearly',
+            'building_names' => 'required_without:stall_ids|array',
+            'building_names.*' => 'string',
+            'stall_ids' => 'nullable|array',
+            'stall_ids.*' => 'integer',
+            'market_name' => 'nullable|string',
+            'tier_label' => 'nullable|string',
+        ]);
+
+        $query = MarketStall::query();
+
+        if (!empty($validated['market_name'])) {
+            $query->where('market_name', $validated['market_name']);
+        }
+
+        if (!empty($validated['building_names'])) {
+            $query->whereIn('building_name', $validated['building_names']);
+        } elseif (!empty($validated['stall_ids'])) {
+            $query->whereIn('id', $validated['stall_ids']);
+        }
+
+        $totalStalls = $query->count();
+        if ($totalStalls === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada lapak atau gedung yang cocok dengan kriteria yang dipilih.',
+            ], 404);
+        }
+
+        $query->update([
+            'tariff_amount' => $validated['tariff_amount'],
+            'billing_cycle' => $validated['billing_cycle'],
+        ]);
+
+        $buildingsCount = !empty($validated['building_names']) ? count($validated['building_names']) : 1;
+        $tierName = $validated['tier_label'] ?? 'tarif Perda';
+
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil menerapkan {$tierName} ke {$totalStalls} unit lapak ({$buildingsCount} gedung) secara serentak.",
+            'data' => [
+                'updated_stalls' => $totalStalls,
+                'buildings_count' => $buildingsCount,
+                'tariff_amount' => $validated['tariff_amount'],
+                'billing_cycle' => $validated['billing_cycle'],
+            ],
+        ]);
+    }
+
+    /**
      * Tambah lapak / unit pasar baru.
      */
     public function createStall(Request $request): JsonResponse
@@ -615,6 +671,42 @@ class MarketController extends Controller
             'success' => true,
             'message' => "Pembayaran lapak {$stall->full_code} berhasil dicatat.",
             'data' => $receiptData,
+        ]);
+    }
+
+    /**
+     * Update data penugasan petugas penagihan retribusi pasar.
+     */
+    public function updateOfficer(Request $request, int $id): JsonResponse
+    {
+        $officer = MarketOfficerAssignment::findOrFail($id);
+
+        $validated = $request->validate([
+            'officer_name' => 'sometimes|string|max:255',
+            'market_name' => 'sometimes|string|max:255',
+            'market_id' => 'nullable|integer|exists:markets,id',
+            'assigned_areas' => 'sometimes|array',
+            'assigned_areas.*' => 'string|max:255',
+            'collects_daily_pkl' => 'sometimes|boolean',
+            'signed_by' => 'nullable|string|max:255',
+            'decree_date' => 'nullable|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        // Jika market_name berubah, cari market_id yang sesuai
+        if (isset($validated['market_name']) && !isset($validated['market_id'])) {
+            $market = Market::where('name', $validated['market_name'])->first();
+            if ($market) {
+                $validated['market_id'] = $market->id;
+            }
+        }
+
+        $officer->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Data petugas {$officer->officer_name} berhasil diperbarui.",
+            'data' => $officer->fresh(),
         ]);
     }
 

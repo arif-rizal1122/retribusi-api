@@ -28,10 +28,10 @@
       "market_name": "PASAR WAMEO",
       "officer_name": "Nurfia",
       "assigned_areas": [
-        "1. Gedung Blok D ( Kios 200 )",
-        "Los A, Los B dan Los C",
-        "2. Gedung Kios Semi Permanen",
-        "3. Petugas Retribusi Harian ( PKL )"
+        "1. Los A",
+        "2. Los B",
+        "3. Los C",
+        "Kios Semi Permanen/ Los Orens"
       ],
       "collects_daily_pkl": true,
       "notes": null,
@@ -44,10 +44,11 @@
       "market_name": "PASAR WAMEO",
       "officer_name": "Nurida",
       "assigned_areas": [
-        "1. Gedung Blok D ( Kios 200 )",
-        "Los D, Los E dan Los F",
-        "2. Gedung Higienis A",
-        "3. Los A (Gedung RB 64 )"
+        "4. Los D",
+        "5. Los E",
+        "6. Los F",
+        "Higienis A",
+        "Los A ( RB 64 Los )"
       ],
       "collects_daily_pkl": false,
       "notes": null,
@@ -60,10 +61,10 @@
       "market_name": "PASAR WAMEO",
       "officer_name": "Wa Ode Masria dan / Nursia",
       "assigned_areas": [
-        "1. Gedung Blok A Lama",
-        "2. Gedung Blok B Lama",
-        "3. Gedung Kios 23",
-        "4. Los C ( Baja Ringan )"
+        "Blok A Lama",
+        "Blok B Lama",
+        "Kios 23",
+        "Los C ( los Baja Ringan )"
       ],
       "collects_daily_pkl": false,
       "notes": null,
@@ -76,9 +77,8 @@
       "market_name": "PASAR WAMEO",
       "officer_name": "Samida",
       "assigned_areas": [
-        "1. Gedung Biru",
-        "2. Gedung Orens",
-        "3. Petugas Retribusi Harian ( PKL )"
+        "Gedung Biru",
+        "Gedung Orens"
       ],
       "collects_daily_pkl": true,
       "notes": null,
@@ -91,8 +91,8 @@
       "market_name": "PASAR WAMEO",
       "officer_name": "Anwar Ndawari",
       "assigned_areas": [
-        "1. Gedung Higienis C",
-        "2. Gedung Los B ( Los Gedung Kios 23 )"
+        "Higienis C",
+        "Los B ( Gedung Kios 23 )"
       ],
       "collects_daily_pkl": false,
       "notes": null,
@@ -105,10 +105,10 @@
       "market_name": "PASAR WAMEO",
       "officer_name": "Sandi",
       "assigned_areas": [
-        "1. Gedung Blok E",
-        "2. Gedung Blok F",
-        "3. Gedung Higienis B",
-        "4. Gedung Los B ( Los Gedung Biru )"
+        "Blok E",
+        "Blok F",
+        "Higienis B",
+        "Los B ( Gedung Biru )"
       ],
       "collects_daily_pkl": false,
       "notes": null,
@@ -121,10 +121,8 @@
       "market_name": "PASAR KARYA BARU",
       "officer_name": "La Jede",
       "assigned_areas": [
-        "1. Gedung Karya Baru Tahap I",
-        "2. Gedung Karya Baru Tahap II",
-        "3. Los Tahap I dan Tahap II",
-        "4. Petugas Retribusi Harian ( PKL )"
+        "Karya Baru Tahap I",
+        "Karya Baru Tahap II"
       ],
       "collects_daily_pkl": true,
       "notes": null,

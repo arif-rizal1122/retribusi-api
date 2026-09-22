@@ -284,13 +284,10 @@ class PbbNopApplicationController extends Controller
             $rules['surat_kuasa_file'] = 'nullable|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120';
         }
 
-        // Dokumen PBG/IMB wajib jika ada bangunan (kecuali fasilitas umum)
-        $isFasum = $request->boolean('is_fasum');
-        if ($hasBuilding && ! $isFasum) {
-            $rules['imb_file'] = 'required|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120';
-        } else {
-            $rules['imb_file'] = 'nullable|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120';
-        }
+        // Dokumen PBG/IMB dibuat opsional (banyak warga belum memiliki PBG saat pendaftaran awal)
+        $rules['imb_file'] = 'nullable|file|mimes:pdf,jpg,jpeg,png,webp,heic,heif|max:5120';
+        $rules['building_photo'] = 'nullable|file|mimes:jpg,jpeg,png,webp,heic,heif|max:5120';
+        $rules['building_photo_file'] = 'nullable|file|mimes:jpg,jpeg,png,webp,heic,heif|max:5120';
 
         $validator = Validator::make($request->all(), $rules);
 
@@ -299,12 +296,14 @@ class PbbNopApplicationController extends Controller
             $friendly = [];
             $maxMb = 5;
 
-            $fileFields = ['ktp_file', 'akte_file', 'imb_file', 'pbg_file', 'surat_kuasa_file'];
+            $fileFields = ['ktp_file', 'akte_file', 'imb_file', 'pbg_file', 'surat_kuasa_file', 'building_photo', 'building_photo_file'];
             $labels = [
                 'ktp_file' => 'Foto KTP Pemilik Asli',
                 'surat_kuasa_file' => 'Surat Kuasa / Keterangan Waris',
                 'akte_file' => 'Dokumen Akte / Sertifikat Tanah',
                 'imb_file' => 'Dokumen PBG / IMB',
+                'building_photo' => 'Foto Fisik Bangunan',
+                'building_photo_file' => 'Foto Fisik Bangunan',
                 'nik' => 'NIK Pemohon',
                 'name' => 'Nama Pemohon',
                 'address' => 'Alamat Objek Pajak',
@@ -386,12 +385,22 @@ class PbbNopApplicationController extends Controller
         $aktePath = $request->file('akte_file')->store('pbb_applications/akte', 'public');
         $imbPath = $request->hasFile('imb_file') ? $request->file('imb_file')->store('pbb_applications/imb', 'public') : null;
 
+        $buildingPhotoPath = null;
+        if ($request->hasFile('building_photo')) {
+            $buildingPhotoPath = $request->file('building_photo')->store('pbb_applications/building_photos', 'public');
+        } elseif ($request->hasFile('building_photo_file')) {
+            $buildingPhotoPath = $request->file('building_photo_file')->store('pbb_applications/building_photos', 'public');
+        }
+
         $registeredFor = $request->input('registered_for', 'self');
 
         // Prepare metadata
         $metadata = $request->input('metadata', []);
         if (! is_array($metadata)) {
             $metadata = json_decode((string) $metadata, true) ?? [];
+        }
+        if ($buildingPhotoPath) {
+            $metadata['building_photo_path'] = $buildingPhotoPath;
         }
         if ($request->filled('owner_nik')) {
             $metadata['owner_nik'] = $request->input('owner_nik');

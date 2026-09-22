@@ -741,6 +741,10 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::post('/v1/disperindag/stalls/{id}/pay', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'payStall']);
     Route::get('/disperindag/officer-stats', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'officerStats']);
     Route::get('/v1/disperindag/officer-stats', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'officerStats']);
+    Route::match(['put', 'patch', 'post'], '/disperindag/officers/{id}', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateOfficer']);
+    Route::match(['put', 'patch', 'post'], '/v1/disperindag/officers/{id}', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateOfficer']);
+    Route::post('/disperindag/tariffs/batch-assign', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'batchAssignTariff']);
+    Route::post('/v1/disperindag/tariffs/batch-assign', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'batchAssignTariff']);
 
 });
 
