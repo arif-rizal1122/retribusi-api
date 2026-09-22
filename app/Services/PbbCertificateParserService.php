@@ -114,8 +114,10 @@ class PbbCertificateParserService
 
         // 4. Luas Tanah (m2)
         // Contoh: "Luas : 250 M2" atau "Luas Tanah 1.500 m2" atau "seluas 345 m2"
-        // OCR sering membaca separator sebagai =: atau := atau = : dst
-        if (preg_match('/(?:Luas\s*(?:Tanah)?|seluas)\s*[=:\s]*\s*([0-9\.,]+)\s*(?:m2|M2|m²|Meter\s*Persegi)?/i', $text, $m)) {
+        // OCR sering membaca separator sebagai =: atau := atau = : dst,
+        // dan menyisipkan noise (—, |, }, I, dsb) antara label dan angka.
+        // Karena itu: lewati SEMUA karakter non-digit (kecuali newline) sebelum angka.
+        if (preg_match('/(?:Luas\s*(?:Tanah)?|seluas)\s*[^0-9\n]{0,20}?([0-9][0-9\.,]*)\s*(?:m2|M2|m²|Meter\s*Persegi)?/i', $text, $m)) {
             $cleanArea = str_replace('.', '', $m[1]);
             $cleanArea = str_replace(',', '.', $cleanArea);
             $areaFloat = (float) $cleanArea;
@@ -153,7 +155,9 @@ class PbbCertificateParserService
         }
 
         // 6. Nama Pemegang Hak / Pemilik
-        if (preg_match('/(?:Pemegang\s*Hak|Nama\s*Pemilik|Atas\s*Nama)\s*[:\.]?\s*([A-Z\s\.\',]{3,50})(?:\n|\r|NIB|Luas|$)/i', $text, $m)) {
+        // OCR sering menambahkan noise setelah nama (mis. "MUHAMMAD ANWAR |").
+        // Stop pada pipe, newline, atau akhir baris — bukan hanya \n/NIB/Luas.
+        if (preg_match('/(?:Pemegang\s*Hak|Nama\s*Pemilik|Atas\s*Nama)\s*[:\.]?\s*([A-Z][A-Z\s\.\',\-]{2,50}?)(?=\s*[|\n]|\s*$)/im', $text, $m)) {
             $candidateName = trim($m[1]);
             if (strlen($candidateName) > 2 && !preg_match('/(NOMOR|SERTIPIKAT|KANTOR|BPN)/i', $candidateName)) {
                 $data['owner_name'] = ucwords(strtolower($candidateName));
