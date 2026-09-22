@@ -376,20 +376,26 @@ class PbbNopApplicationController extends Controller
             ]);
         }
 
+        $cloudinary = app(\App\Services\CloudinaryService::class);
+
         $ktpPath = $request->hasFile('ktp_file')
-            ? $request->file('ktp_file')->store('pbb_applications/ktp', 'public')
+            ? $cloudinary->upload($request->file('ktp_file'), 'pbb_applications/ktp')
             : 'verified_via_account';
         $suratKuasaPath = $request->hasFile('surat_kuasa_file')
-            ? $request->file('surat_kuasa_file')->store('pbb_applications/surat_kuasa', 'public')
+            ? $cloudinary->upload($request->file('surat_kuasa_file'), 'pbb_applications/surat_kuasa')
             : null;
-        $aktePath = $request->file('akte_file')->store('pbb_applications/akte', 'public');
-        $imbPath = $request->hasFile('imb_file') ? $request->file('imb_file')->store('pbb_applications/imb', 'public') : null;
+        $aktePath = $request->hasFile('akte_file')
+            ? $cloudinary->upload($request->file('akte_file'), 'pbb_applications/akte')
+            : null;
+        $imbPath = $request->hasFile('imb_file') 
+            ? $cloudinary->upload($request->file('imb_file'), 'pbb_applications/imb') 
+            : null;
 
         $buildingPhotoPath = null;
         if ($request->hasFile('building_photo')) {
-            $buildingPhotoPath = $request->file('building_photo')->store('pbb_applications/building_photos', 'public');
+            $buildingPhotoPath = $cloudinary->upload($request->file('building_photo'), 'pbb_applications/building_photos');
         } elseif ($request->hasFile('building_photo_file')) {
-            $buildingPhotoPath = $request->file('building_photo_file')->store('pbb_applications/building_photos', 'public');
+            $buildingPhotoPath = $cloudinary->upload($request->file('building_photo_file'), 'pbb_applications/building_photos');
         }
 
         $registeredFor = $request->input('registered_for', 'self');
@@ -479,7 +485,7 @@ class PbbNopApplicationController extends Controller
             'status' => 'required|in:PENDING,SURVEY,APPROVED,REJECTED',
             'survey_notes' => 'nullable|string',
             'survey_photo' => 'nullable|file|mimes:jpg,jpeg,png|max:4096',
-            'nop' => 'nullable|required_if:status,APPROVED|string|max:30'
+            'nop' => 'nullable|string|max:30'
         ]);
 
         if ($validator->fails()) {
@@ -506,27 +512,32 @@ class PbbNopApplicationController extends Controller
         }
 
         $nop = null;
-        if ($request->status === 'APPROVED' && $request->filled('nop')) {
-            $digitsOnly = preg_replace('/[^0-9]/', '', (string) $request->nop);
-            $nop = (strlen($digitsOnly) === 18) ? $digitsOnly : trim($request->nop);
+        if ($request->status === 'APPROVED') {
+            if ($request->filled('nop')) {
+                $digitsOnly = preg_replace('/[^0-9]/', '', (string) $request->nop);
+                $nop = (strlen($digitsOnly) === 18) ? $digitsOnly : trim($request->nop);
 
-            if (TaxObject::where(function ($q) use ($nop, $digitsOnly) {
-                $q->where('nop', $nop)
-                    ->orWhere('nop', $digitsOnly)
-                    ->orWhere('metadata->nop_pbb', $nop)
-                    ->orWhere('metadata->nop_pbb', $digitsOnly);
-            })->exists()) {
-                return response()->json([
-                    'errors' => ['nop' => ['NOP sudah digunakan pada objek pajak lain.']],
-                ], 422);
-            }
+                if (TaxObject::where(function ($q) use ($nop, $digitsOnly) {
+                    $q->where('nop', $nop)
+                        ->orWhere('nop', $digitsOnly)
+                        ->orWhere('metadata->nop_pbb', $nop)
+                        ->orWhere('metadata->nop_pbb', $digitsOnly);
+                })->exists()) {
+                    return response()->json([
+                        'errors' => ['nop' => ['NOP sudah digunakan pada objek pajak lain.']],
+                    ], 422);
+                }
 
-            if (PbbNopApplication::where(function ($q) use ($nop, $digitsOnly) {
-                $q->where('nop', $nop)->orWhere('nop', $digitsOnly);
-            })->where('id', '!=', $id)->exists()) {
-                return response()->json([
-                    'errors' => ['nop' => ['NOP sudah digunakan pada aplikasi lain.']],
-                ], 422);
+                if (PbbNopApplication::where(function ($q) use ($nop, $digitsOnly) {
+                    $q->where('nop', $nop)->orWhere('nop', $digitsOnly);
+                })->where('id', '!=', $id)->exists()) {
+                    return response()->json([
+                        'errors' => ['nop' => ['NOP sudah digunakan pada aplikasi lain.']],
+                    ], 422);
+                }
+            } else {
+                // Auto-generate NOP SISMIOP Baubau resmi 18 digit jika tidak diisi manual
+                $nop = $this->generateSismiopNop($application);
             }
         }
 
@@ -538,10 +549,8 @@ class PbbNopApplicationController extends Controller
             }
 
             if ($request->hasFile('survey_photo')) {
-                if ($application->survey_photo_path) {
-                    Storage::disk('public')->delete($application->survey_photo_path);
-                }
-                $application->survey_photo_path = $request->file('survey_photo')->store('pbb_applications/survey', 'public');
+                $cloudinary = app(\App\Services\CloudinaryService::class);
+                $application->survey_photo_path = $cloudinary->upload($request->file('survey_photo'), 'pbb_applications/survey');
             }
 
             if ($request->status === 'APPROVED' && $nop) {
@@ -728,4 +737,56 @@ class PbbNopApplicationController extends Controller
             );
         }
     }
+
+    /**
+     * Menghasilkan NOP SISMIOP Kota Baubau resmi 18 digit secara unik:
+     * Format: 74.72.KKK.LLL.BBB-UUUU.J (disimpan 18 digit angka: 7472KKKLLLBBBUUUUJ)
+     */
+    public function generateSismiopNop(?PbbNopApplication $application = null): string
+    {
+        $kec = '020';
+        $kel = '001';
+        $address = strtolower(($application?->address ?? '') . ' ' . json_encode($application?->metadata ?? []));
+
+        if (str_contains($address, 'betoambari')) {
+            $kec = '020';
+            $kel = str_contains($address, 'katobengke') ? '007' : '001';
+        } elseif (str_contains($address, 'wolio')) {
+            $kec = '010';
+            $kel = str_contains($address, 'bataraguru') ? '001' : (str_contains($address, 'wale') ? '003' : '002');
+        } elseif (str_contains($address, 'murhum')) {
+            $kec = '030';
+            $kel = '001';
+        } elseif (str_contains($address, 'batu poaro')) {
+            $kec = '040';
+            $kel = '001';
+        } elseif (str_contains($address, 'kokalukuna')) {
+            $kec = '050';
+            $kel = '001';
+        } elseif (str_contains($address, 'sorawolio')) {
+            $kec = '060';
+            $kel = '001';
+        } elseif (str_contains($address, 'bungi')) {
+            $kec = '070';
+            $kel = '001';
+        } elseif (str_contains($address, 'lea-lea')) {
+            $kec = '080';
+            $kel = '001';
+        }
+
+        $prefix = "7472{$kec}{$kel}001";
+        
+        $lastSeq = TaxObject::where('nop', 'like', $prefix . '%')
+            ->orWhere('nop', 'like', "74.72.{$kec}.{$kel}.001%")
+            ->pluck('nop')
+            ->map(function ($val) {
+                $clean = preg_replace('/[^0-9]/', '', (string) $val);
+                return (strlen($clean) === 18) ? (int) substr($clean, 13, 4) : 0;
+            })
+            ->max() ?? 0;
+
+        $nextSeq = str_pad($lastSeq + 1, 4, '0', STR_PAD_LEFT);
+        return "7472{$kec}{$kel}001{$nextSeq}0";
+    }
 }
+

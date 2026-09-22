@@ -467,6 +467,39 @@ class DashboardController extends Controller
                 ];
             });
 
-        return response()->json($zones->concat($taxObjects));
+        // 3. Get Field Survey Tasks (Penugasan Survei Lapangan Reklame & Objek Pajak)
+        $surveyTasksQuery = \App\Models\PetugasTask::with(['taxObject.classification', 'taxObject.taxpayer', 'taxObject.opd', 'taxpayer', 'user'])
+            ->where('status', 'pending')
+            ->whereHas('taxObject', function($q) {
+                $q->whereNotNull('latitude')->whereNotNull('longitude');
+            });
+
+        if ($user->role === 'petugas') {
+            $surveyTasksQuery->where('user_id', $user->id);
+        } elseif ($opdId) {
+            $surveyTasksQuery->whereHas('taxObject', fn($q) => $q->where('opd_id', $opdId));
+        }
+
+        $surveyTasks = $surveyTasksQuery->get()->map(function($task) {
+            $obj = $task->taxObject;
+            return [
+                'position' => [(float)$obj->latitude, (float)$obj->longitude],
+                'task_id' => $task->id,
+                'tax_object_id' => $obj->id,
+                'name' => '📍 [SURVEI] ' . ($obj->name ?? 'Objek Baru'),
+                'agency' => $obj->opd->name ?? 'BAPENDA',
+                'address' => $obj->address,
+                'status' => 'field_survey',
+                'is_paid' => false,
+                'classification_name' => $obj->classification->name ?? 'Pajak Reklame',
+                'classification_icon' => $obj->classification->icon ?? null,
+                'notes' => $task->notes,
+                'due_date' => $task->due_date,
+                'taxpayer_name' => $task->taxpayer->name ?? ($obj->taxpayer->name ?? 'Wajib Pajak'),
+                'metadata' => $obj->metadata,
+            ];
+        });
+
+        return response()->json($zones->concat($taxObjects)->concat($surveyTasks));
     }
 }

@@ -18,6 +18,12 @@ class Taxpayer extends Authenticatable
     protected static function booted()
     {
         static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+
+        static::creating(function ($taxpayer) {
+            if (empty($taxpayer->npwpd)) {
+                $taxpayer->npwpd = static::resolveNpwpd($taxpayer->nik);
+            }
+        });
     }
 
     protected $fillable = [
