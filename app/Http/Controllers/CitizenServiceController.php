@@ -604,6 +604,127 @@ class CitizenServiceController extends Controller
                 }
             }
 
+            // ── Integrasi DPMPTSP (PTSP): Opsi NIB Sarang Burung Walet & Notifikasi Perizinan ──
+            $isWalet = ((int) $classification->id === 190) || (strtoupper((string) ($classification->code ?? '')) === 'WALET') || stripos((string) ($classification->name ?? ''), 'walet') !== false;
+            $rawNib = $metadata['nib'] ?? $request->input('nib') ?? $metadata['nib_usaha'] ?? null;
+            $nib = ! empty($rawNib) ? preg_replace('/[^0-9]/', '', (string) $rawNib) : null;
+            $requestPtspAssistance = ! empty($metadata['ptsp_request_assistance']);
+
+            if (! empty($nib) && strlen($nib) >= 13 && strlen($nib) <= 16) {
+                // Tautkan NIB ke profil taxpayer bila belum ada
+                if (empty($taxpayer->nib)) {
+                    $taxpayer->update(['nib' => $nib]);
+                }
+
+                // Perbarui metadata objek pajak dengan status keterhubungan PTSP
+                $metadata['nib'] = $nib;
+                $metadata['has_nib'] = true;
+                $metadata['ptsp_notified'] = true;
+                $metadata['ptsp_notified_at'] = Carbon::now()->toIso8601String();
+                $metadata['ptsp_channel'] = 'dpmptsp_system';
+                $metadata['ptsp_status'] = 'terintegrasi';
+                $taxObject->update(['metadata' => $metadata]);
+
+                // Sinkronkan ke nib_nop_mappings
+                if (\Illuminate\Support\Facades\Schema::hasTable('nib_nop_mappings')) {
+                    $existsMapping = \Illuminate\Support\Facades\DB::table('nib_nop_mappings')->where('nib', $nib)->exists();
+                    if (! $existsMapping) {
+                        \Illuminate\Support\Facades\DB::table('nib_nop_mappings')->insert([
+                            'nib' => $nib,
+                            'nop' => $metadata['nop_pbb'] ?? null,
+                            'taxpayer_name' => $taxpayer->name,
+                            'land_area_m2' => ! empty($metadata['luas_bangunan']) ? (float) $metadata['luas_bangunan'] : null,
+                            'building_area_m2' => ! empty($metadata['luas_bangunan']) ? (float) $metadata['luas_bangunan'] : null,
+                            'match_status' => 'matched',
+                            'source' => 'manual',
+                            'last_synced_at' => Carbon::now(),
+                            'created_at' => Carbon::now(),
+                            'updated_at' => Carbon::now(),
+                        ]);
+                    }
+                }
+
+                // Sinkronkan ke ptsp_data_candidates (Daftar Calon Wajib Pajak / Pelaku Usaha Ber-NIB DPMPTSP)
+                if (\Illuminate\Support\Facades\Schema::hasTable('ptsp_data_candidates')) {
+                    \Illuminate\Support\Facades\DB::table('ptsp_data_candidates')->updateOrInsert(
+                        [
+                            'nik' => $taxpayer->nik,
+                            'jenis_usaha' => $isWalet ? 'Pajak Sarang Burung Walet' : ($classification->name ?? 'Usaha'),
+                        ],
+                        [
+                            'nama' => $taxpayer->name,
+                            'nik' => $taxpayer->nik,
+                            'alamat_usaha' => $request->address ?: $taxpayer->address,
+                            'jenis_usaha' => $isWalet ? 'Pajak Sarang Burung Walet' : ($classification->name ?? 'Usaha'),
+                            'no_hp' => $taxpayer->phone ?: '-',
+                            'status' => 'nib_terbit',
+                            'nib' => $nib,
+                            'keterangan' => 'Notifikasi otomatis dari pendaftaran Objek Pajak '.($isWalet ? 'Sarang Burung Walet' : $classification->name).": {$taxObject->name} (ID Objek: {$taxObject->id})",
+                            'updated_at' => Carbon::now(),
+                            'created_at' => Carbon::now(),
+                        ]
+                    );
+                }
+
+                // Kirim notifikasi resmi sistem DPMPTSP ke notification_logs
+                if (\Illuminate\Support\Facades\Schema::hasTable('notification_logs')) {
+                    \Illuminate\Support\Facades\DB::table('notification_logs')->insert([
+                        'taxpayer_id' => $taxpayer->id,
+                        'phone' => $taxpayer->phone ?: null,
+                        'channel' => 'ptsp_system',
+                        'type' => $isWalet ? 'ptsp_walet_nib_notification' : 'ptsp_nib_notification',
+                        'reference_type' => 'tax_objects',
+                        'reference_id' => $taxObject->id,
+                        'message_preview' => 'Notifikasi DPMPTSP: Pendaftaran Objek Pajak '.($isWalet ? 'Sarang Burung Walet' : $classification->name)." '{$taxObject->name}' oleh {$taxpayer->name} dengan NIB {$nib} berhasil dicatat dan disinkronisasikan ke sistem perizinan PTSP.",
+                        'status' => 'sent',
+                        'sent_at' => Carbon::now(),
+                        'created_at' => Carbon::now(),
+                        'updated_at' => Carbon::now(),
+                    ]);
+                }
+            } elseif ($isWalet && $requestPtspAssistance) {
+                // Wajib Pajak walet belum punya NIB dan meminta permohonan pendampingan PTSP
+                if (\Illuminate\Support\Facades\Schema::hasTable('ptsp_data_candidates')) {
+                    \Illuminate\Support\Facades\DB::table('ptsp_data_candidates')->updateOrInsert(
+                        [
+                            'nik' => $taxpayer->nik,
+                            'jenis_usaha' => 'Pajak Sarang Burung Walet',
+                        ],
+                        [
+                            'nama' => $taxpayer->name,
+                            'nik' => $taxpayer->nik,
+                            'alamat_usaha' => $request->address ?: $taxpayer->address,
+                            'jenis_usaha' => 'Pajak Sarang Burung Walet',
+                            'no_hp' => $taxpayer->phone ?: '-',
+                            'status' => 'menunggu',
+                            'nib' => null,
+                            'keterangan' => "Permohonan pendampingan penerbitan NIB dari pendaftaran Sarang Burung Walet: {$taxObject->name} (ID Objek: {$taxObject->id})",
+                            'updated_at' => Carbon::now(),
+                            'created_at' => Carbon::now(),
+                        ]
+                    );
+                }
+
+                if (\Illuminate\Support\Facades\Schema::hasTable('notification_logs')) {
+                    \Illuminate\Support\Facades\DB::table('notification_logs')->insert([
+                        'taxpayer_id' => $taxpayer->id,
+                        'phone' => $taxpayer->phone ?: null,
+                        'channel' => 'ptsp_system',
+                        'type' => 'ptsp_assistance_request',
+                        'reference_type' => 'tax_objects',
+                        'reference_id' => $taxObject->id,
+                        'message_preview' => "Permohonan Pendampingan DPMPTSP: Pelaku usaha Sarang Burung Walet '{$taxObject->name}' ({$taxpayer->name}) mengajukan bantuan pendampingan pembuatan NIB OSS.",
+                        'status' => 'pending',
+                        'created_at' => Carbon::now(),
+                        'updated_at' => Carbon::now(),
+                    ]);
+                }
+
+                $metadata['ptsp_assistance_requested'] = true;
+                $metadata['ptsp_status'] = 'menunggu_pendampingan';
+                $taxObject->update(['metadata' => $metadata]);
+            }
+
             return [$taxObject, $verification];
         });
 
