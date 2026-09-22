@@ -10,7 +10,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE market_stalls MODIFY COLUMN billing_cycle ENUM('daily', 'weekly', 'monthly', 'yearly') NOT NULL DEFAULT 'monthly'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE market_stalls MODIFY COLUMN billing_cycle ENUM('daily', 'weekly', 'monthly', 'yearly') NOT NULL DEFAULT 'monthly'");
+        }
     }
 
     /**
@@ -18,6 +20,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE market_stalls MODIFY COLUMN billing_cycle ENUM('daily', 'monthly', 'yearly') NOT NULL DEFAULT 'monthly'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE market_stalls MODIFY COLUMN billing_cycle ENUM('daily', 'monthly', 'yearly') NOT NULL DEFAULT 'monthly'");
+        }
     }
 };
