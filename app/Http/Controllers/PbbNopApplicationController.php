@@ -486,20 +486,22 @@ class PbbNopApplicationController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Maker-checker: pemohon tidak boleh memutuskan status permohonannya sendiri.
+        // Maker-checker: pemohon warga tidak boleh memutuskan status permohonannya sendiri.
         if (in_array($request->status, ['APPROVED', 'REJECTED'], true)
             && $application->user_id
+            && $request->user() instanceof \App\Models\Taxpayer
             && (int) $application->user_id === (int) $request->user()->id) {
             return response()->json([
                 'message' => 'Pemohon tidak boleh memutuskan status permohonannya sendiri (maker-checker).',
             ], 403);
         }
 
-        // Hanya admin, super_admin, atau kepala_bapenda yang berwenang menyetujui / menolak NOP resmi
+        // Hanya admin, super_admin, opd Bapenda, verifikator, atau kepala_bapenda yang berwenang menyetujui / menolak NOP resmi
+        $allowedReviewRoles = ['admin', 'super_admin', 'opd', 'verifikator', 'kepala_bapenda'];
         if (in_array($request->status, ['APPROVED', 'REJECTED'], true)
-            && !in_array($request->user()->role, ['admin', 'super_admin', 'kepala_bapenda'], true)) {
+            && (!isset($request->user()->role) || !in_array($request->user()->role, $allowedReviewRoles, true))) {
             return response()->json([
-                'message' => 'Hanya Admin atau Kepala Bapenda yang berwenang memutuskan persetujuan NOP resmi.',
+                'message' => 'Hanya Petugas/Admin Bapenda yang berwenang memutuskan persetujuan NOP resmi.',
             ], 403);
         }
 
@@ -602,14 +604,13 @@ class PbbNopApplicationController extends Controller
 
         $taxpayer = null;
         if ($application->user_id) {
-            $taxpayer = Taxpayer::where('user_id', $application->user_id)->first();
+            $taxpayer = Taxpayer::find($application->user_id);
         }
         if (! $taxpayer && $application->nik) {
             $taxpayer = Taxpayer::where('nik', $application->nik)->first();
         }
         if (! $taxpayer) {
             $taxpayer = Taxpayer::create([
-                'user_id' => $application->user_id,
                 'nik' => $application->nik,
                 'name' => $application->name,
                 'address' => $application->address,
@@ -699,7 +700,7 @@ class PbbNopApplicationController extends Controller
                 'tax_rate' => (float) ($calc['tariff'] ?? 0.001),
                 'tax_amount' => $pbbAmount,
                 'payment_status' => $pbbAmount == 0 ? 'LUNAS' : 'BELUM LUNAS',
-                'data_source' => 'mpad_auto_billing',
+                'data_source' => $application->is_bpn_verified ? 'bpn_sync' : 'manual_input',
             ]
         );
 
