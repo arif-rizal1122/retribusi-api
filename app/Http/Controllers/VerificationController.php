@@ -286,6 +286,13 @@ class VerificationController extends Controller
 
     private function formatFieldSurveyTask(PetugasTask $task): array
     {
+        $photoUrl = null;
+        if ($task->completion_photo_path) {
+            $photoUrl = str_starts_with($task->completion_photo_path, 'http')
+                ? $task->completion_photo_path
+                : url('storage/' . ltrim($task->completion_photo_path, '/'));
+        }
+
         return [
             'id' => $task->id,
             'status' => $task->status,
@@ -294,7 +301,8 @@ class VerificationController extends Controller
             'completed_at' => $task->completed_at,
             'officer_name' => $task->user?->name,
             'created_by_name' => $task->creator?->name,
-            'completion_photo_path' => $task->completion_photo_path,
+            'completion_photo_path' => $photoUrl ?? $task->completion_photo_path,
+            'completion_photo_url' => $photoUrl,
         ];
     }
 }

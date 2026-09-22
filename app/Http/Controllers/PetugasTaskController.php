@@ -46,6 +46,35 @@ class PetugasTaskController extends Controller
             $query->where('verification_id', $request->verification_id);
         }
 
+        if ($request->has('verification_status')) {
+            if ($request->verification_status === 'verified') {
+                $query->where(function($q) {
+                    $q->whereHas('verification', function($vq) {
+                        $vq->where('status', 'approved');
+                    })->orWhere(function($oq) {
+                        $oq->whereNull('verification_id')
+                           ->whereHas('taxObject', function($toq) {
+                               $toq->where('is_verified_physically', true);
+                           });
+                    });
+                });
+            } elseif ($request->verification_status === 'unverified') {
+                $query->where(function($q) {
+                    $q->whereHas('verification', function($vq) {
+                        $vq->whereIn('status', ['pending', 'in_review']);
+                    })->orWhere(function($oq) {
+                        $oq->whereNull('verification_id')
+                           ->where(function($noVerif) {
+                               $noVerif->whereDoesntHave('taxObject')
+                                       ->orWhereHas('taxObject', function($toq) {
+                                           $toq->where('is_verified_physically', false);
+                                       });
+                           });
+                    });
+                });
+            }
+        }
+
         return response()->json([
             'status' => 'success',
             'data' => $query->orderBy('due_date', 'asc')->get()

@@ -26,6 +26,23 @@ class PetugasTask extends Model
         'completed_at' => 'datetime',
     ];
 
+    protected $appends = [
+        'completion_photo_url',
+    ];
+
+    public function getCompletionPhotoUrlAttribute()
+    {
+        if (!$this->completion_photo_path) {
+            return null;
+        }
+
+        if (str_starts_with($this->completion_photo_path, 'http://') || str_starts_with($this->completion_photo_path, 'https://')) {
+            return $this->completion_photo_path;
+        }
+
+        return url('storage/' . ltrim($this->completion_photo_path, '/'));
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
