@@ -495,6 +495,14 @@ class PbbNopApplicationController extends Controller
             ], 403);
         }
 
+        // Hanya admin, super_admin, atau kepala_bapenda yang berwenang menyetujui / menolak NOP resmi
+        if (in_array($request->status, ['APPROVED', 'REJECTED'], true)
+            && !in_array($request->user()->role, ['admin', 'super_admin', 'kepala_bapenda'], true)) {
+            return response()->json([
+                'message' => 'Hanya Admin atau Kepala Bapenda yang berwenang memutuskan persetujuan NOP resmi.',
+            ], 403);
+        }
+
         $nop = null;
         if ($request->status === 'APPROVED' && $request->filled('nop')) {
             $digitsOnly = preg_replace('/[^0-9]/', '', (string) $request->nop);

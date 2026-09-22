@@ -464,7 +464,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         // Pendaftaran NOP alias (tab admin PBB)
         Route::get('/pbb/bapenda/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'index']);
         Route::post('/pbb/bapenda/nop-applications/{id}/status', [\App\Http\Controllers\PbbNopApplicationController::class, 'updateStatus'])
-            ->middleware('role:admin,kepala_bapenda');
+            ->middleware('role:admin,kepala_bapenda,petugas,opd');
 
         // Pelaporan E-SPTPD
         Route::post('/sptpd', [\App\Http\Controllers\SptpdController::class, 'store']);
