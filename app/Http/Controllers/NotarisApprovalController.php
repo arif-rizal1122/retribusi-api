@@ -32,6 +32,13 @@ class NotarisApprovalController extends Controller
      */
     public function approve(Request $request, $id, WaGatewayService $waGateway)
     {
+        $user = $request->user();
+        if ($user && ! \App\Support\TaxDomainHelper::canApprove($user, 'notaris_verification')) {
+            return response()->json([
+                'message' => 'Otorisasi ditolak: Persetujuan aktivasi akun PPAT/Notaris merupakan wewenang Bidang Pajak Daerah Wilayah I (BPHTB).',
+            ], 403);
+        }
+
         $notaris = User::where('role', User::ROLE_NOTARIS)->findOrFail($id);
 
         if ($notaris->status === 'active') {
@@ -62,6 +69,13 @@ class NotarisApprovalController extends Controller
      */
     public function reject(Request $request, $id, WaGatewayService $waGateway)
     {
+        $user = $request->user();
+        if ($user && ! \App\Support\TaxDomainHelper::canApprove($user, 'notaris_verification')) {
+            return response()->json([
+                'message' => 'Otorisasi ditolak: Penolakan aktivasi akun PPAT/Notaris merupakan wewenang Bidang Pajak Daerah Wilayah I (BPHTB).',
+            ], 403);
+        }
+
         $request->validate([
             'reason' => 'required|string|max:255'
         ]);

@@ -111,15 +111,20 @@ class OpdAccess
 
         $hasAset = (bool) array_filter($codes, static fn ($c) => $startsWith($c, 'JU-ASET') || $startsWith($c, 'AS-') || $c === 'JU-PROD') || $isDishubAset || $isPuprAset || $isPupr;
 
+        $taxDomain = \App\Support\TaxDomainHelper::getDomain($user);
+
         return [
             'opd_id' => $opdId,
             'is_bapenda' => $isBapenda,
+            'tax_domain' => $taxDomain,
+            'tax_domain_name' => \App\Support\TaxDomainHelper::DOMAIN_CONFIG[$taxDomain]['name'] ?? 'Semua Bidang Pajak',
             'has_owned_service' => count($codes) > 0 || $isDishubAset || $isPuprAset || $isDisperindag,
             'codes' => $codes,
             'has_sector_mapping' => $hasSectorMapping,
             'flags' => [
-                'pbb'         => in_array('PBB-P2', $codes, true) || $isBapenda,
-                'bphtb'       => in_array('BPHTB', $codes, true) || $isBapenda,
+                'pbb'         => in_array('PBB-P2', $codes, true) || ($isBapenda && ($taxDomain === \App\Support\TaxDomainHelper::DOMAIN_ALL || $taxDomain === \App\Support\TaxDomainHelper::DOMAIN_WILAYAH_1)),
+                'bphtb'       => in_array('BPHTB', $codes, true) || ($isBapenda && ($taxDomain === \App\Support\TaxDomainHelper::DOMAIN_ALL || $taxDomain === \App\Support\TaxDomainHelper::DOMAIN_WILAYAH_1)),
+                'pbjt'        => $isBapenda && ($taxDomain === \App\Support\TaxDomainHelper::DOMAIN_ALL || $taxDomain === \App\Support\TaxDomainHelper::DOMAIN_WILAYAH_2),
                 'aset'        => $hasAset,
                 'ptsp'        => $isPtsp,
                 'rekreasi'    => $isPariwisata,

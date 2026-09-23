@@ -190,7 +190,7 @@ class TaxObjectChangeRequestController extends Controller
     {
         $query = TaxObjectChangeRequest::query()
             ->with([
-                'taxObject:id,nop,name,address,retribution_classification_id',
+                'taxObject:id,nop,name,address,retribution_classification_id,retribution_type_id',
                 'taxpayer:id,name,nik,npwpd',
                 'reviewer:id,name',
             ]);
@@ -201,6 +201,17 @@ class TaxObjectChangeRequestController extends Controller
 
         if ($request->has('tax_object_id')) {
             $query->where('tax_object_id', $request->tax_object_id);
+        }
+
+        $user = $request->user();
+        if ($user) {
+            $taxDomain = \App\Support\TaxDomainHelper::getDomain($user);
+            if ($taxDomain !== \App\Support\TaxDomainHelper::DOMAIN_ALL) {
+                $domainTypeIds = \App\Support\TaxDomainHelper::getRetributionTypeIds($taxDomain);
+                $query->whereHas('taxObject', function ($q) use ($domainTypeIds) {
+                    $q->whereIn('retribution_type_id', $domainTypeIds);
+                });
+            }
         }
 
         // Antrian pending tampil paling atas
@@ -238,6 +249,18 @@ class TaxObjectChangeRequestController extends Controller
         }
 
         $reviewer = $request->user();
+        if ($reviewer) {
+            $taxDomain = \App\Support\TaxDomainHelper::getDomain($reviewer);
+            if ($taxDomain !== \App\Support\TaxDomainHelper::DOMAIN_ALL) {
+                $taxObject = $changeRequest->taxObject;
+                if ($taxObject && ! \App\Support\TaxDomainHelper::canAccessRetributionType($taxDomain, (int) $taxObject->retribution_type_id)) {
+                    return response()->json([
+                        'message' => 'Otorisasi ditolak: Objek pajak ini berada di luar bidang wewenang Anda.',
+                    ], 403);
+                }
+            }
+        }
+
         $status = $request->status;
         $notes = $request->input('review_notes');
 

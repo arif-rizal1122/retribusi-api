@@ -32,8 +32,10 @@ class ClassificationSchemaSeeder extends Seeder
                 ['label' => 'Warung Kuliner', 'value' => 'warung'],
             ]],
             ['key' => 'omset', 'label' => 'Estimasi Omzet per Bulan (Rp)', 'type' => 'number', 'required' => true],
-            ['key' => 'kapasitas_kursi', 'label' => 'Kapasitas Tempat Duduk (Kursi)', 'type' => 'number'],
-            ['key' => 'kapasitas_meja', 'label' => 'Kapasitas Meja', 'type' => 'number'],
+            ['key' => 'jumlah_meja', 'label' => 'Jumlah Meja Makan', 'type' => 'number', 'required' => false],
+            ['key' => 'jumlah_kursi', 'label' => 'Jumlah Kursi / Kapasitas Tempat Duduk', 'type' => 'number', 'required' => false],
+            ['key' => 'kapasitas_kursi', 'label' => 'Total Kapasitas Kursi', 'type' => 'number'],
+            ['key' => 'kapasitas_meja', 'label' => 'Total Kapasitas Meja', 'type' => 'number'],
             ['key' => 'jumlah_karyawan', 'label' => 'Jumlah Karyawan', 'type' => 'number'],
             ['key' => 'jam_operasional', 'label' => 'Jam Operasional (Contoh: 09:00 - 22:00)', 'type' => 'text'],
         ], [
@@ -160,6 +162,7 @@ class ClassificationSchemaSeeder extends Seeder
         // 8. PBJT Jasa Kesenian dan Hiburan
         $this->updateSchema('PBJT - Jasa Kesenian dan Hiburan', [
             ['key' => 'kategori_hiburan', 'label' => 'Kategori Hiburan', 'type' => 'select', 'required' => true, 'options' => [
+                ['label' => 'Penyewaan Lapangan Olahraga (Futsal / Mini Soccer / Bulutangkis)', 'value' => 'lapangan_olahraga'],
                 ['label' => 'Bioskop / Pemutaran Film', 'value' => 'bioskop'],
                 ['label' => 'Pertunjukan Seni / Musik / Tari', 'value' => 'seni_musik'],
                 ['label' => 'Pusat Kebugaran / Fitness / Gym', 'value' => 'gym'],
@@ -168,10 +171,12 @@ class ClassificationSchemaSeeder extends Seeder
                 ['label' => 'Karaoke Keluarga', 'value' => 'karaoke'],
             ]],
             ['key' => 'omset', 'label' => 'Estimasi Omzet Bulanan (Rp)', 'type' => 'number', 'required' => true],
+            ['key' => 'jumlah_lapangan', 'label' => 'Jumlah Lapangan / Line (Jika Sarana Olahraga)', 'type' => 'number', 'required' => false],
+            ['key' => 'tarif_per_jam', 'label' => 'Tarif Sewa Rata-rata per Jam (Rp)', 'type' => 'number', 'required' => false],
             ['key' => 'kapasitas_pengunjung', 'label' => 'Kapasitas Pengunjung (Orang)', 'type' => 'number'],
         ], [
             ['key' => 'nib_usaha', 'name' => 'NIB / Izin Usaha', 'required' => false],
-            ['key' => 'foto_tempat_hiburan', 'name' => 'Foto Tempat Hiburan', 'required' => true],
+            ['key' => 'foto_tempat_hiburan', 'name' => 'Foto Tempat Hiburan / Arena', 'required' => true],
         ]);
 
         // 9. PBJT Tenaga Listrik (Non-PLN / Dihasilkan Sendiri)

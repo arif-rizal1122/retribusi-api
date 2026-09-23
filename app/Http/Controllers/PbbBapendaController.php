@@ -383,6 +383,14 @@ class PbbBapendaController extends Controller
      */
     public function reversal(Request $request)
     {
+        $user = $request->user();
+        if ($user && ! \App\Support\TaxDomainHelper::canApprove($user, 'pbb_reversal')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Otorisasi ditolak: Pembatalan pembayaran PBB merupakan wewenang Bidang Pajak Daerah Wilayah I.',
+            ], 403);
+        }
+
         $request->validate([
             'nop' => 'required|string|size:18',
             'tahun' => 'required|string|size:4',

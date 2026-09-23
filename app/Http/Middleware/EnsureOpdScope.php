@@ -57,6 +57,7 @@ class EnsureOpdScope
 
         $request->attributes->set('scope_opd_id', $scopeOpdId);
         $request->attributes->set('is_global_scope', $isGlobal);
+        $request->attributes->set('scope_tax_domain', \App\Support\TaxDomainHelper::getDomain($user));
 
         return $next($request);
     }

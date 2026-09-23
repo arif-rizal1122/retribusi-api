@@ -130,4 +130,46 @@ class OpdAccessTest extends TestCase
         $this->assertFalse($access['flags']['rekreasi']);
         $this->assertFalse($access['flags']['dishub']);
     }
+
+    public function test_bapenda_wilayah_1_and_wilayah_2_tax_domain_isolation(): void
+    {
+        $bapendaOpd = new Opd([
+            'id' => 5,
+            'name' => 'Badan Pendapatan Daerah',
+            'code' => 'BAPENDA',
+        ]);
+
+        $wilayah1User = new User([
+            'name' => 'Kabid Wilayah I',
+            'email' => 'kabid_pajak@mpad.online',
+            'role' => 'kepala_bapenda',
+            'opd_id' => 5,
+            'metadata' => ['tax_domain' => 'wilayah_1'],
+        ]);
+        $wilayah1User->setRelation('opd', $bapendaOpd);
+
+        $wilayah2User = new User([
+            'name' => 'Kabid Wilayah II',
+            'email' => 'kabid_wilayah2@mpad.online',
+            'role' => 'kepala_bapenda',
+            'opd_id' => 5,
+            'metadata' => ['tax_domain' => 'wilayah_2'],
+        ]);
+        $wilayah2User->setRelation('opd', $bapendaOpd);
+
+        $access1 = OpdAccess::for($wilayah1User);
+        $access2 = OpdAccess::for($wilayah2User);
+
+        // Wilayah 1 has PBB & BPHTB, but not PBJT
+        $this->assertEquals('wilayah_1', $access1['tax_domain']);
+        $this->assertTrue($access1['flags']['pbb']);
+        $this->assertTrue($access1['flags']['bphtb']);
+        $this->assertFalse($access1['flags']['pbjt']);
+
+        // Wilayah 2 has PBJT, but not PBB & BPHTB
+        $this->assertEquals('wilayah_2', $access2['tax_domain']);
+        $this->assertFalse($access2['flags']['pbb']);
+        $this->assertFalse($access2['flags']['bphtb']);
+        $this->assertTrue($access2['flags']['pbjt']);
+    }
 }

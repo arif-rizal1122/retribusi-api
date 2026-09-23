@@ -23,3 +23,5 @@ kendala di halaman aset
 
 cek juga nanti kesesuaian peta untuk kebutuhan admin termasuk di dalamnya titik lokasi yang akan di survei nanti
 
+juga integrasi dengan srikandi terutama jika ada tte
+

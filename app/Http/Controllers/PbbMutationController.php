@@ -703,6 +703,14 @@ class PbbMutationController extends Controller
             } elseif ($newStatus === 'REJECTED') {
                 $updateData['rejection_reason'] = $request->rejection_reason;
             } elseif ($newStatus === 'APPROVED') {
+                if (! \App\Support\TaxDomainHelper::canApprove($user, 'pbb_mutation')) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Otorisasi ditolak: Persetujuan akhir (L3) Mutasi PBB merupakan wewenang Bidang Pajak Daerah Wilayah I.',
+                    ], 403);
+                }
+
                 $updateData['approved_l3_by'] = $user?->id;
                 $updateData['approved_l3_at'] = now();
 

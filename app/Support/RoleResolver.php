@@ -276,6 +276,7 @@ class RoleResolver
         $user->setAttribute('role_code', $role['role_code']);
         $user->setAttribute('opd_role', $role['opd_role']);
         $user->setAttribute('role_group', $role['role_group']);
+        $user->setAttribute('tax_domain', \App\Support\TaxDomainHelper::getDomain($user));
 
         return $user;
     }

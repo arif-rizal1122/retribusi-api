@@ -18,6 +18,17 @@ class PenaltyWaiverController extends Controller
             $query->where('status', $request->status);
         }
 
+        $user = $request->user();
+        if ($user) {
+            $taxDomain = \App\Support\TaxDomainHelper::getDomain($user);
+            if ($taxDomain !== \App\Support\TaxDomainHelper::DOMAIN_ALL) {
+                $domainTypeIds = \App\Support\TaxDomainHelper::getRetributionTypeIds($taxDomain);
+                $query->whereHas('bill', function ($q) use ($domainTypeIds) {
+                    $q->whereIn('retribution_type_id', $domainTypeIds);
+                });
+            }
+        }
+
         return response()->json($query->paginate(20));
     }
 
@@ -83,6 +94,13 @@ class PenaltyWaiverController extends Controller
             return response()->json(['message' => 'This waiver request is already ' . $waiver->status], 422);
         }
 
+        $user = $request->user();
+        if (! \App\Support\TaxDomainHelper::canApprove($user, 'penalty_waiver', (int) $waiver->bill?->retribution_type_id)) {
+            return response()->json([
+                'message' => 'Otorisasi ditolak: Permohonan dispensasi denda untuk jenis pajak ini di luar bidang wewenang Anda.',
+            ], 403);
+        }
+
         // Maker-checker: pengaju tidak boleh memutuskan permohonannya sendiri.
         if ((int) $waiver->requested_by === (int) Auth::id()) {
             return response()->json([
@@ -124,10 +142,17 @@ class PenaltyWaiverController extends Controller
 
     public function reject(Request $request, $id)
     {
-        $waiver = PenaltyWaiver::findOrFail($id);
+        $waiver = PenaltyWaiver::with('bill')->findOrFail($id);
 
         if ($waiver->status !== 'pending') {
             return response()->json(['message' => 'This waiver request is already ' . $waiver->status], 422);
+        }
+
+        $user = $request->user();
+        if (! \App\Support\TaxDomainHelper::canApprove($user, 'penalty_waiver', (int) $waiver->bill?->retribution_type_id)) {
+            return response()->json([
+                'message' => 'Otorisasi ditolak: Permohonan dispensasi denda untuk jenis pajak ini di luar bidang wewenang Anda.',
+            ], 403);
         }
 
         // Maker-checker: pengaju tidak boleh memutuskan permohonannya sendiri.

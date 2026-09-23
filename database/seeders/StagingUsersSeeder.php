@@ -73,19 +73,45 @@ class StagingUsersSeeder extends Seeder
             ]
         );
 
-        // 5. Kabid Pajak Daerah / Ibu Ochi (kabid_pajak@mpad.online)
+        // 5. Kabid Pajak Wilayah I / Ibu Ochi (kabid_pajak@mpad.online)
         User::updateOrCreate(
             ['email' => 'kabid_pajak@mpad.online'],
             [
-                'name' => 'Kabid Pajak Daerah (Ibu Ochi)',
+                'name' => 'Kabid Pajak Wilayah I (Ibu Ochi)',
                 'password' => Hash::make('password123'),
                 'role' => 'kepala_bapenda',
                 'opd_id' => $opdId,
                 'status' => 'active',
+                'metadata' => [
+                    'tax_domain' => 'wilayah_1',
+                    'portfolio' => 'PBB-P2, BPHTB, Reklame, MBLB, Walet, Opsen',
+                    'role_code' => 'bapenda',
+                    'opd_role' => 'Bidang Pajak Daerah Wilayah I',
+                    'role_group' => 'admin',
+                ],
             ]
         );
 
-        // 6. Staf Pelayanan Loket / Ibu Yani (staf_pelayanan@mpad.online)
+        // 6. Kabid Pajak Wilayah II (kabid_wilayah2@mpad.online)
+        User::updateOrCreate(
+            ['email' => 'kabid_wilayah2@mpad.online'],
+            [
+                'name' => 'Kabid Pajak Wilayah II',
+                'password' => Hash::make('password123'),
+                'role' => 'kepala_bapenda',
+                'opd_id' => $opdId,
+                'status' => 'active',
+                'metadata' => [
+                    'tax_domain' => 'wilayah_2',
+                    'portfolio' => 'PBJT-FOOD, PBJT-HTL, PBJT-HBR, PBJT-PRK, PBJT-LISTRIK, Air Tanah',
+                    'role_code' => 'bapenda',
+                    'opd_role' => 'Bidang Pajak Daerah Wilayah II',
+                    'role_group' => 'admin',
+                ],
+            ]
+        );
+
+        // 7. Staf Pelayanan Loket / Ibu Yani (staf_pelayanan@mpad.online)
         User::updateOrCreate(
             ['email' => 'staf_pelayanan@mpad.online'],
             [
