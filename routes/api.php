@@ -661,6 +661,45 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::post('/reconcile', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'reconcile']);
         });
 
+        // ─────────────────────────────────────────────────────────────
+        // RBAC BERBASIS LAYANAN — pemisahan tupoksi Kabid vs Kasubid
+        //
+        //   Kasubid : memeriksa data untuk VERIFIKASI  (service_action:verify)
+        //   Kabid   : melakukan PENUGASAN & otorisasi  (service_action:assign)
+        //
+        // Gate ini bersifat MENAMBAH di atas EnsureAdmin. Role di luar matriks
+        // layanan (petugas/opd) tidak terpengaruh. Domain wilayah tetap dijaga
+        // EnsureTaxDomain pada route masing-masing.
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('bidang-pajak')->group(function () {
+            // Info matriks hak akses akun yang sedang login.
+            Route::get('/akses', function (\Illuminate\Http\Request $request) {
+                $user = $request->user();
+                $role = $user->role ?? null;
+
+                return response()->json([
+                    'role'       => $role,
+                    'is_scoped'  => \App\Support\ServiceAccessMatrix::isServiceScopedRole($role),
+                    'access'     => \App\Support\ServiceAccessMatrix::accessForRole($role),
+                    'profile'    => \App\Support\ServiceAccessMatrix::profileFor($role),
+                ]);
+            });
+
+            // ── VERIFIKASI (Kasubid memeriksa data) ──
+            Route::middleware('service_action:verify')->group(function () {
+                Route::get('/verifikasi/daftar', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'daftarVerifikasi']);
+                Route::get('/verifikasi/{id}', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'detailVerifikasi']);
+                Route::post('/verifikasi/{id}/periksa', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'periksaVerifikasi']);
+            });
+
+            // ── PENUGASAN (Kabid menugaskan) ──
+            Route::middleware('service_action:assign')->group(function () {
+                Route::get('/penugasan/daftar', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'daftarPenugasan']);
+                Route::post('/penugasan', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'buatPenugasan']);
+                Route::post('/penugasan/{id}/otorisasi', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'otorisasiPenugasan']);
+            });
+        });
+
         // Official BAPENDA Documents
         Route::prefix('documents')->group(function () {
             // Pendaftaran
@@ -708,11 +747,16 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             // Taxpayer (warga) tidak — jangan sampai TypeError jadi 500.
             $role = $user->role ?? ($user instanceof \App\Models\Taxpayer ? 'warga' : null);
 
+            $serviceAccess = \App\Support\ServiceAccessMatrix::isServiceScopedRole($role)
+                ? \App\Support\ServiceAccessMatrix::accessForRole($role)
+                : null;
+
             return response()->json([
                 'role' => $role,
                 'tax_domain' => $domain,
                 'classification_codes' => \App\Support\TaxDomainHelper::getClassificationCodes($domain),
                 'retribution_type_ids' => \App\Support\TaxDomainHelper::getRetributionTypeIds($domain),
+                'service_access' => $serviceAccess,
             ]);
         });
 

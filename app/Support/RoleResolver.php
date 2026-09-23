@@ -302,6 +302,13 @@ class RoleResolver
         $user->setAttribute('role_group', $role['role_group']);
         $user->setAttribute('tax_domain', \App\Support\TaxDomainHelper::getDomain($user));
 
+        // RBAC berbasis LAYANAN — dikirim ke FE agar sidebar disusun dari
+        // matriks yang sama dengan backend, tanpa duplikasi logika.
+        // Hanya untuk role yang memang memakai matriks (Kabid/Kasubid Bapenda).
+        if (\App\Support\ServiceAccessMatrix::isServiceScopedRole($user->role)) {
+            $user->setAttribute('service_access', \App\Support\ServiceAccessMatrix::accessForRole($user->role));
+        }
+
         return $user;
     }
 }

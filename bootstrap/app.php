@@ -31,6 +31,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\EnsureRole::class,
             // Gate pemisahan tupoksi wilayah pajak (Wilayah I vs Wilayah II).
             'tax_domain' => \App\Http\Middleware\EnsureTaxDomain::class,
+            // Gate RBAC berbasis LAYANAN: Kabid = penugasan/otorisasi,
+            // Kasubid = pemeriksaan data untuk verifikasi.
+            'service_action' => \App\Http\Middleware\EnsureServiceAction::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

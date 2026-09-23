@@ -24,3 +24,8 @@ Schedule::command('rusun:generate-bills')
 // Penagihan otomatis: buat draf Surat Teguran I/II dan Surat Paksa
 // untuk tagihan yang menunggak. Dijalankan harian 07:00 WITA.
 Schedule::command('enforcements:generate-drafts')->dailyAt('07:00')->timezone('Asia/Makassar');
+
+// Task 2319 — eskalasi SLA penugasan.
+// Dicek tiap 30 menit: ambang eskalasi tahapan terpendek (otorisasi Kabid)
+// hanya 3 jam, sehingga pemeriksaan harian akan terlambat memberi peringatan.
+Schedule::command('sla:escalate')->everyThirtyMinutes()->timezone('Asia/Makassar');
