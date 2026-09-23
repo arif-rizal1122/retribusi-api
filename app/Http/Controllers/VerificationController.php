@@ -112,6 +112,9 @@ class VerificationController extends Controller
             });
         }
 
+        // Isolasi Wilayah I / Wilayah II — data hanya sebatas domain user.
+        \App\Support\TaxDomainHelper::applyDomainScope($query);
+
         if ($request->has('status')) {
             if (is_array($request->status)) {
                 $query->whereIn('status', $request->status);

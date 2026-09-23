@@ -49,6 +49,9 @@ class TaxObjectController extends Controller
             }
         }
 
+        // Isolasi Wilayah I / Wilayah II — data hanya sebatas domain pajak user.
+        \App\Support\TaxDomainHelper::applyDomainScope($query);
+
         if ($request->has('retribution_type_id')) {
             $query->where('retribution_type_id', $request->retribution_type_id);
         }

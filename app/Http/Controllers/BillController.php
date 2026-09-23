@@ -70,6 +70,9 @@ class BillController extends Controller
             }
         }
 
+        // Isolasi Wilayah I / Wilayah II — data hanya sebatas domain pajak user.
+        \App\Support\TaxDomainHelper::applyDomainScope($query);
+
         if ($request->has('status')) {
             if ($request->status === 'overdue') {
                 $query->where('status', 'pending')

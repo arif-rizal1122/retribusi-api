@@ -26,6 +26,9 @@ class SpotCheckController extends Controller
             $query->where('tax_object_id', $request->tax_object_id);
         }
 
+        // Isolasi Wilayah I / Wilayah II — sebatas domain pajak user.
+        \App\Support\TaxDomainHelper::applyDomainScope($query);
+
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }

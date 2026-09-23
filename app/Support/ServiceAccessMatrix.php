@@ -166,7 +166,15 @@ class ServiceAccessMatrix
     public const FOCUS_SERVICES = [
         'pendataan'  => ['PBB-P2', 'BPHTB', 'REKLAME', 'MBLB', 'WALET', 'OPSEN-PKB',
                          'PBJT-PRK', 'PBJT-FOOD', 'PBJT-HTL', 'PBJT-HBR', 'PBJT-LISTRIK', 'AIR-TANAH'],
-        'penagihan'  => ['PENAGIHAN', 'PELAPORAN'],
+        // Kasubid Penagihan tupoksinya "Penagihan, VERIFIKASI & Pelaporan"
+        // (lihat metadata akun: role_code kasubid_penagihan_wilN). Karena itu
+        // ia harus memegang layanan pajak wilayahnya juga — bukan hanya
+        // PENAGIHAN/PELAPORAN — supaya bisa memverifikasi dokumen.
+        // Filter domain di servicesForRole() otomatis memangkas daftar ini
+        // ke layanan wilayah masing-masing (W1 atau W2).
+        'penagihan'  => ['PBB-P2', 'BPHTB', 'REKLAME', 'MBLB', 'WALET', 'OPSEN-PKB',
+                         'PBJT-PRK', 'PBJT-FOOD', 'PBJT-HTL', 'PBJT-HBR', 'PBJT-LISTRIK', 'AIR-TANAH',
+                         'PENAGIHAN', 'PELAPORAN'],
         'pengawasan' => ['PENGAWASAN'],
         'koordinasi' => ['MASTER_DATA', 'PELAPORAN'],
         'all'        => [], // kosong = semua layanan dalam domainnya

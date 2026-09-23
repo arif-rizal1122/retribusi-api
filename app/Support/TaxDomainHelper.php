@@ -70,8 +70,9 @@ class TaxDomainHelper
             'classification_codes' => [
                 'PBB-P2', 'BPHTB', 'REKLAME', 'MBLB', 'WALET', 'OPSEN-PKB', 'OPSEN-BBNKB',
             ],
-            // ID tipe retribusi/pajak resmi Baubau (Dokumen Regulasi Perda 1/2024)
-            'retribution_type_ids' => [186, 187, 188, 189, 190, 191],
+            // ID klasifikasi (retribution_classifications) — BUKAN retribution_types.
+            // 186 PBB-P2 | 187 BPHTB | 188 Reklame | 189 MBLB | 190 Walet | 191 Opsen
+            'classification_ids' => [186, 187, 188, 189, 190, 191],
             'approval_gates' => [
                 'pbb_mutation',
                 'pbb_reversal',
@@ -85,8 +86,10 @@ class TaxDomainHelper
             'classification_codes' => [
                 'PBJT-FOOD', 'PBJT-HTL', 'PBJT-HBR', 'PBJT-PRK', 'PBJT-LISTRIK', 'AIR-TANAH',
             ],
-            // 172: PBJT Parkir, 192-196: PBJT Makanan/Hotel/Hiburan/Listrik, 197: Air Tanah
-            'retribution_type_ids' => [172, 192, 193, 194, 195, 196, 197],
+            // ID klasifikasi (retribution_classifications) — BUKAN retribution_types.
+            // 172 Parkir | 192 Makan-Minum | 193 Hotel | 194 Hiburan
+            // 195 Hiburan Malam | 196 Listrik | 197 Air Tanah
+            'classification_ids' => [172, 192, 193, 194, 195, 196, 197],
             'approval_gates' => [
                 'pbjt_self_assessment',
                 'penalty_waiver',
@@ -237,5 +240,70 @@ class TaxDomainHelper
         }
 
         return false;
+    }
+
+    /**
+     * Terapkan filter domain wilayah pada query Eloquent.
+     *
+     * Dipakai controller agar data yang tampil SESUAI wilayah user.
+     * Sebelumnya hanya matriks di ServiceAccessMatrix yang tahu soal wilayah,
+     * tetapi query data tidak pernah disaring -> Kabid Wilayah I bisa melihat
+     * data Wilayah II. Method ini menutup celah tersebut.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $column  kolom retribution_type_id (opsional)
+     */
+    /**
+     * Dapatkan daftar ID klasifikasi (retribution_classifications) untuk domain.
+     *
+     * @return int[]
+     */
+    public static function getClassificationIds(string $domain): array
+    {
+        return self::DOMAIN_CONFIG[$domain]['classification_ids'] ?? [];
+    }
+
+    /**
+     * Terapkan filter domain wilayah pada query Eloquent.
+     */
+    public static function applyDomainScope($query, ?string $column = null): void
+    {
+        $user = auth()->user();
+        if (! $user || $user instanceof Taxpayer) {
+            return; // warga tidak lewat jalur ini
+        }
+
+        $domain = self::getDomain($user);
+
+        // Role lintas wilayah (admin, kepala_bapenda, pengawas, ...) tidak dibatasi.
+        if ($domain === self::DOMAIN_ALL) {
+            return;
+        }
+
+        $classIds = self::getClassificationIds($domain);
+        if (empty($classIds)) {
+            return;
+        }
+
+        if ($column) {
+            $query->whereIn($column, $classIds);
+            return;
+        }
+
+        // Kolom nyata di tax_objects adalah `retribution_classification_id`.
+        //
+        // PENTING: kalau query sudah menyasar tabel `tax_objects` sendiri,
+        // whereHas('taxObject') tidak akan cocok (relasi ke diri sendiri tidak
+        // ada) -> hasilnya 0 baris. Deteksi dari nama tabel lalu filter langsung.
+        $table = $query->getModel()->getTable();
+
+        if ($table === 'tax_objects') {
+            $query->whereIn('retribution_classification_id', $classIds);
+            return;
+        }
+
+        $query->whereHas('taxObject', function ($q) use ($classIds) {
+            $q->withoutGlobalScopes()->whereIn('retribution_classification_id', $classIds);
+        });
     }
 }

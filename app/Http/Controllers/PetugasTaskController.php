@@ -29,6 +29,26 @@ class PetugasTaskController extends Controller
             });
         }
 
+        // Isolasi Wilayah I / Wilayah II — sebatas domain pajak user.
+        // Tugas penyidikan/penagihan lapangan tidak selalu terikat objek pajak
+        // (71/71 baris punya tax_object_id NULL). Tugas tanpa objek TIDAK bisa
+        // dipetakan ke wilayah, jadi dibiarkan tampil — menyaringnya
+        // berdasarkan relasi akan mengosongkan daftar tanpa alasan.
+        // Yang disaring: tugas yang PUNYA objek, harus sesuai wilayah user.
+        $dom = \App\Support\TaxDomainHelper::getDomain($user);
+        if ($dom !== \App\Support\TaxDomainHelper::DOMAIN_ALL) {
+            $clsIds = \App\Support\TaxDomainHelper::getClassificationIds($dom);
+            if (! empty($clsIds)) {
+                $query->where(function ($q) use ($clsIds) {
+                    $q->whereNull('tax_object_id')
+                      ->orWhereHas('taxObject', fn ($t) => $t->withoutGlobalScopes()
+                            ->whereIn('retribution_classification_id', $clsIds))
+                      ->orWhereHas('verification.taxObject', fn ($t) => $t->withoutGlobalScopes()
+                            ->whereIn('retribution_classification_id', $clsIds));
+                });
+            }
+        }
+
         // Filter status all, pending, completed
         if ($request->has('status') && in_array($request->status, ['pending', 'completed'])) {
             $query->where('status', $request->status);
