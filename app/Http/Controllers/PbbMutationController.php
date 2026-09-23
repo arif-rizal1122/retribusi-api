@@ -558,6 +558,39 @@ class PbbMutationController extends Controller
     }
 
     /**
+     * Riwayat Penugasan Mutasi Petugas Lapangan
+     */
+    public function myAssignments(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $query = PbbMutation::with(['splitItems', 'user', 'assignedOfficer'])
+            ->where('assigned_officer_id', $user->id);
+
+        if ($request->filled('status')) {
+            $query->where('status', strtoupper($request->status));
+        }
+
+        if ($request->filled('search')) {
+            $s = trim($request->search);
+            $query->where(function ($q) use ($s) {
+                $q->where('ticket_no', 'like', "%{$s}%")
+                    ->orWhere('parent_nop', 'like', "%{$s}%")
+                    ->orWhere('applicant_nik', 'like', "%{$s}%")
+                    ->orWhere('applicant_name', 'like', "%{$s}%");
+            });
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $query->latest()->get(),
+        ]);
+    }
+
+    /**
      * Detail Mutasi Tunggal
      */
     public function show($id)
@@ -583,6 +616,8 @@ class PbbMutationController extends Controller
             'rejection_reason' => 'nullable|string',
             'assigned_officer_id' => 'nullable|exists:users,id',
             'survey_notes' => 'nullable|string',
+            'survey_photo' => 'nullable|file|image|max:10240',
+            'survey_metadata' => 'nullable',
         ]);
 
         if ($validator->fails()) {
@@ -605,6 +640,22 @@ class PbbMutationController extends Controller
                 $updateData['notes'] = $request->notes;
             }
 
+            if ($request->hasFile('survey_photo')) {
+                $file = $request->file('survey_photo');
+                $path = $file->store('pbb/mutations/surveys', 'public');
+                $updateData['survey_photo_path'] = $path;
+            }
+
+            if ($request->filled('survey_notes')) {
+                $updateData['survey_notes'] = $request->survey_notes;
+            }
+
+            if ($request->has('survey_metadata')) {
+                $updateData['survey_metadata'] = is_array($request->survey_metadata)
+                    ? $request->survey_metadata
+                    : json_decode($request->survey_metadata, true);
+            }
+
             if ($newStatus === 'VERIFIED_L1') {
                 $updateData['verified_l1_by'] = $user?->id;
                 $updateData['verified_l1_at'] = now();
@@ -612,9 +663,8 @@ class PbbMutationController extends Controller
                 $updateData['verified_l2_by'] = $user?->id;
                 $updateData['verified_l2_at'] = now();
             } elseif ($newStatus === 'SURVEY') {
-                $updateData['assigned_officer_id'] = $request->assigned_officer_id;
-                if ($request->filled('survey_notes')) {
-                    $updateData['survey_notes'] = $request->survey_notes;
+                if ($request->filled('assigned_officer_id')) {
+                    $updateData['assigned_officer_id'] = $request->assigned_officer_id;
                 }
             } elseif ($newStatus === 'REJECTED') {
                 $updateData['rejection_reason'] = $request->rejection_reason;

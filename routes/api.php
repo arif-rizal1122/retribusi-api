@@ -486,7 +486,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/pbb/bapenda/nop-applications/{id}/status', [\App\Http\Controllers\PbbNopApplicationController::class, 'updateStatus'])
             ->middleware('role:admin,kepala_bapenda,kasubid_pendataan,petugas,opd');
 
-        // Mutasi PBB (Admin: 3-Tier Governance Matrix)
+        // Mutasi PBB (Admin: 3-Tier Governance Matrix & Petugas Survey)
+        Route::get('/pbb/mutations/my-assignments', [\App\Http\Controllers\PbbMutationController::class, 'myAssignments']);
         Route::get('/pbb/mutations', [\App\Http\Controllers\PbbMutationController::class, 'index']);
         Route::get('/pbb/mutations/{id}', [\App\Http\Controllers\PbbMutationController::class, 'show']);
         Route::post('/pbb/mutations/{id}/status', [\App\Http\Controllers\PbbMutationController::class, 'updateStatus'])
