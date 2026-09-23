@@ -37,6 +37,9 @@ class RoleResolver
         'kasubid_penagihan_wil1' => ['name' => 'Kasubid Penagihan, Verifikasi & Pelaporan Wilayah I', 'category' => 'instansi', 'core_role' => 'admin', 'group' => 'admin'],
         'kasubid_penagihan_wil2' => ['name' => 'Kasubid Penagihan, Verifikasi & Pelaporan Wilayah II', 'category' => 'instansi', 'core_role' => 'admin', 'group' => 'admin'],
         'kasubid_pengembangan' => ['name' => 'Kasubid Koordinasi, Kerjasama & Pengembangan', 'category' => 'instansi', 'core_role' => 'admin', 'group' => 'admin'],
+        // Kasubid Pengawasan & Pengendalian (Wasdal) — digabung ke satu role.
+        // Menampung nomenklatur "Kasubid Wasdal" tanpa role baru, sesuai keputusan owner.
+        'kasubid_pengawas' => ['name' => 'Kasubid Pengawasan & Pengendalian (Wasdal)', 'category' => 'instansi', 'core_role' => 'admin', 'group' => 'audit'],
         'bpkad' => ['name' => 'BPKAD', 'category' => 'instansi', 'core_role' => 'opd', 'group' => 'opd'],
         'kpp_pratama' => ['name' => 'KPP Pratama', 'category' => 'instansi', 'core_role' => 'viewer', 'group' => 'viewer'],
         'atr_bpn' => ['name' => 'ATR / BPN', 'category' => 'instansi', 'core_role' => 'opd', 'group' => 'opd'],
@@ -69,6 +72,9 @@ class RoleResolver
         'notaris' => 'notaris_ppat',
         'admin_pertanahan' => 'pertanahan',
         'dispertanahan' => 'pertanahan',
+        // Nomenklatur Wasdal digabung ke kasubid_pengawas (keputusan owner 23 Sep 2026).
+        'kasubid_wasdal' => 'kasubid_pengawas',
+        'wasdal' => 'kasubid_pengawas',
     ];
 
     /** Role inti sistem → grup dashboard (sama dengan CORE_ROLE_TO_GROUP di FE). */
