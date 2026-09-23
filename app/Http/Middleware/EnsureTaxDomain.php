@@ -21,8 +21,9 @@ use Symfony\Component\HttpFoundation\Response;
  *   ->middleware('tax_domain:wilayah_1,wilayah_2')
  *
  * Aturan:
- * - `super_admin` dan `admin` berpeta ke DOMAIN_ALL → SELALU lolos
- *   (mereka memang lintas wilayah, lihat TaxDomainHelper::getDomain).
+ * - Role dalam `TaxDomainHelper::CROSS_WILAYAH_ROLES` (admin, super_admin,
+ *   kepala_bapenda, kasubid_pengembangan, kasubid_pengawas, dll) → SELALU lolos.
+ *   Daftarnya ada di satu tempat agar tidak tercecer seperti daftar hardcoded.
  * - Warga (Taxpayer) tidak pernah lolos gate internal ini.
  * - Parameter kosong → DITOLAK (fail-closed).
  * - User tanpa metadata domain (fallback DOMAIN_ALL) → DITOLAK saat route
@@ -49,18 +50,18 @@ class EnsureTaxDomain
             ], 403);
         }
 
-        // Platform/teknis: lintas wilayah.
-        if ($user->role === 'super_admin') {
-            return $next($request);
-        }
-
         $domain = TaxDomainHelper::getDomain($user);
 
-        // Domain ALL hanya sah untuk role yang memang lintas wilayah
-        // (admin / super_admin). Role wilayah yang metadata-nya kosong
-        // TIDAK boleh lolos — kalau lolos, itu fail-open.
+        // Domain ALL sah HANYA untuk role yang memang bertugas lintas wilayah
+        // (lihat TaxDomainHelper::CROSS_WILAYAH_ROLES — rujukan tunggal).
+        //
+        // Dua kondisi berbeda yang sama-sama menghasilkan domain 'all':
+        //   (a) role lintas wilayah yang memang berhak  -> lolos
+        //   (b) role wilayah yang metadata-nya KOSONG   -> DITOLAK (fail-closed)
+        // Kondisi (b) yang dulu jadi celah: akun Kabid tanpa metadata ikut
+        // mendapat 'all' lalu bisa menembus kedua wilayah.
         if ($domain === TaxDomainHelper::DOMAIN_ALL) {
-            if (in_array($user->role, ['admin', 'super_admin'], true)) {
+            if (TaxDomainHelper::isCrossWilayahRole($user->role)) {
                 return $next($request);
             }
 

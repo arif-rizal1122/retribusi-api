@@ -20,6 +20,49 @@ class TaxDomainHelper
     public const DOMAIN_WILAYAH_2 = 'wilayah_2';
     public const DOMAIN_ALL = 'all';
 
+    /**
+     * Role yang SAH mengemban penugasan lintas wilayah (domain 'all').
+     *
+     * Dipakai sebagai rujukan tunggal saat memutuskan apakah pemegang
+     * domain 'all' boleh melewati gate route wilayah. Tanpa daftar ini,
+     * gate hanya mengenali 'admin'/'super_admin' sehingga fungsi koordinasi
+     * (Kasubid Pengembangan) dan pengawasan (Kasubid Wasdal) yang memang
+     * lintas wilayah ikut tertolak.
+     *
+     * Basis penugasan: docs/00_kebijakan_strategis/TUPOKSI_KABID_KASUBID_WILAYAH_I_II.md
+     * - kepala_bapenda      : memimpin seluruh bidang pajak daerah
+     * - admin / super_admin : pengelola sistem, lintas wilayah
+     * - kasubid_pengembangan: koordinasi lintas OPD & kerjasama pengembangan
+     * - kasubid_pengawas    : pengawasan & pengendalian (Wasdal) seluruh wilayah
+     * - kasubid_pendataan   : Checker Level 2 PBB-P2 lintas bidang
+     * - pengawas / kabid_pengawas / inspektur : fungsi audit & pengawasan
+     * - walikota / sekda / bapperida / bpk / dprd : pengawasan eksternal-eksekutif
+     */
+    public const CROSS_WILAYAH_ROLES = [
+        'super_admin',
+        'admin',
+        'kepala_bapenda',
+        'kasubid_pengembangan',
+        'kasubid_pengawas',
+        'kasubid_pendataan',
+        'pengawas',
+        'kabid_pengawas',
+        'inspektur',
+        'walikota',
+        'sekda',
+        'bapperida',
+        'bpk',
+        'pimpinan_dprd',
+    ];
+
+    /**
+     * Apakah role ini sah bertugas lintas wilayah (domain 'all').
+     */
+    public static function isCrossWilayahRole(?string $role): bool
+    {
+        return $role !== null && in_array($role, self::CROSS_WILAYAH_ROLES, true);
+    }
+
     public const DOMAIN_CONFIG = [
         self::DOMAIN_WILAYAH_1 => [
             'name' => 'Bidang Pajak Daerah Wilayah I',

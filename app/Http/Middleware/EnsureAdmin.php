@@ -24,25 +24,22 @@ class EnsureAdmin
             ], 403);
         }
 
-        // Allow all internal staff roles defined in User model constants
-        $allowedRoles = [
-            \App\Models\User::ROLE_SUPER_ADMIN,
-            \App\Models\User::ROLE_ADMIN,
-            \App\Models\User::ROLE_OPD,
-            \App\Models\User::ROLE_PENGAWAS,
-            \App\Models\User::ROLE_KABID_PENGAWAS,
-            \App\Models\User::ROLE_KASUBID_PENGAWAS,
-            \App\Models\User::ROLE_KASUBID_PENDATAAN,
-            \App\Models\User::ROLE_PETUGAS,
-            \App\Models\User::ROLE_WALIKOTA,
-            \App\Models\User::ROLE_ADMIN_PTSP,
-            \App\Models\User::ROLE_KEPALA_BAPENDA,
-            \App\Models\User::ROLE_NOTARIS,
-            'verifikator', // Legacy/other roles
-            'viewer'
-        ];
-        
-        if (!in_array($user->role, $allowedRoles)) {
+        // Daftar role aparatur diambil dari RoleResolver (satu sumber kebenaran).
+        // Sebelumnya daftar ini di-hardcode di sini, sehingga setiap role baru
+        // (mis. kabid_wilayah_1/2, kasubid_pendataan_wil1/2) otomatis tertolak
+        // 403 sampai middleware ini ikut diedit — sumber bug berulang.
+        $allowedRoles = array_merge(
+            array_keys(\App\Support\RoleResolver::CORE_ROLE_GROUPS),
+            array_keys(\App\Support\RoleResolver::ROLE_MATRIX),
+            array_keys(\App\Support\RoleResolver::ROLE_ALIASES),
+            [\App\Models\User::ROLE_WALIKOTA]
+        );
+
+        // Role warga/citizen TIDAK boleh masuk — endpoint aparatur tertutup untuk mereka.
+        $wargaRoles = ['warga', 'citizen', 'wajib_pajak'];
+        $allowedRoles = array_values(array_diff(array_unique($allowedRoles), $wargaRoles));
+
+        if (!in_array($user->role, $allowedRoles, true)) {
             return response()->json([
                 'message' => 'Forbidden: You do not have the required role to access this resource.'
             ], 403);

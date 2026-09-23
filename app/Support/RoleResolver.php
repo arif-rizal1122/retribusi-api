@@ -40,6 +40,9 @@ class RoleResolver
         // Kasubid Pengawasan & Pengendalian (Wasdal) — digabung ke satu role.
         // Menampung nomenklatur "Kasubid Wasdal" tanpa role baru, sesuai keputusan owner.
         'kasubid_pengawas' => ['name' => 'Kasubid Pengawasan & Pengendalian (Wasdal)', 'category' => 'instansi', 'core_role' => 'admin', 'group' => 'audit'],
+        // Kasubid Pendataan lintas bidang (Checker Level 2 PBB-P2).
+        // Berbeda dari kasubid_pendataan_wil1/wil2 yang terikat satu wilayah.
+        'kasubid_pendataan' => ['name' => 'Kasubid Pendataan (Checker L2 lintas bidang)', 'category' => 'instansi', 'core_role' => 'admin', 'group' => 'admin'],
         'bpkad' => ['name' => 'BPKAD', 'category' => 'instansi', 'core_role' => 'opd', 'group' => 'opd'],
         'kpp_pratama' => ['name' => 'KPP Pratama', 'category' => 'instansi', 'core_role' => 'viewer', 'group' => 'viewer'],
         'atr_bpn' => ['name' => 'ATR / BPN', 'category' => 'instansi', 'core_role' => 'opd', 'group' => 'opd'],
@@ -100,6 +103,7 @@ class RoleResolver
         'kasubid_penagihan_wil1' => 'admin',
         'kasubid_penagihan_wil2' => 'admin',
         'kasubid_pengembangan' => 'admin',
+        'kasubid_pendataan' => 'admin',
         'admin_ptsp' => 'opd',
         'admin_pertanahan' => 'opd',
         'pertanahan' => 'opd',
