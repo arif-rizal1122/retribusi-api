@@ -52,3 +52,4 @@ database/seeders/ProductionMainCredentialsSeeder.php
 .AppleDouble
 .LSOverride
 ._*
+storage/backup_pwd_*.csv
