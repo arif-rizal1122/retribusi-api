@@ -49,8 +49,9 @@ class StagingUsersSeeder extends Seeder
 
         // 3. Mobile/Citizen Staging (mpad.online)
         Taxpayer::updateOrCreate(
-            ['nik' => '0000000000000001', 'email' => 'wajibpajak@mpad.online'],
+            ['email' => 'wajibpajak@mpad.online'],
             [
+                'nik' => '0000000000000001',
                 'name' => 'Staging Mobile User',
                 'password' => Hash::make('password123'),
                 'address' => 'Kota Baubau Staging',
@@ -60,13 +61,37 @@ class StagingUsersSeeder extends Seeder
             ]
         );
 
-        // 4. Kasubid Pendataan (kasubid_pendataan@mpad.online)
+        // 4. Kasubid Pendataan / Ibu Salma (kasubid_pendataan@mpad.online)
         User::updateOrCreate(
             ['email' => 'kasubid_pendataan@mpad.online'],
             [
-                'name' => 'Kasubid Pendataan',
+                'name' => 'Kasubid Pendataan (Ibu Salma)',
                 'password' => Hash::make('password123'),
                 'role' => 'kasubid_pendataan',
+                'opd_id' => $opdId,
+                'status' => 'active',
+            ]
+        );
+
+        // 5. Kabid Pajak Daerah / Ibu Ochi (kabid_pajak@mpad.online)
+        User::updateOrCreate(
+            ['email' => 'kabid_pajak@mpad.online'],
+            [
+                'name' => 'Kabid Pajak Daerah (Ibu Ochi)',
+                'password' => Hash::make('password123'),
+                'role' => 'kepala_bapenda',
+                'opd_id' => $opdId,
+                'status' => 'active',
+            ]
+        );
+
+        // 6. Staf Pelayanan Loket / Ibu Yani (staf_pelayanan@mpad.online)
+        User::updateOrCreate(
+            ['email' => 'staf_pelayanan@mpad.online'],
+            [
+                'name' => 'Staf Pelayanan Bapenda (Ibu Yani)',
+                'password' => Hash::make('password123'),
+                'role' => 'opd',
                 'opd_id' => $opdId,
                 'status' => 'active',
             ]
