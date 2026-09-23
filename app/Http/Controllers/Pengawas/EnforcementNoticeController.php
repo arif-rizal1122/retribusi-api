@@ -7,6 +7,7 @@ use App\Models\EnforcementNotice;
 use App\Models\TaxObject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Support\ServiceAccessMatrix;
 
 class EnforcementNoticeController extends Controller
 {
@@ -14,8 +15,10 @@ class EnforcementNoticeController extends Controller
     {
         $user = $request->user();
         
-        // Only Pengawas roles (and super admin, admin, petugas, opd) can view enforcement notices
-        if (!$user->isSuperAdmin() && !$user->isPengawas() && $user->role !== 'petugas' && $user->role !== 'opd') {
+        // Guard berbasis matriks layanan (menggantikan daftar role hardcoded).
+        // Kabid/Kasubid Pengawasan punya aksi 'enforce' pada layanan PENGAWASAN,
+        // sehingga otomatis lolos tanpa perlu menyunting daftar role lagi.
+        if (!$this->canAccessEnforcement($user)) {
             return response()->json(['message' => 'Unauthorized. Only Supervisor, Petugas, and OPD roles can view enforcement notices.'], 403);
         }
 
@@ -32,8 +35,8 @@ class EnforcementNoticeController extends Controller
     {
         $user = $request->user();
         
-        // Only Pengawas roles (and super admin, admin, petugas, opd) can create enforcement notices
-        if (!$user->isSuperAdmin() && !$user->isPengawas() && $user->role !== 'petugas' && $user->role !== 'opd') {
+        // Guard berbasis matriks layanan (lihat canAccessEnforcement).
+        if (!$this->canAccessEnforcement($user)) {
             return response()->json(['message' => 'Unauthorized. Only Supervisor, Petugas, and OPD roles can create enforcement notices.'], 403);
         }
 
@@ -154,5 +157,26 @@ class EnforcementNoticeController extends Controller
             ->get();
 
         return response()->json($history);
+    }
+
+    /**
+     * Boleh mengakses surat penegakan?
+     *
+     * Urutan: super admin → role lama (pengawas/petugas/opd) → matriks layanan
+     * (role berbasis layanan seperti kabid/kasubid yang punya aksi 'enforce').
+     */
+    private function canAccessEnforcement($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+        if ($user->isSuperAdmin() || $user->isPengawas()) {
+            return true;
+        }
+        if (in_array($user->role, ['petugas', 'opd'], true)) {
+            return true;
+        }
+        // Role berbasis layanan: cek aksi 'enforce' pada layanan PENGAWASAN.
+        return ServiceAccessMatrix::can($user->role, 'PENGAWASAN', ServiceAccessMatrix::ACT_ENFORCE);
     }
 }
