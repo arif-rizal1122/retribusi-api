@@ -704,8 +704,12 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             $user = $request->user();
             $domain = \App\Support\TaxDomainHelper::getDomain($user);
 
+            // Tahan dua model auth: User (petugas) punya kolom role,
+            // Taxpayer (warga) tidak — jangan sampai TypeError jadi 500.
+            $role = $user->role ?? ($user instanceof \App\Models\Taxpayer ? 'warga' : null);
+
             return response()->json([
-                'role' => $user->role,
+                'role' => $role,
                 'tax_domain' => $domain,
                 'classification_codes' => \App\Support\TaxDomainHelper::getClassificationCodes($domain),
                 'retribution_type_ids' => \App\Support\TaxDomainHelper::getRetributionTypeIds($domain),

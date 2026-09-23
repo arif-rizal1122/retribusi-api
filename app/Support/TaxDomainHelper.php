@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Taxpayer;
 use App\Models\User;
 
 /**
@@ -51,11 +52,23 @@ class TaxDomainHelper
     ];
 
     /**
-     * Dapatkan domain pajak untuk user.
+     * Dapatkan domain pajak untuk subjek auth.
+     *
+     * Menerima dua model karena endpoint /api/me melayani dua jenis token:
+     * - App\Models\User    → petugas/admin Bapenda (punya role & metadata wilayah)
+     * - App\Models\Taxpayer → wajib pajak / warga (TIDAK punya konsep wilayah)
+     *
+     * Taxpayer selalu dipetakan ke DOMAIN_ALL karena cakupan datanya dibatasi
+     * per-NOP, bukan per-wilayah bidang.
      */
-    public static function getDomain(?User $user): string
+    public static function getDomain(User|Taxpayer|null $user): string
     {
         if (! $user) {
+            return self::DOMAIN_ALL;
+        }
+
+        // Warga hanya melihat objek pajaknya sendiri; wilayah tidak relevan.
+        if ($user instanceof Taxpayer) {
             return self::DOMAIN_ALL;
         }
 
