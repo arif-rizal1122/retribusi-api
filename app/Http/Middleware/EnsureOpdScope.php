@@ -23,6 +23,7 @@ class EnsureOpdScope
         'admin',
         'walikota',
         'kepala_bapenda',
+        'kasubid_pendataan',
         'viewer',
         'pengawas',
         'kabid_pengawas',
