@@ -330,3 +330,84 @@ Selain form keputusan di atas, admin memeriksa dan memvalidasi data spesifik ber
 | **Skenario 7 (Pembatalan NOP Ganda / Musnah)** | • **NOP Target Pembatalan**: Memverifikasi nomor NOP yang akan dihapus.<br>• **Kode Alasan Pembatalan**: Memilih/memvalidasi salah satu alasan: `NOP_GANDA` (Duplikasi/Overlap), `TANAH_MUSNAH` (Bencana alam/abrasi), atau `FASILITAS_UMUM` (Pembebasan jalan/fasum).<br>• **Nomor SK Pembatalan**: Input nomor Berita Acara / Surat Keputusan pembatalan ketetapan. |
 
 Dengan skema ini, proses pelayanan PBB di Admin berjalan transparan, akuntabel, dan bebas celah sengketa karena setiap penerbitan NOP atau mutasi tercatat lengkap mulai dari petugas survei hingga pejabat penetap.
+
+
+
+
+Skema **Zero Internet dengan Offline-First** untuk petugas lapangan adalah **solusi yang SANGAT TEPAT, KRUSIAL, dan WAJIB** untuk aplikasi operasional lapangan seperti `retribusi-petugas`.
+
+Berikut adalah analisis mendalam mengapa skema ini sangat bagus, potensi tantangan, dan blueprint implementasinya:
+
+---
+
+### 1. Mengapa Ini Keputusan yang Sangat Tepat?
+
+1. **Menghilangkan *Blocker* di Lapangan (Zero Downtime)**
+   * Kondisi geografis Kota Baubau (wilayah perbukitan Sorawolio, pesisir Lea-Lea, atau lorong-lorong padat) kerap mengalami *dead zone* sinyal.
+   * Jika aplikasi bergantung pada internet hidup: petugas akan frustrasi karena tombol *submit* berputar terus (*loading*), *timeout*, atau bahkan form-nya *reset* dan petugas terpaksa foto ulang.
+   * Dengan *Offline-First*: petugas bekerja mulus tanpa jeda: buka kamera, jepret foto, beri catatan, simpan $\rightarrow$ **Selesai dalam 3 detik**.
+
+2. **Menjaga Validitas Bukti & Anti-Fraud**
+   * Jika aplikasi harus online, petugas sering mengakali dengan cara: pergi dulu ke tempat yang ada sinyal (misalnya di jalan raya), baru mengambil foto/mengirim data. Akibatnya: **koordinat GPS meleset jauh dari objek pajak aslinya (> 100 meter)**.
+   * Dengan *Offline-First*: koordinat GPS dan foto dikunci di lokasi patok asli menggunakan sensor satelit HP saat itu juga.
+
+3. **Efisiensi Baterai & Kuota HP Petugas**
+   * Mencoba upload file foto berulang-ulang di sinyal yang lemah menguras baterai HP dan boros kuota.
+   * Menyimpan dulu di memori HP, lalu mengunggah sekaligus saat sinyal stabil/ada Wi-Fi kantor jauh lebih hemat energi dan cepat.
+
+---
+
+### 2. Arsitektur Skema yang Ideal (3 Pilar Utama)
+
+Agar skema ini berjalan aman tanpa resiko kehilangan data (*data loss*) atau duplikasi data, berikut 3 pilar yang diterapkan:
+
+```
+┌────────────────────────────────────────────────────────┐
+│                   Aplikasi Petugas                     │
+│                                                        │
+│  [1. Pagi di Kantor / Ada Sinyal]                      │
+│     Pre-fetch daftar tugas hari ini ke Cache Lokal     │
+│                                                        │
+│  [2. Di Lapangan Blank Spot / Zero Internet]           │
+│     - Buka detail tugas dari Cache Lokal               │
+│     - Jepret foto & Watermark koordinat satelit        │
+│     - Simpan payload survei ke IndexedDB Lokal         │
+│     - Tanda: "Tersimpan di HP (Antrean #1)"            │
+│                                                        │
+│  [3. Kembali Mendapat Sinyal / Wi-Fi]                  │
+│     - Event listener 'online' aktif                    │
+│     - Auto-Sync kirim antrean ke retribusi-api         │
+│     - Validasi Idempotency (cegah kirim ganda)         │
+│     - Hapus antrean lokal setelah API balas 200 OK     │
+└────────────────────────────────────────────────────────┘
+```
+
+#### A. Penyimpanan Antrean (IndexedDB)
+Gunakan **IndexedDB** di browser HP (bukan `localStorage`), karena IndexedDB mampu menampung puluhan foto beresolusi terkompresi (WebP/JPEG 300KB) dengan kapasitas hingga ratusan Megabyte tanpa membuat browser lambat.
+
+#### B. Mekanisme Idempotensi (Anti Duplikasi)
+Setiap input survei diberi `client_sync_id` (UUID unik). Jika internet putus-nyambung saat proses pengiriman, backend `retribusi-api` mengenali UUID tersebut dan tidak akan menyimpan survei ganda jika request terkirim lebih dari sekali.
+
+#### C. Indikator Status Transparan di UI Petugas
+Petugas harus tahu persis status datanya:
+* **Badge Mengambang (Floating Pill)** di atas layar:  
+  * 🟢 *"Semua data tersinkron"*
+  * 🟡 *"2 Survei tersimpan di HP (Menunggu Sinyal)"* + Tombol **[Sinkronkan Sekarang]**.
+
+---
+
+### 3. Ekosistem Sudah Siap Mengadopsinya
+
+Di repositori `retribusi-petugas`, fondasi ini sebenarnya **sudah berhasil kita gunakan** pada tiket wisata offline (`offlineTicketStore.ts` & `qrisService.ts`). 
+
+Kita tinggal membuat modul serupa untuk survei lapangan, misalnya `surveyOfflineStore.ts`:
+1. Saat petugas klik *"Simpan Hasil Survei"*:
+   - Cek `navigator.onLine`.
+   - Jika online $\rightarrow$ langsung kirim ke API.
+   - Jika offline atau API timeout $\rightarrow$ simpan ke IndexedDB antrean survei, lalu notifikasi *"Hasil survei tersimpan aman di HP. Akan otomatis dikirim saat ada sinyal."*
+2. Saat koneksi pulih $\rightarrow$ antrean otomatis terkirim.
+
+**Kesimpulan:**  
+Idenya **sangat direkomendasikan** dan akan menjadikan aplikasi petugas tangguh (*bulletproof*) di segala kondisi medan Kota Baubau. 
+
+Apakah Anda ingin kita langsung buatkan modul antrean offline survei ini di `retribusi-petugas`?

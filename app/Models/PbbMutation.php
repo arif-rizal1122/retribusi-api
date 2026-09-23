@@ -16,6 +16,8 @@ class PbbMutation extends Model
         'applicant_name',
         'applicant_phone',
         'applicant_address',
+        'latitude',
+        'longitude',
         'parent_nop',
         'status',
         'notes',
@@ -48,6 +50,8 @@ class PbbMutation extends Model
     ];
 
     protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
         'correction_data' => 'array',
         'merged_source_nops_json' => 'array',
         'attachment_files' => 'array',

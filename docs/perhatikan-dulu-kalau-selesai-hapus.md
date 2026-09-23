@@ -21,3 +21,5 @@ mpad mewadahi agar bisa terkonek
 kendala di halaman aset
 
 
+cek juga nanti kesesuaian peta untuk kebutuhan admin termasuk di dalamnya titik lokasi yang akan di survei nanti
+
