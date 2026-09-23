@@ -506,6 +506,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         });
 
         Route::apiResource('petugas-tasks', \App\Http\Controllers\PetugasTaskController::class);
+        Route::apiResource('tasks', \App\Http\Controllers\PetugasTaskController::class);
         Route::apiResource('spot-checks', \App\Http\Controllers\SpotCheckController::class);
         Route::patch('spot-checks/{id}/status', [\App\Http\Controllers\SpotCheckController::class, 'updateStatus']);
         Route::get('spot-checks/tax-object/{id}/estimation', [\App\Http\Controllers\SpotCheckController::class, 'getEstimatedRevenue']);

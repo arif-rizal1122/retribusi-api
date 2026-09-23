@@ -217,3 +217,116 @@ Monitoring: Performa Redis Caching dipastikan stabil untuk menangani lonjakan da
 Integritas Data: Pencegahan terhadap race-condition pada pembuatan nomor NOP baru.
 Keabsahan: Jaminan keabsahan e-SPPT yang dihasilkan melalui sistem otoritas berjenjang.
 Pengujian 4 Kuadran: Mencakup Happy Path, Boundary (batas nilai), Concurrency (akses bersamaan), dan Resilience (ketahanan sistem).
+
+
+
+
+
+
+Viewed BRD_PBB_MUTASI_DAN_VERIFIKASI_BERJENJANG.md:1-117
+Viewed PbbMutationsTab.tsx:110-250
+Viewed PbbMutationsTab.tsx:350-545
+Viewed PbbNopApplicationsTab.tsx:100-200
+Viewed PbbNopApplicationsTab.tsx:350-450
+Viewed PbbNopApplicationsTab.tsx:600-750
+Searched for "scenario"
+Searched for "skenario"
+Viewed plan.md:45-92
+Viewed PbbMutationsTab.tsx:100-160
+Viewed PbbMutationsTab.tsx:350-480
+Viewed PbbNopApplicationsTab.tsx:190-320
+Viewed PbbNopApplicationsTab.tsx:980-1100
+Viewed PbbNopApplicationsTab.tsx:1220-1330
+
+Berikut adalah penjelasan lengkap mengenai **skema penugasan di dashboard Admin (`retribusi-admin`)** dan **rincian apa saja yang perlu diinput** untuk menangani **7 Skenario Layanan PBB-P2 Kota Baubau** berdasarkan tata kelola berjenjang (*3-Tier Governance* Bapenda Baubau).
+
+---
+
+### 1. Peta 7 Skenario PBB-P2 di Dashboard Admin
+
+Semua permohonan masuk secara terpusat pada menu **Pajak Bumi & Bangunan (PBB-P2)** ([`PbbBapenda.tsx`](file:///Users/pondokit/Herd/retribusi-admin/src/pages/PbbBapenda.tsx)):
+
+| No | Skenario Layanan | Tab di Admin | Kebutuhan Survei Lapangan? |
+| :--- | :--- | :--- | :--- |
+| **S1** | **Pecah Kavling / Bidang** | *Mutasi PBB* | **Ya** (verifikasi batas bidang baru & jalan akses) |
+| **S2** | **Bangunan Eksisting Tanpa PBG** | *Permohonan NOP* | **Ya** (pendataan fisik bangunan riil & LSPOP) |
+| **S3** | **Pendaftaran Objek Pajak Baru** | *Permohonan NOP* | **Ya** (tinjauan batas fisik & geotagging koordinat) |
+| **S4** | **Pembetulan Data SPPT (Rectification)** | *Mutasi PBB* | **Tidak** (*Paperless* / verifikasi dokumen administrasi) |
+| **S5** | **Balik Nama Penuh (e-BPHTB)** | *Mutasi PBB* | **Tidak** (Otomatis terintegrasi via validasi NTPD H2H) |
+| **S6** | **Penggabungan Multi-NOP** | *Mutasi PBB* | **Kondisional** (jika ada sengketa fisik bidang tanah) |
+| **S7** | **Pembatalan NOP Ganda / Tanah Musnah** | *Mutasi PBB* | **Ya** (uji petik peninjauan fisik / rekonsiliasi GIS) |
+
+---
+
+### 2. Skema Alur Penugasan di Admin
+
+Proses penugasan dan persetujuan mengikuti alur **3 Level + Petugas Lapangan**:
+
+```mermaid
+flowchart TD
+    A[Permohonan Masuk dari Warga / PPAT] --> B[Level 1: Staf Pelayanan / Loket]
+    B -->|Checklist Berkas Valid| C[Level 2: Kasubid Pendataan]
+    B -->|Berkas Tidak Lengkap| R1[Tolak / Minta Perbaikan]
+    
+    C -->|Perlu Cek Fisik Lapangan| D[Disposisi Petugas Surveyor]
+    C -->|Berkas Administratif Cukup| F[Pre-Approve Level 2]
+    
+    D --> E[Aplikasi Petugas Lapangan: Cek Fisik, Foto Geotag, Buat BASL]
+    E -->|BASL & Rekomendasi Terunggah| C
+    
+    F --> G[Level 3: Kabid Pajak Daerah]
+    G -->|Otorisasi SK & Generate 18-Digit NOP| H[Disetujui Definitif & SPPT Terbit]
+    G -->|Data Meragukan| R2[Tolak / Kembalikan]
+```
+
+1. **Level 1 (Staf Pelayanan / Loket)**: Memeriksa kelengkapan berkas pemohon (KTP, bukti kepemilikan, surat kuasa).
+2. **Level 2 (Kasubid Pendataan)**: 
+   - Melakukan telaah teknis fiskal (ZNT, kelas bumi/bangunan).
+   - Memutuskan apakah permohonan memerlukan peninjauan lapangan (*Survei*).
+   - Jika butuh survei, memilih nama petugas lapangan dari dropdown penugasan. Tiket otomatis masuk ke aplikasi `retribusi-petugas`.
+3. **Petugas Lapangan (Surveyor)**: Menerima notifikasi di aplikasi mobile petugas, turun ke lokasi, mengambil foto fisik bergeotag GPS, mengisi Berita Acara Survei Lapangan (BASL), dan memberi rekomendasi teknis (*Layak Terbit NOP* atau *Perlu Koreksi*).
+4. **Level 3 (Kabid Pajak Daerah)**: Menelaah hasil BASL dan menerbitkan Surat Keputusan (SK) definitif serta pengesahan 18-digit NOP SISMIOP.
+
+---
+
+### 3. Apa Saja yang Perlu Diinput di Dashboard Admin
+
+#### A. Input Aksi Penugasan & Keputusan Berjenjang (Form Tindakan)
+
+Ketika admin membuka detail permohonan, terdapat form aksi modal dengan input sebagai berikut:
+
+1. **Jika Menugaskan Survei Lapangan (Status: `SURVEY`)**:
+   - **Pilih Petugas Surveyor Lapangan** *(Wajib)*: Dropdown memilih nama staf petugas lapangan yang bertugas di zonasi tersebut.
+   - **Instruksi Fokus Tinjauan Lapangan** *(Opsional tapi dianjurkan)*: Catatan instruksi khusus bagi petugas (contoh: *"Cek batas patok sebelah timur dan pastikan luas bangunan ruko lantai 2 sesuai"*).
+
+2. **Jika Menyetujui & Menerbitkan NOP (Status: `APPROVED`)**:
+   - **18 Digit NOP SISMIOP** *(Wajib)*: Sistem secara otomatis menyediakan format usulan:
+     $$\text{74.72.KEC.KEL.BLOK-URUT.KODE}$$
+     Admin dapat memakai nomor usulan otomatis tersebut (*Auto-Generate*) atau mengetikkan nomor buku SISMIOP secara manual.
+   - **Checklist Verifikasi Dokumen**:
+     - [x] KTP / Identitas Pemohon atau Kuasa
+     - [x] Sertifikat Tanah / Akta Jual Beli / Alas Hak
+     - [x] Bukti Pelunasan Pajak / Bebas Tunggakan
+     - [x] Kesesuaian Lokasi Fisik & Titik Geotagging
+   - **Catatan Pemeriksaan / SK Penetapan**: Keterangan persetujuan resmi Bapenda.
+
+3. **Jika Menolak / Meminta Perbaikan (Status: `REJECTED`)**:
+   - **Alasan Penolakan Resmi** *(Wajib)*: Penjelasan jelas penyebab penolakan (misal: *"Surat kuasa belum bermaterai"* atau *"Hasil survei menunjukkan luas fisik tanah berbeda dengan sertifikat"*). Pesan ini otomatis tampil di aplikasi warga.
+
+---
+
+#### B. Input & Verifikasi Data Spesifik per Skenario
+
+Selain form keputusan di atas, admin memeriksa dan memvalidasi data spesifik berikut:
+
+| Skenario | Data yang Muncul & Wajib Divalidasi / Diinput Admin |
+| :--- | :--- |
+| **Skenario 1 (Pecah Kavling)** | • **Luas Induk Awal vs Sisa Luas Induk**: Memastikan asas konservasi luas ($\text{Luas Awal} = \text{Luas Sisa} + \sum \text{Luas Pecahan}$).<br>• **Piutang Proporsional**: Memvalidasi nominal pelunasan piutang yang dialokasikan khusus untuk kavling pecahan tersebut agar pecah NOP dapat disetujui tanpa harus melunasi seluruh utang NOP induk yang besar.<br>• **Rincian Pecahan Baru**: Jumlah pecahan kavling dan usulan NOP anak. |
+| **Skenario 2 (Bangunan Tanpa PBG)** | • **Fisik Bangunan Riil**: Input luas lantai bangunan, jumlah lantai, dan jenis konstruksi.<br>• **Klausul Disclaimer Yuridis**: Sistem mengunci bahwa SPPT yang diterbitkan berstatus *"Bukan Bukti Izin PBG"* sesuai asas *Substance over Form* untuk mengamankan potensi PAD. |
+| **Skenario 3 (Objek Baru Mandiri/Proxy)** | • **Status Pemohon**: Memeriksa apakah pendaftaran mandiri (KTP sama dengan pemilik) atau melalui Proxy/Kuasa (harus ada upload Surat Kuasa bermaterai).<br>• **Plotting GIS**: Memeriksa koordinat garis lintang/bujur tanah agar tidak tumpang tindih (*overlapping*) dengan persil NOP yang sudah ada. |
+| **Skenario 4 (Pembetulan Data SPPT)** | • **Tabel Komparasi Data**: Admin melihat tampilan komparasi *Data Lama (Eksisting)* berdampingan dengan *Data Baru (Usulan)* untuk ejaan nama WP, NIK, alamat objek, atau koreksi luas.<br>• **Dasar Hukum**: Mengonfirmasi pasal pembetulan (Pasal 71 PP 35/2023) tanpa perubahan subjek kepemilikan. |
+| **Skenario 5 (Balik Nama / Peralihan Hak)** | • **Validasi NTPD e-BPHTB**: Sistem mengecek otomatis via H2H; jika nomor NTPD valid dan berstatus `LUNAS H2H`, admin cukup memverifikasi KTP pemilik baru.<br>• **Nama & NIK Subjek Baru**: Memastikan data subjek pajak baru sesuai dokumen peralihan hak (AJB/APHB/Waris). |
+| **Skenario 6 (Penggabungan Multi-NOP)** | • **NOP Utama**: Memvalidasi NOP tujuan tempat seluruh akumulasi luas tanah dan bangunan dialihkan.<br>• **Daftar NOP Sumber**: Memeriksa daftar NOP pendukung yang akan dilebur dan otomatis berstatus `NON-AKTIF / MERGED` di SIMPBB. |
+| **Skenario 7 (Pembatalan NOP Ganda / Musnah)** | • **NOP Target Pembatalan**: Memverifikasi nomor NOP yang akan dihapus.<br>• **Kode Alasan Pembatalan**: Memilih/memvalidasi salah satu alasan: `NOP_GANDA` (Duplikasi/Overlap), `TANAH_MUSNAH` (Bencana alam/abrasi), atau `FASILITAS_UMUM` (Pembebasan jalan/fasum).<br>• **Nomor SK Pembatalan**: Input nomor Berita Acara / Surat Keputusan pembatalan ketetapan. |
+
+Dengan skema ini, proses pelayanan PBB di Admin berjalan transparan, akuntabel, dan bebas celah sengketa karena setiap penerbitan NOP atau mutasi tercatat lengkap mulai dari petugas survei hingga pejabat penetap.
