@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\ValidNop;
 use App\Models\SpptRecord;
 use App\Models\TransactionPbb;
 use App\Models\BphtbSubmission;
@@ -40,11 +41,14 @@ class H2HBpnController extends Controller
         }
 
         $request->validate([
-            'nop' => 'required|string|max:50',
+            // NOP resmi 18 digit (PP.KKK.Kec.Kel.Blok.Urut.C) — lihat NopHelper (task 2325).
+            // Sebelumnya max:50 sehingga NOP cacat lolos validasi lalu gagal senyap di query.
+            'nop' => ['required', 'string', new ValidNop],
             'tahun_pajak' => 'nullable|integer|min:2000|max:2100',
         ]);
 
-        $nop = $request->nop;
+        // Terima input bertitik/hubung (mis. 74.710.100.100.100-010.1) — dinormalkan.
+        $nop = \App\Support\NopHelper::normalize($request->nop);
         $tahun = $request->tahun_pajak ? (int) $request->tahun_pajak : null;
 
         // 1. Ambil SPPT records utk NOP (semua tahun / tahun tertentu)
