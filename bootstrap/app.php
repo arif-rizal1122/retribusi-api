@@ -29,6 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'auto_deduct_access' => \App\Http\Middleware\AutoDeductAccess::class,
             // Gate otorisasi berbasis role per-route (maker-checker pelaksana vs penyetuju).
             'role' => \App\Http\Middleware\EnsureRole::class,
+            // Gate pemisahan tupoksi wilayah pajak (Wilayah I vs Wilayah II).
+            'tax_domain' => \App\Http\Middleware\EnsureTaxDomain::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

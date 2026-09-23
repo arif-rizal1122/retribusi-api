@@ -19,7 +19,17 @@ class TTEService
 
     public function __construct()
     {
-        $this->bsreUrl = config('services.bsre.url', env('BSRE_API_URL', 'https://esign-sandbox.bsre.bssid'));
+        // config('services.bsre.url') mengembalikan string KOSONG kalau BSRE_API_URL
+        // tidak ada di .env (bukan null), sehingga default arg tidak terpakai.
+        // Resolusi eksplisit: config -> env -> default sandbox BSrE.
+        $resolvedUrl = (string) config('services.bsre.url');
+        if (trim($resolvedUrl) === '') {
+            $resolvedUrl = (string) env('BSRE_API_URL', 'https://esign-sandbox.bsre.bssid');
+        }
+        if (trim($resolvedUrl) === '') {
+            $resolvedUrl = 'https://esign-sandbox.bsre.bssid';
+        }
+        $this->bsreUrl = rtrim($resolvedUrl, '/');
         $this->bsreUser = config('services.bsre.username', env('BSRE_USERNAME', 'baubau_mpad'));
         $this->bsrePass = config('services.bsre.password', env('BSRE_PASSWORD', 'BaubauTTE2026!'));
         $this->bsreTimeout = (int) env('BSRE_TIMEOUT', 3000); // 3 seconds timeout
@@ -202,6 +212,28 @@ class TTEService
     {
         $startTime = microtime(true);
         $endpoint = rtrim($this->bsreUrl, '/') . '/api/sign/pdf';
+
+        // Guard: endpoint WAJIB URI absolut (skema + host). Tanpa ini, Guzzle
+        // melempar "URI must include a scheme and host" dan error aslinya
+        // tertutup oleh pesan yang membingungkan.
+        $parts = parse_url($endpoint);
+        $hasScheme = ! empty($parts['scheme']) && ! empty($parts['host']);
+        $hostMentah = ! $hasScheme || str_contains((string) ($parts['host'] ?? ''), 'bsre.bssid');
+
+        if (! $hasScheme || $hostMentah) {
+            $alasan = ! $hasScheme
+                ? 'BSrE endpoint tidak valid (skema/host kosong): ' . $endpoint
+                : 'BSrE API URL belum dikonfigurasi (masih host contoh/sandbox): ' . $endpoint;
+            Log::warning('TTE BSrE dilewati: ' . $alasan . '. Memakai segel lokal.', ['doc' => $docNumber]);
+            $this->logTte($docNumber, $endpoint, ['document_number' => $docNumber], 0, ['error' => $alasan], 0, 'skipped_not_configured');
+
+            return [
+                'status' => 'skipped_not_configured',
+                'hash' => hash('sha256', "LOCAL-SEAL-BAUBAU-{$docNumber}-" . now()->toIso8601String() . '-' . Str::random(12)),
+                'reference' => 'LOCAL-SEAL-' . strtoupper(Str::random(10)),
+                'file_path' => null,
+            ];
+        }
 
         $payload = [
             'document_number' => $docNumber,

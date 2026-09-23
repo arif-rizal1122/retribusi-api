@@ -681,6 +681,37 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/spmp/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'spmp']);
         });
 
+        // ─────────────────────────────────────────────────────────────
+        // Wilayah Pajak Daerah — gate pemisahan tupoksi (Wilayah I / II)
+        // Hanya akun yang domain-nya cocok (atau admin/super_admin) lolos.
+        // Akun wilayah dengan metadata kosong DITOLAK (fail-closed).
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('wilayah-1')->middleware('tax_domain:wilayah_1')->group(function () {
+            // PBB-P2, BPHTB, Reklame, MBLB, Sarang Burung Walet, Opsen PKB/BBNKB
+            Route::get('/objek', [\App\Http\Controllers\Api\V1\WilayahController::class, 'objekWilayah1']);
+            Route::get('/tagihan', [\App\Http\Controllers\Api\V1\WilayahController::class, 'tagihanWilayah1']);
+        });
+
+        Route::prefix('wilayah-2')->middleware('tax_domain:wilayah_2')->group(function () {
+            // PBJT (Makanan/Minuman, Perhotelan, Hiburan, Parkir, Kesenian, Listrik), Pajak Air Tanah
+            Route::get('/objek', [\App\Http\Controllers\Api\V1\WilayahController::class, 'objekWilayah2']);
+            Route::get('/tagihan', [\App\Http\Controllers\Api\V1\WilayahController::class, 'tagihanWilayah2']);
+        });
+
+        // Info domain penugasan akun yang sedang login — dipakai FE untuk
+        // menyembunyikan menu di luar wewenang (bukan pengamanan, hanya UX).
+        Route::get('/me/tax-domain', function (\Illuminate\Http\Request $request) {
+            $user = $request->user();
+            $domain = \App\Support\TaxDomainHelper::getDomain($user);
+
+            return response()->json([
+                'role' => $user->role,
+                'tax_domain' => $domain,
+                'classification_codes' => \App\Support\TaxDomainHelper::getClassificationCodes($domain),
+                'retribution_type_ids' => \App\Support\TaxDomainHelper::getRetributionTypeIds($domain),
+            ]);
+        });
+
         // Modul Penyuluhan & Sosialisasi
         Route::apiResource('tax-educations', TaxEducationController::class);
         Route::post('tax-educations/{taxEducation}/broadcast', [TaxEducationController::class, 'broadcast']);
