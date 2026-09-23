@@ -1,0 +1,23 @@
+- verifikasi dengan ptsp terkait reklame
+- filtrasi penugasan
+
+
+BPN:
+- setelah balik nama NIB jadi NIBEL NIB Elektronik - Skema penarikan 
+- 
+
+Balik nama :
+- pemisahan 14 hari kerja, 
+
+proses bphtb sampai 
+
+pengolahan data pakai aplikasi apa
+
+kebutuhan data
+
+mpad mewadahi agar bisa terkonek
+
+
+kendala di halaman aset
+
+
