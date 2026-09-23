@@ -72,7 +72,10 @@ class GenerateAutomatedTeguran extends Command
                 $noticeDate = $lastNotice->created_at;
                 if ($noticeDate->diffInDays(Carbon::now()) >= 7) {
                     $shouldCreate = true;
-                    $newType = 'penindakan';
+                    // 'paksa' = Surat Paksa (SPMP). Sebelumnya ditulis
+                    // 'penindakan' yang BUKAN nilai sah, sehingga draf
+                    // tidak bisa diproses lewat controller (validasi menolak).
+                    $newType = 'paksa';
                 }
             }
 
@@ -81,8 +84,14 @@ class GenerateAutomatedTeguran extends Command
             }
 
             // 3. Generate Notice Draft
-            $typeName = ($newType === 'teguran_1' ? 'KESATU' : 'KEDUA');
-            $typeCode = ($newType === 'teguran_1' ? 'TEG1' : 'TEG2');
+            // Label per jenis: sebelumnya semua selain teguran_1 dilabeli
+            // 'KEDUA'/'TEG2', termasuk saat sudah naik ke surat paksa.
+            $labelMap = [
+                'teguran_1' => ['KESATU',  'TEG1'],
+                'teguran_2' => ['KEDUA',   'TEG2'],
+                'paksa'     => ['PAKSA',   'SP'],
+            ];
+            [$typeName, $typeCode] = $labelMap[$newType] ?? ['KESATU', 'TEG1'];
 
             $notice = EnforcementNotice::create([
                 'tax_object_id' => $bill->tax_object_id,

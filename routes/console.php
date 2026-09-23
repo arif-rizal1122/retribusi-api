@@ -20,3 +20,7 @@ Schedule::command('rusun:generate-bills')
     ->monthlyOn(1, '00:01')
     ->timezone('Asia/Makassar')
     ->withoutOverlapping();
+
+// Penagihan otomatis: buat draf Surat Teguran I/II dan Surat Paksa
+// untuk tagihan yang menunggak. Dijalankan harian 07:00 WITA.
+Schedule::command('enforcements:generate-drafts')->dailyAt('07:00')->timezone('Asia/Makassar');
