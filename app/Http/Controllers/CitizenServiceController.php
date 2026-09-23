@@ -341,6 +341,30 @@ class CitizenServiceController extends Controller
         }
 
 
+        // Auto-isi "Link Lokasi Google Maps" bila kosong: turunkan dari koordinat
+        // jika tersedia, atau dari alamat objek agar warga tak wajib klik peta.
+        if (empty($metadata['lokasi_google_maps'])) {
+            $coord = $request->input('latitude') . ',' . $request->input('longitude');
+            if ($request->filled('latitude') && $request->filled('longitude')) {
+                $coord = round((float) $request->input('latitude'), 6) . ',' . round((float) $request->input('longitude'), 6);
+                $metadata['lokasi_google_maps'] = 'https://maps.google.com/?q=' . $coord;
+            } else {
+                foreach (['koordinat_usaha', 'koordinat', 'titik_koordinat'] as $metaKey) {
+                    $raw = $metadata[$metaKey] ?? null;
+                    if (is_string($raw) && preg_match('/^[-+]?\d+(\.\d+)?\s*[,;\s]\s*[-+]?\d+(\.\d+)?$/', trim($raw))) {
+                        $parts = preg_split('/[,;\s]+/', trim($raw));
+                        $metadata['lokasi_google_maps'] = 'https://maps.google.com/?q=' . round((float) $parts[0], 6) . ',' . round((float) $parts[1], 6);
+                        break;
+                    }
+                }
+            }
+            if (empty($metadata['lokasi_google_maps']) && ! empty($metadata['alamat_usaha'])) {
+                $metadata['lokasi_google_maps'] = 'https://www.google.com/maps/search/?api=1&query=' . urlencode($metadata['alamat_usaha']);
+            } elseif (empty($metadata['lokasi_google_maps']) && $request->filled('address')) {
+                $metadata['lokasi_google_maps'] = 'https://www.google.com/maps/search/?api=1&query=' . urlencode((string) $request->input('address'));
+            }
+        }
+
         $metadata = $this->applySchemaDefaults($classification->form_schema ?? [], $metadata);
         $missingMetadata = $this->missingRequiredMetadata($classification->form_schema ?? [], $metadata);
         if (! empty($missingMetadata)) {
