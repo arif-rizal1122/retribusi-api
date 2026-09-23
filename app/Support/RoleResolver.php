@@ -49,6 +49,7 @@ class RoleResolver
         'sosial_naker' => ['name' => 'Dinas Sosial & Naker', 'category' => 'opd', 'core_role' => 'opd', 'group' => 'opd'],
         'pertanian' => ['name' => 'Dinas Pertanian', 'category' => 'opd', 'core_role' => 'opd', 'group' => 'opd'],
         'damkar' => ['name' => 'Dinas Damkar & Penyelamatan', 'category' => 'opd', 'core_role' => 'opd', 'group' => 'opd'],
+        'pertanahan' => ['name' => 'Dinas Pertanahan', 'category' => 'opd', 'core_role' => 'opd', 'group' => 'opd'],
         'satpol_pp' => ['name' => 'Satuan Polisi Pamong Praja', 'category' => 'opd', 'core_role' => 'petugas', 'group' => 'petugas'],
         'warga' => ['name' => 'Wajib Pajak / Warga', 'category' => 'warga', 'core_role' => 'citizen', 'group' => 'warga'],
     ];
@@ -59,6 +60,8 @@ class RoleResolver
         'lpm' => 'lpm_pt',
         'kpp' => 'kpp_pratama',
         'notaris' => 'notaris_ppat',
+        'admin_pertanahan' => 'pertanahan',
+        'dispertanahan' => 'pertanahan',
     ];
 
     /** Role inti sistem → grup dashboard (sama dengan CORE_ROLE_TO_GROUP di FE). */
@@ -78,12 +81,16 @@ class RoleResolver
         'warga' => 'warga',
         'kepala_bapenda' => 'admin',
         'admin_ptsp' => 'opd',
+        'admin_pertanahan' => 'opd',
+        'pertanahan' => 'opd',
         'walikota' => 'eksekutif',
     ];
 
     /** Pemetaan kode OPD (kolom opds.code) → role_code matriks 29 akun. */
     public const OPD_CODE_ROLE_MAP = [
         'BAPENDA' => 'bapenda',
+        'PERTANAHAN' => 'pertanahan',
+        'DISPERTANAHAN' => 'pertanahan',
         'DISHUB' => 'perhubungan',
         'DISPERINDAG' => 'perindag',
         'DLH' => 'dlh',
