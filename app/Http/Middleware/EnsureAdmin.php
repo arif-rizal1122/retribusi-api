@@ -32,6 +32,7 @@ class EnsureAdmin
             \App\Models\User::ROLE_PENGAWAS,
             \App\Models\User::ROLE_KABID_PENGAWAS,
             \App\Models\User::ROLE_KASUBID_PENGAWAS,
+            \App\Models\User::ROLE_KASUBID_PENDATAAN,
             \App\Models\User::ROLE_PETUGAS,
             \App\Models\User::ROLE_WALIKOTA,
             \App\Models\User::ROLE_ADMIN_PTSP,

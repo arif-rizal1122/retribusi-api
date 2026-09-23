@@ -48,6 +48,20 @@ Berdasarkan Perda Kota Baubau No. 1 Tahun 2024 dan Peraturan Walikota terkait, b
 
 ---
 
+### 3.1. Matriks Khusus Verifikasi Berjenjang PBB-P2 Bapenda (Maker-Checker-Signer)
+
+Untuk layanan PBB-P2 (9 Skenario Mutasi & Pembetulan), diterapkan jenjang otorisasi khusus aparatur Bapenda:
+
+| Jenjang Otorisasi | Aktor Pengampu | Role Sistem | Wewenang & Batasan Aksi |
+|---|---|---|---|
+| **Level 1 (Maker/Validator)** | **Staf Pelayanan / Verifikator** | `verifikator` / `admin` | • Pemeriksaan kelengkapan warkah & dokumen permohonan.<br>• Verifikasi spasial batas bidang tanah awal via GIS.<br>• Transisi status ke `VERIFIED_L1`. |
+| **Level 2 (Checker/Analyst)** | **Kasubid Pendataan** | `kasubid_pendataan` | • Verifikasi kesesuaian ZNT & DBKB bangunan.<br>• Disposisi tugas survei lapangan ke petugas (`SURVEY`).<br>• Validasi hasil survei/LSPOP dan kalkulasi piutang proporsional.<br>• Transisi status ke `PRE_APPROVED_L2`. |
+| **Level 3 (Signer/Approver)** | **Kabid Pajak Daerah** | `kabid_pengawas` / `kepala_bapenda` | • Otorisasi hukum penetapan SK Mutasi/Pembetulan.<br>• Penandatanganan TTE elektronik dan pengesahan SPPT definitif.<br>• Transisi status ke `APPROVED` atau `REJECTED`. |
+
+*Standar Akun Kelembagaan:* Akun verifikasi Level 2 didaftarkan sebagai `kasubid_pendataan@mpad.online` dengan nama akun **`Kasubid Pendataan`** (role: `kasubid_pendataan`).
+
+---
+
 ### 4. Pedoman Implementasi Teknis & Sinkronisasi Lintas Repositori
 
 1. **Backend (`retribusi-api`)**:

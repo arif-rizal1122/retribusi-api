@@ -36,6 +36,7 @@ Desain skema basis data, kamus data, dan modernisasi relasi:
 Alur penerbitan invoice, verifikasi, BRD, dan alur pelacakan petugas:
 - `/docs/03_proses_bisnis_penagihan/INVOICING_WORKFLOW.md`
 - `/docs/03_proses_bisnis_penagihan/BRD_H2H_BPN_DUKCAPIL.md` (Business Requirement H2H BPN BHUMI & Dukcapil)
+- `/docs/03_proses_bisnis_penagihan/BRD_PBB_MUTASI_DAN_VERIFIKASI_BERJENJANG.md` (Business Requirement PBB 9 Skenario & Matriks Verifikasi 3 Tingkat: Yani, Salma, Ochi)
 - `/docs/03_proses_bisnis_penagihan/DOKUMEN_PERENCANAAN_BANK_H2H.md`
 - `/docs/03_proses_bisnis_penagihan/TECH_SPEC_BANK_H2H_MASTER.md`
 - `/docs/03_proses_bisnis_penagihan/INVOICE_GAP_ANALYSIS.md`
@@ -44,6 +45,7 @@ Alur penerbitan invoice, verifikasi, BRD, dan alur pelacakan petugas:
 ## ⚙️ 4. Infrastruktur & API
 Routing, arsitektur server, API specifications, dan SRS:
 - `/docs/04_infrastruktur_api/SRS_H2H_BPN_DUKCAPIL.md` (Software Requirement Specification H2H)
+- `/docs/04_infrastruktur_api/SRS_PBB_MUTASI_DAN_VERIFIKASI_BERJENJANG.md` (Software Requirement Specification PBB 9 Skenario & RBAC Multi-Tier)
 - `/docs/04_infrastruktur_api/routes-and-components.md`
 - `/docs/04_infrastruktur_api/core_apis.md` & `public_apis.md`
 - `/docs/04_infrastruktur_api/CREDENTIALS_GUIDE.md`

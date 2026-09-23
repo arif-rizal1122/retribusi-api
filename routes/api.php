@@ -484,13 +484,13 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         // Pendaftaran NOP alias (tab admin PBB)
         Route::get('/pbb/bapenda/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'index']);
         Route::post('/pbb/bapenda/nop-applications/{id}/status', [\App\Http\Controllers\PbbNopApplicationController::class, 'updateStatus'])
-            ->middleware('role:admin,kepala_bapenda,petugas,opd');
+            ->middleware('role:admin,kepala_bapenda,kasubid_pendataan,petugas,opd');
 
         // Mutasi PBB (Admin: 3-Tier Governance Matrix)
         Route::get('/pbb/mutations', [\App\Http\Controllers\PbbMutationController::class, 'index']);
         Route::get('/pbb/mutations/{id}', [\App\Http\Controllers\PbbMutationController::class, 'show']);
         Route::post('/pbb/mutations/{id}/status', [\App\Http\Controllers\PbbMutationController::class, 'updateStatus'])
-            ->middleware('role:admin,kepala_bapenda,petugas,opd');
+            ->middleware('role:admin,kepala_bapenda,kasubid_pendataan,petugas,opd');
 
         // Pelaporan E-SPTPD
         Route::post('/sptpd', [\App\Http\Controllers\SptpdController::class, 'store']);

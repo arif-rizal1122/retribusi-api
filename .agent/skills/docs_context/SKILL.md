@@ -33,8 +33,13 @@ Jika user memberikan tugas kompleks, bagi ke dalam kategori:
 4. **Dokumen Resmi/TTE**: Aktifkan `tte_documents`.
 5. **Manajemen Dokumen/Drive**: Aktifkan `docs_sync_management`.
 
-## Aturan Pembaruan Dokumentasi
+## Aturan Pembaruan Dokumentasi (Continuous Auto-Update Protocol)
 1. Jika Anda mengubah struktur Database, perbarui `docs/04-database-schema.md`.
 2. Jika Anda mengubah rute API, perbarui `docs/routes-and-components.md`.
 3. Catat perubahan signifikan di `docs/todo-list.md` (Update status [x]).
 4. Jika terdapat perubahan skema atau mapping 9pajak, perbarui `docs/08_legacy_systems/MEGA_DOCUMENTATION_9PAJAK.md`.
+5. **Auto-Update Proaktif BRD & SRS**: Setiap kali terjadi penemuan pemahaman kunci (*domain insights*), pembentukan/perubahan peran aparatur (seperti verifikasi 3 tingkat: Ibu Yani L1, Ibu Salma L2 `kasubid_pendataan`, Ibu Ochi L3 `kabid_pengawas`), atau penyempurnaan alur bisnis:
+   - Agen **WAJIB** langsung memperbarui atau menyusun dokumen **BRD** di `docs/03_proses_bisnis_penagihan/` dan **SRS** di `docs/04_infrastruktur_api/`.
+   - Perbarui matriks peran di `docs/mpad_rbac/04_MATRIKS_PEMBAGIAN_LAYANAN_OPD_DAN_ROLE_MAPPING.md`.
+   - Daftarkan dokumen baru pada indeks SSOT di `docs/98_pemetaan_fungsi/MAP_FUNGSIONAL_DOKUMEN.md`.
+6. **Kebijakan Sinkronisasi Dokumen**: Jangan menunggu siklus sprint berakhir atau instruksi manual berulang; lakukan *in-flight continuous documentation update* bersamaan dengan iterasi pemahaman sistem.

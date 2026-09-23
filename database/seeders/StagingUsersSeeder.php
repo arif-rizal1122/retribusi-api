@@ -60,6 +60,18 @@ class StagingUsersSeeder extends Seeder
             ]
         );
 
+        // 4. Kasubid Pendataan (kasubid_pendataan@mpad.online)
+        User::updateOrCreate(
+            ['email' => 'kasubid_pendataan@mpad.online'],
+            [
+                'name' => 'Kasubid Pendataan',
+                'password' => Hash::make('password123'),
+                'role' => 'kasubid_pendataan',
+                'opd_id' => $opdId,
+                'status' => 'active',
+            ]
+        );
+
         $this->command->info('Staging accounts created successfully.');
     }
 }

@@ -89,11 +89,20 @@ class User extends Authenticatable
     const ROLE_PENGAWAS = 'pengawas';
     const ROLE_KABID_PENGAWAS = 'kabid_pengawas';
     const ROLE_KASUBID_PENGAWAS = 'kasubid_pengawas';
+    const ROLE_KASUBID_PENDATAAN = 'kasubid_pendataan';
     const ROLE_PETUGAS = 'petugas';
     const ROLE_WALIKOTA = 'walikota';
     const ROLE_ADMIN_PTSP = 'admin_ptsp';
     const ROLE_KEPALA_BAPENDA = 'kepala_bapenda';
     const ROLE_NOTARIS = 'notaris';
+
+    /**
+     * Check if user is Kasubid Pendataan
+     */
+    public function isKasubidPendataan(): bool
+    {
+        return $this->role === self::ROLE_KASUBID_PENDATAAN;
+    }
 
     /**
      * Check if user is super admin or admin

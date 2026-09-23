@@ -69,6 +69,28 @@ class PbbMutationController extends Controller
      */
     public function storeSplitKavling(Request $request)
     {
+        // Normalisasi data input sebelum validasi
+        $rawSplitItems = $request->input('split_items', []);
+        if (is_array($rawSplitItems)) {
+            foreach ($rawSplitItems as &$item) {
+                if (isset($item['target_nik'])) {
+                    $item['target_nik'] = preg_replace('/[^0-9]/', '', (string) $item['target_nik']);
+                }
+                if (isset($item['target_name'])) {
+                    $item['target_name'] = trim((string) $item['target_name']);
+                }
+            }
+            unset($item);
+            $request->merge(['split_items' => $rawSplitItems]);
+        }
+
+        if ($request->has('applicant_nik')) {
+            $cleanedNik = preg_replace('/[^0-9]/', '', (string) $request->applicant_nik);
+            if (strlen($cleanedNik) === 16) {
+                $request->merge(['applicant_nik' => $cleanedNik]);
+            }
+        }
+
         $validator = Validator::make($request->all(), [
             'parent_nop' => 'required|string|max:25',
             'applicant_nik' => 'required|string|size:16',
@@ -85,10 +107,35 @@ class PbbMutationController extends Controller
             'notes' => 'nullable|string',
             'deed_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'site_plan_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ], [
+            'parent_nop.required' => 'Nomor NOP Induk wajib diisi.',
+            'parent_nop.max' => 'Format NOP Induk maksimal 25 karakter.',
+            'applicant_nik.required' => 'NIK Pemohon wajib diisi.',
+            'applicant_nik.size' => 'NIK Pemohon harus terdiri dari 16 digit.',
+            'applicant_name.required' => 'Nama Pemohon wajib diisi.',
+            'parent_land_area.required' => 'Luas Tanah Induk wajib diisi.',
+            'parent_land_area.min' => 'Luas Tanah Induk minimal 1 m².',
+            'split_items.required' => 'Daftar kavling pecahan minimal 1 bidang.',
+            'split_items.min' => 'Daftar kavling pecahan minimal 1 bidang.',
+            'split_items.*.target_nik.required' => 'NIK Calon Pemilik wajib diisi.',
+            'split_items.*.target_nik.size' => 'NIK Calon Pemilik kavling harus tepat 16 digit angka.',
+            'split_items.*.target_name.required' => 'Nama Calon Pemilik kavling wajib diisi.',
+            'split_items.*.land_area_m2.required' => 'Luas tanah pecahan kavling wajib diisi.',
+            'split_items.*.land_area_m2.min' => 'Luas tanah kavling pecahan minimal 1 m².',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            $firstError = $validator->errors()->first();
+            Log::warning('PbbMutationController::storeSplitKavling validation failed', [
+                'first_error' => $firstError,
+                'errors' => $validator->errors()->toArray(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $firstError,
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
         $parentArea = (float) $request->parent_land_area;
@@ -175,6 +222,13 @@ class PbbMutationController extends Controller
      */
     public function storeRectification(Request $request)
     {
+        if ($request->has('applicant_nik')) {
+            $cleanedNik = preg_replace('/[^0-9]/', '', (string) $request->applicant_nik);
+            if (strlen($cleanedNik) === 16) {
+                $request->merge(['applicant_nik' => $cleanedNik]);
+            }
+        }
+
         $validator = Validator::make($request->all(), [
             'parent_nop' => 'required|string|max:25',
             'applicant_nik' => 'required|string|size:16',
@@ -185,10 +239,22 @@ class PbbMutationController extends Controller
             'new_data' => 'required|array',
             'notes' => 'nullable|string',
             'supporting_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ], [
+            'parent_nop.required' => 'Nomor NOP pada SPPT wajib diisi.',
+            'applicant_nik.required' => 'NIK Pemohon wajib diisi.',
+            'applicant_nik.size' => 'NIK Pemohon harus terdiri dari 16 digit.',
+            'applicant_name.required' => 'Nama Pemohon wajib diisi.',
+            'correction_field.required' => 'Bidang yang ingin dibetulkan wajib dipilih.',
+            'old_data.required' => 'Data lama sebelum pembetulan wajib disertakan.',
+            'new_data.required' => 'Data baru hasil pembetulan wajib disertakan.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
         $ticketNo = 'MUT-RECT-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(2)));
@@ -227,6 +293,15 @@ class PbbMutationController extends Controller
      */
     public function storeTransferOwnership(Request $request)
     {
+        foreach (['applicant_nik', 'previous_taxpayer_nik', 'new_taxpayer_nik'] as $nikField) {
+            if ($request->has($nikField)) {
+                $cleanedNik = preg_replace('/[^0-9]/', '', (string) $request->$nikField);
+                if (strlen($cleanedNik) === 16) {
+                    $request->merge([$nikField => $cleanedNik]);
+                }
+            }
+        }
+
         $validator = Validator::make($request->all(), [
             'parent_nop' => 'required|string|max:25',
             'applicant_nik' => 'required|string|size:16',
@@ -238,10 +313,24 @@ class PbbMutationController extends Controller
             'bphtb_ntpd_ref' => 'nullable|string|max:64',
             'notes' => 'nullable|string',
             'deed_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ], [
+            'parent_nop.required' => 'Nomor NOP wajib diisi.',
+            'applicant_nik.required' => 'NIK Pemohon wajib diisi.',
+            'applicant_nik.size' => 'NIK Pemohon harus 16 digit.',
+            'previous_taxpayer_nik.required' => 'NIK Pemilik Lama wajib diisi.',
+            'previous_taxpayer_nik.size' => 'NIK Pemilik Lama harus 16 digit.',
+            'previous_taxpayer_name.required' => 'Nama Pemilik Lama wajib diisi.',
+            'new_taxpayer_nik.required' => 'NIK Pemilik Baru wajib diisi.',
+            'new_taxpayer_nik.size' => 'NIK Pemilik Baru harus 16 digit.',
+            'new_taxpayer_name.required' => 'Nama Pemilik Baru wajib diisi.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
         $ticketNo = 'MUT-TRF-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(2)));
@@ -279,6 +368,13 @@ class PbbMutationController extends Controller
      */
     public function storeAmalgamation(Request $request)
     {
+        if ($request->has('applicant_nik')) {
+            $cleanedNik = preg_replace('/[^0-9]/', '', (string) $request->applicant_nik);
+            if (strlen($cleanedNik) === 16) {
+                $request->merge(['applicant_nik' => $cleanedNik]);
+            }
+        }
+
         $validator = Validator::make($request->all(), [
             'primary_target_nop' => 'required|string|max:25',
             'applicant_nik' => 'required|string|size:16',
@@ -287,10 +383,20 @@ class PbbMutationController extends Controller
             'merged_source_nops.*' => 'required|string|max:25',
             'notes' => 'nullable|string',
             'certificate_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ], [
+            'primary_target_nop.required' => 'Nomor NOP Utama wajib diisi.',
+            'applicant_nik.required' => 'NIK Pemohon wajib diisi.',
+            'applicant_nik.size' => 'NIK Pemohon harus 16 digit.',
+            'merged_source_nops.required' => 'Daftar NOP yang akan digabung minimal 1 NOP.',
+            'merged_source_nops.min' => 'Daftar NOP yang akan digabung minimal 1 NOP.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
         // Jangan izinkan NOP utama ada di daftar NOP yang digabungkan
@@ -333,6 +439,13 @@ class PbbMutationController extends Controller
      */
     public function storeCancellation(Request $request)
     {
+        if ($request->has('applicant_nik')) {
+            $cleanedNik = preg_replace('/[^0-9]/', '', (string) $request->applicant_nik);
+            if (strlen($cleanedNik) === 16) {
+                $request->merge(['applicant_nik' => $cleanedNik]);
+            }
+        }
+
         $validator = Validator::make($request->all(), [
             'duplicate_nop_target' => 'required|string|max:25',
             'applicant_nik' => 'required|string|size:16',
@@ -340,10 +453,20 @@ class PbbMutationController extends Controller
             'cancellation_reason_code' => 'required|string|in:DUPLICATE,DESTROYED_LAND,PUBLIC_FACILITY',
             'notes' => 'required|string|min:5',
             'statement_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ], [
+            'duplicate_nop_target.required' => 'Nomor NOP yang dimohonkan pembatalan wajib diisi.',
+            'applicant_nik.required' => 'NIK Pemohon wajib diisi.',
+            'applicant_nik.size' => 'NIK Pemohon harus 16 digit.',
+            'cancellation_reason_code.required' => 'Alasan pembatalan wajib dipilih.',
+            'notes.required' => 'Penjelasan / kronologi pembatalan wajib diisi minimal 5 karakter.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
         $ticketNo = 'MUT-CNL-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(2)));
@@ -385,8 +508,15 @@ class PbbMutationController extends Controller
         }
 
         if ($request->filled('status')) {
-            $status = strtoupper($request->status);
-            $query->where('status', $status);
+            if (is_array($request->status)) {
+                $statuses = array_map('strtoupper', $request->status);
+                $query->whereIn('status', $statuses);
+            } elseif (str_contains($request->status, ',')) {
+                $statuses = array_map('strtoupper', explode(',', $request->status));
+                $query->whereIn('status', $statuses);
+            } else {
+                $query->where('status', strtoupper($request->status));
+            }
         }
 
         if ($request->filled('search')) {
@@ -441,9 +571,9 @@ class PbbMutationController extends Controller
 
     /**
      * Matriks Verifikasi 3 Tingkat (Update Status):
-     * Level 1 (Staf Admin / Ibu Yani): VERIFIED_L1
-     * Level 2 (Kasubid / Ibu Salma): PRE_APPROVED_L2 atau disposisi SURVEY
-     * Level 3 (Kabid / Ibu Ochi): APPROVED (Final) atau REJECTED
+     * Level 1 (Staf Pelayanan / Verifikator): VERIFIED_L1
+     * Level 2 (Kasubid Pendataan): PRE_APPROVED_L2 atau disposisi SURVEY
+     * Level 3 (Kabid Pajak Daerah): APPROVED (Final) atau REJECTED
      */
     public function updateStatus(Request $request, $id)
     {
