@@ -25,26 +25,40 @@ class TaxpayerController extends Controller
         // user's global Query Scope (see RetributionTypeScope), so there is
         // no need to manually add `where('opd_id', ...)` here anymore.
         if ($user && $user->role === 'petugas') {
-            // Petugas additionally filtered by assigned retribution types and created_by
+            // Petugas only sees taxpayers whose chosen services (tax_objects or
+            // taxpayer_retribution_type pivot) match their assignments.
+            // `created_by` is intentionally NOT used - scoping is purely by assignments.
             $assignments = $user->assignments;
             if ($assignments->isNotEmpty()) {
-                $query->where(function($masterQ) use ($user, $assignments) {
-                    $masterQ->where('created_by', $user->id)
-                            ->orWhereHas('retributionTypes', function($q) use ($assignments) {
-                                $q->where(function($query) use ($assignments) {
-                                    foreach ($assignments as $assignment) {
-                                        $query->orWhere(function($sq) use ($assignment) {
-                                            $sq->where('retribution_types.id', $assignment->retribution_type_id);
-                                            if ($assignment->retribution_classification_id) {
-                                                $sq->where('taxpayer_retribution_type.retribution_classification_id', $assignment->retribution_classification_id);
-                                            }
-                                        });
+                $query->where(function($masterQ) use ($assignments) {
+                    $masterQ->orWhereHas('taxObjects', function($q) use ($assignments) {
+                        $q->where(function($query) use ($assignments) {
+                            foreach ($assignments as $assignment) {
+                                $query->orWhere(function($sq) use ($assignment) {
+                                    $sq->where('retribution_type_id', $assignment->retribution_type_id);
+                                    if ($assignment->retribution_classification_id) {
+                                        $sq->where('retribution_classification_id', $assignment->retribution_classification_id);
                                     }
                                 });
-                            });
+                            }
+                        });
+                    });
+                    $masterQ->orWhereHas('retributionTypes', function($q) use ($assignments) {
+                        $q->where(function($query) use ($assignments) {
+                            foreach ($assignments as $assignment) {
+                                $query->orWhere(function($sq) use ($assignment) {
+                                    $sq->where('retribution_types.id', $assignment->retribution_type_id);
+                                    if ($assignment->retribution_classification_id) {
+                                        $sq->where('taxpayer_retribution_type.retribution_classification_id', $assignment->retribution_classification_id);
+                                    }
+                                });
+                            }
+                        });
+                    });
                 });
             } else {
-                $query->where('created_by', $user->id);
+                // No assignments -> no assigned service to scope by
+                $query->whereRaw('1 = 0');
             }
         }
 
