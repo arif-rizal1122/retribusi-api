@@ -743,4 +743,462 @@ class MarketController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Cari daftar lapak yang tersedia untuk diklaim / ditandai oleh warga.
+     */
+    public function availableStalls(Request $request): JsonResponse
+    {
+        $query = MarketStall::with(['market', 'zone']);
+
+        if ($request->filled('market_name')) {
+            $query->where('market_name', 'like', '%' . trim($request->query('market_name')) . '%');
+        }
+
+        if ($request->filled('building_name')) {
+            $query->where('building_name', 'like', '%' . trim($request->query('building_name')) . '%');
+        }
+
+        if ($request->filled('stall_type')) {
+            $query->where('stall_type', $request->query('stall_type'));
+        }
+
+        if ($request->filled('q')) {
+            $search = trim($request->query('q'));
+            $query->where(function ($q) use ($search) {
+                $q->where('merchant_name', 'like', "%{$search}%")
+                  ->orWhere('stall_number', 'like', "%{$search}%")
+                  ->orWhere('full_code', 'like', "%{$search}%")
+                  ->orWhere('building_name', 'like', "%{$search}%");
+            });
+        }
+
+        $stalls = $query->orderBy('building_name')
+            ->orderByRaw('CAST(stall_number AS UNSIGNED) ASC')
+            ->limit(200)
+            ->get();
+
+        $data = $stalls->map(function ($st) {
+            $meta = is_array($st->metadata) ? $st->metadata : [];
+            $claimStatus = $meta['claim_status'] ?? null;
+            $isClaimed = !empty($meta['is_claimed']) && in_array($claimStatus, ['active', 'pending_verification']);
+
+            // Ambil foto petugas jika sudah ada task survei lapangan
+            $surveyPhoto = null;
+            if ($st->tax_object_id) {
+                $task = \App\Models\PetugasTask::where('tax_object_id', $st->tax_object_id)
+                    ->whereNotNull('completion_photo_path')
+                    ->latest()
+                    ->first();
+                if ($task) {
+                    $surveyPhoto = $task->completion_photo_url;
+                }
+            }
+
+            return [
+                'id' => $st->id,
+                'market_id' => $st->market_id,
+                'market_name' => $st->market_name,
+                'building_name' => $st->building_name,
+                'stall_type' => $st->stall_type,
+                'stall_number' => $st->stall_number,
+                'full_code' => $st->full_code,
+                'merchant_name' => $st->merchant_name,
+                'tariff_amount' => (float) $st->tariff_amount,
+                'billing_cycle' => $st->billing_cycle,
+                'status' => $st->status,
+                'is_claimed' => $isClaimed,
+                'claim_status' => $claimStatus,
+                'payer_taxpayer_id' => $isClaimed ? ($meta['payer_taxpayer_id'] ?? null) : null,
+                'payer_name' => $isClaimed ? ($meta['payer_name'] ?? null) : null,
+                'claim_for' => $isClaimed ? ($meta['claim_for'] ?? 'self') : null,
+                'target_merchant_name' => $isClaimed ? ($meta['target_merchant_name'] ?? null) : null,
+                'relationship' => $isClaimed ? ($meta['relationship'] ?? null) : null,
+                'survey_photo_url' => $surveyPhoto,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
+    }
+
+    /**
+     * Tandai / Klaim Lapak Terdata (Status awal Menunggu Verifikasi Admin Disperindag & Foto Petugas Pasar).
+     */
+    public function claimStall(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Autentikasi diperlukan.'], 401);
+        }
+
+        $request->validate([
+            'claim_for' => 'required|in:self,representative',
+            'target_name' => 'nullable|string|max:255',
+            'target_nik' => 'nullable|string|max:20',
+            'target_phone' => 'nullable|string|max:20',
+            'relationship' => 'nullable|string|max:50',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $stall = MarketStall::findOrFail($id);
+
+        // Cari taxpayer record dari user yang login
+        $taxpayer = null;
+        if ($user instanceof Taxpayer) {
+            $taxpayer = $user;
+        } else {
+            $taxpayer = Taxpayer::where('nik', $user->nik ?? '')->orWhere('email', $user->email ?? '')->first();
+        }
+
+        if (!$taxpayer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun pembayar wajib pajak tidak ditemukan. Lengkapi profil terlebih dahulu.',
+            ], 422);
+        }
+
+        $meta = is_array($stall->metadata) ? $stall->metadata : [];
+        if (!empty($meta['is_claimed']) && in_array($meta['claim_status'] ?? '', ['active', 'pending_verification']) && ($meta['payer_taxpayer_id'] ?? null) != $taxpayer->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lapak ini sudah ditautkan atau sedang dalam proses verifikasi akun lain. Hubungi pos Disperindag jika terjadi kekeliruan.',
+            ], 422);
+        }
+
+        $claimFor = $request->input('claim_for', 'self');
+        $targetName = trim($request->input('target_name', ''));
+        $targetNik = trim($request->input('target_nik', ''));
+        $targetPhone = trim($request->input('target_phone', ''));
+        $relationship = trim($request->input('relationship', ''));
+        $notes = trim($request->input('notes', ''));
+
+        if ($claimFor === 'representative' && empty($targetName)) {
+            $targetName = $stall->merchant_name ?: 'Pedagang Binaan';
+        }
+
+        // Tentukan nama penanggung jawab dan catatan
+        $displayResponsible = $claimFor === 'representative'
+            ? "{$targetName} (Kuasa Bayar: {$taxpayer->name}" . ($relationship ? " [{$relationship}]" : "") . ")"
+            : $taxpayer->name;
+
+        DB::beginTransaction();
+        try {
+            // Update metadata MarketStall (Status Awal: pending_verification)
+            $meta['is_claimed'] = true;
+            $meta['claim_status'] = 'pending_verification';
+            $meta['claim_for'] = $claimFor;
+            $meta['payer_taxpayer_id'] = $taxpayer->id;
+            $meta['payer_name'] = $taxpayer->name;
+            $meta['payer_nik'] = $taxpayer->nik;
+            $meta['payer_phone'] = $taxpayer->phone;
+            $meta['target_merchant_name'] = $targetName ?: $stall->merchant_name;
+            $meta['target_merchant_nik'] = $targetNik;
+            $meta['target_merchant_phone'] = $targetPhone;
+            $meta['relationship'] = $relationship;
+            $meta['claimed_at'] = now()->toDateTimeString();
+            $meta['notes'] = $notes;
+
+            $stall->taxpayer_id = $taxpayer->id;
+            if ($claimFor === 'self' && !empty($taxpayer->name)) {
+                $stall->merchant_name = $taxpayer->name;
+            } elseif ($claimFor === 'representative' && !empty($targetName)) {
+                $stall->merchant_name = $targetName;
+            }
+            $stall->metadata = $meta;
+            $stall->save();
+
+            // Hubungkan TaxObject dengan status pending
+            $taxObject = $stall->tax_object_id ? TaxObject::find($stall->tax_object_id) : null;
+            if ($taxObject) {
+                $objMeta = is_array($taxObject->metadata) ? $taxObject->metadata : [];
+                $objMeta['is_representative_payment'] = ($claimFor === 'representative');
+                $objMeta['payer_taxpayer_id'] = $taxpayer->id;
+                $objMeta['payer_name'] = $taxpayer->name;
+                $objMeta['target_merchant_name'] = $targetName;
+                $objMeta['target_merchant_nik'] = $targetNik;
+                $objMeta['relationship'] = $relationship;
+                $objMeta['claimed_at'] = now()->toDateTimeString();
+
+                $taxObject->taxpayer_id = $taxpayer->id;
+                $taxObject->penanggung_jawab_nama = $displayResponsible;
+                if (!empty($targetPhone)) {
+                    $taxObject->penanggung_jawab_kontak = $targetPhone;
+                }
+                $taxObject->tipe_penghuni = ($claimFor === 'representative') ? 'KUASA_BAYAR' : 'PENYEWA';
+                $taxObject->status = 'pending';
+                $taxObject->metadata = $objMeta;
+                $taxObject->save();
+
+                // 1. Buat Permintaan Verifikasi Resmi ke Admin Disperindag
+                $verification = \App\Models\Verification::create([
+                    'opd_id' => 3, // DISPERINDAG
+                    'tax_object_id' => $taxObject->id,
+                    'user_id' => $user->id,
+                    'document_number' => 'VRC-INDAG-' . strtoupper(Str::random(8)),
+                    'taxpayer_name' => $taxpayer->name,
+                    'type' => 'pendaftaran_objek',
+                    'amount' => $stall->tariff_amount ?? 0,
+                    'status' => 'pending',
+                    'submitted_at' => now(),
+                    'notes' => "Klaim Lapak: {$stall->full_code} ({$stall->building_name} Unit {$stall->stall_number}). " . ($claimFor === 'representative' ? "Mewakili: {$targetName} ({$relationship})" : "Lapak Sendiri"),
+                ]);
+
+                // 2. Buat Tugas Survei & Foto Fisik ke Petugas Lapangan Pasar
+                $assignedOfficer = MarketOfficerAssignment::where('assigned_areas', 'like', "%{$stall->building_name}%")->first();
+                $officerUserId = $assignedOfficer?->user_id ?: 202; // default ke petugas Disperindag
+
+                \App\Models\PetugasTask::create([
+                    'user_id' => $officerUserId,
+                    'taxpayer_id' => $taxpayer->id,
+                    'tax_object_id' => $taxObject->id,
+                    'verification_id' => $verification->id,
+                    'task_type' => 'survey_verifikasi',
+                    'due_date' => now()->addDays(3),
+                    'notes' => "Survei & foto fisik kios/los {$stall->building_name} No. {$stall->stall_number}. Verifikasi kepemilikan pedagang asli ({$targetName}) atas kuasa pembayar ({$taxpayer->name}).",
+                    'status' => 'pending',
+                    'created_by' => $user->id,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => $claimFor === 'representative'
+                    ? "Pengajuan tautan lapak untuk {$targetName} berhasil dikirim! Menunggu verifikasi admin Disperindag dan foto kios dari petugas pasar."
+                    : "Pengajuan tautan lapak berhasil dikirim! Menunggu verifikasi admin Disperindag dan foto kios dari petugas pasar.",
+                'data' => [
+                    'stall_id' => $stall->id,
+                    'tax_object_id' => $stall->tax_object_id,
+                    'stall_number' => $stall->stall_number,
+                    'building_name' => $stall->building_name,
+                    'merchant_name' => $stall->merchant_name,
+                    'claim_for' => $claimFor,
+                    'claim_status' => 'pending_verification',
+                    'payer_name' => $taxpayer->name,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menandai lapak: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Verifikasi Klaim Lapak oleh Admin Disperindag (Approve / Reject).
+     */
+    public function verifyClaim(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user || !in_array($user->role, ['super_admin', 'admin', 'opd'])) {
+            return response()->json(['success' => false, 'message' => 'Hanya admin Disperindag yang berwenang memverifikasi klaim.'], 403);
+        }
+
+        $request->validate([
+            'action' => 'required|in:approve,reject',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $action = $request->input('action');
+        $notes = $request->input('notes');
+
+        $stall = MarketStall::findOrFail($id);
+        $meta = is_array($stall->metadata) ? $stall->metadata : [];
+        $taxObject = $stall->tax_object_id ? TaxObject::find($stall->tax_object_id) : null;
+        $verification = $taxObject ? \App\Models\Verification::where('tax_object_id', $taxObject->id)->latest()->first() : null;
+
+        DB::beginTransaction();
+        try {
+            if ($action === 'approve') {
+                $meta['claim_status'] = 'active';
+                $meta['verified_at'] = now()->toDateTimeString();
+                $meta['verified_by'] = $user->id;
+                $stall->metadata = $meta;
+                $stall->save();
+
+                if ($taxObject) {
+                    $taxObject->status = 'active';
+                    $taxObject->approved_at = now();
+                    $taxObject->approved_by = $user->id;
+                    $taxObject->save();
+
+                    // Reassign bill ke taxpayer pendaftar agar bisa dibayarkan lewat dia
+                    if (!empty($meta['payer_taxpayer_id'])) {
+                        Bill::where('tax_object_id', $taxObject->id)
+                            ->where('status', '!=', 'lunas')
+                            ->update(['taxpayer_id' => $meta['payer_taxpayer_id']]);
+                    }
+                }
+
+                if ($verification) {
+                    $verification->update([
+                        'status' => 'approved',
+                        'notes' => $notes ?: 'Klaim lapak telah diverifikasi dan disetujui oleh admin Disperindag.',
+                        'verifier_id' => $user->id,
+                        'verified_at' => now(),
+                    ]);
+                }
+
+                // Tandai selesai tugas petugas
+                if ($taxObject) {
+                    \App\Models\PetugasTask::where('tax_object_id', $taxObject->id)
+                        ->where('status', '!=', 'completed')
+                        ->update(['status' => 'completed', 'completed_at' => now()]);
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Klaim lapak berhasil disetujui dan kini aktif resmi.',
+                ]);
+            } else {
+                // Reject / Batalkan Klaim
+                $meta['is_claimed'] = false;
+                $meta['claim_status'] = 'rejected';
+                $meta['rejected_at'] = now()->toDateTimeString();
+                $meta['rejected_by'] = $user->id;
+                $meta['rejection_notes'] = $notes;
+                $stall->taxpayer_id = null;
+                $stall->metadata = $meta;
+                $stall->save();
+
+                if ($taxObject) {
+                    $taxObject->status = 'rejected';
+                    $taxObject->save();
+                }
+
+                if ($verification) {
+                    $verification->update([
+                        'status' => 'rejected',
+                        'notes' => $notes ?: 'Klaim lapak ditolak oleh admin Disperindag.',
+                        'verifier_id' => $user->id,
+                        'verified_at' => now(),
+                    ]);
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Klaim lapak telah ditolak / dicabut.',
+                ]);
+            }
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses verifikasi klaim: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Tarik klaim / Lepas tautan lapak (Unclaim).
+     */
+    public function unclaimStall(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Autentikasi diperlukan.'], 401);
+        }
+
+        $stall = MarketStall::findOrFail($id);
+        $taxpayerId = ($user instanceof Taxpayer) ? $user->id : ($user->taxpayer_id ?? null);
+        $isAdmin = !($user instanceof Taxpayer) && in_array($user->role ?? '', ['admin', 'super_admin', 'admin_disperindag', 'disperindag']);
+
+        $meta = is_array($stall->metadata) ? $stall->metadata : [];
+        $currentPayerId = $meta['payer_taxpayer_id'] ?? $stall->taxpayer_id;
+
+        if (!$isAdmin && $currentPayerId != $taxpayerId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak untuk melepas tautan lapak ini.',
+            ], 403);
+        }
+
+        $reason = trim($request->input('reason', 'Ditarik oleh wajib pajak / pemegang akun'));
+
+        DB::beginTransaction();
+        try {
+            $meta['is_claimed'] = false;
+            $meta['claim_status'] = 'unclaimed';
+            $meta['unclaimed_at'] = now()->toDateTimeString();
+            $meta['unclaimed_by'] = $user->name ?? 'User';
+            $meta['unclaimed_reason'] = $reason;
+
+            $stall->taxpayer_id = null;
+            $stall->metadata = $meta;
+            $stall->save();
+
+            $taxObject = $stall->tax_object_id ? TaxObject::find($stall->tax_object_id) : null;
+            if ($taxObject) {
+                $objMeta = is_array($taxObject->metadata) ? $taxObject->metadata : [];
+                $objMeta['is_representative_payment'] = false;
+                $objMeta['unclaimed_at'] = now()->toDateTimeString();
+                $objMeta['unclaimed_reason'] = $reason;
+
+                $taxObject->taxpayer_id = null;
+                $taxObject->penanggung_jawab_nama = null;
+                $taxObject->penanggung_jawab_kontak = null;
+                $taxObject->metadata = $objMeta;
+                $taxObject->save();
+
+                // Lepas keterkaitan tagihan yang belum lunas
+                Bill::where('tax_object_id', $taxObject->id)
+                    ->where('status', '!=', 'lunas')
+                    ->update(['taxpayer_id' => null]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tautan lapak berhasil dilepas. Lapak kembali tersedia dan tagihan tidak lagi dibebankan ke akun Anda.',
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal melepas tautan lapak: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Tarik klaim berdasarkan tax_object_id.
+     */
+    public function unclaimByTaxObject(Request $request, int $taxObjectId): JsonResponse
+    {
+        $stall = MarketStall::where('tax_object_id', $taxObjectId)->first();
+        if ($stall) {
+            return $this->unclaimStall($request, $stall->id);
+        }
+
+        $taxObject = TaxObject::findOrFail($taxObjectId);
+        $user = $request->user();
+        $taxpayerId = ($user instanceof Taxpayer) ? $user->id : ($user->taxpayer_id ?? null);
+        $isAdmin = !($user instanceof Taxpayer) && in_array($user->role ?? '', ['admin', 'super_admin', 'admin_disperindag', 'disperindag']);
+
+        if (!$isAdmin && $taxObject->taxpayer_id != $taxpayerId) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berhak melepas tautan objek ini.'], 403);
+        }
+
+        $taxObject->taxpayer_id = null;
+        $taxObject->penanggung_jawab_nama = null;
+        $taxObject->penanggung_jawab_kontak = null;
+        $taxObject->save();
+
+        Bill::where('tax_object_id', $taxObject->id)
+            ->where('status', '!=', 'lunas')
+            ->update(['taxpayer_id' => null]);
+
+        return response()->json(['success' => true, 'message' => 'Tautan objek berhasil dilepas.']);
+    }
 }

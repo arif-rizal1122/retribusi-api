@@ -102,7 +102,7 @@ Route::post('/simulate-tax', function (Request $request) {
         'classification_id' => 'nullable|exists:retribution_classifications,id',
         'type_id' => 'nullable|exists:retribution_types,id',
         'calculation_formula' => 'nullable|string',
-        'variables' => 'required|array',
+        'variables' => 'nullable|array',
     ]);
 
     $formula = $request->calculation_formula;
@@ -134,7 +134,7 @@ Route::post('/simulate-tax', function (Request $request) {
         }
     }
 
-    $vars = $request->variables;
+    $vars = $request->input('variables', []) ?: [];
     $hasDirectPbbFormulaVariables = $isPbb && $formula && array_key_exists('njop', $vars);
 
     if ($isPbb && !$request->calculation_formula && !$hasDirectPbbFormulaVariables) {
@@ -190,6 +190,21 @@ Route::post('/simulate-tax', function (Request $request) {
         }
     }
     
+    // Fallback variabel teknis (selaras dengan Perda 1/2024 & frontend TECHNICAL_VARIABLE_FALLBACKS)
+    $technicalFallbacks = [
+        'njopr' => 30000,
+        'nspr' => 35000,
+        'koefisien' => 1,
+        'tarif_dasar' => 10000,
+        'hda' => 2500,
+        'harga_satuan_njtl' => 1444.7,
+    ];
+    foreach ($technicalFallbacks as $tfKey => $tfVal) {
+        if (!isset($vars[$tfKey]) || $vars[$tfKey] === '' || $vars[$tfKey] === null) {
+            $vars[$tfKey] = $tfVal;
+        }
+    }
+
     $parser = new \App\Services\FormulaParserService();
     $result = $parser->calculate($formula, $vars);
     
@@ -910,6 +925,16 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::post('/disperindag/tariffs/batch-assign', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'batchAssignTariff']);
     Route::post('/v1/disperindag/tariffs/batch-assign', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'batchAssignTariff']);
 
+    // Tautkan / Klaim Lapak Pasar & Lepas Tautan (Unclaim)
+    Route::post('/disperindag/stalls/{id}/claim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'claimStall']);
+    Route::post('/v1/disperindag/stalls/{id}/claim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'claimStall']);
+    Route::post('/disperindag/stalls/{id}/unclaim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'unclaimStall']);
+    Route::post('/v1/disperindag/stalls/{id}/unclaim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'unclaimStall']);
+    Route::post('/disperindag/tax-objects/{taxObjectId}/unclaim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'unclaimByTaxObject']);
+    Route::post('/v1/disperindag/tax-objects/{taxObjectId}/unclaim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'unclaimByTaxObject']);
+    Route::post('/disperindag/stalls/{id}/verify-claim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'verifyClaim']);
+    Route::post('/v1/disperindag/stalls/{id}/verify-claim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'verifyClaim']);
+
 });
 
 // ------------------------------------------------------------------------
@@ -923,6 +948,7 @@ $disperindagPublicRoutes = function () {
     Route::get('/zones', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'zones']);
     Route::get('/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'buildings']);
     Route::get('/stalls', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'stalls']);
+    Route::get('/stalls/available', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'availableStalls']);
     Route::get('/officers', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'officers']);
 };
 

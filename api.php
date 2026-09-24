@@ -59,7 +59,7 @@ Route::post('/simulate-tax', function (Request $request) {
         'classification_id' => 'nullable|exists:retribution_classifications,id',
         'type_id' => 'nullable|exists:retribution_types,id',
         'calculation_formula' => 'nullable|string',
-        'variables' => 'required|array',
+        'variables' => 'nullable|array',
     ]);
     
     $formula = $request->calculation_formula;
