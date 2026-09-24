@@ -168,13 +168,17 @@ class TaxDomainHelper
             return [];
         }
 
-        return array_values(array_unique(array_map('intval', array_column(
-            \Illuminate\Support\Facades\DB::table('retribution_classifications')
-                ->whereIn('id', $classIds)
-                ->get(['retribution_type_id'])
-                ->toArray(),
-            'retribution_type_id'
-        ))));
+        try {
+            return array_values(array_unique(array_map('intval', array_column(
+                \Illuminate\Support\Facades\DB::table('retribution_classifications')
+                    ->whereIn('id', $classIds)
+                    ->get(['retribution_type_id'])
+                    ->toArray(),
+                'retribution_type_id'
+            ))));
+        } catch (\Throwable) {
+            return $classIds;
+        }
     }
 
     /**

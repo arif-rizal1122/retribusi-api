@@ -66,7 +66,12 @@ return new class extends Migration
     {
         $opdId = DB::table('opds')->where('code', self::OPD_CODE)->value('id');
         if (! $opdId) {
-            throw new RuntimeException('OPD '.self::OPD_CODE.' tidak ditemukan — migration dibatalkan.');
+            $opdId = DB::table('opds')->insertGetId([
+                'name' => 'Badan Pendapatan Daerah',
+                'code' => self::OPD_CODE,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
 
         foreach (self::ACCOUNTS as $email => $a) {
