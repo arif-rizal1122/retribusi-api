@@ -165,6 +165,14 @@ class ServiceAccessMatrix
         'kasubid_pengembangan'   => ['group' => 'kasubid', 'domain' => TaxDomainHelper::DOMAIN_ALL,       'focus' => 'koordinasi'],
         'kasubid_pengawas'       => ['group' => 'kasubid', 'domain' => TaxDomainHelper::DOMAIN_ALL,       'focus' => 'pengawasan'],
         'kasubid_pendataan'      => ['group' => 'kasubid', 'domain' => TaxDomainHelper::DOMAIN_ALL,       'focus' => 'pendataan'],
+
+        // Kabid Pengawas — sebelumnya TIDAK terdaftar di matriks sehingga
+        // akunnya (kabid@retribusi.id) lolos semua gate `service_action`
+        // tanpa pemeriksaan. Tupoksinya pengawasan lintas wilayah: boleh
+        // menugaskan & menegakkan, TIDAK boleh `approve` (otorisasi akhir
+        // tetap milik Kabid Pendapatan wilayah / Kepala Bapenda).
+        'kabid_pengawas'         => ['group' => 'kabid',   'domain' => TaxDomainHelper::DOMAIN_ALL,       'focus' => 'all'],
+
         'kepala_bapenda'         => ['group' => 'kabid',   'domain' => TaxDomainHelper::DOMAIN_ALL,       'focus' => 'all'],
     ];
 

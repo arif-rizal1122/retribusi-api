@@ -53,3 +53,9 @@ database/seeders/ProductionMainCredentialsSeeder.php
 .LSOverride
 ._*
 storage/backup_pwd_*.csv
+
+# File backup lokal — HARAM masuk repo (aturan pengelola 24 Sep 2026)
+*.bak
+*.bak.*
+*.bak-*
+.env.backup

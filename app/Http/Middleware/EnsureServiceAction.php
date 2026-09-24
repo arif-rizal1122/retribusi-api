@@ -43,9 +43,22 @@ class EnsureServiceAction
 
         $role = $user->role ?? null;
 
-        // Role di luar matriks layanan -> tidak dibatasi di sini.
-        if (! ServiceAccessMatrix::isServiceScopedRole($role)) {
+        // FAIL-CLOSED (dikoreksi 24 Sep 2026).
+        // Sebelumnya: role di luar matriks -> return $next($request) == LOLOS.
+        // Terbukti bocor: akun `petugas` dapat 200 di seluruh endpoint Kabid.
+        // Sekarang hanya pengecualian eksplisit yang lolos; sisanya 403.
+        $exempt = ['super_admin', 'admin'];
+
+        if (in_array($role, $exempt, true)) {
             return $next($request);
+        }
+
+        if (! ServiceAccessMatrix::isServiceScopedRole($role)) {
+            return response()->json([
+                'message' => 'Forbidden: akun Anda (role "'.($role ?? 'null').'") tidak terdaftar dalam matriks tupoksi bidang ini.',
+                'tindakan' => 'Hubungi administrator untuk pemetaan role yang benar.',
+                'your_role' => $role,
+            ], 403);
         }
 
         $services = ServiceAccessMatrix::servicesForRole($role);

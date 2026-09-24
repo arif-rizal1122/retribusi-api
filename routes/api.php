@@ -699,6 +699,54 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
                 Route::post('/penugasan/{id}/otorisasi', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'otorisasiPenugasan']);
             });
 
+            // ── MASTER PENUGASAN PETUGAS (Kabid menetapkan siapa pegang
+            //    layanan apa). Bukan menu baru — melengkapi rangka RBAC di atas:
+            //    BidangPajakController menugaskan PER PEKERJAAN, sedangkan ini
+            //    menetapkan SEKALI lalu dipakai AutoAssignService berulang kali.
+            //
+            //    Aturan pengelola 24 Sep 2026: seluruh layanan domain SELALU
+            //    ditampilkan (termasuk yang belum ada petugas), dan petugas
+            //    dengan frekuensi 0 tetap tampil sebagai prioritas.
+            Route::middleware('service_action:assign')->group(function () {
+                Route::get('/petugas-layanan', [\App\Http\Controllers\Api\V1\PenugasanPetugasController::class, 'daftar']);
+                Route::get('/petugas-layanan/petugas', [\App\Http\Controllers\Api\V1\PenugasanPetugasController::class, 'daftarPetugas']);
+                Route::post('/petugas-layanan/tetapkan', [\App\Http\Controllers\Api\V1\PenugasanPetugasController::class, 'tetapkan']);
+                Route::post('/petugas-layanan/cabut', [\App\Http\Controllers\Api\V1\PenugasanPetugasController::class, 'cabut']);
+            });
+
+            // ── PEKERJAAN LAPANGAN — serah-terima petugas -> Kasubid ──
+            //    Alur maker-checker yang diminta pengelola: petugas hanya
+            //    MENGAJUKAN ("sudah saya kerjakan"), Kasubid yang MEMASTIKAN
+            //    SELESAI. Tanpa blok ini, tugas lapangan tidak punya titik
+            //    akhir dan antrean Kasubid tidak pernah terisi.
+            Route::prefix('lapangan')->group(function () {
+                // Sisi PETUGAS: PIC mengajukan hasil pekerjaannya.
+                // Tidak digate service_action — petugas memang di luar
+                // matriks layanan (kewenangannya dari penetapan master).
+                Route::get('/tugas-saya', [\App\Http\Controllers\Api\V1\PekerjaanLapanganController::class, 'tugasSaya']);
+                Route::post('/{id}/ajukan', [\App\Http\Controllers\Api\V1\PekerjaanLapanganController::class, 'ajukan']);
+
+                // Sisi KASUBID: memeriksa hasil dan memutuskan selesai/tidak.
+                Route::middleware('service_action:verify')->group(function () {
+                    Route::get('/daftar', [\App\Http\Controllers\Api\V1\PekerjaanLapanganController::class, 'daftar']);
+                    Route::get('/{id}', [\App\Http\Controllers\Api\V1\PekerjaanLapanganController::class, 'detail']);
+                    Route::post('/{id}/verifikasi', [\App\Http\Controllers\Api\V1\PekerjaanLapanganController::class, 'verifikasi']);
+                    Route::post('/{id}/tolak', [\App\Http\Controllers\Api\V1\PekerjaanLapanganController::class, 'tolak']);
+                });
+            });
+
+            // ── KABID PER OBJEK — konfirmasi akhir & ganti petugas ──
+            //    Menutup rantai: petugas mengajukan -> Kasubid memverifikasi
+            //    -> KABID mengonfirmasi. Tanpa blok ini, pekerjaan lapangan
+            //    menggantung di TERVERIFIKASI tanpa titik akhir.
+            Route::prefix('kabid')->middleware('service_action:assign')->group(function () {
+                Route::get('/objek', [\App\Http\Controllers\Api\V1\KabidPerObjekController::class, 'daftar']);
+                Route::get('/objek/{id}', [\App\Http\Controllers\Api\V1\KabidPerObjekController::class, 'detail']);
+                Route::get('/objek/{id}/kandidat', [\App\Http\Controllers\Api\V1\KabidPerObjekController::class, 'kandidat']);
+                Route::post('/objek/{id}/konfirmasi', [\App\Http\Controllers\Api\V1\KabidPerObjekController::class, 'konfirmasi']);
+                Route::post('/objek/{id}/ganti-petugas', [\App\Http\Controllers\Api\V1\KabidPerObjekController::class, 'gantiPetugas']);
+            });
+
             // ── OTORISASI L3 (Kabid memutus permohonan yang sudah diperiksa
             //    Kasubid). Inilah jalur Kasubid -> Kabid yang sebelumnya
             //    tidak ada, sehingga antrean Kabid tidak pernah terisi.

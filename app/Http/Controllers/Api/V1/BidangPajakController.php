@@ -207,7 +207,12 @@ class BidangPajakController extends Controller
         $validated = $request->validate([
             'tahapan'             => 'required|string',
             'layanan'             => 'nullable|string',
-            'ditugaskan_ke'       => 'required|integer|exists:users,id',
+            // OPSIONAL. Bila kosong -> sistem auto-assign memilih petugas paling
+            // adil (frekuensi bulan ini terkecil, seri diacak) dari master
+            // "petugas x layanan" yang ditetapkan Kabid.
+            // Bila diisi -> penugasan manual (kewenangan Kabid).
+            'ditugaskan_ke'       => 'nullable|integer|exists:users,id',
+            'classification_id'    => 'nullable|integer',
             'reference_type'      => 'nullable|string|max:100',
             'reference_id'        => 'nullable|integer',
             'catatan'             => 'nullable|string|max:2000',
@@ -230,45 +235,132 @@ class BidangPajakController extends Controller
             }
         }
 
-        // Penerima tugas harus berada di OPD yang sama.
-        $target = \App\Models\User::find($validated['ditugaskan_ke']);
-        if (! $target || (int) $target->opd_id !== (int) $c['user']->opd_id) {
-            return response()->json([
-                'message' => 'Penerima tugas harus pegawai pada OPD yang sama.',
-            ], 422);
-        }
+        // ── TENTUKAN PENERIMA TUGAS ────────────────────────────────────
+        // Dua jalur:
+        //   (a) ditugaskan_ke diisi  -> manual, kekuasaan Kabid
+        //   (b) ditugaskan_ke kosong -> AUTO-ASSIGN, sistem pilih paling adil
+        $autoAssign = app(\App\Services\AutoAssignService::class);
+        $target = null;
+        $modeAuto = empty($validated['ditugaskan_ke']);
+        $alasanAuto = null;
 
-        // Penerima tugas harus benar-benar berwenang MEMERIKSA layanan yang
-        // ditugaskan. Tanpa cek ini, Kabid Wilayah I bisa menugaskan pekerjaan
-        // PBB-P2 ke pegawai Wilayah II — pembagian wilayah jadi tidak bermakna.
-        if (! empty($validated['layanan'])) {
-            $peranPenerima = ServiceAccessMatrix::profileFor($target->role);
-            if ($peranPenerima === null) {
+        if (! $modeAuto) {
+            // Penerima tugas harus berada di OPD yang sama.
+            $target = \App\Models\User::find($validated['ditugaskan_ke']);
+            if (! $target || (int) $target->opd_id !== (int) $c['user']->opd_id) {
                 return response()->json([
-                    'message' => 'Penerima tugas bukan pejabat bidang pajak yang berwenang memeriksa layanan.',
-                    'role_penerima' => $target->role,
+                    'message' => 'Penerima tugas harus pegawai pada OPD yang sama.',
                 ], 422);
             }
 
-            if (! ServiceAccessMatrix::can($target->role, $validated['layanan'], ServiceAccessMatrix::ACT_VERIFY)) {
+            // Penerima tugas harus benar-benar berwenang untuk pekerjaan yang
+            // ditugaskan. Ada DUA jenis penerima yang sah, dengan bukti
+            // kewenangan berbeda:
+            //
+            //   (1) PEJABAT bidang pajak (Kasubid/Kabid) — buktinya profil
+            //       ServiceAccessMatrix + izin ACT_VERIFY atas layanan itu.
+            //       Ini jalur verifikasi berjenjang (L2).
+            //   (2) PETUGAS lapangan — TIDAK punya profil bidang pajak (role
+            //       `petugas` sengaja berada di luar matriks layanan). Bukti
+            //       kewenangannya adalah penetapan master petugas x layanan
+            //       oleh Kabid (user_retribution_assignments).
+            //
+            // Tanpa percabangan ini, penugasan manual ke petugas lapangan
+            // selalu ditolak — padahal itulah alur kerja yang diminta.
+            if (! empty($validated['layanan'])) {
+                if ($target->role === 'petugas') {
+                    // Wajib sudah ditetapkan Kabid untuk layanan ini.
+                    $classId = $validated['classification_id'] ?? null;
+                    if ($classId) {
+                        $kompeten = DB::table('user_retribution_assignments')
+                            ->where('user_id', $target->id)
+                            ->where('retribution_classification_id', (int) $classId)
+                            ->where('is_active', true)
+                            ->exists();
+
+                        if (! $kompeten) {
+                            return response()->json([
+                                'message' => 'Petugas ini belum ditetapkan untuk layanan tersebut. '
+                                    .'Tetapkan lebih dulu lewat POST /api/bidang-pajak/petugas-layanan/tetapkan.',
+                                'petugas_id'        => $target->id,
+                                'classification_id' => (int) $classId,
+                            ], 422);
+                        }
+                    }
+                } else {
+                    $peranPenerima = ServiceAccessMatrix::profileFor($target->role);
+                    if ($peranPenerima === null) {
+                        return response()->json([
+                            'message' => 'Penerima tugas bukan pejabat bidang pajak yang berwenang memeriksa layanan.',
+                            'role_penerima' => $target->role,
+                        ], 422);
+                    }
+
+                    if (! ServiceAccessMatrix::can($target->role, $validated['layanan'], ServiceAccessMatrix::ACT_VERIFY)) {
+                        return response()->json([
+                            'message' => 'Penerima tugas tidak berwenang memeriksa layanan "'.$validated['layanan'].'".',
+                            'role_penerima'  => $target->role,
+                            'layanan_penerima' => ServiceAccessMatrix::servicesForRole($target->role),
+                        ], 422);
+                    }
+                }
+            }
+
+            // Domain penerima harus cocok dengan domain penugasan.
+            // Petugas lapangan TIDAK punya tax_domain (metadata kosong di
+            // produksi) — kewenangan wilayahnya sudah dijamin lewat penetapan
+            // master petugas x layanan, jadi jangan ditolak di sini.
+            if ($target->role !== 'petugas') {
+                $domainPenerima = TaxDomainHelper::getDomain($target);
+                if ($c['domain'] !== TaxDomainHelper::DOMAIN_ALL
+                    && $domainPenerima !== TaxDomainHelper::DOMAIN_ALL
+                    && $domainPenerima !== $c['domain']) {
+                    return response()->json([
+                        'message'         => 'Penerima tugas berada di wilayah penugasan yang berbeda.',
+                        'wilayah_anda'    => $c['domain'],
+                        'wilayah_penerima' => $domainPenerima,
+                    ], 422);
+                }
+            }
+        } else {
+            // ── Jalur auto-assign ──
+            // Butuh klasifikasi objek untuk tahu pool petugas yang kompeten.
+            $classId = $validated['classification_id'] ?? null;
+
+            if (! $classId && ! empty($validated['reference_type']) && ! empty($validated['reference_id'])) {
+                // Turunkan klasifikasi dari objek referensi bila tidak dikirim.
+                if ($validated['reference_type'] === 'tax_object') {
+                    $classId = DB::table('tax_objects')
+                        ->where('id', $validated['reference_id'])
+                        ->value('retribution_classification_id');
+                }
+            }
+
+            if (! $classId) {
                 return response()->json([
-                    'message' => 'Penerima tugas tidak berwenang memeriksa layanan "'.$validated['layanan'].'".',
-                    'role_penerima'  => $target->role,
-                    'layanan_penerima' => ServiceAccessMatrix::servicesForRole($target->role),
+                    'message' => 'Auto-assign butuh `classification_id` (atau reference_type=tax_object '
+                        .'beserta reference_id) untuk menentukan petugas yang kompeten. '
+                        .'Alternatif: isi `ditugaskan_ke` untuk penugasan manual.',
                 ], 422);
             }
-        }
 
-        // Domain penerima harus cocok dengan domain penugasan.
-        $domainPenerima = TaxDomainHelper::getDomain($target);
-        if ($c['domain'] !== TaxDomainHelper::DOMAIN_ALL
-            && $domainPenerima !== TaxDomainHelper::DOMAIN_ALL
-            && $domainPenerima !== $c['domain']) {
-            return response()->json([
-                'message'         => 'Penerima tugas berada di wilayah penugasan yang berbeda.',
-                'wilayah_anda'    => $c['domain'],
-                'wilayah_penerima' => $domainPenerima,
-            ], 422);
+            $pilih = $autoAssign->pilihPetugas((int) $classId);
+
+            if (! $pilih['petugas']) {
+                // Keputusan pengelola #3: tidak ada petugas kompeten -> eskalasi,
+                // bukan gagal senyap. Kabid harus menetapkan petugas untuk layanan
+                // ini lewat POST /bidang-pajak/petugas-layanan/tetapkan.
+                return response()->json([
+                    'message' => $pilih['alasan'],
+                    'butuh_penetapan' => true,
+                    'classification_id' => (int) $classId,
+                    'tindakan' => 'Tetapkan petugas untuk layanan ini lewat '
+                        .'POST /api/bidang-pajak/petugas-layanan/tetapkan, lalu ulangi.',
+                ], 409);
+            }
+
+            $target = $pilih['petugas'];
+            $alasanAuto = $pilih['alasan'];
         }
 
         $id = SlaTrackerService::assign($validated['tahapan'], [
@@ -276,14 +368,39 @@ class BidangPajakController extends Controller
             'reference_id'        => $validated['reference_id'] ?? null,
             'tax_domain'          => $c['domain'],
             'tax_sector_code'     => $validated['layanan'] ?? null,
-            'assigned_to_user_id' => $validated['ditugaskan_ke'],
+            'assigned_to_user_id' => $target->id,
             'assigned_by_user_id' => $c['user']->id,
             'notes'               => $validated['catatan'] ?? null,
         ]);
 
+        // Jejak ke tabel audit (keputusan pengelola #7).
+        $autoAssign->catatLog([
+            'assignment_id' => $id,
+            'event'         => \App\Services\AutoAssignService::EVENT_ASSIGNED,
+            'actor_user_id' => $c['user']->id,
+            'to_user_id'    => $target->id,
+            'status_to'     => 'PENDING',
+            'reason'        => $alasanAuto,
+            'meta'          => [
+                'mode'              => $modeAuto ? 'auto' : 'manual',
+                'classification_id' => $validated['classification_id'] ?? null,
+                'layanan'           => $validated['layanan'] ?? null,
+                'tax_domain'        => $c['domain'],
+            ],
+        ]);
+
         return response()->json([
-            'message' => 'Penugasan dibuat.',
+            'message' => $modeAuto
+                ? 'Penugasan dibuat otomatis (sistem memilih petugas paling adil).'
+                : 'Penugasan dibuat manual.',
             'id'      => $id,
+            'mode'    => $modeAuto ? 'auto' : 'manual',
+            'petugas' => [
+                'user_id' => $target->id,
+                'nama'    => $target->name,
+                'role'    => $target->role,
+            ],
+            'alasan_pemilihan' => $alasanAuto,
         ], 201);
     }
 

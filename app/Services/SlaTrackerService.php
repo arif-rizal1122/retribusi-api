@@ -46,6 +46,21 @@ class SlaTrackerService
         ],
         // Jalur Kasubid -> Kabid: setelah L2 selesai, Kabid menugaskan
         // petugas lapangan bila diperlukan survei/peninjauan.
+        // Kasubid memeriksa HASIL pekerjaan lapangan (maker-checker).
+        // Ini tahap yang memisahkan "sudah dikerjakan petugas" dari
+        // "sudah dipastikan selesai oleh Kasubid".
+        'VERIFIKASI_HASIL_SURVEI' => [
+            'label'          => 'Verifikasi Hasil Survei Lapangan',
+            'minutes'        => 720,   // 12 jam
+            'escalate_after' => 540,   // 9 jam (75%)
+            'pic'            => 'Kasubid Pendataan Wilayah I & II',
+        ],
+        'VERIFIKASI_HASIL_PENAGIHAN' => [
+            'label'          => 'Verifikasi Hasil Penagihan Lapangan',
+            'minutes'        => 720,   // 12 jam
+            'escalate_after' => 540,
+            'pic'            => 'Kasubid Penagihan Wilayah I & II',
+        ],
         'PENUGASAN_LAPANGAN' => [
             'label'          => 'Penugasan Petugas Lapangan',
             'minutes'        => 240,   // 4 jam
@@ -83,6 +98,14 @@ class SlaTrackerService
     public const STATUS_APPROVED = 'APPROVED';
     public const STATUS_REJECTED = 'REJECTED';
     public const STATUS_ESCALATED = 'ESCALATED';
+
+    // ── Status alur SERAH-TERIMA pekerjaan lapangan (Maker-Checker) ──
+    // Petugas TIDAK pernah mengklaim 'SELESAI'. Ia hanya menyatakan
+    // "sudah saya kerjakan" (MENUNGGU_VERIFIKASI). Yang memastikan selesai
+    // adalah Kasubid lewat TERVERIFIKASI. Bila hasil kurang, REVISI.
+    public const STATUS_MENUNGGU_VERIFIKASI = 'MENUNGGU_VERIFIKASI';
+    public const STATUS_TERVERIFIKASI       = 'TERVERIFIKASI';
+    public const STATUS_REVISI              = 'REVISI';
 
     public static function isKnownStage(string $stage): bool
     {
