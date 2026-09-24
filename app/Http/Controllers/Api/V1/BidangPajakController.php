@@ -124,27 +124,41 @@ class BidangPajakController extends Controller
             ], 409);
         }
 
+        // Status antara L2 — agar Kabid dapat membedakan mana yang sudah
+        // diperiksa Kasubid dan mana yang belum. Sebelumnya status tetap
+        // 'pending' sehingga antrean Kabid tidak pernah terisi.
+        $statusL2 = $validated['sesuai']
+            ? 'PRE_APPROVED_L2'
+            : 'PERLU_PERBAIKAN_L2';
+
         DB::table('tax_object_change_requests')->where('id', $id)->update([
             'reviewer_id'  => $user->id,
             'review_notes' => ($validated['temuan'] ?? '')
                 ."\n[Diperiksa Kasubid: ".($validated['sesuai'] ? 'DATA SESUAI' : 'PERLU PERBAIKAN')."]",
-            // Belum final — menunggu penugasan/otorisasi Kabid.
-            'status'       => 'pending',
+            'status'       => $statusL2,
+            'reviewed_at'  => now(),
             'updated_at'   => now(),
         ]);
 
+        // Pilih tahapan SLA sesuai fokus Kasubid yang memeriksa:
+        // Kasubid Penagihan punya jalur tersendiri (tupoksi Penagihan,
+        // Verifikasi & Pelaporan), bukan menumpang jalur Pendataan.
+        $focus = $c['profile']['focus'] ?? 'pendataan';
+        $stage = ($focus === 'penagihan') ? 'VERIFIKASI_PENAGIHAN' : 'VERIFIKASI_BERKAS';
+
         // Catat jejak SLA tahap verifikasi.
-        $slaId = SlaTrackerService::assign('VERIFIKASI_BERKAS', [
+        $slaId = SlaTrackerService::assign($stage, [
             'reference_type'      => 'tax_object_change_request',
             'reference_id'        => $id,
             'tax_domain'          => $c['domain'],
             'assigned_to_user_id' => $user->id,
-            'notes'               => 'Pemeriksaan Kasubid selesai; menunggu penugasan Kabid.',
+            'notes'               => 'Pemeriksaan Kasubid selesai ('.$statusL2.'); menunggu penugasan/otorisasi Kepala Bidang.',
         ]);
 
         return response()->json([
             'message'  => 'Hasil pemeriksaan tersimpan. Menunggu penugasan/otorisasi Kepala Bidang.',
-            'status'   => 'PRE_APPROVED_L2',
+            'status'   => $statusL2,
+            'tahapan'  => $stage,
             'sla_id'   => $slaId,
         ]);
     }
@@ -217,10 +231,43 @@ class BidangPajakController extends Controller
         }
 
         // Penerima tugas harus berada di OPD yang sama.
-        $target = DB::table('users')->where('id', $validated['ditugaskan_ke'])->first();
+        $target = \App\Models\User::find($validated['ditugaskan_ke']);
         if (! $target || (int) $target->opd_id !== (int) $c['user']->opd_id) {
             return response()->json([
                 'message' => 'Penerima tugas harus pegawai pada OPD yang sama.',
+            ], 422);
+        }
+
+        // Penerima tugas harus benar-benar berwenang MEMERIKSA layanan yang
+        // ditugaskan. Tanpa cek ini, Kabid Wilayah I bisa menugaskan pekerjaan
+        // PBB-P2 ke pegawai Wilayah II — pembagian wilayah jadi tidak bermakna.
+        if (! empty($validated['layanan'])) {
+            $peranPenerima = ServiceAccessMatrix::profileFor($target->role);
+            if ($peranPenerima === null) {
+                return response()->json([
+                    'message' => 'Penerima tugas bukan pejabat bidang pajak yang berwenang memeriksa layanan.',
+                    'role_penerima' => $target->role,
+                ], 422);
+            }
+
+            if (! ServiceAccessMatrix::can($target->role, $validated['layanan'], ServiceAccessMatrix::ACT_VERIFY)) {
+                return response()->json([
+                    'message' => 'Penerima tugas tidak berwenang memeriksa layanan "'.$validated['layanan'].'".',
+                    'role_penerima'  => $target->role,
+                    'layanan_penerima' => ServiceAccessMatrix::servicesForRole($target->role),
+                ], 422);
+            }
+        }
+
+        // Domain penerima harus cocok dengan domain penugasan.
+        $domainPenerima = TaxDomainHelper::getDomain($target);
+        if ($c['domain'] !== TaxDomainHelper::DOMAIN_ALL
+            && $domainPenerima !== TaxDomainHelper::DOMAIN_ALL
+            && $domainPenerima !== $c['domain']) {
+            return response()->json([
+                'message'         => 'Penerima tugas berada di wilayah penugasan yang berbeda.',
+                'wilayah_anda'    => $c['domain'],
+                'wilayah_penerima' => $domainPenerima,
             ], 422);
         }
 
@@ -238,6 +285,110 @@ class BidangPajakController extends Controller
             'message' => 'Penugasan dibuat.',
             'id'      => $id,
         ], 201);
+    }
+
+    /**
+     * GET /api/bidang-pajak/otorisasi/daftar
+     *
+     * Antrean permohonan yang sudah DIPERIKSA Kasubid (status PRE_APPROVED_L2)
+     * dan menunggu otorisasi akhir Kepala Bidang. Inilah jalur Kasubid -> Kabid
+     * yang sebelumnya tidak ada, sehingga Kabid tidak pernah melihat antrean.
+     */
+    public function daftarOtorisasi(Request $request)
+    {
+        $c = $this->ctx($request);
+
+        $q = DB::table('tax_object_change_requests')
+            ->select('id', 'tax_object_id', 'taxpayer_id', 'status', 'reviewer_id',
+                     'review_notes', 'reviewed_at', 'created_at')
+            ->where('status', 'PRE_APPROVED_L2')
+            ->orderBy('reviewed_at');
+
+        // Batasi ke objek pajak dalam domain wilayah Kabid.
+        if ($c['domain'] !== TaxDomainHelper::DOMAIN_ALL && ! empty($c['typeIds'])) {
+            $q->whereIn('tax_object_id', function ($sub) use ($c) {
+                $sub->select('id')
+                    ->from('tax_objects')
+                    ->whereIn('retribution_classification_id', $c['typeIds']);
+            });
+        }
+
+        $rows = $q->limit(100)->get();
+
+        // Nama pemeriksa L2, agar Kabid tahu siapa yang sudah memeriksa.
+        $reviewerIds = $rows->pluck('reviewer_id')->filter()->unique()->values();
+        $reviewers = $reviewerIds->isEmpty()
+            ? collect()
+            : DB::table('users')->whereIn('id', $reviewerIds)->pluck('name', 'id');
+
+        $rows = $rows->map(function ($row) use ($reviewers) {
+            $row->reviewer_name = $reviewers[$row->reviewer_id] ?? null;
+            return $row;
+        });
+
+        return response()->json([
+            'peran'   => $c['profile']['group'] ?? null,
+            'domain'  => $c['domain'],
+            'layanan' => $c['services'],
+            'jumlah'  => $rows->count(),
+            'data'    => $rows,
+        ]);
+    }
+
+    /**
+     * POST /api/bidang-pajak/otorisasi/{id}
+     *
+     * Kabid memberi keputusan akhir atas permohonan yang sudah diperiksa
+     * Kasubid (status PRE_APPROVED_L2).
+     */
+    public function putuskanOtorisasi(Request $request, int $id)
+    {
+        $c = $this->ctx($request);
+
+        $validated = $request->validate([
+            'keputusan' => 'required|in:setujui,tolak',
+            'alasan'    => 'nullable|string|max:2000',
+        ]);
+
+        $row = DB::table('tax_object_change_requests')->where('id', $id)->first();
+        if (! $row) {
+            return response()->json(['message' => 'Permohonan tidak ditemukan.'], 404);
+        }
+
+        if ($row->status !== 'PRE_APPROVED_L2') {
+            return response()->json([
+                'message' => 'Permohonan belum diperiksa Kasubid atau sudah diputuskan (status: '.$row->status.').',
+            ], 409);
+        }
+
+        // Jaga domain: Kabid hanya memutus dalam wilayahnya.
+        if ($c['domain'] !== TaxDomainHelper::DOMAIN_ALL && ! empty($c['typeIds'])) {
+            $obj = DB::table('tax_objects')->where('id', $row->tax_object_id)->first();
+            $inDomain = $obj && in_array($obj->retribution_classification_id, $c['typeIds'], true);
+            if (! $inDomain) {
+                return response()->json([
+                    'message' => 'Permohonan ini berada di luar wilayah penugasan Anda.',
+                ], 403);
+            }
+        }
+
+        $setuju = $validated['keputusan'] === 'setujui';
+
+        DB::table('tax_object_change_requests')->where('id', $id)->update([
+            'status'     => $setuju ? 'approved' : 'rejected',
+            'review_notes' => trim((string) $row->review_notes
+                ."\n[Otorisasi Kabid: ".($setuju ? 'DISETUJUI' : 'DITOLAK').' - '.$c['user']->name.']'
+                .($validated['alasan'] ?? '' ? "\nAlasan: ".$validated['alasan'] : '')),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'message'   => $setuju ? 'Permohonan diotorisasi (L3).' : 'Permohonan ditolak (L3).',
+            'id'        => $id,
+            'status'    => $setuju ? 'approved' : 'rejected',
+            'keputusan' => $validated['keputusan'],
+            'oleh'      => $c['user']->name,
+        ]);
     }
 
     /**

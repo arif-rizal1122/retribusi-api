@@ -36,6 +36,22 @@ class SlaTrackerService
             'escalate_after' => 1080,  // 18 jam — sesuai aturan bisnis
             'pic'            => 'Petugas Lapangan',
         ],
+        // Kasubid Penagihan punya jalur verifikasi sendiri. Tupoksinya
+        // "Penagihan, Verifikasi & Pelaporan" — bukan menumpang jalur Pendataan.
+        'VERIFIKASI_PENAGIHAN' => [
+            'label'          => 'Verifikasi Berkas oleh Kasubid Penagihan',
+            'minutes'        => 720,   // 12 jam
+            'escalate_after' => 540,   // 9 jam (75%)
+            'pic'            => 'Kasubid Penagihan Wilayah I & II',
+        ],
+        // Jalur Kasubid -> Kabid: setelah L2 selesai, Kabid menugaskan
+        // petugas lapangan bila diperlukan survei/peninjauan.
+        'PENUGASAN_LAPANGAN' => [
+            'label'          => 'Penugasan Petugas Lapangan',
+            'minutes'        => 240,   // 4 jam
+            'escalate_after' => 180,   // 3 jam (75%)
+            'pic'            => 'Kepala Bidang Pajak Daerah I & II',
+        ],
         'APPROVAL_KABID' => [
             'label'          => 'Otorisasi Draf SKPD/SKRD',
             'minutes'        => 240,   // 4 jam

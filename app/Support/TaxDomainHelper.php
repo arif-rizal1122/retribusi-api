@@ -152,14 +152,29 @@ class TaxDomainHelper
      */
     public static function getRetributionTypeIds(string $domain): array
     {
-        if ($domain === self::DOMAIN_ALL) {
-            return array_merge(
-                self::DOMAIN_CONFIG[self::DOMAIN_WILAYAH_1]['retribution_type_ids'],
-                self::DOMAIN_CONFIG[self::DOMAIN_WILAYAH_2]['retribution_type_ids']
-            );
+        // ⚠️ BUG PRODUKSI yang diperbaiki 24 Sep 2026:
+        // Kode lama membaca key `retribution_type_ids` dari DOMAIN_CONFIG,
+        // padahal key itu TIDAK PERNAH ADA di config (yang ada hanya
+        // classification_codes, classification_ids, approval_gates).
+        // Akibatnya setiap pemanggilan dengan domain `all` melempar
+        // "Undefined array key" -> HTTP 500. Terbukti di produksi:
+        // /api/bidang-pajak/verifikasi/daftar untuk Kasubid Pengembangan
+        // (domain all) balas 500.
+        //
+        // Perbaikan: turunkan dari classification_ids (satu sumber kebenaran)
+        // supaya tidak ada daftar ganda yang bisa lupa disinkronkan.
+        $classIds = self::getClassificationIds($domain);
+        if (empty($classIds)) {
+            return [];
         }
 
-        return self::DOMAIN_CONFIG[$domain]['retribution_type_ids'] ?? [];
+        return array_values(array_unique(array_map('intval', array_column(
+            \Illuminate\Support\Facades\DB::table('retribution_classifications')
+                ->whereIn('id', $classIds)
+                ->get(['retribution_type_id'])
+                ->toArray(),
+            'retribution_type_id'
+        ))));
     }
 
     /**
@@ -260,6 +275,18 @@ class TaxDomainHelper
      */
     public static function getClassificationIds(string $domain): array
     {
+        // Konsisten dengan getClassificationCodes() — domain `all` harus
+        // menggabungkan kedua wilayah. Sebelumnya fungsi ini TIDAK menangani
+        // DOMAIN_ALL sehingga selalu mengembalikan [] untuk role lintas
+        // wilayah (kasubid_pengembangan, kasubid_pendataan, kepala_bapenda).
+        // Akibatnya filter domain mereka senyap tidak jalan.
+        if ($domain === self::DOMAIN_ALL) {
+            return array_merge(
+                self::DOMAIN_CONFIG[self::DOMAIN_WILAYAH_1]['classification_ids'],
+                self::DOMAIN_CONFIG[self::DOMAIN_WILAYAH_2]['classification_ids']
+            );
+        }
+
         return self::DOMAIN_CONFIG[$domain]['classification_ids'] ?? [];
     }
 

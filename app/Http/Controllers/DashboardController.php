@@ -60,6 +60,32 @@ class DashboardController extends Controller
     }
 
     /**
+     * Scope DOMAIN WILAYAH untuk role bidang pajak (Kabid/Kasubid).
+     *
+     * Tanpa ini, endpoint dasbor hanya menyaring `opd_id` sehingga Kabid
+     * Wilayah I melihat seluruh layanan Bapenda termasuk milik Wilayah II
+     * (PBJT Parkir, Air Tanah, dst) — angka lintas wilayah rawan masuk laporan.
+     *
+     * ⚠️ Helper ini semula hanya ada di Api\DashboardController sehingga
+     * pemanggilan dari controller ini melempar
+     * "Call to undefined method ...::classIdsForRole()" -> HTTP 500.
+     * Disalin ke sini agar kedua controller punya.
+     *
+     * @return int[]|null null = tidak dibatasi (role non-bidang atau domain all)
+     */
+    private function classIdsForRole(?\App\Models\User $user): ?array
+    {
+        if (! $user || ! \App\Support\ServiceAccessMatrix::isServiceScopedRole($user->role ?? null)) {
+            return null;
+        }
+
+        $domain = \App\Support\TaxDomainHelper::getDomain($user);
+        $ids = \App\Support\TaxDomainHelper::getClassificationIds($domain);
+
+        return empty($ids) ? null : $ids;
+    }
+
+    /**
      * Get KPI statistics for the dashboard with date filtering
      */
     public function getStats(Request $request)
@@ -71,6 +97,20 @@ class DashboardController extends Controller
         // Filter OPD: role lintas-OPD boleh lihat seluruh OPD (?opd_id= opsional),
         // role OPD/petugas/verifikator tetap terkunci ke opd_id sendiri.
         $opdId = $this->resolveScopeOpdId($request);
+
+        // ── Scope DOMAIN WILAYAH ──
+        // Role ber-scope layanan (Kabid/Kasubid Bidang Pajak) hanya boleh
+        // melihat angka untuk layanan wilayahnya. Tanpa ini, Kabid Wilayah I
+        // melihat realisasi PBJT Parkir & Air Tanah milik Wilayah II —
+        // pembagian wilayah jadi tidak bermakna dan rawan salah lapor.
+        $classIds = null;
+        if ($user && \App\Support\ServiceAccessMatrix::isServiceScopedRole($user->role ?? null)) {
+            $domainUser = \App\Support\TaxDomainHelper::getDomain($user);
+            $ids = \App\Support\TaxDomainHelper::getClassificationIds($domainUser);
+            if (! empty($ids)) {
+                $classIds = $ids;
+            }
+        }
 
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
@@ -90,18 +130,18 @@ class DashboardController extends Controller
         $prevStart = $prevEnd->copy()->subDays($diff - 1);
 
         // Revenue query
-        $totalRevenue = $this->getRevenue($opdId, $start, $end);
-        $prevRevenue = $this->getRevenue($opdId, $prevStart, $prevEnd);
+        $totalRevenue = $this->getRevenue($opdId, $start, $end, $classIds);
+        $prevRevenue = $this->getRevenue($opdId, $prevStart, $prevEnd, $classIds);
         $revenueTrend = $this->calculateTrend($totalRevenue, $prevRevenue);
 
         // Pending Bills
-        $pendingBillsCount = $this->getPendingCount($opdId, $start, $end);
-        $prevPendingCount = $this->getPendingCount($opdId, $prevStart, $prevEnd);
+        $pendingBillsCount = $this->getPendingCount($opdId, $start, $end, $classIds);
+        $prevPendingCount = $this->getPendingCount($opdId, $prevStart, $prevEnd, $classIds);
         $pendingTrend = $this->calculateTrend($pendingBillsCount, $prevPendingCount, true); // Lower is better
 
         // Collection Rate
-        $collectionRate = $this->getCollectionRate($opdId, $start, $end);
-        $prevCollectionRate = $this->getCollectionRate($opdId, $prevStart, $prevEnd);
+        $collectionRate = $this->getCollectionRate($opdId, $start, $end, $classIds);
+        $prevCollectionRate = $this->getCollectionRate($opdId, $prevStart, $prevEnd, $classIds);
         $rateTrend = $this->calculateTrend($collectionRate, $prevCollectionRate);
 
         // Active taxpayers for operations are taxpayers with at least one approved object.
@@ -172,6 +212,9 @@ class DashboardController extends Controller
                 ->get(),
             'revenue_by_classification' => Payment::join('bills', 'payments.bill_id', '=', 'bills.id')
                 ->leftJoin('retribution_classifications', 'bills.retribution_classification_id', '=', 'retribution_classifications.id')
+                // Scope domain wilayah: role bidang pajak hanya melihat
+                // realisasi layanan wilayahnya, bukan seluruh Bapenda.
+                ->when($classIds, fn($q) => $q->whereIn('bills.retribution_classification_id', $classIds))
                 ->when($opdId, fn($q) => $q->where('bills.opd_id', $opdId))
                 ->when($user->retribution_type_id && in_array($user->role, ['admin', 'pengawas']), fn($q) => $q->where('bills.retribution_type_id', $user->retribution_type_id))
                 ->when($user->role === 'petugas', function($q) use ($user) {
@@ -201,9 +244,17 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function getRevenue($opdId, $start, $end)
+    private function getRevenue($opdId, $start, $end, ?array $classIds = null)
     {
         return Payment::query()
+            ->when($classIds, function ($query) use ($classIds) {
+                $query->whereExists(function ($sub) use ($classIds) {
+                    $sub->select(DB::raw(1))
+                        ->from('bills')
+                        ->whereColumn('bills.id', 'payments.bill_id')
+                        ->whereIn('bills.retribution_classification_id', $classIds);
+                });
+            })
             ->when($opdId, function ($query) use ($opdId) {
                 $query->whereExists(function ($sub) use ($opdId) {
                     $sub->select(DB::raw(1))
@@ -238,9 +289,10 @@ class DashboardController extends Controller
             ->sum('payments.amount');
     }
 
-    private function getPendingCount($opdId, $start, $end)
+    private function getPendingCount($opdId, $start, $end, ?array $classIds = null)
     {
         return Bill::where('status', 'pending')
+            ->when($classIds, fn($q) => $q->whereIn('retribution_classification_id', $classIds))
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->when(auth()->user()->role === 'petugas', function($q) {
                 $typeIds = auth()->user()->assignments->pluck('retribution_type_id')->unique()->toArray();
@@ -250,9 +302,10 @@ class DashboardController extends Controller
             ->count();
     }
 
-    private function getCollectionRate($opdId, $start, $end)
+    private function getCollectionRate($opdId, $start, $end, ?array $classIds = null)
     {
-        $totalBills = Bill::when($opdId, fn($q) => $q->where('opd_id', $opdId))
+        $totalBills = Bill::when($classIds, fn($q) => $q->whereIn('retribution_classification_id', $classIds))
+            ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->when(auth()->user()->role === 'petugas', function($q) {
                 $typeIds = auth()->user()->assignments->pluck('retribution_type_id')->unique()->toArray();
                 $q->whereIn('retribution_type_id', $typeIds);
@@ -293,6 +346,9 @@ class DashboardController extends Controller
         // role OPD/petugas/verifikator tetap terkunci ke opd_id sendiri.
         $opdId = $this->resolveScopeOpdId($request);
 
+        // Scope domain wilayah (role bidang pajak) — lihat classIdsForRole().
+        $classIds = $this->classIdsForRole($user);
+
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
 
@@ -315,12 +371,17 @@ class DashboardController extends Controller
                 DB::raw("$dateSql as date_label"),
                 DB::raw('SUM(amount) as amount')
             )
-            ->when($opdId, function ($q) use ($opdId) {
-                $q->whereExists(function ($sub) use ($opdId) {
+            ->when($opdId || $classIds, function ($q) use ($opdId, $classIds) {
+                $q->whereExists(function ($sub) use ($opdId, $classIds) {
                     $sub->select(DB::raw(1))
                         ->from('bills')
-                        ->whereColumn('bills.id', 'payments.bill_id')
-                        ->where('bills.opd_id', $opdId);
+                        ->whereColumn('bills.id', 'payments.bill_id');
+                    if ($opdId) {
+                        $sub->where('bills.opd_id', $opdId);
+                    }
+                    if ($classIds) {
+                        $sub->whereIn('bills.retribution_classification_id', $classIds);
+                    }
                 });
             })
             ->whereBetween('paid_at', [$start, $end])
@@ -343,12 +404,17 @@ class DashboardController extends Controller
                 DB::raw("$monthSql as month_num"),
                 DB::raw('SUM(amount) as amount')
             )
-            ->when($opdId, function ($q) use ($opdId) {
-                $q->whereExists(function ($sub) use ($opdId) {
+            ->when($opdId || $classIds, function ($q) use ($opdId, $classIds) {
+                $q->whereExists(function ($sub) use ($opdId, $classIds) {
                     $sub->select(DB::raw(1))
                         ->from('bills')
-                        ->whereColumn('bills.id', 'payments.bill_id')
-                        ->where('bills.opd_id', $opdId);
+                        ->whereColumn('bills.id', 'payments.bill_id');
+                    if ($opdId) {
+                        $sub->where('bills.opd_id', $opdId);
+                    }
+                    if ($classIds) {
+                        $sub->whereIn('bills.retribution_classification_id', $classIds);
+                    }
                 });
             })
             ->whereBetween('paid_at', [$start, $end])
@@ -380,11 +446,15 @@ class DashboardController extends Controller
         // Filter OPD: role lintas-OPD boleh lihat seluruh OPD (?opd_id= opsional),
         // role OPD/petugas/verifikator tetap terkunci ke opd_id sendiri.
         $opdId = $this->resolveScopeOpdId($request);
-        
+
+        // Scope domain wilayah (role bidang pajak) — lihat classIdsForRole().
+        $classIds = $this->classIdsForRole($user);
+
         // 1. Get Zones (Potentials)
         $zones = \App\Models\Zone::with(['opd', 'retributionType'])
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
+            ->when($classIds, fn($q) => $q->whereIn('retribution_classification_id', $classIds))
             ->when($opdId, fn($q) => $q->where('opd_id', $opdId))
             ->when($user->role === 'petugas', function($q) use ($user) {
                 $assignments = $user->assignments ?? collect();

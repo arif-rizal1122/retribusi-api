@@ -698,6 +698,14 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
                 Route::post('/penugasan', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'buatPenugasan']);
                 Route::post('/penugasan/{id}/otorisasi', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'otorisasiPenugasan']);
             });
+
+            // ── OTORISASI L3 (Kabid memutus permohonan yang sudah diperiksa
+            //    Kasubid). Inilah jalur Kasubid -> Kabid yang sebelumnya
+            //    tidak ada, sehingga antrean Kabid tidak pernah terisi.
+            Route::middleware('service_action:approve')->group(function () {
+                Route::get('/otorisasi/daftar', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'daftarOtorisasi']);
+                Route::post('/otorisasi/{id}', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'putuskanOtorisasi']);
+            });
         });
 
         // Official BAPENDA Documents

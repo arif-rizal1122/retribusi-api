@@ -156,7 +156,13 @@ class ServiceAccessMatrix
         'kasubid_penagihan_wil1' => ['group' => 'kasubid', 'domain' => TaxDomainHelper::DOMAIN_WILAYAH_1, 'focus' => 'penagihan'],
         'kasubid_pendataan_wil2' => ['group' => 'kasubid', 'domain' => TaxDomainHelper::DOMAIN_WILAYAH_2, 'focus' => 'pendataan'],
         'kasubid_penagihan_wil2' => ['group' => 'kasubid', 'domain' => TaxDomainHelper::DOMAIN_WILAYAH_2, 'focus' => 'penagihan'],
-        'kasubid_pengembangan'   => ['group' => 'kabid',   'domain' => TaxDomainHelper::DOMAIN_ALL,       'focus' => 'koordinasi'],
+        // Kasubid Koordinasi, Kerjasama & Pengembangan — tupoksinya teknis
+        // (integrasi bank H2H, simulator tarif, pemetaan objek baru, evaluasi
+        // regulasi). BUKAN pengambil keputusan otorisasi.
+        // Sebelumnya group-nya 'kabid' sehingga ikut mendapat aksi
+        // `approve` + `assign` — wewenang yang bukan miliknya. Dikoreksi ke
+        // 'kasubid' (view + verify) selaras sifat pemeriksaan teknisnya.
+        'kasubid_pengembangan'   => ['group' => 'kasubid', 'domain' => TaxDomainHelper::DOMAIN_ALL,       'focus' => 'koordinasi'],
         'kasubid_pengawas'       => ['group' => 'kasubid', 'domain' => TaxDomainHelper::DOMAIN_ALL,       'focus' => 'pengawasan'],
         'kasubid_pendataan'      => ['group' => 'kasubid', 'domain' => TaxDomainHelper::DOMAIN_ALL,       'focus' => 'pendataan'],
         'kepala_bapenda'         => ['group' => 'kabid',   'domain' => TaxDomainHelper::DOMAIN_ALL,       'focus' => 'all'],
@@ -176,7 +182,13 @@ class ServiceAccessMatrix
                          'PBJT-PRK', 'PBJT-FOOD', 'PBJT-HTL', 'PBJT-HBR', 'PBJT-LISTRIK', 'AIR-TANAH',
                          'PENAGIHAN', 'PELAPORAN'],
         'pengawasan' => ['PENGAWASAN'],
-        'koordinasi' => ['MASTER_DATA', 'PELAPORAN'],
+        // Kasubid Pengembangan memeriksa/menelaah lintas wilayah (portofolio:
+        // integrasi H2H, simulator tarif, pemetaan objek baru, evaluasi
+        // regulasi). Diberi seluruh layanan pajak lintas wilayah + PENAGIHAN
+        // + PELAPORAN + MASTER_DATA agar `verify` benar-benar berguna.
+        'koordinasi' => ['PBB-P2', 'BPHTB', 'REKLAME', 'MBLB', 'WALET', 'OPSEN-PKB',
+                         'PBJT-PRK', 'PBJT-FOOD', 'PBJT-HTL', 'PBJT-HBR', 'PBJT-LISTRIK', 'AIR-TANAH',
+                         'PENAGIHAN', 'PELAPORAN', 'MASTER_DATA'],
         'all'        => [], // kosong = semua layanan dalam domainnya
     ];
 

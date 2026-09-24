@@ -29,6 +29,28 @@ class DashboardController extends Controller
     /** Status tagihan belum bayar (menunggu). */
     private const UNPAID_BILL_STATUSES = ['pending', 'unpaid'];
 
+    /**
+     * Scope DOMAIN WILAYAH untuk role bidang pajak (Kabid/Kasubid).
+     *
+     * Endpoint dasbor sebelumnya hanya menyaring `opd_id`, sehingga Kabid
+     * Wilayah I melihat seluruh layanan Bapenda — termasuk layanan milik
+     * Wilayah II (PBJT Parkir, Air Tanah, dst). Pembagian wilayah jadi tidak
+     * bermakna dan angka lintas wilayah rawan masuk laporan resmi.
+     *
+     * @return int[]|null null = tidak dibatasi (role non-bidang atau domain all)
+     */
+    private function classIdsForRole(?\App\Models\User $user): ?array
+    {
+        if (! $user || ! \App\Support\ServiceAccessMatrix::isServiceScopedRole($user->role ?? null)) {
+            return null;
+        }
+
+        $domain = \App\Support\TaxDomainHelper::getDomain($user);
+        $ids = \App\Support\TaxDomainHelper::getClassificationIds($domain);
+
+        return empty($ids) ? null : $ids;
+    }
+
     // ---------------------------------------------------------------------
     // GET /api/dashboard/pad-summary
     // ---------------------------------------------------------------------
@@ -37,14 +59,22 @@ class DashboardController extends Controller
         $scopeOpdId = $request->attributes->get('scope_opd_id');
         $isGlobal = (bool) $request->attributes->get('is_global_scope', true);
 
+        // Scope domain wilayah (role bidang pajak) — lihat classIdsForRole().
+        $classIds = $this->classIdsForRole($request->user());
+
         // Realisasi PAD: total pembayaran berstatus approved/success.
         $revenueQuery = Payment::whereIn('status', self::PAID_PAYMENT_STATUSES);
-        if ($scopeOpdId) {
-            $revenueQuery->whereExists(function ($sub) use ($scopeOpdId) {
+        if ($scopeOpdId || $classIds) {
+            $revenueQuery->whereExists(function ($sub) use ($scopeOpdId, $classIds) {
                 $sub->select(DB::raw(1))
                     ->from('bills')
-                    ->whereColumn('bills.id', 'payments.bill_id')
-                    ->where('bills.opd_id', $scopeOpdId);
+                    ->whereColumn('bills.id', 'payments.bill_id');
+                if ($scopeOpdId) {
+                    $sub->where('bills.opd_id', $scopeOpdId);
+                }
+                if ($classIds) {
+                    $sub->whereIn('bills.retribution_classification_id', $classIds);
+                }
             });
         }
         $totalRevenue = (float) $revenueQuery->sum('payments.amount');
@@ -53,6 +83,9 @@ class DashboardController extends Controller
         $billsQuery = Bill::query();
         if ($scopeOpdId) {
             $billsQuery->where('opd_id', $scopeOpdId);
+        }
+        if ($classIds) {
+            $billsQuery->whereIn('retribution_classification_id', $classIds);
         }
 
         $totalBills = (clone $billsQuery)->count();
@@ -107,14 +140,20 @@ class DashboardController extends Controller
         $scopeOpdId = $request->attributes->get('scope_opd_id');
         $isGlobal = (bool) $request->attributes->get('is_global_scope', true);
 
+        // Scope domain wilayah (role bidang pajak) — lihat classIdsForRole().
+        // Tanpa ini, sektor yang ditampilkan tetap seluruh Bapenda walau
+        // pemanggilnya Kabid Wilayah I (hanya berhak atas layanan W1).
+        $classIds = $this->classIdsForRole($request->user());
+
         $opdQuery = Opd::query()->where('status', 'approved');
         if ($scopeOpdId) {
             $opdQuery->where('id', $scopeOpdId);
         }
         $opds = $opdQuery->orderBy('name')->get();
 
-        $data = $opds->map(function (Opd $opd) {
+        $data = $opds->map(function (Opd $opd) use ($classIds) {
             $stats = Bill::where('opd_id', $opd->id)
+                ->when($classIds, fn ($q) => $q->whereIn('retribution_classification_id', $classIds))
                 ->selectRaw('COUNT(*) as total_bills')
                 ->selectRaw('COALESCE(SUM(amount),0) as billed_amount')
                 ->selectRaw('COALESCE(SUM(CASE WHEN status IN ("lunas","paid") THEN 1 ELSE 0 END),0) as paid_count')
@@ -124,11 +163,14 @@ class DashboardController extends Controller
 
             // Realisasi per OPD: pembayaran sukses yang tertaut ke tagihan OPD tsb.
             $paidAmount = (float) Payment::whereIn('status', self::PAID_PAYMENT_STATUSES)
-                ->whereExists(function ($sub) use ($opd) {
+                ->whereExists(function ($sub) use ($opd, $classIds) {
                     $sub->select(DB::raw(1))
                         ->from('bills')
                         ->whereColumn('bills.id', 'payments.bill_id')
                         ->where('bills.opd_id', $opd->id);
+                    if ($classIds) {
+                        $sub->whereIn('bills.retribution_classification_id', $classIds);
+                    }
                 })
                 ->sum('payments.amount');
 
@@ -242,10 +284,14 @@ class DashboardController extends Controller
 
         $anomalies = [];
 
+        // Scope domain wilayah (role bidang pajak) — lihat classIdsForRole().
+        $classIds = $this->classIdsForRole($request->user());
+
         // 1) Tagihan berstatus lunas/paid tetapi TIDAK punya catatan pembayaran
         //    (indikasi data hilang / rekonsiliasi tidak sinkron).
         $missingPaymentBills = Bill::whereIn('status', self::PAID_BILL_STATUSES)
             ->when($scopeOpdId, fn ($q) => $q->where('opd_id', $scopeOpdId))
+            ->when($classIds, fn ($q) => $q->whereIn('retribution_classification_id', $classIds))
             ->whereNotExists(function ($q) {
                 $q->select(DB::raw(1))->from('payments')->whereColumn('payments.bill_id', 'bills.id');
             })
@@ -351,6 +397,22 @@ class DashboardController extends Controller
 
         if ($opdId) {
             $query->where('opd_id', $opdId);
+        }
+
+        // ── Scope DOMAIN WILAYAH ──
+        // Tanpa ini, Kabid Wilayah I melihat seluruh layanan Bapenda termasuk
+        // layanan milik Wilayah II (mis. PBJT Parkir, Air Tanah). Pembagian
+        // wilayah jadi tidak bermakna di dasbor. Role ber-scope layanan
+        // (lihat ServiceAccessMatrix) dibatasi ke classification wilayahnya.
+        // CATATAN: pakai classification_ids (angka 186/187/...), BUKAN
+        // classification_codes (string 'PBB-P2') — kolom `id` di
+        // retribution_classifications berisi angka, bukan kode layanan.
+        if ($user && \App\Support\ServiceAccessMatrix::isServiceScopedRole($user->role ?? null)) {
+            $domainUser = \App\Support\TaxDomainHelper::getDomain($user);
+            $classIdsForRole = \App\Support\TaxDomainHelper::getClassificationIds($domainUser);
+            if (! empty($classIdsForRole)) {
+                $query->whereIn('id', $classIdsForRole);
+            }
         }
 
         $services = $query->get()->map(function ($svc) {
