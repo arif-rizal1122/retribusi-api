@@ -228,7 +228,7 @@ class YokkeMandiriService
             'X-SIGNATURE' => $this->sign($this->transactionStringToSign($method, $path, $body, $timestamp)),
             'X-PARTNER-ID' => $this->conf('partner_id'),
             'X-EXTERNAL-ID' => $externalId,
-            'CHANNEL-ID' => $this->conf('channel_id'),
+            'CHANNEL-ID' => $this->conf('channel_id') ?: env('MANDIRI_SNAP_CHANNEL_ID', ''),
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
         ];
