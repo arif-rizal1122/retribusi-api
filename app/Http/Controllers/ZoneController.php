@@ -13,13 +13,30 @@ class ZoneController extends Controller
         $user = $request->user();
         $query = Zone::with(['opd', 'retributionType', 'classification']);
 
-        if ($user && in_array($user->role, ['opd', 'petugas'])) {
-            $query->where('opd_id', $user->opd_id);
+        // Mode peta: kembalikan SELURUH zona lintas-OPD untuk visualisasi peta pajak
+        // (batas kecamatan, zona tarif). Hanya bila diminta eksplisit via ?peta=1,
+        // sehingga data operasional OPD lain tetap tidak terbuka untuk endpoint biasa.
+        $modePeta = $request->boolean('peta');
+
+        if (! $modePeta) {
+            if ($user && in_array($user->role, ['opd', 'petugas'])) {
+                $query->where('opd_id', $user->opd_id);
+            } elseif ($request->has('opd_id')) {
+                $query->where('opd_id', $request->opd_id);
+            }
         } elseif ($request->has('opd_id')) {
             $query->where('opd_id', $request->opd_id);
         }
 
-        return response()->json(['data' => $query->get()]);
+        // Filter opsional: hanya zona yang sudah punya geometri (khusus peta).
+        if ($request->boolean('bergeom')) {
+            $query->whereNotNull('coordinates')->where('coordinates', '!=', '');
+        }
+
+        return response()->json([
+            'data'      => $query->get(),
+            'mode_peta' => $modePeta,
+        ]);
     }
 
     public function store(Request $request)
