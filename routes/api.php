@@ -753,6 +753,9 @@ Route::post('/h2h/bhumi/reverse-lookup', [\App\Http\Controllers\H2HBpnController
 // PENTING: route ini pernah HILANG -> modal tampil kosong (poligon "M0 0").
 // JANGAN taruh di dalam prefix h2h/bpn, frontend mengakses /api/smartgis/...
 // ------------------------------------------------------------------------
+// PENTING URUTAN: daftar (/smartgis/bidang) HARUS di atas {nop},
+// kalau dibalik maka {nop} menangkap string "bidang".
+Route::get('/smartgis/bidang', [\App\Http\Controllers\SpatialController::class, 'daftarBidang']);
 Route::get('/smartgis/bidang/{nop}', [\App\Http\Controllers\SpatialController::class, 'bidangByNop']);
 Route::get('/smartgis/wilayah', [\App\Http\Controllers\SpatialController::class, 'wilayah']);
 Route::get('/smartgis/stats', [\App\Http\Controllers\SpatialController::class, 'stats']);

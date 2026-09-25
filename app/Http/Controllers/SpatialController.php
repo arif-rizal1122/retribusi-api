@@ -225,6 +225,79 @@ class SpatialController extends Controller
     /**
      * Nama koneksi DB: pakai smartgis_test dulu (fase uji), bisa diubah via env.
      */
+    /**
+     * Daftar bidang tanah SmartGIS dengan pencarian & paginasi.
+     * GET /api/smartgis/bidang?search=&kelurahan=&kecamatan=&page=1&per_page=25
+     *
+     * Dipakai panel "Data Bidang Tanah (SmartGIS)" di halaman Katalog Aset.
+     * Sumber: 52.136 poligon bidang (37.481 NOP unik) hasil impor SmartGIS Bapenda.
+     */
+    public function daftarBidang(Request $request)
+    {
+        $search    = trim((string) $request->query('search', ''));
+        $kelurahan = trim((string) $request->query('kelurahan', ''));
+        $kecamatan = trim((string) $request->query('kecamatan', ''));
+        $page      = max(1, (int) $request->query('page', 1));
+        $perPage   = max(1, min(200, (int) $request->query('per_page', 25)));
+        $offset    = ($page - 1) * $perPage;
+
+        $where = [];
+        $bind  = [];
+
+        if ($search !== '') {
+            $where[] = '(b.nop LIKE ? OR b.nm_kel LIKE ? OR b.nm_kec LIKE ?)';
+            $like = '%' . $search . '%';
+            $bind[] = $like; $bind[] = $like; $bind[] = $like;
+        }
+        if ($kelurahan !== '') { $where[] = 'b.nm_kel = ?'; $bind[] = $kelurahan; }
+        if ($kecamatan !== '') { $where[] = 'b.nm_kec = ?'; $bind[] = $kecamatan; }
+
+        $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+        $conn     = DB::connection($this->conn());
+
+        $total = (int) ($conn->selectOne(
+            "SELECT COUNT(*) AS n FROM smartgis_bidang b $whereSql", $bind
+        )->n ?? 0);
+
+        $rows = $conn->select(
+            "SELECT b.gid, b.nop, b.kd_kec, b.nm_kec, b.kd_kel, b.nm_kel,
+                    b.luas, b.d_luas,
+                    ST_AsGeoJSON(b.geometry) AS geojson
+             FROM smartgis_bidang b
+             $whereSql
+             ORDER BY b.gid ASC
+             LIMIT ? OFFSET ?",
+            array_merge($bind, [$perPage, $offset])
+        );
+
+        $data = [];
+        foreach ($rows as $r) {
+            $data[] = [
+                'gid'      => (int) $r->gid,
+                'nop'      => $r->nop,
+                'kd_kec'   => $r->kd_kec,
+                'nm_kec'   => $r->nm_kec,
+                'kd_kel'   => $r->kd_kel,
+                'nm_kel'   => $r->nm_kel,
+                'luas'     => $r->luas !== null ? (float) $r->luas : null,
+                'd_luas'   => $r->d_luas !== null ? (float) $r->d_luas : null,
+                'geojson'  => $r->geojson,
+                'punya_geometri' => !empty($r->geojson),
+            ];
+        }
+
+        return response()->json([
+            'sukses'    => true,
+            'sumber'    => 'SmartGIS Bapenda Kota Baubau',
+            'page'      => $page,
+            'per_page'  => $perPage,
+            'total'     => $total,
+            'last_page' => $total > 0 ? (int) ceil($total / $perPage) : 1,
+            'jumlah'    => count($data),
+            'data'      => $data,
+        ]);
+    }
+
     private function conn(): string
     {
         return env('SMARTGIS_CONNECTION', 'smartgis');
