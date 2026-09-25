@@ -403,7 +403,19 @@ class PetaPajakController extends Controller
             }
         }
 
-        $rows = $query->limit($limit)->get();
+        $pageParam    = $request->query('page');
+        $perPageParam = $request->query('per_page');
+        $isPaginated  = ($pageParam !== null || $request->has('page'));
+
+        if ($isPaginated) {
+            $page = max(1, (int) $pageParam);
+            $perPage = max(1, min(200, (int) ($perPageParam ?: 25)));
+            $totalCount = (clone $query)->count();
+            $rows = $query->offset(($page - 1) * $perPage)->limit($perPage)->get();
+        } else {
+            $totalCount = null;
+            $rows = $query->limit($limit)->get();
+        }
 
         $data = $rows->map(function ($r) {
             // Guard NaN/Inf -> 0 supaya JSON tetap bisa di-encode
@@ -459,7 +471,10 @@ class PetaPajakController extends Controller
         return response()->json([
             'status' => 'success',
             'source' => 'database_spatial_smartgis',
-            'total'  => $data->count(),
+            'total'  => $totalCount ?? $data->count(),
+            'page'   => $isPaginated ? $page : 1,
+            'per_page' => $isPaginated ? $perPage : $limit,
+            'last_page' => $isPaginated ? max(1, (int) ceil(($totalCount ?: 1) / $perPage)) : 1,
             'limit'  => $limit,
             'detail' => $detailMode,
             'zoom'   => $zoom,
