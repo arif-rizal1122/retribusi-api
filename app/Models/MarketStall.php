@@ -33,6 +33,49 @@ class MarketStall extends Model
         'metadata' => 'array',
     ];
 
+    protected $appends = [
+        'latitude',
+        'longitude',
+        'is_claimed',
+        'claim_status',
+    ];
+
+    public function getLatitudeAttribute()
+    {
+        $baseLat = $this->taxObject?->latitude 
+            ?? $this->zone?->latitude 
+            ?? $this->market?->latitude;
+            
+        if ($baseLat === null) return null;
+        
+        $num = (int) preg_replace('/\D/', '', (string) $this->stall_number) ?: 1;
+        $offset = (($num % 7) - 3) * 0.000035;
+        return (float) $baseLat + $offset;
+    }
+
+    public function getLongitudeAttribute()
+    {
+        $baseLng = $this->taxObject?->longitude 
+            ?? $this->zone?->longitude 
+            ?? $this->market?->longitude;
+            
+        if ($baseLng === null) return null;
+        
+        $num = (int) preg_replace('/\D/', '', (string) $this->stall_number) ?: 1;
+        $offset = (floor($num / 7) % 7 - 3) * 0.000035;
+        return (float) $baseLng + $offset;
+    }
+
+    public function getIsClaimedAttribute(): bool
+    {
+        return !empty($this->metadata['is_claimed']);
+    }
+
+    public function getClaimStatusAttribute(): ?string
+    {
+        return $this->metadata['claim_status'] ?? null;
+    }
+
     public function market(): BelongsTo
     {
         return $this->belongsTo(Market::class);

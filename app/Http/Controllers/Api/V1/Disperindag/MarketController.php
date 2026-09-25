@@ -35,6 +35,11 @@ class MarketController extends Controller
         $totalSealed = (clone $stallQuery)->where('status', 'tersegel')->count();
         $totalVacant = (clone $stallQuery)->where('status', 'kosong')->count();
 
+        // Status Klaim Warga & Kuasa Bayar
+        $totalClaimed = (clone $stallQuery)->where('metadata->is_claimed', true)->count();
+        $totalPendingClaims = (clone $stallQuery)->where('metadata->claim_status', 'pending_verification')->count();
+        $totalActiveClaims = (clone $stallQuery)->where('metadata->claim_status', 'active')->count();
+
         // Potensi Retribusi
         $monthlyLosPotential = (clone $stallQuery)
             ->where('stall_type', 'los')
@@ -54,6 +59,7 @@ class MarketController extends Controller
             'stalls as active_stalls' => fn($q) => $q->where('status', 'aktif'),
             'stalls as sealed_stalls' => fn($q) => $q->where('status', 'tersegel'),
             'stalls as vacant_stalls' => fn($q) => $q->where('status', 'kosong'),
+            'stalls as claimed_stalls' => fn($q) => $q->where('metadata->is_claimed', true),
         ])->get();
 
         // Breakdown per gedung / blok
@@ -67,6 +73,7 @@ class MarketController extends Controller
                 DB::raw("SUM(CASE WHEN status = 'aktif' THEN 1 ELSE 0 END) as active_count"),
                 DB::raw("SUM(CASE WHEN status = 'tersegel' THEN 1 ELSE 0 END) as sealed_count"),
                 DB::raw("SUM(CASE WHEN status = 'kosong' THEN 1 ELSE 0 END) as vacant_count"),
+                DB::raw("SUM(CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.is_claimed')) = 'true' THEN 1 ELSE 0 END) as claimed_count"),
                 DB::raw("SUM(tariff_amount) as total_tariff_nominal"),
                 DB::raw("MAX(tariff_amount) as sample_tariff"),
                 DB::raw("MAX(billing_cycle) as sample_cycle"),
@@ -101,6 +108,9 @@ class MarketController extends Controller
                     'active_stalls' => $totalActive,
                     'sealed_stalls' => $totalSealed,
                     'vacant_stalls' => $totalVacant,
+                    'claimed_stalls' => $totalClaimed,
+                    'pending_claims' => $totalPendingClaims,
+                    'active_claims' => $totalActiveClaims,
                     'occupancy_rate' => $totalStalls > 0 ? round(($totalActive / $totalStalls) * 100, 1) : 0,
                     'monthly_los_potential' => (float) $monthlyLosPotential,
                     'yearly_kios_potential' => (float) $yearlyKiosPotential,
@@ -152,7 +162,7 @@ class MarketController extends Controller
      */
     public function stalls(Request $request): JsonResponse
     {
-        $query = MarketStall::with(['market', 'zone', 'taxpayer']);
+        $query = MarketStall::with(['market', 'zone', 'taxpayer', 'taxObject']);
 
         if ($request->filled('market_id')) {
             $query->where('market_id', $request->query('market_id'));
@@ -168,6 +178,23 @@ class MarketController extends Controller
 
         if ($request->filled('status')) {
             $query->where('status', $request->query('status'));
+        }
+
+        if ($request->filled('claim_status')) {
+            $claimStatus = $request->query('claim_status');
+            if ($claimStatus === 'unclaimed') {
+                $query->where(function ($q) {
+                    $q->whereNull('metadata->is_claimed')
+                      ->orWhere('metadata->is_claimed', false);
+                });
+            } elseif ($claimStatus === 'all_claimed' || $claimStatus === 'claimed') {
+                $query->where('metadata->is_claimed', true);
+            } else {
+                $query->where('metadata->is_claimed', true)
+                      ->where('metadata->claim_status', $claimStatus);
+            }
+        } elseif ($request->boolean('claimed_only')) {
+            $query->where('metadata->is_claimed', true);
         }
 
         if ($request->filled('q')) {
