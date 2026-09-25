@@ -63,7 +63,7 @@ class RoleResolver
         'pertanian' => ['name' => 'Dinas Pertanian', 'category' => 'opd', 'core_role' => 'opd', 'group' => 'opd'],
         'damkar' => ['name' => 'Dinas Damkar & Penyelamatan', 'category' => 'opd', 'core_role' => 'opd', 'group' => 'opd'],
         'pertanahan' => ['name' => 'Dinas Pertanahan', 'category' => 'opd', 'core_role' => 'opd', 'group' => 'opd'],
-        // Juru ukur / survei lapangan pertanahan. Petugas ini TIDAK memutuskan
+        // Petugas survey lapangan pertanahan. Petugas ini TIDAK memutuskan
         // persetujuan — hanya melakukan pengukuran & mengunggah bukti lapangan.
         'petugas_survei' => ['name' => 'Petugas Survei Lapangan', 'category' => 'opd', 'core_role' => 'petugas', 'group' => 'opd'],
         'satpol_pp' => ['name' => 'Satuan Polisi Pamong Praja', 'category' => 'opd', 'core_role' => 'petugas', 'group' => 'petugas'],
