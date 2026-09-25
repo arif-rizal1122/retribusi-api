@@ -665,6 +665,17 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::prefix('opd')->middleware('opd_scope')->group(function () {
             Route::get('/sector-data', [\App\Http\Controllers\OpdSectorDataController::class, 'index']);
         });
+
+        // Mutasi PBB — Petugas & Admin (daftar, verifikasi, survey, penolakan)
+        Route::prefix('pbb/mutations')->group(function () {
+            Route::get('/', [\App\Http\Controllers\PbbMutationController::class, 'index']);
+            Route::get('/my-assignments', [\App\Http\Controllers\PbbMutationController::class, 'myAssignments']);
+            Route::post('/calculate-proportional', [\App\Http\Controllers\PbbMutationController::class, 'calculateProportionalDebt']);
+            Route::get('/{id}/split-items', [\App\Http\Controllers\PbbMutationController::class, 'splitItems']);
+            Route::post('/{id}/split-items/{itemId}/terbit-nib', [\App\Http\Controllers\PbbMutationController::class, 'terbitNib']);
+            Route::post('/{id}/status', [\App\Http\Controllers\PbbMutationController::class, 'updateStatus']);
+            Route::get('/{id}', [\App\Http\Controllers\PbbMutationController::class, 'show']);
+        });
     });
 
     // ----------------------------------------------------------------
