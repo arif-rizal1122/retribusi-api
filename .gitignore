@@ -59,3 +59,4 @@ storage/backup_pwd_*.csv
 *.bak.*
 *.bak-*
 .env.backup
+kaji_*.php

@@ -76,9 +76,6 @@ Route::post('/public/nib/candidate', [\App\Http\Controllers\NibPublicController:
 // Public: Banner beranda mobile
 Route::get('/public/banners', [\App\Http\Controllers\BannerController::class, 'indexPublic']);
 
-// Public: Resolve lokasi (reverse geocode & spatial engine) — map picker mobile
-Route::post('/location/resolve', [\App\Http\Controllers\LocationController::class, 'resolve']);
-
 // Public: Zero-Login Stiker QR Persil & Pembayaran Mandiri
 $publicObjectRoutes = function () {
     Route::get('/objects/{code}/bill', [\App\Http\Controllers\Api\V1\Public\PublicTaxObjectBillController::class, 'showBill']);
@@ -102,7 +99,7 @@ Route::post('/simulate-tax', function (Request $request) {
         'classification_id' => 'nullable|exists:retribution_classifications,id',
         'type_id' => 'nullable|exists:retribution_types,id',
         'calculation_formula' => 'nullable|string',
-        'variables' => 'nullable|array',
+        'variables' => 'required|array',
     ]);
 
     $formula = $request->calculation_formula;
@@ -134,7 +131,7 @@ Route::post('/simulate-tax', function (Request $request) {
         }
     }
 
-    $vars = $request->input('variables', []) ?: [];
+    $vars = $request->variables;
     $hasDirectPbbFormulaVariables = $isPbb && $formula && array_key_exists('njop', $vars);
 
     if ($isPbb && !$request->calculation_formula && !$hasDirectPbbFormulaVariables) {
@@ -160,58 +157,14 @@ Route::post('/simulate-tax', function (Request $request) {
     if (!$formula) {
         return response()->json(['error' => 'Rumus perhitungan tidak ditemukan.'], 422);
     }
-
-    // Auto-inject default official parameters for Reklame per Perwali 11/2025
-    $isReklame = ($request->classification_id == 188) 
-        || (isset($classCode) && str_contains($classCode, 'reklame')) 
-        || (isset($name) && str_contains(strtolower($name), 'reklame'));
-
-    if ($isReklame) {
-        $kat = strtolower($vars['kategori_reklame'] ?? 'videotron');
-        $njoprMap = [
-            'videotron' => 100000,
-            'megatron' => 100000,
-            'billboard' => 50000,
-            'neon_box' => 30000,
-            'baliho' => 25000,
-            'spanduk' => 15000,
-            'kendaraan' => 20000,
-        ];
-        if (empty($vars['njopr'])) {
-            $vars['njopr'] = $njoprMap[$kat] ?? 30000;
-        }
-        if (empty($vars['nspr'])) {
-            $vars['nspr'] = 35000;
-        }
-        $p = (float)($vars['panjang'] ?? 0);
-        $l = (float)($vars['lebar'] ?? 0);
-        if ($p > 0 && $l > 0) {
-            $vars['luas'] = $p * $l;
-        }
-    }
     
-    // Fallback variabel teknis (selaras dengan Perda 1/2024 & frontend TECHNICAL_VARIABLE_FALLBACKS)
-    $technicalFallbacks = [
-        'njopr' => 30000,
-        'nspr' => 35000,
-        'koefisien' => 1,
-        'tarif_dasar' => 10000,
-        'hda' => 2500,
-        'harga_satuan_njtl' => 1444.7,
-    ];
-    foreach ($technicalFallbacks as $tfKey => $tfVal) {
-        if (!isset($vars[$tfKey]) || $vars[$tfKey] === '' || $vars[$tfKey] === null) {
-            $vars[$tfKey] = $tfVal;
-        }
-    }
-
     $parser = new \App\Services\FormulaParserService();
-    $result = $parser->calculate($formula, $vars);
+    $result = $parser->calculate($formula, $request->variables);
     
     return response()->json([
         'classification' => $name,
         'formula' => $formula,
-        'variables' => $vars,
+        'variables' => $request->variables,
         'result' => $result,
         'formatted' => 'Rp ' . number_format($result, 0, ',', '.'),
     ]);
@@ -358,30 +311,31 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/ratings', [RatingController::class, 'store']);
         Route::get('/ratings', [RatingController::class, 'citizenIndex']);
 
-        // Pendaftaran NOP Mandiri (Warga), Document Parsers & Integrasi BPN
-        Route::post('/pbb/parse-pbg-document', [\App\Http\Controllers\PbbNopApplicationController::class, 'parsePbgDocument']);
-        Route::post('/pbb/parse-certificate-document', [\App\Http\Controllers\PbbNopApplicationController::class, 'parseCertificateDocument']);
-        Route::post('/pbb/parse-ktp-document', [\App\Http\Controllers\PbbNopApplicationController::class, 'parseKtpDocument']);
-        Route::get('/pbb/bpn-lookup', [\App\Http\Controllers\PbbNopApplicationController::class, 'bpnLookup']);
+        // Pendaftaran NOP Mandiri (Warga)
         Route::post('/pbb/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'store']);
         Route::get('/pbb/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'index']);
-
-        // Layanan Mutasi PBB (Skenario 1, 4, 5, 6, 7)
-        Route::get('/pbb/calculator/proportional-debt', [\App\Http\Controllers\PbbMutationController::class, 'calculateProportionalDebt']);
-        Route::post('/pbb/mutations/split-kavling', [\App\Http\Controllers\PbbMutationController::class, 'storeSplitKavling']);
-        Route::post('/pbb/mutations/rectification', [\App\Http\Controllers\PbbMutationController::class, 'storeRectification']);
-        Route::post('/pbb/mutations/transfer-ownership', [\App\Http\Controllers\PbbMutationController::class, 'storeTransferOwnership']);
-        Route::post('/pbb/mutations/amalgamation', [\App\Http\Controllers\PbbMutationController::class, 'storeAmalgamation']);
-        Route::post('/pbb/mutations/cancellation', [\App\Http\Controllers\PbbMutationController::class, 'storeCancellation']);
-        Route::get('/pbb/mutations/my-applications', [\App\Http\Controllers\PbbMutationController::class, 'myApplications']);
-        Route::get('/pbb/mutations/my-assignments', [\App\Http\Controllers\PbbMutationController::class, 'myAssignments']);
-        Route::get('/pbb/mutations/{id}', [\App\Http\Controllers\PbbMutationController::class, 'show'])->whereNumber('id');
 
         // QR Wajib Pajak
         Route::get('/my-qr', [\App\Http\Controllers\QrController::class, 'citizenMyQr']);
 
         // Permohonan Perubahan Data (warga)
         Route::get('/change-requests', [\App\Http\Controllers\TaxObjectChangeRequestController::class, 'citizenIndex']);
+
+        // Mutasi PBB — Pecah Kavling, Rektifikasi, Balik Nama, Gabung, Pembatalan
+        // Prefix disamakan dengan FE: /api/citizen/pbb/mutations/*
+        Route::prefix('pbb/mutations')->group(function () {
+            Route::get('/my-applications', [\App\Http\Controllers\PbbMutationController::class, 'myApplications']);
+            Route::get('/my-assignments', [\App\Http\Controllers\PbbMutationController::class, 'myAssignments']);
+            Route::post('/calculate-proportional', [\App\Http\Controllers\PbbMutationController::class, 'calculateProportionalDebt']);
+            Route::post('/split-kavling', [\App\Http\Controllers\PbbMutationController::class, 'storeSplitKavling']);
+            Route::post('/rectification', [\App\Http\Controllers\PbbMutationController::class, 'storeRectification']);
+            Route::post('/transfer-ownership', [\App\Http\Controllers\PbbMutationController::class, 'storeTransferOwnership']);
+            Route::post('/amalgamation', [\App\Http\Controllers\PbbMutationController::class, 'storeAmalgamation']);
+            Route::post('/cancellation', [\App\Http\Controllers\PbbMutationController::class, 'storeCancellation']);
+            Route::get('/{id}', [\App\Http\Controllers\PbbMutationController::class, 'show']);
+            Route::get('/{id}/split-items', [\App\Http\Controllers\PbbMutationController::class, 'splitItems']);
+            Route::post('/{id}/split-items/{itemId}/terbit-nib', [\App\Http\Controllers\PbbMutationController::class, 'terbitNib']);
+        });
     });
 
     // PBB Bapenda Citizen Actions
@@ -410,15 +364,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::match(['put', 'patch', 'post'], '/tax-objects/{taxObject}', [TaxObjectController::class, 'update']);
     Route::delete('/tax-objects/{taxObject}', [TaxObjectController::class, 'destroy']);
 
-    // Layanan Mutasi PBB (Direct Aliases)
-    Route::get('/pbb/calculator/proportional-debt', [\App\Http\Controllers\PbbMutationController::class, 'calculateProportionalDebt']);
-    Route::post('/pbb/mutations/split-kavling', [\App\Http\Controllers\PbbMutationController::class, 'storeSplitKavling']);
-    Route::post('/pbb/mutations/rectification', [\App\Http\Controllers\PbbMutationController::class, 'storeRectification']);
-    Route::post('/pbb/mutations/transfer-ownership', [\App\Http\Controllers\PbbMutationController::class, 'storeTransferOwnership']);
-    Route::post('/pbb/mutations/amalgamation', [\App\Http\Controllers\PbbMutationController::class, 'storeAmalgamation']);
-    Route::post('/pbb/mutations/cancellation', [\App\Http\Controllers\PbbMutationController::class, 'storeCancellation']);
-    Route::get('/pbb/mutations/my-applications', [\App\Http\Controllers\PbbMutationController::class, 'myApplications']);
-    Route::get('/pbb/mutations/{id}', [\App\Http\Controllers\PbbMutationController::class, 'show']);
+    // Resolve lokasi (reverse geocode) — map picker mobile
+    Route::post('/location/resolve', [\App\Http\Controllers\LocationController::class, 'resolve']);
 
     // ------------------------------------------------------------------------
     // Admin & Petugas ONLY (Restricted by EnsureAdmin middleware)
@@ -462,17 +409,6 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         });
 
         // Integrasi NIB-BPN & NOP PBB-P2 (Aplikasi Peta Pajak — Standar Output KPK & ATR/BPN)
-
-        // ===== Kanal Spasial SmartGIS Bapenda (25 Sep 2026) =====
-        // Sumber: impor dump PostGIS SmartGIS -> tabel smartgis_* (WGS84/EPSG:4326)
-        Route::prefix('smartgis')->group(function () {
-            Route::get('/stats', [\App\Http\Controllers\SpatialController::class, 'stats']);
-            Route::get('/bidang-by-point', [\App\Http\Controllers\SpatialController::class, 'bidangByPoint']);
-            Route::get('/bidang-bbox', [\App\Http\Controllers\SpatialController::class, 'bidangBbox']);
-            Route::get('/bidang/{nop}', [\App\Http\Controllers\SpatialController::class, 'bidangByNop']);
-            Route::get('/wilayah', [\App\Http\Controllers\SpatialController::class, 'wilayah']);
-        });
-
         Route::prefix('peta-pajak')->group(function () {
             Route::get('/stats', [\App\Http\Controllers\PetaPajakController::class, 'stats']);
             Route::get('/parcels', [\App\Http\Controllers\PetaPajakController::class, 'parcels']);
@@ -483,6 +419,9 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::post('/import-dhkp', [\App\Http\Controllers\PetaPajakController::class, 'importDhkp']);
             Route::get('/dhkp-template', [\App\Http\Controllers\PetaPajakController::class, 'dhkpTemplate']);
             Route::get('/tax-gap', [\App\Http\Controllers\PetaPajakController::class, 'taxGap']);
+            Route::get('/bounds', [\App\Http\Controllers\PetaPajakController::class, 'bounds']);
+            Route::get('/districts', [\App\Http\Controllers\PetaPajakController::class, 'districts']);
+            Route::get('/district-bounds', [\App\Http\Controllers\PetaPajakController::class, 'districtBounds']);
         });
 
         // H2H NIB-NOP Mapping (Sinkronisasi BHUMI BPN)
@@ -511,14 +450,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         // Pendaftaran NOP alias (tab admin PBB)
         Route::get('/pbb/bapenda/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'index']);
         Route::post('/pbb/bapenda/nop-applications/{id}/status', [\App\Http\Controllers\PbbNopApplicationController::class, 'updateStatus'])
-            ->middleware('role:admin,kepala_bapenda,kasubid_pendataan,petugas,opd');
-
-        // Mutasi PBB (Admin: 3-Tier Governance Matrix & Petugas Survey)
-        Route::get('/pbb/mutations/my-assignments', [\App\Http\Controllers\PbbMutationController::class, 'myAssignments']);
-        Route::get('/pbb/mutations', [\App\Http\Controllers\PbbMutationController::class, 'index']);
-        Route::get('/pbb/mutations/{id}', [\App\Http\Controllers\PbbMutationController::class, 'show'])->whereNumber('id');
-        Route::post('/pbb/mutations/{id}/status', [\App\Http\Controllers\PbbMutationController::class, 'updateStatus'])
-            ->middleware('role:admin,kepala_bapenda,kasubid_pendataan,petugas,opd');
+            ->middleware('role:admin,kepala_bapenda');
 
         // Pelaporan E-SPTPD
         Route::post('/sptpd', [\App\Http\Controllers\SptpdController::class, 'store']);
@@ -532,7 +464,6 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         });
 
         Route::apiResource('petugas-tasks', \App\Http\Controllers\PetugasTaskController::class);
-        Route::apiResource('tasks', \App\Http\Controllers\PetugasTaskController::class);
         Route::apiResource('spot-checks', \App\Http\Controllers\SpotCheckController::class);
         Route::patch('spot-checks/{id}/status', [\App\Http\Controllers\SpotCheckController::class, 'updateStatus']);
         Route::get('spot-checks/tax-object/{id}/estimation', [\App\Http\Controllers\SpotCheckController::class, 'getEstimatedRevenue']);
@@ -682,104 +613,9 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         });
 
         // Bank H2H Monitoring Logs
-        Route::prefix('bank-h2h')->middleware('role:super_admin')->group(function () {
+        Route::prefix('bank-h2h')->group(function () {
             Route::get('/logs', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'logs']);
             Route::post('/reconcile', [\App\Http\Controllers\Api\V1\Bank\BankH2HController::class, 'reconcile']);
-        });
-
-        // ─────────────────────────────────────────────────────────────
-        // RBAC BERBASIS LAYANAN — pemisahan tupoksi Kabid vs Kasubid
-        //
-        //   Kasubid : memeriksa data untuk VERIFIKASI  (service_action:verify)
-        //   Kabid   : melakukan PENUGASAN & otorisasi  (service_action:assign)
-        //
-        // Gate ini bersifat MENAMBAH di atas EnsureAdmin. Role di luar matriks
-        // layanan (petugas/opd) tidak terpengaruh. Domain wilayah tetap dijaga
-        // EnsureTaxDomain pada route masing-masing.
-        // ─────────────────────────────────────────────────────────────
-        Route::prefix('bidang-pajak')->group(function () {
-            // Info matriks hak akses akun yang sedang login.
-            Route::get('/akses', function (\Illuminate\Http\Request $request) {
-                $user = $request->user();
-                $role = $user->role ?? null;
-
-                return response()->json([
-                    'role'       => $role,
-                    'is_scoped'  => \App\Support\ServiceAccessMatrix::isServiceScopedRole($role),
-                    'access'     => \App\Support\ServiceAccessMatrix::accessForRole($role),
-                    'profile'    => \App\Support\ServiceAccessMatrix::profileFor($role),
-                ]);
-            });
-
-            // ── VERIFIKASI (Kasubid memeriksa data) ──
-            Route::middleware('service_action:verify')->group(function () {
-                Route::get('/verifikasi/daftar', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'daftarVerifikasi']);
-                Route::get('/verifikasi/{id}', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'detailVerifikasi']);
-                Route::post('/verifikasi/{id}/periksa', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'periksaVerifikasi']);
-            });
-
-            // ── PENUGASAN (Kabid menugaskan) ──
-            Route::middleware('service_action:assign')->group(function () {
-                Route::get('/penugasan/daftar', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'daftarPenugasan']);
-                Route::post('/penugasan', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'buatPenugasan']);
-                Route::post('/penugasan/{id}/otorisasi', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'otorisasiPenugasan']);
-            });
-
-            // ── MASTER PENUGASAN PETUGAS (Kabid menetapkan siapa pegang
-            //    layanan apa). Bukan menu baru — melengkapi rangka RBAC di atas:
-            //    BidangPajakController menugaskan PER PEKERJAAN, sedangkan ini
-            //    menetapkan SEKALI lalu dipakai AutoAssignService berulang kali.
-            //
-            //    Aturan pengelola 24 Sep 2026: seluruh layanan domain SELALU
-            //    ditampilkan (termasuk yang belum ada petugas), dan petugas
-            //    dengan frekuensi 0 tetap tampil sebagai prioritas.
-            Route::middleware('service_action:assign')->group(function () {
-                Route::get('/petugas-layanan', [\App\Http\Controllers\Api\V1\PenugasanPetugasController::class, 'daftar']);
-                Route::get('/petugas-layanan/petugas', [\App\Http\Controllers\Api\V1\PenugasanPetugasController::class, 'daftarPetugas']);
-                Route::post('/petugas-layanan/tetapkan', [\App\Http\Controllers\Api\V1\PenugasanPetugasController::class, 'tetapkan']);
-                Route::post('/petugas-layanan/cabut', [\App\Http\Controllers\Api\V1\PenugasanPetugasController::class, 'cabut']);
-            });
-
-            // ── PEKERJAAN LAPANGAN — serah-terima petugas -> Kasubid ──
-            //    Alur maker-checker yang diminta pengelola: petugas hanya
-            //    MENGAJUKAN ("sudah saya kerjakan"), Kasubid yang MEMASTIKAN
-            //    SELESAI. Tanpa blok ini, tugas lapangan tidak punya titik
-            //    akhir dan antrean Kasubid tidak pernah terisi.
-            Route::prefix('lapangan')->group(function () {
-                // Sisi PETUGAS: PIC mengajukan hasil pekerjaannya.
-                // Tidak digate service_action — petugas memang di luar
-                // matriks layanan (kewenangannya dari penetapan master).
-                Route::get('/tugas-saya', [\App\Http\Controllers\Api\V1\PekerjaanLapanganController::class, 'tugasSaya']);
-                Route::post('/{id}/ajukan', [\App\Http\Controllers\Api\V1\PekerjaanLapanganController::class, 'ajukan']);
-
-                // Sisi KASUBID: memeriksa hasil dan memutuskan selesai/tidak.
-                Route::middleware('service_action:verify')->group(function () {
-                    Route::get('/daftar', [\App\Http\Controllers\Api\V1\PekerjaanLapanganController::class, 'daftar']);
-                    Route::get('/{id}', [\App\Http\Controllers\Api\V1\PekerjaanLapanganController::class, 'detail']);
-                    Route::post('/{id}/verifikasi', [\App\Http\Controllers\Api\V1\PekerjaanLapanganController::class, 'verifikasi']);
-                    Route::post('/{id}/tolak', [\App\Http\Controllers\Api\V1\PekerjaanLapanganController::class, 'tolak']);
-                });
-            });
-
-            // ── KABID PER OBJEK — konfirmasi akhir & ganti petugas ──
-            //    Menutup rantai: petugas mengajukan -> Kasubid memverifikasi
-            //    -> KABID mengonfirmasi. Tanpa blok ini, pekerjaan lapangan
-            //    menggantung di TERVERIFIKASI tanpa titik akhir.
-            Route::prefix('kabid')->middleware('service_action:assign')->group(function () {
-                Route::get('/objek', [\App\Http\Controllers\Api\V1\KabidPerObjekController::class, 'daftar']);
-                Route::get('/objek/{id}', [\App\Http\Controllers\Api\V1\KabidPerObjekController::class, 'detail']);
-                Route::get('/objek/{id}/kandidat', [\App\Http\Controllers\Api\V1\KabidPerObjekController::class, 'kandidat']);
-                Route::post('/objek/{id}/konfirmasi', [\App\Http\Controllers\Api\V1\KabidPerObjekController::class, 'konfirmasi']);
-                Route::post('/objek/{id}/ganti-petugas', [\App\Http\Controllers\Api\V1\KabidPerObjekController::class, 'gantiPetugas']);
-            });
-
-            // ── OTORISASI L3 (Kabid memutus permohonan yang sudah diperiksa
-            //    Kasubid). Inilah jalur Kasubid -> Kabid yang sebelumnya
-            //    tidak ada, sehingga antrean Kabid tidak pernah terisi.
-            Route::middleware('service_action:approve')->group(function () {
-                Route::get('/otorisasi/daftar', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'daftarOtorisasi']);
-                Route::post('/otorisasi/{id}', [\App\Http\Controllers\Api\V1\BidangPajakController::class, 'putuskanOtorisasi']);
-            });
         });
 
         // Official BAPENDA Documents
@@ -800,46 +636,6 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/strd/{billId}', [\App\Http\Controllers\DocumentController::class, 'strd']);
             Route::get('/spp/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'spp']);
             Route::get('/spmp/{noticeId}', [\App\Http\Controllers\DocumentController::class, 'spmp']);
-        });
-
-        // ─────────────────────────────────────────────────────────────
-        // Wilayah Pajak Daerah — gate pemisahan tupoksi (Wilayah I / II)
-        // Hanya akun yang domain-nya cocok (atau admin/super_admin) lolos.
-        // Akun wilayah dengan metadata kosong DITOLAK (fail-closed).
-        // ─────────────────────────────────────────────────────────────
-        Route::prefix('wilayah-1')->middleware('tax_domain:wilayah_1')->group(function () {
-            // PBB-P2, BPHTB, Reklame, MBLB, Sarang Burung Walet, Opsen PKB/BBNKB
-            Route::get('/objek', [\App\Http\Controllers\Api\V1\WilayahController::class, 'objekWilayah1']);
-            Route::get('/tagihan', [\App\Http\Controllers\Api\V1\WilayahController::class, 'tagihanWilayah1']);
-        });
-
-        Route::prefix('wilayah-2')->middleware('tax_domain:wilayah_2')->group(function () {
-            // PBJT (Makanan/Minuman, Perhotelan, Hiburan, Parkir, Kesenian, Listrik), Pajak Air Tanah
-            Route::get('/objek', [\App\Http\Controllers\Api\V1\WilayahController::class, 'objekWilayah2']);
-            Route::get('/tagihan', [\App\Http\Controllers\Api\V1\WilayahController::class, 'tagihanWilayah2']);
-        });
-
-        // Info domain penugasan akun yang sedang login — dipakai FE untuk
-        // menyembunyikan menu di luar wewenang (bukan pengamanan, hanya UX).
-        Route::get('/me/tax-domain', function (\Illuminate\Http\Request $request) {
-            $user = $request->user();
-            $domain = \App\Support\TaxDomainHelper::getDomain($user);
-
-            // Tahan dua model auth: User (petugas) punya kolom role,
-            // Taxpayer (warga) tidak — jangan sampai TypeError jadi 500.
-            $role = $user->role ?? ($user instanceof \App\Models\Taxpayer ? 'warga' : null);
-
-            $serviceAccess = \App\Support\ServiceAccessMatrix::isServiceScopedRole($role)
-                ? \App\Support\ServiceAccessMatrix::accessForRole($role)
-                : null;
-
-            return response()->json([
-                'role' => $role,
-                'tax_domain' => $domain,
-                'classification_codes' => \App\Support\TaxDomainHelper::getClassificationCodes($domain),
-                'retribution_type_ids' => \App\Support\TaxDomainHelper::getRetributionTypeIds($domain),
-                'service_access' => $serviceAccess,
-            ]);
         });
 
         // Modul Penyuluhan & Sosialisasi
@@ -879,7 +675,6 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         // Lab Lingkungan (UPTD)
         Route::get('/lab/parameters', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'indexParameters']);
         Route::post('/lab/orders', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'storeOrder']);
-        Route::get('/lab/orders/by-number/{orderNumber}', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'showOrderByNumber']);
         Route::get('/lab/orders/{id}', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'showOrder']);
         Route::post('/lab/orders/{id}/billing', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'generateBilling']);
         Route::post('/lab/orders/{id}/results', [\App\Http\Controllers\Api\V1\Dlh\DlhLabServiceController::class, 'uploadResult']);
@@ -903,89 +698,12 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/trash/calculate', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'calculateTariff']);
         Route::post('/trash/transfer-occupant/{taxObjectId}', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'transferOccupant']);
         Route::post('/trash/generate-bills', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'generateMonthlyBills']);
-        Route::get('/trash/inquiry', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'inquiry'])
-            ->middleware('throttle:30,1');
+        Route::get('/trash/inquiry', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'inquiry']);
         Route::post('/trash/empty-house-notice/{taxObjectId}', [\App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController::class, 'reportEmptyHouse']);
     };
 
     Route::prefix('dlh')->group($dlhRoutes);
     Route::prefix('v1/dlh')->group($dlhRoutes);
-
-    // ----------------------------------------------------------------
-    // Operasi tulis Disperindag Pasar (wajib auth)
-    Route::match(['put', 'patch', 'post'], '/disperindag/stalls/{id}/status', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateStallStatus']);
-    Route::match(['put', 'patch', 'post'], '/v1/disperindag/stalls/{id}/status', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateStallStatus']);
-    Route::match(['put', 'patch', 'post'], '/disperindag/stalls/{id}', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateStall']);
-    Route::match(['put', 'patch', 'post'], '/v1/disperindag/stalls/{id}', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateStall']);
-    Route::post('/disperindag/stalls', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'createStall']);
-    Route::post('/v1/disperindag/stalls', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'createStall']);
-    Route::post('/disperindag/buildings/tariff', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateBuildingTariff']);
-    Route::post('/v1/disperindag/buildings/tariff', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateBuildingTariff']);
-    Route::post('/disperindag/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'createBuilding']);
-    Route::post('/v1/disperindag/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'createBuilding']);
-    Route::delete('/disperindag/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'deleteBuilding']);
-    Route::delete('/v1/disperindag/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'deleteBuilding']);
-    Route::post('/disperindag/tickets/daily', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'issueDailyTicket']);
-    Route::post('/v1/disperindag/tickets/daily', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'issueDailyTicket']);
-    Route::post('/disperindag/stalls/{id}/pay', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'payStall']);
-    Route::post('/v1/disperindag/stalls/{id}/pay', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'payStall']);
-    Route::get('/disperindag/officer-stats', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'officerStats']);
-    Route::get('/v1/disperindag/officer-stats', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'officerStats']);
-    Route::match(['put', 'patch', 'post'], '/disperindag/officers/{id}', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateOfficer']);
-    Route::match(['put', 'patch', 'post'], '/v1/disperindag/officers/{id}', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateOfficer']);
-    Route::post('/disperindag/tariffs/batch-assign', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'batchAssignTariff']);
-    Route::post('/v1/disperindag/tariffs/batch-assign', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'batchAssignTariff']);
-
-    // Tautkan / Klaim Lapak Pasar & Lepas Tautan (Unclaim)
-    Route::post('/disperindag/stalls/{id}/claim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'claimStall']);
-    Route::post('/v1/disperindag/stalls/{id}/claim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'claimStall']);
-    Route::post('/disperindag/stalls/{id}/unclaim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'unclaimStall']);
-    Route::post('/v1/disperindag/stalls/{id}/unclaim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'unclaimStall']);
-    Route::post('/disperindag/tax-objects/{taxObjectId}/unclaim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'unclaimByTaxObject']);
-    Route::post('/v1/disperindag/tax-objects/{taxObjectId}/unclaim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'unclaimByTaxObject']);
-    Route::post('/disperindag/stalls/{id}/verify-claim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'verifyClaim']);
-    Route::post('/v1/disperindag/stalls/{id}/verify-claim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'verifyClaim']);
-
-});
-
-// ------------------------------------------------------------------------
-// MODUL DINAS PERDAGANGAN & PERINDUSTRIAN (DISPERINDAG) — Perda 1/2024
-// Data pasar, kios, los, juru pungut, dan KPI summary (dapat diakses dashboard & publik)
-// ------------------------------------------------------------------------
-$disperindagPublicRoutes = function () {
-    Route::get('/summary', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'summary']);
-    Route::get('/kpi', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'summary']);
-    Route::get('/markets', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'markets']);
-    Route::get('/zones', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'zones']);
-    Route::get('/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'buildings']);
-    Route::get('/stalls', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'stalls']);
-    Route::get('/stalls/available', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'availableStalls']);
-    Route::get('/officers', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'officers']);
-};
-
-Route::prefix('disperindag')->group($disperindagPublicRoutes);
-Route::prefix('v1/disperindag')->group($disperindagPublicRoutes);
-
-// ------------------------------------------------------------------------
-// MODUL DINAS PARIWISATA & KEBUDAYAAN (OPD 16) — Perda Kota Baubau 1/2024
-// Top-level: katalog & portal WNA harus publik (tanpa auth:sanctum).
-// Endpoint tulis tetap dilindungi auth:sanctum di dalam blok.
-// ------------------------------------------------------------------------
-Route::prefix('tourism')->group(function () {
-    // Katalog publik: destinasi, kuota, matriks tarif, add-on sewa alat
-    Route::get('/catalog', [\App\Http\Controllers\Api\V1\Pariwisata\TourismTicketController::class, 'getCatalog']);
-
-    // Portal wisatawan asing — guest checkout tanpa NIK/login
-    Route::post('/guest-checkout', [\App\Http\Controllers\Api\V1\Pariwisata\ForeignTouristController::class, 'guestCheckout']);
-    Route::get('/ticket-status', [\App\Http\Controllers\Api\V1\Pariwisata\ForeignTouristController::class, 'checkTicketStatus']);
-
-    // Butuh login: pemesanan domestik, check-in gerbang, keringanan, link mitra
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/order', [\App\Http\Controllers\Api\V1\Pariwisata\TourismTicketController::class, 'order']);
-        Route::post('/check-in', [\App\Http\Controllers\Api\V1\Pariwisata\TourismTicketController::class, 'scanCheckIn']);
-        Route::post('/kiosk-relief', [\App\Http\Controllers\Api\V1\Pariwisata\TourismTicketController::class, 'applyKioskRelief']);
-        Route::post('/partner-link', [\App\Http\Controllers\Api\V1\Pariwisata\ForeignTouristController::class, 'generateBookingLink']);
-    });
 });
 
 // ------------------------------------------------------------------------
@@ -1043,8 +761,6 @@ Route::group(['prefix' => 'snap', 'namespace' => '\App\Http\Controllers\Api\V1\P
     // BNI VA Billing (callback v1.1 - instruksi BNI 30 Agu 2026)
     Route::post('/v1.1/transfer-va/inquiry', 'BniSnapController@inquiry');
     Route::post('/v1.1/transfer-va/payment', 'BniSnapController@payment');
-    // BNI VA Billing — inquiry status (SC26, path v1.0 - instruksi BNI 30 Agu 2026)
-    Route::post('/v1.0/transfer-va/status', 'BniSnapController@inquiryStatus');
 });
 
 // ------------------------------------------------------------------------
@@ -1082,9 +798,6 @@ Route::middleware('auth:sanctum')->prefix('tpi')->group(function () {
     Route::get('/daily-summary', [\App\Http\Controllers\Api\TpiTransactionController::class, 'dailySummary']);
     Route::get('/cross-pbjt-stats', [\App\Http\Controllers\Api\TpiTransactionController::class, 'crossPbjtStats']);
 });
-
-// PBB Auto-Mutation Webhook (e-BPHTB Settlement)
-Route::post('/pbb/callbacks/bphtb-paid', [\App\Http\Controllers\PbbMutationController::class, 'bphtbPaidCallback']);
 
 // ------------------------------------------------------------------------
 // DEPLOY HOOK (Staging only - protected by X-Deploy-Secret header)

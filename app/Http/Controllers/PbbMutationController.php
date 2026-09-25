@@ -826,4 +826,81 @@ class PbbMutationController extends Controller
             'data' => $mutation,
         ]);
     }
+
+    /**
+     * Catat/terbitkan NIB per kavling hasil pecah bidang.
+     *
+     * POSISI NIB: hasil TERBITAN Kantah ATR/BPN, BUKAN diisi pendaftar.
+     * Hanya boleh dijalankan setelah mutasi diverifikasi (L1/L2/L3 selesai).
+     *
+     * PATCH /api/pbb/mutations/{id}/split-items/{itemId}/nib
+     * Body: { nib: "12.34.56.78.90.12345", nib_status: "TERBIT" }
+     */
+    public function terbitNib(Request $request, $id, $itemId)
+    {
+        $mutation = PbbMutation::find($id);
+        if (!$mutation) {
+            return response()->json(['success' => false, 'message' => 'Mutasi tidak ditemukan.'], 404);
+        }
+
+        // NIB hanya terbit setelah verifikasi berjalan (minimal L2 disetujui).
+        $sudahVerifikasi = $mutation->verified_l1_at !== null || $mutation->approved_l3_at !== null;
+        if (!$sudahVerifikasi) {
+            return response()->json([
+                'success' => false,
+                'message' => 'NIB hanya dapat diterbitkan setelah bidang terverifikasi.',
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'nib' => 'required|string|max:30',
+            'nib_status' => 'nullable|string|in:BELUM_TERBIT,MENUNGGU_BPN,TERBIT',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $item = PbbSplitItem::where('pbb_mutation_id', $mutation->id)->find($itemId);
+        if (!$item) {
+            return response()->json(['success' => false, 'message' => 'Kavling tidak ditemukan pada mutasi ini.'], 404);
+        }
+
+        $status = $request->input('nib_status', 'TERBIT');
+        $item->update([
+            'nib' => trim((string) $request->nib),
+            'nib_status' => $status,
+            'nib_issued_at' => $status === 'TERBIT' ? now() : null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'NIB kavling #' . $item->item_index . ' berhasil dicatat.',
+            'data' => $item->fresh(),
+        ]);
+    }
+
+    /**
+     * Daftar kavling + status NIB untuk satu mutasi (dipakai halaman verifikasi).
+     * GET /api/pbb/mutations/{id}/split-items
+     */
+    public function splitItems($id)
+    {
+        $mutation = PbbMutation::with('splitItems')->find($id);
+        if (!$mutation) {
+            return response()->json(['success' => false, 'message' => 'Mutasi tidak ditemukan.'], 404);
+        }
+
+        $sudahVerifikasi = $mutation->verified_l1_at !== null || $mutation->approved_l3_at !== null;
+
+        return response()->json([
+            'success' => true,
+            'mutation_id' => $mutation->id,
+            'ticket_no' => $mutation->ticket_no,
+            'parent_nop' => $mutation->parent_nop,
+            'sudah_verifikasi' => $sudahVerifikasi,
+            'boleh_terbit_nib' => $sudahVerifikasi,
+            'data' => $mutation->splitItems,
+        ]);
+    }
 }

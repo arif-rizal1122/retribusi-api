@@ -16,6 +16,10 @@ class PbbSplitItem extends Model
         'building_area_m2',
         'proportional_debt_amount',
         'generated_nop',
+        // NIB: hasil TERBITAN setelah verifikasi BPN, bukan input pendaftar
+        'nib',
+        'nib_status',
+        'nib_issued_at',
         'status',
         'metadata',
     ];
@@ -24,6 +28,7 @@ class PbbSplitItem extends Model
         'land_area_m2' => 'decimal:2',
         'building_area_m2' => 'decimal:2',
         'proportional_debt_amount' => 'decimal:2',
+        'nib_issued_at' => 'datetime',
         'metadata' => 'array',
     ];
 

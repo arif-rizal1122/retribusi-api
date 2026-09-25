@@ -78,10 +78,17 @@ class PetaPajakController extends Controller
         $dbNopCount = $hasTaxObj ? DB::table('tax_objects')->count() : 0;
         $totalNop   = $dbNopCount > 0 ? $dbNopCount : $nopUnik;
 
-        // ----- Bangunan LOD1 (kolom nyata: building_size_m2) -----
+        // ----- Luas bangunan (kolom nyata: building_size_m2) -----
+        // CATATAN JUJUR: sumber data bangunan/LOD1 BELUM tersedia di M-PAD.
+        // Layer SmartGIS gis_bangunan kosong (0 baris); tax_objects hanya punya
+        // beberapa baris uji dengan NOP NULL. Jangan tampilkan sebagai data nyata.
         $totalLod1 = $hasTaxObj
-            ? DB::table('tax_objects')->whereNotNull('building_size_m2')->where('building_size_m2', '>', 0)->count()
+            ? DB::table('tax_objects')->whereNotNull('building_size_m2')
+                ->where('building_size_m2', '>', 0)
+                ->whereNotNull('nop')->where('nop', '<>', '')
+                ->count()
             : 0;
+        $punyaSumberBangunan = $totalLod1 > 0;
 
         // ----- Status pencocokan NIB-NOP (NYATA, tanpa kalibrasi) -----
         $matchedCount = 0; $pendingCount = 0; $conflictCount = 0; $notFoundCount = 0;
@@ -134,10 +141,13 @@ class PetaPajakController extends Controller
                 'sub' => 'Basis Data Operasional M-PAD',
             ],
             'bangunan_lod1' => [
-                'label' => 'Bangunan LOD1',
-                'display' => $fmt($totalLod1) . ' Unit',
+                'label' => 'Bangunan (Luas m2)',
+                'display' => $punyaSumberBangunan ? $fmt($totalLod1) . ' Unit' : '—',
                 'value' => $totalLod1,
-                'sub' => 'Objek pajak dengan data luas bangunan',
+                'sub' => $punyaSumberBangunan
+                    ? 'Objek pajak dengan luas bangunan terisi'
+                    : 'Data bangunan belum tersedia di M-PAD (layer SmartGIS kosong).',
+                'tersedia' => $punyaSumberBangunan,
             ],
             'cakupan_tertaut' => [
                 'label' => 'Cakupan Tertaut NIB-NOP',
@@ -245,8 +255,52 @@ class PetaPajakController extends Controller
     {
         $districtFilter = $request->query('district');
         $statusFilter   = $request->query('status');
-        $limit          = min((int) $request->query('limit', 500), 5000);
+        // Limit dinaikkan: dengan bbox, 1 layar biasanya < 3.000 bidang.
+        // Tanpa bbox tetap dibatasi 5.000 supaya respons tidak membengkak.
+        $limit          = min((int) $request->query('limit', 500), 20000);
         $search         = $request->query('search');
+        // bbox = "minLng,minLat,maxLng,maxLat": ambil HANYA bidang yang terlihat
+        // di layar -> semua bidang bisa tampil tanpa batas limit besar.
+        $bboxFilter     = $request->query('bbox');
+        // --- LOD OTOMATIS: presisi tetap, jumlah data menyesuaikan zoom ---
+        // Klien boleh override dgn ?detail=centroid|ringkas|penuh
+        // Kalau tidak, server tentukan sendiri dari zoom + luas bbox.
+        $detailMode = strtolower(trim((string) $request->query('detail', '')));
+        $zoom       = $request->query('zoom');
+        $zoom       = is_numeric($zoom) ? (float) $zoom : null;
+
+        // Hitung mode otomatis dari zoom
+        if ($detailMode === '') {
+            if ($zoom === null) {
+                $detailMode = 'ringkas';          // fallback aman
+            } elseif ($zoom <= 12.5) {
+                $detailMode = 'centroid';         // seluruh kota -> titik saja
+            } elseif ($zoom <= 14.5) {
+                $detailMode = 'ringkas';          // kecamatan -> poligon ~1 m
+            } else {
+                $detailMode = 'penuh';            // detail bidang -> presisi asli
+            }
+        }
+
+        // Normalisasi alias
+        $detailMode = match ($detailMode) {
+            'full', 'exact', 'asli'   => 'penuh',
+            'ringan', 'light', 'low'  => 'ringkas',
+            'titik', 'point', 'dots'  => 'centroid',
+            default                   => in_array($detailMode, ['penuh', 'ringkas', 'centroid'], true)
+                                            ? $detailMode : 'ringkas',
+        };
+
+        $fullDetail    = ($detailMode === 'penuh');
+        $centroidOnly  = ($detailMode === 'centroid');
+
+        // Batas jumlah bidang per mode -> jaga payload tetap ringan
+        $limitByMode = match ($detailMode) {
+            'centroid' => 6000,    // titik murah -> boleh banyak
+            'ringkas'  => 8000,    // poligon ~1 m
+            default    => 2000,    // presisi asli tapi area sudah sempit
+        };
+        $limit = min((int) $request->query('limit', $limitByMode), $limitByMode);
 
         if (!Schema::connection('smartgis')->hasTable('smartgis_bidang')) {
             return response()->json([
@@ -258,6 +312,20 @@ class PetaPajakController extends Controller
         }
 
         // Kolom kd_kec/nm_kec sudah precomputed (prefix NOP) -> tanpa join spasial.
+        // Geometri per mode (MariaDB 10.6: tak ada ST_IsValid/ST_Simplify*).
+        //   centroid -> NULL (FE pakai titik center saja, jauh lebih ringan)
+        //   ringkas  -> presisi 5 desimal (~1 m), cukup untuk lebar kecamatan
+        //   penuh    -> presisi asli 9 desimal (tanpa kehilangan apa pun)
+        // Guard ST_IsEmpty mencegah geometri kosong -> JSON gagal encode (HTTP 500).
+        $geomWkt = 'IF(b.geometry IS NULL OR ST_IsEmpty(b.geometry), NULL, b.geometry)';
+        if ($centroidOnly) {
+            $geomExpr = 'NULL';
+        } elseif ($fullDetail) {
+            $geomExpr = 'ST_AsGeoJSON(' . $geomWkt . ')';
+        } else {
+            $geomExpr = 'ST_AsGeoJSON(' . $geomWkt . ', 5)';
+        }
+
         $query = DB::connection('smartgis')->table('smartgis_bidang as b')
             ->select([
                 'b.gid as id',
@@ -266,10 +334,17 @@ class PetaPajakController extends Controller
                 'b.d_luas as luas_sertifikat',
                 'b.kd_kec',
                 'b.nm_kec',
+                DB::raw('(SELECT k.nm_kel FROM smartgis_kelurahan k
+                          WHERE LEFT(k.kd_kel, 10) = LEFT(b.nop, 10)
+                          LIMIT 1) as nm_kel'),
                 DB::raw('COALESCE(b.nm_kec, "Tidak Terdeteksi") as district'),
-                DB::raw('ST_AsGeoJSON(b.geometry) as geometry'),
-                DB::raw('ST_Y(ST_Centroid(b.geometry)) as center_lat'),
-                DB::raw('ST_X(ST_Centroid(b.geometry)) as center_lng'),
+                DB::raw($geomExpr . ' as geometry'),
+                // Guard: MariaDB tidak punya ST_IsValid. Cukup cek IS NULL + ST_IsEmpty.
+                // Centroid bidang degenerat bisa jadi Inf/NaN -> JSON gagal encode (HTTP 500).
+                DB::raw('IF(b.geometry IS NULL OR ST_IsEmpty(b.geometry),
+                          NULL, ST_Y(ST_Centroid(b.geometry))) as center_lat'),
+                DB::raw('IF(b.geometry IS NULL OR ST_IsEmpty(b.geometry),
+                          NULL, ST_X(ST_Centroid(b.geometry))) as center_lng'),
             ]);
 
         // Filter kecamatan: terima kode (7472710) atau nama (Wolio)
@@ -297,13 +372,42 @@ class PetaPajakController extends Controller
             $query->where('b.nop', 'like', '%' . $search . '%');
         }
 
+        // Filter bounding-box: hanya bidang yang beririsan dengan area layar.
+        // ST_GeomFromText + MBRIntersects -> memanfaatkan SPATIAL INDEX.
+        if ($bboxFilter) {
+            $parts = array_map('trim', explode(',', $bboxFilter));
+            if (count($parts) === 4 && is_numeric($parts[0]) && is_numeric($parts[1])
+                && is_numeric($parts[2]) && is_numeric($parts[3])) {
+                $minLng = (float) $parts[0];
+                $minLat = (float) $parts[1];
+                $maxLng = (float) $parts[2];
+                $maxLat = (float) $parts[3];
+                // Pastikan min < max (Leaflet kadang kirim terbalik saat zoom out).
+                if ($minLng > $maxLng) { [$minLng, $maxLng] = [$maxLng, $minLng]; }
+                if ($minLat > $maxLat) { [$minLat, $maxLat] = [$maxLat, $minLat]; }
+                $bboxWkt = "POLYGON(($minLng $minLat, $maxLng $minLat, $maxLng $maxLat, $minLng $maxLat, $minLng $minLat))";
+                $query->whereRaw('MBRIntersects(b.geometry, ST_GeomFromText(?, 4326))', [$bboxWkt]);
+            }
+        }
+
         $rows = $query->limit($limit)->get();
 
         $data = $rows->map(function ($r) {
-            $luas = (float) ($r->luas ?? 0);
+            // Guard NaN/Inf -> 0 supaya JSON tetap bisa di-encode
+            $luas = is_numeric($r->luas) ? (float) $r->luas : 0.0;
+            if (!is_finite($luas)) { $luas = 0.0; }
             $geom = json_decode($r->geometry ?? 'null', true);
-            $centerLat = $r->center_lat !== null ? (float) $r->center_lat : null;
-            $centerLng = $r->center_lng !== null ? (float) $r->center_lng : null;
+            // Center WAJIB finite di KEDUA sumbu. Kalau salah satu NULL/NaN/Inf
+            // -> center = null. (Bug lama: hanya center_lat yang dicek.)
+            $centerLat = ($r->center_lat !== null && is_numeric($r->center_lat))
+                ? (float) $r->center_lat : null;
+            $centerLng = ($r->center_lng !== null && is_numeric($r->center_lng))
+                ? (float) $r->center_lng : null;
+            if ($centerLat !== null && !is_finite($centerLat)) { $centerLat = null; }
+            if ($centerLng !== null && !is_finite($centerLng)) { $centerLng = null; }
+            // Hanya pakai center kalau KEDUA-nya sah
+            $center = ($centerLat !== null && $centerLng !== null)
+                ? [$centerLat, $centerLng] : null;
 
             // Status nyata berbasis kelengkapan data
             if (empty($r->nop)) {
@@ -320,17 +424,20 @@ class PetaPajakController extends Controller
                 'nop'              => $r->nop,
                 'taxpayer_name'    => null, // dilengkapi dari tax_objects bila diminta
                 'district'         => $r->district,
-                'sub_district'     => null,
+                'sub_district'     => $r->nm_kel ?: null, // kelurahan dari master smartgis_kelurahan
                 'address'          => null,
                 'land_area_m2'     => $luas,
-                'land_area_sertifikat_m2' => $r->luas_sertifikat !== null ? (float) $r->luas_sertifikat : null,
+                'land_area_sertifikat_m2' => ($r->luas_sertifikat !== null
+                    && is_numeric($r->luas_sertifikat)
+                    && is_finite((float) $r->luas_sertifikat))
+                    ? (float) $r->luas_sertifikat : null,
                 'building_area_m2' => null,
                 'znt_class'        => null,
                 'znt_value'        => null,
                 'njop_total'       => null,
                 'match_status'     => $status,
                 'source'           => 'smartgis_bapenda',
-                'center'           => ($centerLat !== null) ? [$centerLat, $centerLng] : null,
+                'center'           => $center,
                 'polygon'          => null,
                 'geometry'         => $geom, // GeoJSON asli dari DB
             ];
@@ -341,6 +448,9 @@ class PetaPajakController extends Controller
             'source' => 'database_spatial_smartgis',
             'total'  => $data->count(),
             'limit'  => $limit,
+            'detail' => $detailMode,
+            'zoom'   => $zoom,
+            'bbox'   => $bboxFilter ?: null,
             'data'   => $data,
         ]);
     }
@@ -390,6 +500,7 @@ class PetaPajakController extends Controller
      */
     public function match(Request $request)
     {
+        \Illuminate\Support\Facades\Cache::forget('peta_pajak_districts_v1');
         $request->validate([
             'nib' => 'required|string',
             'nop' => 'required|string',
@@ -426,6 +537,7 @@ class PetaPajakController extends Controller
      */
     public function autoMatch()
     {
+        \Illuminate\Support\Facades\Cache::forget('peta_pajak_districts_v1');
         $matchedCount = 0;
         $conflictCount = 0;
 
@@ -629,6 +741,7 @@ class PetaPajakController extends Controller
      */
     public function importDhkp(Request $request)
     {
+        \Illuminate\Support\Facades\Cache::forget('peta_pajak_districts_v1');
         $request->validate([
             'file' => 'required|file|mimes:csv,txt|max:20480', // max 20MB
         ]);
@@ -864,5 +977,216 @@ class PetaPajakController extends Controller
             ],
         ]);
     }
+
+    /**
+     * 10. GET /api/peta-pajak/districts
+     * Agregat JUMLAH BIDANG per kecamatan & kelurahan dari SELURUH tabel
+     * smartgis_bidang (52.136 bidang) — bukan hanya yang ter-limit di FE.
+     * Dipakai FE untuk label jumlah di tombol filter (akurat, bukan sampel).
+     */
+    public function districts()
+    {
+        // Cache 10 menit: agregasi 52.136 bidang per kecamatan/kelurahan mahal
+        // (~0,9 s) tetapi datanya jarang berubah.
+        // PENTING: simpan DATA-nya (array), bukan objek JsonResponse.
+        // Kalau objek respons yang disimpan, hasilnya terbungkus {"headers":...,"original":...}.
+        $data = \Illuminate\Support\Facades\Cache::remember('peta_pajak_districts_v1', 600, function () {
+            return $this->buildDistricts();
+        });
+
+        return response()->json($data);
+    }
+
+    /**
+     * Perhitungan agregat kecamatan + kelurahan (dipisah agar bisa di-cache).
+     */
+    private function buildDistricts()
+    {
+        if (!Schema::connection('smartgis')->hasTable('smartgis_bidang')) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Tabel spatial smartgis_bidang belum tersedia.',
+                'data'    => [],
+            ], 503);
+        }
+
+        // Agregat per kecamatan dari SELURUH tabel (kolom kd_kec/nm_kec precomputed).
+        $perKecamatan = DB::connection('smartgis')->select(
+            'SELECT kd_kec, nm_kec,
+                    COUNT(*) AS jml_bidang,
+                    COUNT(DISTINCT nop) AS nop_unik,
+                    ROUND(SUM(luas)) AS luas_total
+             FROM smartgis_bidang
+             GROUP BY kd_kec, nm_kec
+             ORDER BY jml_bidang DESC'
+        );
+
+        $total = (int) DB::connection('smartgis')->table('smartgis_bidang')->count();
+
+        // Kelurahan: turunan dari prefix NOP (7 digit kec + 3 digit kel) bila
+        // tabel master kelurahan tersedia. Fallback: hitung dari kd_kel.
+        $perKelurahan = [];
+        if (Schema::connection('smartgis')->hasTable('smartgis_kelurahan')) {
+            // Master kelurahan hanya menyimpan kode; bidang dihitung via
+            // pencocokan prefix NOP 10 digit (7 kec + 3 kel) terhadap kd_kel
+            // (10 digit) -> cocokkan 10 digit pertama kd_kel.
+            $rows = DB::connection('smartgis')->select(
+                'SELECT k.nm_kel,
+                        k.kd_kel,
+                        COALESCE(COUNT(b.gid), 0) AS jml_bidang
+                 FROM smartgis_kelurahan k
+                 LEFT JOIN smartgis_bidang b
+                        ON LEFT(b.nop, 10) = LEFT(k.kd_kel, 10)
+                 GROUP BY k.nm_kel, k.kd_kel
+                 ORDER BY jml_bidang DESC'
+            );
+            foreach ($rows as $r) {
+                $perKelurahan[] = [
+                    'nama'      => $r->nm_kel,
+                    'kode'      => $r->kd_kel,
+                    'jml_bidang' => (int) $r->jml_bidang,
+                ];
+            }
+        }
+
+        $kecamatan = [];
+        foreach ($perKecamatan as $r) {
+            $kecamatan[] = [
+                'kode'       => $r->kd_kec,
+                'nama'       => $r->nm_kec,
+                'jml_bidang' => (int) $r->jml_bidang,
+                'nop_unik'   => (int) $r->nop_unik,
+                'luas_total' => (float) $r->luas_total,
+            ];
+        }
+
+        // WAJIB return array (bukan JsonResponse) supaya Cache::remember
+        // menyimpan data bersih, bukan objek respons terbungkus.
+        return [
+            'status'      => 'success',
+            'source'      => 'database_nyata',
+            'total_bidang' => $total,
+            'kecamatan'   => $kecamatan,
+            'kelurahan'   => $perKelurahan,
+            'generated_at' => now()->toIso8601String(),
+        ];
+    }
+
+
+    /**
+     * 11. GET /api/peta-pajak/bounds
+     * Kotak pembatas (bounding box) SELURUH bidang SmartGIS.
+     * Dipakai FE untuk auto-zoom supaya peta langsung menampilkan semua bidang
+     * saat halaman pertama dibuka.
+     */
+    /**
+     * Batas wilayah SELURUH kecamatan (geometry asli dari smartgis_kecamatan).
+     * Dipakai FE: saat kecamatan dipilih -> peta auto fitBounds ke wilayah itu.
+     * presisi=ringkas (5 desimal ~1 m) cukup untuk zoom-out kecamatan.
+     */
+    public function districtBounds(Request $request)
+    {
+        if (!Schema::connection('smartgis')->hasTable('smartgis_kecamatan')) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Tabel smartgis_kecamatan belum tersedia.',
+                'data'    => [],
+            ], 503);
+        }
+
+        $kdKec = $request->query('kd_kec');
+
+        $data = \Illuminate\Support\Facades\Cache::remember(
+            'peta_pajak_district_bounds_v1' . ($kdKec ? '_' . md5($kdKec) : ''),
+            3600,
+            function () use ($kdKec) {
+                $q = DB::connection('smartgis')->table('smartgis_kecamatan as k')
+                    ->select([
+                        'k.kd_kec',
+                        'k.nm_kec',
+                        DB::raw('ST_AsGeoJSON(IF(k.geometry IS NULL OR ST_IsEmpty(k.geometry),
+                                  NULL, k.geometry), 5) as geometry'),
+                        DB::raw('ST_Y(ST_Centroid(k.geometry)) as center_lat'),
+                        DB::raw('ST_X(ST_Centroid(k.geometry)) as center_lng'),
+                    ]);
+
+                if ($kdKec) {
+                    $q->where('k.kd_kec', $kdKec)->orWhere('k.nm_kec', 'like', '%' . $kdKec . '%');
+                }
+
+                $rows = $q->get();
+                $out = [];
+
+                foreach ($rows as $r) {
+                    // Guard: centroid harus finite, kalau tidak -> null
+                    $lat = is_numeric($r->center_lat) ? (float) $r->center_lat : null;
+                    $lng = is_numeric($r->center_lng) ? (float) $r->center_lng : null;
+                    if ($lat !== null && !is_finite($lat)) { $lat = null; }
+                    if ($lng !== null && !is_finite($lng)) { $lng = null; }
+
+                    $out[] = [
+                        'kd_kec'   => $r->kd_kec,
+                        'nama'     => $r->nm_kec,
+                        'geometry' => $r->geometry ? json_decode($r->geometry, true) : null,
+                        'center'   => ($lat !== null && $lng !== null) ? [$lat, $lng] : null,
+                    ];
+                }
+
+                return [
+                    'status' => 'success',
+                    'source' => 'smartgis_kecamatan',
+                    'total'  => count($out),
+                    'data'   => $out,
+                ];
+            }
+        );
+
+        return response()->json($data);
+    }
+
+    public function bounds()
+    {
+        if (!Schema::connection('smartgis')->hasTable('smartgis_bidang')) {
+            return response()->json(['status' => 'error', 'message' => 'Tabel spatial belum tersedia.'], 503);
+        }
+
+        $r = DB::connection('smartgis')->selectOne(
+            'SELECT
+                MIN(ST_X(ST_Centroid(geometry))) AS min_lng,
+                MIN(ST_Y(ST_Centroid(geometry))) AS min_lat,
+                MAX(ST_X(ST_Centroid(geometry))) AS max_lng,
+                MAX(ST_Y(ST_Centroid(geometry))) AS max_lat,
+                COUNT(*) AS total
+             FROM smartgis_bidang
+             WHERE geometry IS NOT NULL'
+        );
+
+        if (!$r || $r->min_lng === null) {
+            return response()->json(['status' => 'error', 'message' => 'Data bidang kosong.'], 404);
+        }
+
+        // Tambah margin kecil supaya bidang di tepi tidak terpotong
+        $padLng = 0.004;
+        $padLat = 0.004;
+
+        return response()->json([
+            'status' => 'success',
+            'total'  => (int) $r->total,
+            'bounds' => [
+                'min_lng' => (float) $r->min_lng - $padLng,
+                'min_lat' => (float) $r->min_lat - $padLat,
+                'max_lng' => (float) $r->max_lng + $padLng,
+                'max_lat' => (float) $r->max_lat + $padLat,
+            ],
+            'bbox' => sprintf('%.6F,%.6F,%.6F,%.6F',
+                (float) $r->min_lng - $padLng,
+                (float) $r->min_lat - $padLat,
+                (float) $r->max_lng + $padLng,
+                (float) $r->max_lat + $padLat
+            ),
+        ]);
+    }
+
+
 }
 
