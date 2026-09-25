@@ -35,50 +35,128 @@ class PetaPajakController extends Controller
      */
     public function stats()
     {
-        $hasNib = Schema::hasTable('nib_nop_mappings');
-        $hasTaxObjects = Schema::hasTable('tax_objects');
+        // ============ SUMBER DATA NYATA ============
+        // 1) Layer spatial SmartGIS Bapenda (bidang tanah Kantah)
+        // 2) Tabel operasional M-PAD (objek pajak, mapping NIB-NOP)
+        $hasSpatial = Schema::connection('smartgis')->hasTable('smartgis_bidang');
+        $hasNib     = Schema::hasTable('nib_nop_mappings');
+        $hasTaxObj  = Schema::hasTable('tax_objects');
 
-        // Total Bidang NIB dari data Kantah Baubau
-        $dbNibCount = $hasNib ? DB::table('nib_nop_mappings')->count() : 0;
-        $totalNib = max(48250, $dbNibCount);
+        // ----- Bidang tanah & luas dari layer spatial -----
+        $totalNib = 0; $nopUnik = 0; $luasTotal = 0; $luasNol = 0; $luasTerisi = 0;
+        $perKecamatan = [];
 
-        // Objek Pajak NOP dari data Bapenda
-        $dbNopCount = $hasTaxObjects ? DB::table('tax_objects')->count() : 0;
-        $totalNop = max(52840, $dbNopCount);
+        if ($hasSpatial) {
+            $agg = DB::connection('smartgis')->selectOne(
+                'SELECT COUNT(*) AS jml,
+                        COUNT(DISTINCT nop) AS nop_unik,
+                        ROUND(SUM(luas)) AS luas_total,
+                        SUM(CASE WHEN luas IS NULL OR luas = 0 THEN 1 ELSE 0 END) AS luas_nol,
+                        SUM(CASE WHEN luas > 0 THEN 1 ELSE 0 END) AS luas_terisi
+                 FROM smartgis_bidang'
+            );
+            $totalNib   = (int) ($agg->jml ?? 0);
+            $nopUnik    = (int) ($agg->nop_unik ?? 0);
+            $luasTotal  = (float) ($agg->luas_total ?? 0);
+            $luasNol    = (int) ($agg->luas_nol ?? 0);
+            $luasTerisi = (int) ($agg->luas_terisi ?? 0);
 
-        // Bangunan LOD1 (Level of Detail 1)
-        $totalLod1 = 45410;
-
-        // Status Matched & Persentase Cakupan Tertaut
-        if ($hasNib && $dbNibCount > 0) {
-            $matchedCount = DB::table('nib_nop_mappings')->where('match_status', 'matched')->count();
-            $pendingCount = DB::table('nib_nop_mappings')->where('match_status', 'pending')->count();
-            $conflictCount = DB::table('nib_nop_mappings')->where('match_status', 'conflict')->count();
-            $notFoundCount = DB::table('nib_nop_mappings')->where('match_status', 'not_found')->count();
-
-            // Hitung persentase real basis data (baseline terkalibrasi ~42.5% melampaui target 40% Oktober)
-            $sampleRate = $matchedCount / max(1, $dbNibCount);
-            $calibratedRate = max(0.418, $sampleRate);
-            $totalMatched = (int) round($totalNib * $calibratedRate);
-            $totalPending = (int) round($totalNib * 0.32);
-            $totalConflict = (int) round($totalNib * 0.08);
-            $totalUnmatched = max(0, $totalNib - $totalMatched - $totalPending - $totalConflict);
-        } else {
-            $calibratedRate = 0.418;
-            $totalMatched = 20170;
-            $totalPending = 15440;
-            $totalConflict = 4210;
-            $totalUnmatched = 8430;
+            // Pakai kolom precomputed kd_kec/nm_kec (diisi dari prefix NOP).
+            // Sebelumnya pakai ST_Contains -> 37 detik untuk 52.136 bidang.
+            $perKecamatan = DB::connection('smartgis')->select(
+                'SELECT kd_kec, nm_kec,
+                        COUNT(*) AS jml_bidang,
+                        COUNT(DISTINCT nop) AS nop_unik,
+                        ROUND(SUM(luas)) AS luas_total
+                 FROM smartgis_bidang
+                 GROUP BY kd_kec, nm_kec
+                 ORDER BY jml_bidang DESC'
+            );
         }
 
-        $cakupanTertautPercent = round($calibratedRate * 100, 1);
+        // ----- Objek pajak (NOP) dari DB operasional -----
+        $dbNopCount = $hasTaxObj ? DB::table('tax_objects')->count() : 0;
+        $totalNop   = $dbNopCount > 0 ? $dbNopCount : $nopUnik;
 
-        // Total Nilai NJOP Terdata (dalam Rupiah)
-        // Nilai NJOP agregat Kota Baubau: Rp 4,32 Triliun
-        $totalNjopNominal = 4325800000000;
-        $totalNjopDisplay = 'Rp 4,32 T';
+        // ----- Bangunan LOD1 (kolom nyata: building_size_m2) -----
+        $totalLod1 = $hasTaxObj
+            ? DB::table('tax_objects')->whereNotNull('building_size_m2')->where('building_size_m2', '>', 0)->count()
+            : 0;
 
-        // 9 Program Terintegrasi KPK & ATR/BPN
+        // ----- Status pencocokan NIB-NOP (NYATA, tanpa kalibrasi) -----
+        $matchedCount = 0; $pendingCount = 0; $conflictCount = 0; $notFoundCount = 0;
+        if ($hasNib) {
+            $matchedCount  = DB::table('nib_nop_mappings')->where('match_status', 'matched')->count();
+            $pendingCount  = DB::table('nib_nop_mappings')->where('match_status', 'pending')->count();
+            $conflictCount = DB::table('nib_nop_mappings')->where('match_status', 'conflict')->count();
+            $notFoundCount = DB::table('nib_nop_mappings')->where('match_status', 'not_found')->count();
+        }
+
+        // Basis pencocokan = jumlah bidang spatial bila tersedia (lebih realistis)
+        $basis = $totalNib > 0 ? $totalNib : max(1, $matchedCount + $pendingCount + $conflictCount + $notFoundCount);
+        $totalUnmatched = max(0, $basis - $matchedCount - $pendingCount - $conflictCount);
+        $cakupanPercent = $basis > 0 ? round(($matchedCount / $basis) * 100, 2) : 0.0;
+
+        // ----- Nilai NJOP: estimasi transparan (kolom NJOP resmi belum ada) -----
+        $totalNjopNominal = 0;
+        $njopKeterangan = 'Kolom nilai NJOP belum tersedia di database M-PAD.';
+        if ($hasSpatial && $luasTotal > 0) {
+            $totalNjopNominal = $luasTotal * 500000;
+            $njopKeterangan = 'Estimasi: total luas bidang x Rp 500.000/m2 (bukan angka resmi DHKP).';
+        }
+
+        // Nilai tampilan
+        $fmt = fn (float $n) => number_format($n, 0, ',', '.');
+        $njopDisplay = $totalNjopNominal >= 1e12
+            ? 'Rp ' . number_format($totalNjopNominal / 1e12, 2, ',', '.') . ' T'
+            : ($totalNjopNominal >= 1e9
+                ? 'Rp ' . number_format($totalNjopNominal / 1e9, 2, ',', '.') . ' M'
+                : 'Rp ' . $fmt($totalNjopNominal));
+
+        // ===== KPI terstruktur (format display/value sesuai kontrak FE) =====
+        $kpi = [
+            'total_njop' => [
+                'label' => 'Total Nilai NJOP Terdata',
+                'display' => $njopDisplay,
+                'value' => $totalNjopNominal,
+                'sub' => $njopKeterangan,
+            ],
+            'bidang_nib' => [
+                'label' => 'Total Bidang Tanah (Layer Spatial)',
+                'display' => $fmt($totalNib) . ' Bidang',
+                'value' => $totalNib,
+                'sub' => 'SmartGIS Bapenda — ' . $nopUnik . ' NOP unik',
+            ],
+            'objek_pajak_nop' => [
+                'label' => 'Objek Pajak NOP',
+                'display' => $fmt($totalNop) . ' NOP',
+                'value' => $totalNop,
+                'sub' => 'Basis Data Operasional M-PAD',
+            ],
+            'bangunan_lod1' => [
+                'label' => 'Bangunan LOD1',
+                'display' => $fmt($totalLod1) . ' Unit',
+                'value' => $totalLod1,
+                'sub' => 'Objek pajak dengan data luas bangunan',
+            ],
+            'cakupan_tertaut' => [
+                'label' => 'Cakupan Tertaut NIB-NOP',
+                'display' => $cakupanPercent . '%',
+                'value' => $cakupanPercent,
+                'target_oktober' => 40,
+                'status_target' => $cakupanPercent >= 40 ? 'terlampaui' : 'belum_tercapai',
+                'sub' => $matchedCount . ' dari ' . $basis . ' bidang tertaut',
+            ],
+        ];
+
+        $breakdown = [
+            'matched' => $matchedCount,
+            'pending' => $pendingCount,
+            'conflict' => $conflictCount,
+            'unmatched' => $totalUnmatched,
+            'total' => $basis,
+        ];
+
         $tahapanProgram = [
             [
                 'step' => 1,
@@ -114,115 +192,42 @@ class PetaPajakController extends Controller
             ],
             [
                 'step' => 5,
+                'title' => 'Impor Layer Spatial SmartGIS (Bidang, Kecamatan, Kelurahan, Blok)',
+                'kategori' => 'Teknis',
+                'status' => $hasSpatial ? 'completed' : 'in_progress',
+                'badge' => $hasSpatial ? 'Selesai' : 'Sedang Berjalan',
+                'keterangan' => $hasSpatial
+                    ? $fmt($totalNib) . ' bidang, ' . $fmt($nopUnik) . ' NOP unik, ' . count($perKecamatan) . ' kecamatan terimpor.'
+                    : 'Menunggu impor layer spatial ke database produksi.',
+            ],
+            [
+                'step' => 6,
                 'title' => 'Surat Aktivasi Sharing Data ke Pusdatin ATR/BPN',
                 'kategori' => 'Teknis',
                 'status' => 'in_progress',
                 'badge' => 'Sedang Berjalan',
-                'keterangan' => 'Pertukaran kanal API/GeoJSON bidang NIB dari BPN berjalan.',
+                'keterangan' => 'Verifikasi akun & hak akses sharing data spasial ke Pusdatin ATR/BPN.',
             ],
-            [
-                'step' => 6,
-                'title' => 'Matching Data NIB & NOP secara Bertahap',
-                'kategori' => 'Sinkronisasi',
-                'status' => 'in_progress',
-                'badge' => 'Sedang Berjalan',
-                'keterangan' => 'Progres pencocokan NIB-NOP mencapai ' . $cakupanTertautPercent . '% (Target: min. 40%).',
-            ],
-            [
-                'step' => 7,
-                'title' => 'Insert Data Hasil Matching ke dalam M-PAD',
-                'kategori' => 'Sinkronisasi',
-                'status' => 'in_progress',
-                'badge' => 'Sedang Berjalan',
-                'keterangan' => 'Tersimpan terenkripsi di tabel nib_nop_mappings dan layer spasial.',
-            ],
-            [
-                'step' => 8,
-                'title' => 'Integrasi Hasil Matching ke Aplikasi Peta Pajak (Target 40% Okt)',
-                'kategori' => 'Sinkronisasi',
-                'status' => 'completed',
-                'badge' => 'Target 40% Tercapai (' . $cakupanTertautPercent . '%)',
-                'keterangan' => 'Cakupan tertaut telah menembus ambang batas 40% per September 2026.',
-            ],
-            [
-                'step' => 9,
-                'title' => 'Penerbitan SPPT PBB Tahun 2027 Berbasis NIB',
-                'kategori' => 'Output Layanan',
-                'status' => 'upcoming',
-                'badge' => 'Output 2027',
-                'keterangan' => 'Cetak masal SPPT PBB 2027 memuat NIB tervalidasi resmi BPN.',
-            ],
-        ];
-
-        // Perbandingan Daerah Sultra
-        $regionalComparison = [
-            ['nama' => 'Kota Baubau', 'cakupan' => $cakupanTertautPercent . '% (' . number_format($totalMatched) . ' Bidang)', 'status' => 'Terlapor & Aktif (M-PAD)', 'color' => 'emerald'],
-            ['nama' => 'Kab. Muna', 'cakupan' => '22 Kecamatan (seluruh kecamatan)', 'status' => 'Tersinkronisasi', 'color' => 'blue'],
-            ['nama' => 'Kab. Kolaka Timur', 'cakupan' => '1 Desa', 'status' => 'Parsial', 'color' => 'yellow'],
-            ['nama' => 'Kab. Buton Selatan', 'cakupan' => 'Belum ada data', 'status' => 'Belum Dilaporkan', 'color' => 'gray'],
         ];
 
         return response()->json([
             'status' => 'success',
-            'data' => [
-                'kpi' => [
-                    'total_njop' => [
-                        'value' => $totalNjopNominal,
-                        'display' => $totalNjopDisplay,
-                        'label' => 'Total NJOP Terdata',
-                        'sub' => 'Akumulasi NJOP Bumi & Bangunan Baubau',
-                    ],
-                    'bidang_nib' => [
-                        'value' => $totalNib,
-                        'display' => number_format($totalNib, 0, ',', '.') . ' Bidang',
-                        'label' => 'Bidang NIB (BPN)',
-                        'sub' => 'Kantor Pertanahan Kota Baubau',
-                    ],
-                    'objek_pajak_nop' => [
-                        'value' => $totalNop,
-                        'display' => number_format($totalNop, 0, ',', '.') . ' NOP',
-                        'label' => 'Objek Pajak NOP (PBB)',
-                        'sub' => 'Basis Data Bapenda Baubau',
-                    ],
-                    'bangunan_lod1' => [
-                        'value' => $totalLod1,
-                        'display' => number_format($totalLod1, 0, ',', '.') . ' Unit',
-                        'label' => 'Bangunan LOD1',
-                        'sub' => 'Tapak Bangunan Geospasial',
-                    ],
-                    'cakupan_tertaut' => [
-                        'value' => $cakupanTertautPercent,
-                        'display' => $cakupanTertautPercent . '%',
-                        'target_oktober' => 40.0,
-                        'status_target' => $cakupanTertautPercent >= 40.0 ? 'Terlampaui' : 'Kurang ' . (40.0 - $cakupanTertautPercent) . '%',
-                        'label' => 'Cakupan Tertaut (NIB-NOP)',
-                        'sub' => 'Target KPK: Min. 40% (Okt 2026)',
-                    ],
-                ],
-                'breakdown' => [
-                    'matched' => $totalMatched,
-                    'pending' => $totalPending,
-                    'conflict' => $totalConflict,
-                    'unmatched' => $totalUnmatched,
-                    'total' => $totalNib,
-                ],
-                'timeline' => [
-                    'apresiasi_menteri' => [
-                        'date' => '24 Sep 2026',
-                        'title' => 'Apresiasi Menteri ATR/BPN',
-                        'desc' => 'Batas integrasi data matching NIB-NOP dalam aplikasi untuk surat apresiasi (tembusan Mendagri, Ketua KPK, Gubernur).',
-                        'status' => 'Memenuhi Syarat',
-                    ],
-                    'isian_laporan' => [
-                        'date' => '1 Okt 2026',
-                        'title' => 'Isian Laporan KPK',
-                        'desc' => 'Batas penyampaian isian laporan kepada Kepala Daerah & Tim Korsupgah KPK.',
-                        'status' => 'Siap Ekspor Data',
-                    ],
-                ],
-                'tahapan_program' => $tahapanProgram,
-                'regional_comparison' => $regionalComparison,
+            'source' => 'database_nyata',
+            // --- Kontrak utama FE ---
+            'kpi' => $kpi,
+            'breakdown' => $breakdown,
+            'tahapan_program' => $tahapanProgram,
+            // --- Data tambahan ---
+            'per_kecamatan' => $perKecamatan,
+            'ringkasan' => [
+                'total_bidang' => $totalNib,
+                'nop_unik' => $nopUnik,
+                'luas_total_m2' => $luasTotal,
+                'luas_terisi' => $luasTerisi,
+                'luas_nol' => $luasNol,
+                'rata_luas_m2' => $totalNib > 0 ? round($luasTotal / $totalNib, 2) : 0,
             ],
+            'generated_at' => now()->toIso8601String(),
         ]);
     }
 
@@ -231,25 +236,112 @@ class PetaPajakController extends Controller
      * Mengembalikan daftar poligon geospasial bidang tanah Kota Baubau
      * dengan informasi NIB, NOP, luas, NJOP, dan status keterkaitan.
      */
+    /**
+     * 2. GET /api/peta-pajak/parcels
+     * Data bidang NYATA dari tabel spatial smartgis_bidang (hasil migrasi SmartGIS Bapenda).
+     * Mendukung filter district (kode/nama kecamatan), status, dan bbox untuk peta.
+     */
     public function parcels(Request $request)
     {
         $districtFilter = $request->query('district');
-        $statusFilter = $request->query('status');
+        $statusFilter   = $request->query('status');
+        $limit          = min((int) $request->query('limit', 500), 5000);
+        $search         = $request->query('search');
 
-        $parcels = $this->generateBaubauParcels();
+        if (!Schema::connection('smartgis')->hasTable('smartgis_bidang')) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Tabel spatial smartgis_bidang belum tersedia.',
+                'data'    => [],
+                'total'   => 0,
+            ], 503);
+        }
 
+        // Kolom kd_kec/nm_kec sudah precomputed (prefix NOP) -> tanpa join spasial.
+        $query = DB::connection('smartgis')->table('smartgis_bidang as b')
+            ->select([
+                'b.gid as id',
+                'b.nop',
+                'b.luas',
+                'b.d_luas as luas_sertifikat',
+                'b.kd_kec',
+                'b.nm_kec',
+                DB::raw('COALESCE(b.nm_kec, "Tidak Terdeteksi") as district'),
+                DB::raw('ST_AsGeoJSON(b.geometry) as geometry'),
+                DB::raw('ST_Y(ST_Centroid(b.geometry)) as center_lat'),
+                DB::raw('ST_X(ST_Centroid(b.geometry)) as center_lng'),
+            ]);
+
+        // Filter kecamatan: terima kode (7472710) atau nama (Wolio)
         if ($districtFilter && $districtFilter !== 'all') {
-            $parcels = array_values(array_filter($parcels, fn ($p) => strtolower($p['district']) === strtolower($districtFilter)));
+            $query->where(function ($q) use ($districtFilter) {
+                $q->where('b.kd_kec', $districtFilter)
+                  ->orWhere('b.nm_kec', 'like', '%' . $districtFilter . '%');
+            });
         }
 
+        // Filter status: turunan dari kelengkapan data nyata
         if ($statusFilter && $statusFilter !== 'all') {
-            $parcels = array_values(array_filter($parcels, fn ($p) => $p['match_status'] === $statusFilter));
+            if ($statusFilter === 'matched') {
+                $query->whereNotNull('b.nop')->where('b.luas', '>', 0);
+            } elseif ($statusFilter === 'pending') {
+                $query->whereNotNull('b.nop')->where(function ($q) {
+                    $q->whereNull('b.luas')->orWhere('b.luas', 0);
+                });
+            } elseif ($statusFilter === 'unmatched') {
+                $query->whereNull('b.nop');
+            }
         }
+
+        if ($search) {
+            $query->where('b.nop', 'like', '%' . $search . '%');
+        }
+
+        $rows = $query->limit($limit)->get();
+
+        $data = $rows->map(function ($r) {
+            $luas = (float) ($r->luas ?? 0);
+            $geom = json_decode($r->geometry ?? 'null', true);
+            $centerLat = $r->center_lat !== null ? (float) $r->center_lat : null;
+            $centerLng = $r->center_lng !== null ? (float) $r->center_lng : null;
+
+            // Status nyata berbasis kelengkapan data
+            if (empty($r->nop)) {
+                $status = 'unmatched';
+            } elseif ($luas <= 0) {
+                $status = 'pending';
+            } else {
+                $status = 'matched';
+            }
+
+            return [
+                'id'               => (int) $r->id,
+                'nib'              => null, // NIB dari Kantah belum tersedia di layer ini
+                'nop'              => $r->nop,
+                'taxpayer_name'    => null, // dilengkapi dari tax_objects bila diminta
+                'district'         => $r->district,
+                'sub_district'     => null,
+                'address'          => null,
+                'land_area_m2'     => $luas,
+                'land_area_sertifikat_m2' => $r->luas_sertifikat !== null ? (float) $r->luas_sertifikat : null,
+                'building_area_m2' => null,
+                'znt_class'        => null,
+                'znt_value'        => null,
+                'njop_total'       => null,
+                'match_status'     => $status,
+                'source'           => 'smartgis_bapenda',
+                'center'           => ($centerLat !== null) ? [$centerLat, $centerLng] : null,
+                'polygon'          => null,
+                'geometry'         => $geom, // GeoJSON asli dari DB
+            ];
+        });
 
         return response()->json([
             'status' => 'success',
-            'total' => count($parcels),
-            'data' => $parcels,
+            'source' => 'database_spatial_smartgis',
+            'total'  => $data->count(),
+            'limit'  => $limit,
+            'data'   => $data,
         ]);
     }
 

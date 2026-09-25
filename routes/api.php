@@ -462,6 +462,17 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         });
 
         // Integrasi NIB-BPN & NOP PBB-P2 (Aplikasi Peta Pajak — Standar Output KPK & ATR/BPN)
+
+        // ===== Kanal Spasial SmartGIS Bapenda (25 Sep 2026) =====
+        // Sumber: impor dump PostGIS SmartGIS -> tabel smartgis_* (WGS84/EPSG:4326)
+        Route::prefix('smartgis')->group(function () {
+            Route::get('/stats', [\App\Http\Controllers\SpatialController::class, 'stats']);
+            Route::get('/bidang-by-point', [\App\Http\Controllers\SpatialController::class, 'bidangByPoint']);
+            Route::get('/bidang-bbox', [\App\Http\Controllers\SpatialController::class, 'bidangBbox']);
+            Route::get('/bidang/{nop}', [\App\Http\Controllers\SpatialController::class, 'bidangByNop']);
+            Route::get('/wilayah', [\App\Http\Controllers\SpatialController::class, 'wilayah']);
+        });
+
         Route::prefix('peta-pajak')->group(function () {
             Route::get('/stats', [\App\Http\Controllers\PetaPajakController::class, 'stats']);
             Route::get('/parcels', [\App\Http\Controllers\PetaPajakController::class, 'parcels']);
