@@ -321,7 +321,8 @@ class PetaPajakController extends Controller
         // Guard ST_IsEmpty mencegah geometri kosong -> JSON gagal encode (HTTP 500).
         $geomWkt = 'IF(b.geometry IS NULL OR ST_IsEmpty(b.geometry), NULL, b.geometry)';
         if ($centroidOnly) {
-            $geomExpr = 'NULL';
+            // Tetap berikan geometri ringkas (4 desimal) agar garis bidang poligon tetap tampil jelas
+            $geomExpr = 'ST_AsGeoJSON(' . $geomWkt . ', 4)';
         } elseif ($fullDetail) {
             $geomExpr = 'ST_AsGeoJSON(' . $geomWkt . ')';
         } else {
@@ -362,7 +363,8 @@ class PetaPajakController extends Controller
         if ($kelurahanFilter && $kelurahanFilter !== 'all') {
             $query->where(function ($q) use ($kelurahanFilter) {
                 $q->where('b.nm_kel', $kelurahanFilter)
-                  ->orWhere('b.kd_kel', $kelurahanFilter);
+                  ->orWhere('b.kd_kel', $kelurahanFilter)
+                  ->orWhere('b.nm_kel', 'like', '%' . $kelurahanFilter . '%');
             });
         }
 
@@ -384,8 +386,8 @@ class PetaPajakController extends Controller
         }
 
         // Filter bounding-box: hanya bidang yang beririsan dengan area layar.
-        // ST_GeomFromText + MBRIntersects -> memanfaatkan SPATIAL INDEX.
-        if ($bboxFilter) {
+        // Abaikan bbox jika sedang memfilter kelurahan spesifik, agar viewport lama tidak memotong bidang tanah kelurahan.
+        if ($bboxFilter && (!$kelurahanFilter || $kelurahanFilter === 'all')) {
             $parts = array_map('trim', explode(',', $bboxFilter));
             if (count($parts) === 4 && is_numeric($parts[0]) && is_numeric($parts[1])
                 && is_numeric($parts[2]) && is_numeric($parts[3])) {
@@ -397,7 +399,7 @@ class PetaPajakController extends Controller
                 if ($minLng > $maxLng) { [$minLng, $maxLng] = [$maxLng, $minLng]; }
                 if ($minLat > $maxLat) { [$minLat, $maxLat] = [$maxLat, $minLat]; }
                 $bboxWkt = "POLYGON(($minLng $minLat, $maxLng $minLat, $maxLng $maxLat, $minLng $maxLat, $minLng $minLat))";
-                $query->whereRaw('MBRIntersects(b.geometry, ST_GeomFromText(?, 4326))', [$bboxWkt]);
+                $query->whereRaw('MBRIntersects(b.geometry, ST_GeomFromText(?, ST_SRID(b.geometry)))', [$bboxWkt]);
             }
         }
 
@@ -1021,16 +1023,30 @@ class PetaPajakController extends Controller
             ], 503);
         }
 
-        // Agregat per kecamatan dari SELURUH tabel (kolom kd_kec/nm_kec precomputed).
-        $perKecamatan = DB::connection('smartgis')->select(
-            'SELECT kd_kec, nm_kec,
-                    COUNT(*) AS jml_bidang,
-                    COUNT(DISTINCT nop) AS nop_unik,
-                    ROUND(SUM(luas)) AS luas_total
-             FROM smartgis_bidang
-             GROUP BY kd_kec, nm_kec
-             ORDER BY jml_bidang DESC'
-        );
+        // Agregat per kecamatan dari master smartgis_kecamatan (seluruh 8 kecamatan)
+        // di-left join dengan bidang agar kecamatan dengan 0 bidang tetap muncul di filter.
+        if (Schema::connection('smartgis')->hasTable('smartgis_kecamatan')) {
+            $perKecamatan = DB::connection('smartgis')->select(
+                'SELECT k.kd_kec, k.nm_kec,
+                        COUNT(b.gid) AS jml_bidang,
+                        COUNT(DISTINCT b.nop) AS nop_unik,
+                        COALESCE(ROUND(SUM(b.luas)), 0) AS luas_total
+                 FROM smartgis_kecamatan k
+                 LEFT JOIN smartgis_bidang b ON b.kd_kec = k.kd_kec
+                 GROUP BY k.kd_kec, k.nm_kec
+                 ORDER BY jml_bidang DESC, k.nm_kec ASC'
+            );
+        } else {
+            $perKecamatan = DB::connection('smartgis')->select(
+                'SELECT kd_kec, nm_kec,
+                        COUNT(*) AS jml_bidang,
+                        COUNT(DISTINCT nop) AS nop_unik,
+                        ROUND(SUM(luas)) AS luas_total
+                 FROM smartgis_bidang
+                 GROUP BY kd_kec, nm_kec
+                 ORDER BY jml_bidang DESC'
+            );
+        }
 
         $total = (int) DB::connection('smartgis')->table('smartgis_bidang')->count();
 
@@ -1146,6 +1162,83 @@ class PetaPajakController extends Controller
                 return [
                     'status' => 'success',
                     'source' => 'smartgis_kecamatan',
+                    'total'  => count($out),
+                    'data'   => $out,
+                ];
+            }
+        );
+
+        return response()->json($data);
+    }
+
+    /**
+     * Batas wilayah kelurahan (geometry asli dari smartgis_kelurahan).
+     * Dipakai FE: saat kelurahan dipilih -> peta auto fitBounds & highlight kelurahan itu.
+     */
+    public function kelurahanBounds(Request $request = null)
+    {
+        if (!Schema::connection('smartgis')->hasTable('smartgis_kelurahan')) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Tabel smartgis_kelurahan belum tersedia.',
+                'data'    => [],
+            ], 503);
+        }
+
+        $kdKec = $request ? $request->query('kd_kec') : null;
+        $kdKel = $request ? $request->query('kd_kel') : null;
+
+        $cacheKey = 'peta_pajak_kelurahan_bounds_v1' . ($kdKec ? '_' . md5($kdKec) : '') . ($kdKel ? '_' . md5($kdKel) : '');
+
+        $data = \Illuminate\Support\Facades\Cache::remember(
+            $cacheKey,
+            3600,
+            function () use ($kdKec, $kdKel) {
+                $q = DB::connection('smartgis')->table('smartgis_kelurahan as k')
+                    ->select([
+                        'k.kd_kel',
+                        'k.nm_kel',
+                        DB::raw('LEFT(k.kd_kel, 7) as kd_kec'),
+                        DB::raw('ST_AsGeoJSON(IF(k.geometry IS NULL OR ST_IsEmpty(k.geometry),
+                                  NULL, k.geometry), 5) as geometry'),
+                        DB::raw('ST_Y(ST_Centroid(k.geometry)) as center_lat'),
+                        DB::raw('ST_X(ST_Centroid(k.geometry)) as center_lng'),
+                    ]);
+
+                if ($kdKec) {
+                    $q->where(function ($sub) use ($kdKec) {
+                        $sub->where(DB::raw('LEFT(k.kd_kel, 7)'), $kdKec);
+                    });
+                }
+
+                if ($kdKel) {
+                    $q->where(function ($sub) use ($kdKel) {
+                        $sub->where('k.kd_kel', $kdKel)
+                            ->orWhere('k.nm_kel', 'like', '%' . $kdKel . '%');
+                    });
+                }
+
+                $rows = $q->get();
+                $out = [];
+
+                foreach ($rows as $r) {
+                    $lat = is_numeric($r->center_lat) ? (float) $r->center_lat : null;
+                    $lng = is_numeric($r->center_lng) ? (float) $r->center_lng : null;
+                    if ($lat !== null && !is_finite($lat)) { $lat = null; }
+                    if ($lng !== null && !is_finite($lng)) { $lng = null; }
+
+                    $out[] = [
+                        'kd_kel'   => $r->kd_kel,
+                        'kd_kec'   => $r->kd_kec,
+                        'nama'     => $r->nm_kel,
+                        'geometry' => $r->geometry ? json_decode($r->geometry, true) : null,
+                        'center'   => ($lat !== null && $lng !== null) ? [$lat, $lng] : null,
+                    ];
+                }
+
+                return [
+                    'status' => 'success',
+                    'source' => 'smartgis_kelurahan',
                     'total'  => count($out),
                     'data'   => $out,
                 ];

@@ -422,6 +422,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/bounds', [\App\Http\Controllers\PetaPajakController::class, 'bounds']);
             Route::get('/districts', [\App\Http\Controllers\PetaPajakController::class, 'districts']);
             Route::get('/district-bounds', [\App\Http\Controllers\PetaPajakController::class, 'districtBounds']);
+            Route::get('/kelurahan-bounds', [\App\Http\Controllers\PetaPajakController::class, 'kelurahanBounds']);
         });
 
         // H2H NIB-NOP Mapping (Sinkronisasi BHUMI BPN)
