@@ -255,6 +255,8 @@ class PetaPajakController extends Controller
     {
         $districtFilter = $request->query('district');
         $statusFilter   = $request->query('status');
+        // Filter kelurahan: terima nama (BATULO) atau kode (7472710004)
+        $kelurahanFilter = $request->query('kelurahan');
         // Limit dinaikkan: dengan bbox, 1 layar biasanya < 3.000 bidang.
         // Tanpa bbox tetap dibatasi 5.000 supaya respons tidak membengkak.
         $limit          = min((int) $request->query('limit', 500), 20000);
@@ -334,9 +336,10 @@ class PetaPajakController extends Controller
                 'b.d_luas as luas_sertifikat',
                 'b.kd_kec',
                 'b.nm_kec',
-                DB::raw('(SELECT k.nm_kel FROM smartgis_kelurahan k
-                          WHERE LEFT(k.kd_kel, 10) = LEFT(b.nop, 10)
-                          LIMIT 1) as nm_kel'),
+                // Kelurahan dibaca dari kolom b.nm_kel langsung (hasil spatial join
+                // sekali jalan). Sub-query per-baris dihapus karena lambat:
+                // LEFT() mematikan index dan dieksekusi utk SETIAP bidang.
+                DB::raw('b.nm_kel as nm_kel'),
                 DB::raw('COALESCE(b.nm_kec, "Tidak Terdeteksi") as district'),
                 DB::raw($geomExpr . ' as geometry'),
                 // Guard: MariaDB tidak punya ST_IsValid. Cukup cek IS NULL + ST_IsEmpty.
@@ -352,6 +355,14 @@ class PetaPajakController extends Controller
             $query->where(function ($q) use ($districtFilter) {
                 $q->where('b.kd_kec', $districtFilter)
                   ->orWhere('b.nm_kec', 'like', '%' . $districtFilter . '%');
+            });
+        }
+
+        // Filter kelurahan: pakai kolom nm_kel/kd_kel hasil spatial join
+        if ($kelurahanFilter && $kelurahanFilter !== 'all') {
+            $query->where(function ($q) use ($kelurahanFilter) {
+                $q->where('b.nm_kel', $kelurahanFilter)
+                  ->orWhere('b.kd_kel', $kelurahanFilter);
             });
         }
 

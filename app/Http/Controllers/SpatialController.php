@@ -75,11 +75,26 @@ class SpatialController extends Controller
             ], 404);
         }
 
+        // Ambil geometri bidang pertama sebagai GeoJSON siap-pakai Leaflet.
+        // Frontend (modal "Peta Bidang") membaca res.geometry langsung.
+        $geojson = $rows[0]->geojson ?? null;
+        $geometry = null;
+        if ($geojson) {
+            $decoded = json_decode($geojson, true);
+            if (is_array($decoded)) {
+                $geometry = ['type' => 'Feature', 'properties' => [], 'geometry' => $decoded];
+            }
+        }
+
         return response()->json([
-            'sukses' => true,
-            'nop'    => $nop,
-            'jumlah' => count($rows),
-            'bidang' => $rows,
+            'sukses'      => true,
+            'nop'         => $nop,
+            'jumlah'      => count($rows),
+            'luas'        => $rows[0]->luas ?? null,
+            'd_luas'      => $rows[0]->d_luas ?? null,
+            'geometry'    => $geometry,
+            'geometry_raw' => $geojson,
+            'bidang'      => $rows,
         ]);
     }
 

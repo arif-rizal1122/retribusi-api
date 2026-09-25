@@ -741,12 +741,23 @@ Route::prefix('h2h/bpn')->group(function () {
     Route::post('/check-pbb', [\App\Http\Controllers\H2HBpnController::class, 'checkPbb']);
     Route::post('/verify-payment', [\App\Http\Controllers\H2HBpnController::class, 'verifyPayment']);
     Route::post('/splp/update', [\App\Http\Controllers\H2HBpnController::class, 'updateSplp']);
-    Route::post('/spatial/reverse-lookup', [\App\Http\Controllers\H2HBpnController::class, 'spatialReverseLookup']);
+Route::post('/spatial/reverse-lookup', [\App\Http\Controllers\H2HBpnController::class, 'spatialReverseLookup']);
     Route::post('/spatial/sync', [\App\Http\Controllers\H2HBpnController::class, 'syncSpatial']);
 });
 
 // Endpoint reverse lookup spasial untuk mobile warga dan admin web
 Route::post('/h2h/bhumi/reverse-lookup', [\App\Http\Controllers\H2HBpnController::class, 'spatialReverseLookup']);
+
+// ------------------------------------------------------------------------
+// Layer SmartGIS Bapenda — bidang spasial (peta pajak & modal "Peta Bidang")
+// PENTING: route ini pernah HILANG -> modal tampil kosong (poligon "M0 0").
+// JANGAN taruh di dalam prefix h2h/bpn, frontend mengakses /api/smartgis/...
+// ------------------------------------------------------------------------
+Route::get('/smartgis/bidang/{nop}', [\App\Http\Controllers\SpatialController::class, 'bidangByNop']);
+Route::get('/smartgis/wilayah', [\App\Http\Controllers\SpatialController::class, 'wilayah']);
+Route::get('/smartgis/stats', [\App\Http\Controllers\SpatialController::class, 'stats']);
+Route::get('/spatial/bidang-bbox', [\App\Http\Controllers\SpatialController::class, 'bidangBbox']);
+Route::post('/spatial/bidang-by-point', [\App\Http\Controllers\SpatialController::class, 'bidangByPoint']);
 
 // ------------------------------------------------------------------------
 // BANK H2H GATEWAY (Restricted by BankSecurityCheck middleware)
