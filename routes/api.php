@@ -727,6 +727,25 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 // ------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------
+// MODUL DINAS PERDAGANGAN & PERINDUSTRIAN (DISPERINDAG) — Perda 1/2024
+// Data pasar, kios, los, juru pungut, dan KPI summary (dapat diakses dashboard & publik)
+// PENTING: blok ini pernah HILANG (tertimpa saat edit routes/api.php).
+// Frontend admin memanggil /api/v1/disperindag/* — JANGAN dihapus lagi.
+// ------------------------------------------------------------------------
+$disperindagPublicRoutes = function () {
+    Route::get('/summary', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'summary']);
+    Route::get('/kpi', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'summary']);
+    Route::get('/markets', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'markets']);
+    Route::get('/zones', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'zones']);
+    Route::get('/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'buildings']);
+    Route::get('/stalls', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'stalls']);
+    Route::get('/officers', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'officers']);
+};
+
+Route::prefix('disperindag')->group($disperindagPublicRoutes);
+Route::prefix('v1/disperindag')->group($disperindagPublicRoutes);
+
+// ------------------------------------------------------------------------
 // BANK SULTRA — callback VA (dipanggil Bank Sultra saat pembayaran masuk)
 // ------------------------------------------------------------------------
 Route::prefix('h2h/bank-sultra')->group(function () {
