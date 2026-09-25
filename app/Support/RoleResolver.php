@@ -63,6 +63,9 @@ class RoleResolver
         'pertanian' => ['name' => 'Dinas Pertanian', 'category' => 'opd', 'core_role' => 'opd', 'group' => 'opd'],
         'damkar' => ['name' => 'Dinas Damkar & Penyelamatan', 'category' => 'opd', 'core_role' => 'opd', 'group' => 'opd'],
         'pertanahan' => ['name' => 'Dinas Pertanahan', 'category' => 'opd', 'core_role' => 'opd', 'group' => 'opd'],
+        // Juru ukur / survei lapangan pertanahan. Petugas ini TIDAK memutuskan
+        // persetujuan — hanya melakukan pengukuran & mengunggah bukti lapangan.
+        'petugas_survei' => ['name' => 'Petugas Survei Lapangan', 'category' => 'opd', 'core_role' => 'petugas', 'group' => 'opd'],
         'satpol_pp' => ['name' => 'Satuan Polisi Pamong Praja', 'category' => 'opd', 'core_role' => 'petugas', 'group' => 'petugas'],
         'warga' => ['name' => 'Wajib Pajak / Warga', 'category' => 'warga', 'core_role' => 'citizen', 'group' => 'warga'],
     ];
@@ -75,6 +78,8 @@ class RoleResolver
         'notaris' => 'notaris_ppat',
         'admin_pertanahan' => 'pertanahan',
         'dispertanahan' => 'pertanahan',
+        'juru_ukur' => 'petugas_survei',
+        'survei_lapangan' => 'petugas_survei',
         // Nomenklatur Wasdal digabung ke kasubid_pengawas (keputusan owner 23 Sep 2026).
         'kasubid_wasdal' => 'kasubid_pengawas',
         'wasdal' => 'kasubid_pengawas',
@@ -107,6 +112,7 @@ class RoleResolver
         'admin_ptsp' => 'opd',
         'admin_pertanahan' => 'opd',
         'pertanahan' => 'opd',
+        'petugas_survei' => 'opd',
         'walikota' => 'eksekutif',
     ];
 

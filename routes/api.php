@@ -395,7 +395,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'index']);
         Route::get('/nop-applications/{id}', [\App\Http\Controllers\PbbNopApplicationController::class, 'show']);
         Route::post('/nop-applications/{id}/status', [\App\Http\Controllers\PbbNopApplicationController::class, 'updateStatus'])
-            ->middleware('role:admin,kepala_bapenda');
+            ->middleware('role:admin,kepala_bapenda,opd,petugas_survei');
 
         // H2H BPN / BPHTB
         Route::prefix('h2h/bphtb')->group(function () {
@@ -450,7 +450,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         // Pendaftaran NOP alias (tab admin PBB)
         Route::get('/pbb/bapenda/nop-applications', [\App\Http\Controllers\PbbNopApplicationController::class, 'index']);
         Route::post('/pbb/bapenda/nop-applications/{id}/status', [\App\Http\Controllers\PbbNopApplicationController::class, 'updateStatus'])
-            ->middleware('role:admin,kepala_bapenda');
+            ->middleware('role:admin,kepala_bapenda,opd,petugas_survei');
 
         // Pelaporan E-SPTPD
         Route::post('/sptpd', [\App\Http\Controllers\SptpdController::class, 'store']);
@@ -675,6 +675,13 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::post('/{id}/split-items/{itemId}/terbit-nib', [\App\Http\Controllers\PbbMutationController::class, 'terbitNib']);
             Route::post('/{id}/status', [\App\Http\Controllers\PbbMutationController::class, 'updateStatus']);
             Route::get('/{id}', [\App\Http\Controllers\PbbMutationController::class, 'show']);
+        });
+
+        // Analitik SLA & Penghambat Verifikasi — Dinas Pertanahan
+        Route::prefix('pertanahan')->group(function () {
+            Route::get('/sla', [\App\Http\Controllers\PertanahanAnalyticsController::class, 'sla']);
+            Route::get('/hambatan', [\App\Http\Controllers\PertanahanAnalyticsController::class, 'hambatan']);
+            Route::get('/ringkasan', [\App\Http\Controllers\PertanahanAnalyticsController::class, 'ringkasan']);
         });
     });
 

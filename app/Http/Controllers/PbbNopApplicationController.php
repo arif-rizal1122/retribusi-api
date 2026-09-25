@@ -511,6 +511,28 @@ class PbbNopApplicationController extends Controller
             ], 403);
         }
 
+        // Petugas Survei Lapangan hanya mengukur & mengunggah bukti lapangan.
+        // Keputusan menyetujui / menolak tetap di tangan pejabat penilai (maker-checker),
+        // walau kategori role-nya sama-sama 'opd'.
+        $kodeRole = $request->user()->role_code ?? $request->user()->role;
+        $isPetugasSurvei = in_array($kodeRole, ['petugas_survei', 'juru_ukur', 'survei_lapangan'], true);
+        if ($isPetugasSurvei && in_array($request->status, ['APPROVED', 'REJECTED'], true)) {
+            return response()->json([
+                'message' => 'Petugas Survei Lapangan tidak berwenang memutuskan persetujuan. Hanya dapat mengunggah hasil survei.',
+            ], 403);
+        }
+
+        // Asas ketidakberlanjutan: permohonan tidak boleh disetujui tanpa jejak survei lapangan.
+        if ($request->status === 'APPROVED') {
+            $punyaCatatan = $request->filled('survey_notes') || !empty($application->survey_notes);
+            $punyaFoto = $request->hasFile('survey_photo') || !empty($application->survey_photo_path);
+            if (!$punyaCatatan && !$punyaFoto) {
+                return response()->json([
+                    'message' => 'Permohonan belum dapat disetujui: belum ada bukti survei lapangan (catatan atau foto survei). Petugas Survei Lapangan perlu turun terlebih dahulu.',
+                ], 422);
+            }
+        }
+
         $nop = null;
         if ($request->status === 'APPROVED') {
             if ($request->filled('nop')) {
@@ -591,6 +613,11 @@ class PbbNopApplicationController extends Controller
             if ($request->status === 'APPROVED' && $nop) {
                 $this->autoLinkAndGeneratePbbBill($application, $nop);
             }
+
+            // Notifikasi ke pemohon — asas ketidakberlanjutan & kejelasan status.
+            // Setiap keputusan yang mengubah nasib permohonan WAJIB diberitahukan,
+            // supaya pemohon tidak menggantung tanpa kabar.
+            $this->kirimNotifikasiStatus($application, $request->status, $request->input('rejection_reason'), $nop);
         });
 
         return response()->json(['message' => 'Status updated successfully', 'data' => $application->fresh()]);
@@ -787,6 +814,69 @@ class PbbNopApplicationController extends Controller
 
         $nextSeq = str_pad($lastSeq + 1, 4, '0', STR_PAD_LEFT);
         return "7472{$kec}{$kel}001{$nextSeq}0";
+    }
+
+    /**
+     * Kirim notifikasi perubahan status permohonan ke pemohon.
+     *
+     * Menegakkan asas ketidakberlanjutan: pemohon tidak boleh dibiarkan tanpa kabar.
+     * Setiap status yang mengubah nasib permohonan (ditolak, perlu survei, disetujui)
+     * menghasilkan satu catatan notifikasi.
+     *
+     * Catatan: bila data kontak pemohon tidak tersedia, notifikasi TIDAK dibuat —
+     * lebih baik tidak ada catatan palsu daripada mencatat pengiriman yang tak terjadi.
+     */
+    private function kirimNotifikasiStatus(PbbNopApplication $application, string $status, ?string $alasanTolak = null, ?string $nop = null): void
+    {
+        // Tentukan nomor tujuan dari data nyata.
+        // Tabel pbb_nop_applications TIDAK punya kolom telepon — nomor diambil
+        // dari akun pemohon (users.phone). Bila tidak ada, notifikasi dilewati
+        // daripada mencatat pengiriman yang tidak pernah terjadi.
+        $phone = optional(\App\Models\User::find($application->user_id))->phone ?? null;
+
+        if (empty($phone)) {
+            return;
+        }
+
+        $tiket = 'NOP-' . str_pad((string) $application->id, 5, '0', STR_PAD_LEFT);
+
+        $pesan = match ($status) {
+            'REJECTED' => "Permohonan pendaftaran objek pajak {$tiket} TIDAK DAPAT DITERIMA."
+                . ($alasanTolak ? " Alasan: {$alasanTolak}." : '')
+                . ' Silakan lengkapi berkas lalu ajukan kembali.',
+            'SURVEY' => "Permohonan {$tiket} memasuki tahap SURVEI LAPANGAN. "
+                . 'Petugas akan melakukan pengukuran. Mohon pastikan lokasi dapat diakses.',
+            'APPROVED' => "Permohonan {$tiket} telah DISETUJUI."
+                . ($nop ? " NOP resmi Anda: {$nop}." : '')
+                . ' Silakan cek aplikasi untuk ketetapan pajaknya.',
+            'PENDING' => "Permohonan {$tiket} sedang dalam pemeriksaan berkas oleh petugas.",
+            default => null,
+        };
+
+        if ($pesan === null) {
+            return;
+        }
+
+        try {
+            \App\Models\NotificationLog::create([
+                'taxpayer_id' => $application->user_id,
+                'phone' => $phone,
+                'channel' => 'whatsapp',
+                'type' => 'PBB_NOP_' . $status,
+                'reference_type' => PbbNopApplication::class,
+                'reference_id' => $application->id,
+                'message_preview' => \Illuminate\Support\Str::limit($pesan, 200),
+                'status' => 'queued',
+                'sent_at' => null,
+            ]);
+        } catch (\Throwable $e) {
+            // Notifikasi gagal TIDAK boleh menggagalkan perubahan status yang sudah sah.
+            \Illuminate\Support\Facades\Log::warning('Notifikasi status NOP gagal dicatat', [
+                'application_id' => $application->id,
+                'status' => $status,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }
 
