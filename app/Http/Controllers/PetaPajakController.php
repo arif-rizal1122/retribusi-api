@@ -275,10 +275,10 @@ class PetaPajakController extends Controller
         if ($detailMode === '') {
             if ($zoom === null) {
                 $detailMode = 'ringkas';          // fallback aman
-            } elseif ($zoom <= 12.5) {
-                $detailMode = 'centroid';         // seluruh kota -> titik saja
-            } elseif ($zoom <= 14.5) {
-                $detailMode = 'ringkas';          // kecamatan -> poligon ~1 m
+            } elseif ($zoom <= 13.5) {
+                $detailMode = 'centroid';         // kota/kecamatan luas -> titik saja
+            } elseif ($zoom <= 15.5) {
+                $detailMode = 'ringkas';          // kecamatan dekat -> poligon ~1 m
             } else {
                 $detailMode = 'penuh';            // detail bidang -> presisi asli
             }
@@ -298,8 +298,8 @@ class PetaPajakController extends Controller
 
         // Batas jumlah bidang per mode -> jaga payload tetap ringan
         $limitByMode = match ($detailMode) {
-            'centroid' => 6000,    // titik murah -> boleh banyak
-            'ringkas'  => 8000,    // poligon ~1 m
+            'centroid' => 6000,    // titik murah -> boleh banyak (~2.4 MB)
+            'ringkas'  => 3500,    // poligon ~1 m -> dijaga < ~2 MB
             default    => 2000,    // presisi asli tapi area sudah sempit
         };
         $limit = min((int) $request->query('limit', $limitByMode), $limitByMode);
