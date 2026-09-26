@@ -120,6 +120,30 @@ class AdminAssetController extends Controller
     }
 
     /**
+     * Detail pengajuan sewa aset (admin).
+     */
+    public function showRental($id)
+    {
+        $rental = AssetRental::with([
+            'taxpayer:id,name,nik,npwpd,phone',
+            'assetItem:id,name,code,category_id,opd_id',
+            'assetItem.category:id,name',
+            'surveyor:id,name,email',
+            'verifiedBy:id,name',
+            'approvedBy:id,name',
+            'inspections.officer:id,name',
+            'inspections' => fn ($q) => $q->orderBy('created_at'),
+        ])->findOrFail($id);
+
+        $this->authorizeAssetScope($rental);
+
+        return response()->json([
+            'success' => true,
+            'data' => $rental,
+        ]);
+    }
+
+    /**
      * Submit hasil survey lapangan (4 butir checklist kelayakan).
      */
     public function submitSurvey(Request $request, $id)
