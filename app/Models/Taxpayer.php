@@ -107,6 +107,14 @@ class Taxpayer extends Authenticatable
     }
 
     /**
+     * Get all asset rentals / service orders for this taxpayer
+     */
+    public function assetRentals(): HasMany
+    {
+        return $this->hasMany(AssetRental::class);
+    }
+
+    /**
      * Get all PBB NOPs owned by this taxpayer
      */
     public function nops(): HasMany

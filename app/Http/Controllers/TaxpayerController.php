@@ -19,7 +19,14 @@ class TaxpayerController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = Taxpayer::with(['opd', 'retributionTypes', 'retributionClassifications', 'creator', 'taxObjects']);
+        $query = Taxpayer::with([
+            'opd',
+            'retributionTypes',
+            'retributionClassifications',
+            'creator',
+            'taxObjects',
+            'assetRentals.assetItem.opd',
+        ]);
 
         // Admin OPD and Petugas: filter taxpayers by OPD context
         if ($user && in_array($user->role, ['opd', 'petugas'])) {
@@ -29,10 +36,8 @@ class TaxpayerController extends Controller
                 || str_contains(strtolower($user->email ?? ''), 'bapenda'));
 
             if (!$isBapenda) {
-                // Sesuai regulasi: OPD selain Bapenda HANYA melihat Wajib Pajak yang SUDAH MEMILIKI OBJEK PAJAK/RETRIBUSI!
-                // Warga/calon WP yang belum memiliki objek pajak terfilter sehingga HANYA BISA DILIHAT DI BAPENDA.
-                $query->has('taxObjects');
-
+                // Sesuai regulasi: OPD selain Bapenda melihat Wajib Pajak yang memiliki objek retribusi,
+                // ATAU warga yang pernah mengajukan permohonan/pemesanan layanan/sewa aset OPD terkait.
                 if ($user->opd_id) {
                     $query->where(function ($q) use ($user) {
                         $q->where('opd_id', $user->opd_id)
@@ -44,6 +49,9 @@ class TaxpayerController extends Controller
                           })
                           ->orWhereHas('bills', function ($b) use ($user) {
                               $b->where('opd_id', $user->opd_id);
+                          })
+                          ->orWhereHas('assetRentals.assetItem', function ($ai) use ($user) {
+                              $ai->where('opd_id', $user->opd_id);
                           });
                     });
                 }
@@ -282,10 +290,11 @@ class TaxpayerController extends Controller
                 $hasAccess = true;
             }
 
-            // 2. Taxpayer owns tax objects administered by user's OPD
+            // 2. Taxpayer owns tax objects administered by user's OPD or ordered assets/services
             if (!$hasAccess && $user->opd_id) {
                 $hasAccess = $taxpayer->taxObjects()->where('opd_id', $user->opd_id)->exists()
-                    || $taxpayer->retributionTypes()->where('retribution_types.opd_id', $user->opd_id)->exists();
+                    || $taxpayer->retributionTypes()->where('retribution_types.opd_id', $user->opd_id)->exists()
+                    || $taxpayer->assetRentals()->whereHas('assetItem', fn($ai) => $ai->where('opd_id', $user->opd_id))->exists();
             }
 
             // 3. Petugas created this taxpayer
@@ -313,6 +322,17 @@ class TaxpayerController extends Controller
             ->orderBy('paid_at', 'desc')
             ->get();
 
+        $assetRentals = \App\Models\AssetRental::where('taxpayer_id', $taxpayer->id)
+            ->with([
+                'assetItem:id,name,code,category_id,opd_id',
+                'assetItem.category:id,name',
+                'assetItem.opd:id,name,code',
+                'room:id,room_number,floor,complex_code',
+                'surveyor:id,name,email',
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return response()->json([
             'data' => $taxpayer->load([
                 'opd',
@@ -323,7 +343,8 @@ class TaxpayerController extends Controller
                 'taxObjects.classification',
             ]),
             'related_assets' => $relatedAssets,
-            'payment_history' => $paymentHistory
+            'payment_history' => $paymentHistory,
+            'asset_rentals' => $assetRentals,
         ]);
     }
 

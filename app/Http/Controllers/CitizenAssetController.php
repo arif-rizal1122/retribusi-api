@@ -157,7 +157,7 @@ class CitizenAssetController extends Controller
             'include_tronton' => 'nullable|boolean',
             'jarak_tronton_km' => 'nullable|numeric|min:0',
             'biaya_tronton' => 'nullable|numeric|min:0',
-            // Simple Sedot Kakus Google Form fields per Perda 1/2024
+            // Simple Sedot Kakus Google Form fields per Perda 1/2024 & Smart Screening
             'nama_konsumen' => 'nullable|string',
             'jenis_bangunan' => 'nullable|string',
             'jumlah_rit' => 'nullable|integer|min:1',
@@ -165,6 +165,9 @@ class CitizenAssetController extends Controller
             'pelaksana_armada' => 'nullable|string',
             'foto_lokasi' => 'nullable|string',
             'bukti_pembayaran_manual' => 'nullable|string',
+            'screening_akses_jalan' => 'nullable|string|in:lebar_truk,sempit_motor',
+            'screening_jarak_selang' => 'nullable|string|in:kurang_20m,20_sampai_40m,lebih_50m',
+            'screening_kondisi_lubang' => 'nullable|string|in:sudah_terbuka,bisa_dibuka,tertimbun_semen',
         ]);
 
         $mulai = Carbon::parse($validated['tanggal_mulai'])->startOfDay();
@@ -376,6 +379,16 @@ class CitizenAssetController extends Controller
                 $metadata['pelaksana_armada'] = $validated['pelaksana_armada'] ?? null;
                 $metadata['foto_lokasi'] = $validated['foto_lokasi'] ?? null;
                 $metadata['bukti_pembayaran_manual'] = $validated['bukti_pembayaran_manual'] ?? null;
+
+                $isEkstrem = ($validated['screening_jarak_selang'] ?? '') === 'lebih_50m' || (int) ($validated['jumlah_rit'] ?? 1) > 5;
+                $metadata['smart_screening'] = [
+                    'akses_jalan' => $validated['screening_akses_jalan'] ?? 'lebar_truk',
+                    'jarak_selang' => $validated['screening_jarak_selang'] ?? 'kurang_20m',
+                    'kondisi_lubang' => $validated['screening_kondisi_lubang'] ?? 'bisa_dibuka',
+                    'is_akses_ekstrem' => $isEkstrem,
+                ];
+                $metadata['requires_survey'] = $isEkstrem;
+                $metadata['survey_reason'] = $isEkstrem ? 'Jarak selang > 50 meter / Kapasitas ritase industri besar' : null;
             }
 
             $rental = AssetRental::create([

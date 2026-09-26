@@ -476,6 +476,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/asset/rentals/{id}', [\App\Http\Controllers\AdminAssetController::class, 'showRental']);
         Route::post('/asset/rentals/{id}/assign', [\App\Http\Controllers\AdminAssetController::class, 'assignOfficer']);
         Route::post('/asset/rentals/{id}/survey', [\App\Http\Controllers\AdminAssetController::class, 'submitSurvey']);
+        Route::post('/asset/rentals/{id}/sedot-kakus-execution', [\App\Http\Controllers\AdminAssetController::class, 'submitSedotKakusExecution']);
         Route::post('/asset/rentals/{id}/inspection', [\App\Http\Controllers\AdminAssetController::class, 'submitInspection']);
         Route::get('/asset/rentals/{id}/document/sipab', [\App\Http\Controllers\AdminAssetController::class, 'documentSipab']);
         Route::get('/asset/rentals/{id}/document/bast', [\App\Http\Controllers\AdminAssetController::class, 'documentBast']);

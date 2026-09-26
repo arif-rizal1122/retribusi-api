@@ -159,10 +159,23 @@ class AdminAssetController extends Controller
             'survey_penjebolan_akses' => 'nullable|boolean',
             'survey_penjebolan_catatan' => 'nullable|string',
             'survey_rekomendasi_alat' => 'nullable|string',
+            'survey_gps_lat' => 'nullable|numeric',
+            'survey_gps_lng' => 'nullable|numeric',
+            'survey_gps_status' => 'nullable|string',
+            'survey_gps_notes' => 'nullable|string',
         ]);
 
         $rental = AssetRental::findOrFail($id);
         $this->authorizeAssetScope($rental);
+
+        $metadata = $rental->metadata ?? [];
+        $metadata['survey_gps'] = [
+            'lat' => $validated['survey_gps_lat'] ?? null,
+            'lng' => $validated['survey_gps_lng'] ?? null,
+            'status' => $validated['survey_gps_status'] ?? 'active',
+            'notes' => $validated['survey_gps_notes'] ?? null,
+            'recorded_at' => now()->toIso8601String(),
+        ];
 
         $rental->update([
             'survey_akses_jalan' => $validated['survey_akses_jalan'],
@@ -177,12 +190,75 @@ class AdminAssetController extends Controller
             'survey_rekomendasi_alat' => $validated['survey_rekomendasi_alat'] ?? null,
             'surveyor_user_id' => auth()->id(),
             'survey_submitted_at' => now(),
+            'metadata' => $metadata,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Laporan hasil survey kelayakan lapangan berhasil disimpan.',
             'data' => $rental->load(['surveyor:id,name', 'assetItem:id,name,code']),
+        ]);
+    }
+
+    /**
+     * Submit asesmen & eksekusi on-the-spot mobil tinja / sedot kakus oleh Sopir & Operator.
+     * Tidak memerlukan survei lapangan formal terpisah.
+     */
+    public function submitSedotKakusExecution(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'foto_sebelum' => 'required|string',
+            'foto_sesudah' => 'required|string',
+            'signature_pemohon' => 'nullable|string',
+            'catatan_lapangan' => 'nullable|string',
+            'volume_rit_aktual' => 'nullable|numeric',
+            'status_tutup_lubang' => 'nullable|string',
+            'pembuangan_iplt' => 'nullable|boolean',
+            'gps_lat' => 'nullable|numeric',
+            'gps_lng' => 'nullable|numeric',
+        ]);
+
+        $rental = AssetRental::findOrFail($id);
+        $this->authorizeAssetScope($rental);
+
+        $metadata = $rental->metadata ?? [];
+        $metadata['sedot_kakus_execution'] = [
+            'foto_sebelum' => $validated['foto_sebelum'],
+            'foto_sesudah' => $validated['foto_sesudah'],
+            'signature_pemohon' => $validated['signature_pemohon'] ?? null,
+            'catatan_lapangan' => $validated['catatan_lapangan'] ?? null,
+            'volume_rit_aktual' => $validated['volume_rit_aktual'] ?? $rental->jumlah_unit ?? 1,
+            'status_tutup_lubang' => $validated['status_tutup_lubang'] ?? 'Rapi dan tertutup kembali',
+            'pembuangan_iplt' => (bool) ($validated['pembuangan_iplt'] ?? true),
+            'gps' => [
+                'lat' => $validated['gps_lat'] ?? null,
+                'lng' => $validated['gps_lng'] ?? null,
+            ],
+            'executed_by_id' => auth()->id(),
+            'executed_by_name' => auth()->user()?->name ?? 'Operator UPTD',
+            'executed_at' => now()->toIso8601String(),
+        ];
+
+        // Tandai sewa selesai dan catat kondisi
+        $rental->update([
+            'status' => 'Selesai',
+            'kondisi_pengembalian' => 'Selesai disedot dan dialirkan ke tangki armada',
+            'metadata' => $metadata,
+        ]);
+
+        // Selesaikan tugas petugas jika ada
+        try {
+            \App\Models\PetugasTask::where('target_id', $rental->id)
+                ->whereIn('task_type', ['eksekusi_sedot_kakus', 'survey_aset'])
+                ->update(['status' => 'completed']);
+        } catch (\Throwable $e) {
+            // Task model might have different columns or table
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Layanan sedot kakus berhasil diselesaikan di lokasi dan siap dibuang ke IPLT.',
+            'data' => $rental->fresh(['taxpayer', 'assetItem']),
         ]);
     }
 
@@ -257,14 +333,21 @@ class AdminAssetController extends Controller
             'catatan_verifikator' => $validated['catatan'] ?? $rental->catatan_verifikator,
         ]);
 
+        $isSedotKakus = (bool) ($rental->metadata['is_sedot_kakus'] ?? false)
+            || str_starts_with($rental->assetItem?->code ?? '', 'SK-')
+            || str_contains(strtolower($rental->assetItem?->name ?? ''), 'tinja')
+            || str_contains(strtolower($rental->assetItem?->name ?? ''), 'kakus');
+
         // Buat atau sinkronkan tugas di PetugasTask agar muncul di mobile app retribusi-petugas
         if (! empty($validated['surveyor_user_id'])) {
             \App\Models\PetugasTask::create([
                 'user_id' => $validated['surveyor_user_id'],
                 'taxpayer_id' => $rental->taxpayer_id,
-                'task_type' => 'survey_aset',
+                'task_type' => $isSedotKakus ? 'eksekusi_sedot_kakus' : 'survey_aset',
                 'due_date' => now()->addDays(2),
-                'notes' => "Survei Kelayakan Sewa: {$rental->rental_code} ({$rental->assetItem?->name}). Lokasi: {$rental->lokasi_penggunaan}. Catatan: " . ($validated['catatan'] ?? 'Segera lakukan survey 4 parameter lapangan.'),
+                'notes' => $isSedotKakus
+                    ? "Pelayanan Sedot Kakus: {$rental->rental_code} ({$rental->assetItem?->name}). Lokasi: {$rental->lokasi_penggunaan}. Armada: " . ($rental->metadata['pelaksana_armada'] ?? 'Truk Tangki UPTD PUPR') . ". Sopir/Operator: " . ($validated['operator_nama'] ?? $rental->operator_nama ?? 'Tim UPTD')
+                    : "Survei Kelayakan Sewa: {$rental->rental_code} ({$rental->assetItem?->name}). Lokasi: {$rental->lokasi_penggunaan}. Catatan: " . ($validated['catatan'] ?? 'Segera lakukan survey 4 parameter lapangan.'),
                 'status' => 'pending',
                 'created_by' => auth()->id(),
             ]);
@@ -272,7 +355,7 @@ class AdminAssetController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Penugasan petugas lapangan dan operator berhasil disimpan.',
+            'message' => $isSedotKakus ? 'Disposisi armada dan sopir/operator sedot kakus berhasil diterbitkan.' : 'Penugasan petugas lapangan dan operator berhasil disimpan.',
             'data' => $rental->load(['surveyor:id,name,phone', 'assetItem:id,name,code']),
         ]);
     }
