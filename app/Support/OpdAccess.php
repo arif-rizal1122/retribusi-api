@@ -92,7 +92,7 @@ class OpdAccess
             || in_array('JU-REK', $codes, true)
         );
 
-        $isPtsp = ! $isBapenda && (
+        $isPtsp = ! $isBapenda && ! $isPupr && ! $isPuprAset && (
             in_array($opdCode, ['DPMPTSP', 'PTSP'], true)
             || str_contains($opdName, 'penanaman modal')
             || str_contains($email, 'ptsp')
