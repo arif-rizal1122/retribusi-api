@@ -1,5 +1,10 @@
 # API Backlog
 
+## Kompatibilitas Geometri Spasial MySQL 9 — 26 September 2026
+
+- [x] **SPATIAL-SRID-01**: Normalisasi kueri spasial `SpatialController::bidangByPoint` dan `SpatialController::bidangBbox` untuk menghapus parameter eksplisit SRID 4326 pada `ST_GeomFromText(?)` agar selaras dengan kolom geometri SRID 0 `smartgis_bidang` di MySQL 9. Kueri titik `POST /api/spatial/bidang-by-point` dan bounding box `GET /api/spatial/bidang-bbox` kini merespons dalam <30ms tanpa error 500.
+- Validasi: cURL pengujian endpoint titik dan bbox lulus (200 OK); PHP syntax lint lulus.
+
 ## Normalisasi flag aksi payment request pada bill citizen — 20 September 2026
 
 - [x] **AM-BASE-03P**: payload `GET /api/citizen/bills` menghitung `can_refresh` dan `can_cancel` dari status payment request secara case-insensitive; storage legacy `PENDING` tetap menjadi payment request aktif.
