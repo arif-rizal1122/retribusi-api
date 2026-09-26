@@ -192,6 +192,68 @@ class AdminAssetController extends Controller
     }
 
     /**
+     * Daftar petugas lapangan yang dapat ditugaskan untuk survey dan operasional aset.
+     */
+    public function officers(Request $request)
+    {
+        $user = auth()->user();
+        $query = User::where('role', 'petugas')->where('status', 'active');
+        if ($user && $user->opd_id && ! $user->isSuperAdmin()) {
+            $query->where('opd_id', $user->opd_id);
+        }
+
+        $officers = $query->orderBy('name')->get(['id', 'name', 'email', 'phone', 'metadata']);
+        return response()->json([
+            'success' => true,
+            'data' => $officers,
+        ]);
+    }
+
+    /**
+     * Disposisi / Penugasan Petugas Surveyor dan Operator Alat Berat.
+     */
+    public function assignOfficer(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'surveyor_user_id' => 'nullable|exists:users,id',
+            'operator_nama' => 'nullable|string|max:100',
+            'operator_hp' => 'nullable|string|max:30',
+            'operator_sim' => 'nullable|string|max:50',
+            'catatan' => 'nullable|string',
+        ]);
+
+        $rental = AssetRental::with(['taxpayer', 'assetItem'])->findOrFail($id);
+        $this->authorizeAssetScope($rental);
+
+        $rental->update([
+            'surveyor_user_id' => $validated['surveyor_user_id'] ?? $rental->surveyor_user_id,
+            'operator_nama' => $validated['operator_nama'] ?? $rental->operator_nama,
+            'operator_hp' => $validated['operator_hp'] ?? $rental->operator_hp,
+            'operator_sim' => $validated['operator_sim'] ?? $rental->operator_sim,
+            'catatan_verifikator' => $validated['catatan'] ?? $rental->catatan_verifikator,
+        ]);
+
+        // Buat atau sinkronkan tugas di PetugasTask agar muncul di mobile app retribusi-petugas
+        if (! empty($validated['surveyor_user_id'])) {
+            \App\Models\PetugasTask::create([
+                'user_id' => $validated['surveyor_user_id'],
+                'taxpayer_id' => $rental->taxpayer_id,
+                'task_type' => 'survey_aset',
+                'due_date' => now()->addDays(2),
+                'notes' => "Survei Kelayakan Sewa: {$rental->rental_code} ({$rental->assetItem?->name}). Lokasi: {$rental->lokasi_penggunaan}. Catatan: " . ($validated['catatan'] ?? 'Segera lakukan survey 4 parameter lapangan.'),
+                'status' => 'pending',
+                'created_by' => auth()->id(),
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Penugasan petugas lapangan dan operator berhasil disimpan.',
+            'data' => $rental->load(['surveyor:id,name,phone', 'assetItem:id,name,code']),
+        ]);
+    }
+
+    /**
      * Verifikasi pengajuan (status Diajukan → Diverifikasi).
      */
     public function verify(Request $request, $id)

@@ -161,6 +161,25 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // Create Petugas Lapangan PUPR Aset (Alkal)
+        User::updateOrCreate(
+            ['email' => 'petugas.aset.pupr@baubaukota.go.id'],
+            [
+                'name' => 'Petugas Lapangan PUPR Aset (Alkal)',
+                'password' => Hash::make('Pupr@2026'),
+                'role' => 'petugas',
+                'opd_id' => 9,
+                'phone' => '085241902026',
+                'status' => 'active',
+                'metadata' => [
+                    'role_code' => 'petugas_pupr_aset',
+                    'sub_role' => 'surveyor_dan_operator',
+                    'department' => 'UPTD Peralatan & Workshop',
+                    'jabatan' => 'Petugas Survei & Pengawas Alat Berat',
+                ],
+            ]
+        );
+
         // Create retribution types for Dishub
         $parkirMobil = RetributionType::create([
             'opd_id' => $dishub->id,
