@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AssetCategory;
 use App\Models\AssetItem;
 use App\Models\AssetRental;
+use App\Models\Bill;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -273,8 +274,37 @@ class AdminAssetController extends Controller
             'tahap_2_amount' => 'nullable|numeric|min:0',
         ]);
 
-        $rental = AssetRental::findOrFail($id);
+        $rental = AssetRental::with(['assetItem.category'])->findOrFail($id);
         $this->authorizeAssetScope($rental);
+
+        $metadata = $rental->metadata ?? [];
+
+        // Buat atau sinkronkan tagihan SKRD di tabel bills untuk Tahap 1 (Uang Muka / Sewa Awal)
+        $billNumber = 'SKRD-AST-' . $rental->rental_code . '-T1';
+        $bill = Bill::updateOrCreate(
+            ['bill_number' => $billNumber],
+            [
+                'taxpayer_id' => $rental->taxpayer_id,
+                'opd_id' => $rental->assetItem?->category?->opd_id ?? 9,
+                'retribution_type_id' => $rental->retribution_type_id ?? 106,
+                'retribution_classification_id' => $rental->retribution_classification_id ?? 211,
+                'amount' => $validated['tahap_1_amount'],
+                'admin_fee' => 0,
+                'penalty_amount' => 0,
+                'status' => 'pending',
+                'due_date' => now()->addDays(7),
+                'period' => now()->format('Y-m'),
+                'metadata' => [
+                    'rental_id' => $rental->id,
+                    'rental_code' => $rental->rental_code,
+                    'tahap' => 1,
+                    'asset_name' => $rental->assetItem?->name ?? 'Aset Daerah',
+                ],
+            ]
+        );
+
+        $metadata['tahap_1_bill_id'] = $bill->id;
+        $metadata['tahap_1_bill_number'] = $bill->bill_number;
 
         $rental->update([
             'nomor_kontrak' => $validated['nomor_kontrak'],
@@ -282,14 +312,17 @@ class AdminAssetController extends Controller
             'tahap_2_amount' => $validated['tahap_2_amount'] ?? 0,
             'tahap_1_status' => 'Pending',
             'tahap_2_status' => 'Pending',
+            'metadata' => $metadata,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Kontrak sewa dan termin pembayaran berhasil diterbitkan.',
+            'message' => 'Kontrak sewa dan SKRD termin pembayaran berhasil diterbitkan.',
             'data' => $rental,
+            'bill' => $bill,
         ]);
     }
+
 
     /**
      * Daftar petugas lapangan yang dapat ditugaskan untuk survey dan operasional aset.
@@ -489,6 +522,11 @@ class AdminAssetController extends Controller
             $dpPaid = (float) ($rental->tahap_1_amount ?: $rental->dp);
             $updates['dp'] = $dpPaid;
             $updates['sisa_pembayaran'] = max(0, (float) $rental->total_biaya - $dpPaid);
+
+            // Sinkronkan status bill SKRD menjadi lunas
+            if (!empty($rental->metadata['tahap_1_bill_id'])) {
+                Bill::where('id', $rental->metadata['tahap_1_bill_id'])->update(['status' => 'lunas']);
+            }
         }
 
         if ($validated['status'] === 'Lunas' && $validated['tahap'] === '2') {
