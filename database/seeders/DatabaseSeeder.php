@@ -143,6 +143,24 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // Create Admin Aset PUPR (Alkal & Workshop)
+        User::updateOrCreate(
+            ['email' => 'aset.pupr@baubaukota.go.id'],
+            [
+                'name' => 'Admin Aset PUPR (Alkal & Workshop)',
+                'password' => Hash::make('Pupr@2026'),
+                'role' => 'opd',
+                'opd_id' => 9,
+                'status' => 'active',
+                'metadata' => [
+                    'role_code' => 'admin_pupr_aset',
+                    'opd_role' => 'Admin Aset PUPR',
+                    'role_group' => 'opd',
+                    'department' => 'UPTD Peralatan & Workshop',
+                ],
+            ]
+        );
+
         // Create retribution types for Dishub
         $parkirMobil = RetributionType::create([
             'opd_id' => $dishub->id,
