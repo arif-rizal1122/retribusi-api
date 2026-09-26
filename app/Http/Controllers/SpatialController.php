@@ -42,7 +42,7 @@ class SpatialController extends Controller
                    ST_AsGeoJSON(geometry) AS geojson,
                    ST_Area(geometry) AS luas_derajat
             FROM smartgis_bidang
-            WHERE ST_Contains(geometry, ST_GeomFromText(?, 4326))
+            WHERE ST_Contains(geometry, ST_GeomFromText(?))
             LIMIT 10
         ", ["POINT($lng $lat)"]);
 
@@ -124,7 +124,7 @@ class SpatialController extends Controller
             SELECT gid, nop, luas,
                    ST_AsGeoJSON(geometry) AS geojson
             FROM smartgis_bidang
-            WHERE ST_Intersects(geometry, ST_GeomFromText(?, 4326))
+            WHERE ST_Intersects(geometry, ST_GeomFromText(?))
             LIMIT ?
         ", [$bbox, $limit]);
 
