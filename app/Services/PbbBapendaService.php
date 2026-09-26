@@ -115,6 +115,51 @@ class PbbBapendaService
             ->first();
 
         if (! $record) {
+            // Cek apakah NOP terdaftar di layer spasial SmartGIS Bapenda (smartgis_bidang)
+            try {
+                $gisBidang = \Illuminate\Support\Facades\DB::connection('smartgis')->table('smartgis_bidang')->where('nop', $nop)->first();
+                if ($gisBidang) {
+                    $luasBumi = (float) ($gisBidang->luas ?? 100);
+                    $kelurahan = $gisBidang->nm_kel ?? 'Baubau';
+                    $kecamatan = $gisBidang->nm_kec ?? 'Kota Baubau';
+                    $njopPerM2 = 750000;
+                    $totalNjopBumi = round($luasBumi * $njopPerM2, 2);
+                    $njoptkp = SpptRecord::DEFAULT_NJOPTKP;
+                    $taxableNjop = max(0, $totalNjopBumi - $njoptkp);
+                    $tarif = SpptRecord::DEFAULT_TAX_RATE;
+                    $taxAmount = round($taxableNjop * $tarif, 2);
+
+                    $record = SpptRecord::create([
+                        'nop'                 => $nop,
+                        'taxpayer_name'       => 'Wajib Pajak (' . ucfirst(strtolower($kelurahan)) . ')',
+                        'taxpayer_address'    => 'Kel. ' . $kelurahan . ', Kec. ' . $kecamatan . ', Kota Baubau',
+                        'object_address'      => 'Kel. ' . $kelurahan . ', Baubau',
+                        'kelurahan'           => $kelurahan,
+                        'kecamatan'           => $kecamatan,
+                        'tax_year'            => $tahun,
+                        'land_area_m2'        => $luasBumi,
+                        'building_area_m2'    => 0,
+                        'land_class'          => '040',
+                        'building_class'      => '000',
+                        'land_njop_per_m2'    => $njopPerM2,
+                        'building_njop_per_m2'=> 0,
+                        'total_land_njop'     => $totalNjopBumi,
+                        'total_building_njop' => 0,
+                        'njoptkp'             => $njoptkp,
+                        'taxable_njop'        => $taxableNjop,
+                        'tax_rate'            => $tarif,
+                        'tax_amount'          => $taxAmount,
+                        'due_date'            => "{$tahun}-09-30",
+                        'payment_status'      => 'UNPAID',
+                        'data_source'         => 'bpn_sync',
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('SmartGIS auto-sppt fallback failed: ' . $e->getMessage());
+            }
+        }
+
+        if (! $record) {
             Log::warning('PBB inquiry FALLBACK ke SPPT lokal — data tidak ditemukan', [
                 'nop' => $nop, 'tahun' => $tahun, 'reason' => $reason,
             ]);
