@@ -481,6 +481,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::post('/asset/rentals/{id}/approve', [\App\Http\Controllers\AdminAssetController::class, 'approve']);
         Route::post('/asset/rentals/{id}/reject', [\App\Http\Controllers\AdminAssetController::class, 'reject']);
         Route::post('/asset/rentals/{id}/complete', [\App\Http\Controllers\AdminAssetController::class, 'complete']);
+        Route::post('/asset/rentals/{id}/payment', [\App\Http\Controllers\AdminAssetController::class, 'confirmPayment']);
         Route::get('/asset/categories', [\App\Http\Controllers\AdminAssetController::class, 'categories']);
         Route::post('/asset/categories', [\App\Http\Controllers\AdminAssetController::class, 'storeCategory']);
         Route::put('/asset/categories/{id}', [\App\Http\Controllers\AdminAssetController::class, 'updateCategory']);

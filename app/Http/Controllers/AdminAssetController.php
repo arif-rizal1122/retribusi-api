@@ -295,6 +295,47 @@ class AdminAssetController extends Controller
     }
 
     /**
+     * Konfirmasi pembayaran termin / pelunasan sewa aset (Admin Pengampu).
+     */
+    public function confirmPayment(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'tahap' => 'required|in:1,2,all',
+            'status' => 'required|in:Lunas,Pending,Dibatalkan',
+            'catatan' => 'nullable|string',
+        ]);
+
+        $rental = AssetRental::findOrFail($id);
+        $this->authorizeAssetScope($rental);
+
+        $updates = [];
+        if (in_array($validated['tahap'], ['1', 'all'])) {
+            $updates['tahap_1_status'] = $validated['status'];
+        }
+        if (in_array($validated['tahap'], ['2', 'all'])) {
+            $updates['tahap_2_status'] = $validated['status'];
+        }
+
+        if ($validated['status'] === 'Lunas' && in_array($validated['tahap'], ['1', 'all'])) {
+            $dpPaid = (float) ($rental->tahap_1_amount ?: $rental->dp);
+            $updates['dp'] = $dpPaid;
+            $updates['sisa_pembayaran'] = max(0, (float) $rental->total_biaya - $dpPaid);
+        }
+
+        if ($validated['status'] === 'Lunas' && $validated['tahap'] === '2') {
+            $updates['sisa_pembayaran'] = 0;
+        }
+
+        $rental->update($updates);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status pembayaran berhasil dikonfirmasi.',
+            'data' => $rental,
+        ]);
+    }
+
+    /**
      * CRUD kategori aset.
      */
     public function categories()
