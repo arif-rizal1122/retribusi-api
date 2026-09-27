@@ -1,3 +1,10 @@
+# [DONE] Penegasan Yuridis & Struktur Tarif Retribusi Pelayanan Pasar (Perda No. 1/2024)
+
+> **STATUS: DONE / TERIMPLEMENTASI**
+> Seluruh dasar yuridis Perda Kota Baubau No. 1/2024, struktur tarif resmi pasar, klausul bebas pungutan ganda retribusi sampah lapak, serta rumusan redaksi struk bukti bayar thermal M-PAD telah diselaraskan ke dalam sistem.
+
+---
+
 Berdasarkan penelusuran yuridis terhadap naskah resmi **[Peraturan Daerah Kota Baubau No. 1 Tahun 2024 tentang Pajak Daerah dan Retribusi Daerah](https://drive.google.com/file/d/1nVRrted30T9th42uXP0fuVH0FtO67_m5/view?usp=drivesdk&utm_source=gemini)** serta regulasi pelaksanaannya (**Perwali Kota Baubau**), berikut adalah **redaksi lengkap pasal, struktur tarif, dan penegasan status retribusi sampah**:
 
 ---
