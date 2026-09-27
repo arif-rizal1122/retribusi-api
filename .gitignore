@@ -60,3 +60,4 @@ storage/backup_pwd_*.csv
 *.bak-*
 .env.backup
 kaji_*.php
+docs/user.md

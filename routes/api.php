@@ -747,11 +747,34 @@ $disperindagPublicRoutes = function () {
     Route::get('/zones', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'zones']);
     Route::get('/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'buildings']);
     Route::get('/stalls', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'stalls']);
+    Route::get('/stalls/available', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'availableStalls']);
     Route::get('/officers', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'officers']);
+    Route::get('/tickets', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'dailyTickets']);
+};
+
+$disperindagAuthRoutes = function () {
+    Route::get('/officer-stats', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'officerStats']);
+    Route::post('/tickets/daily', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'issueDailyTicket']);
+    Route::post('/stalls/{id}/pay', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'payStall']);
+    Route::put('/stalls/{id}/status', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateStallStatus']);
+    Route::put('/stalls/{id}', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateStall']);
+    Route::post('/stalls', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'createStall']);
+    Route::post('/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'createBuilding']);
+    Route::delete('/buildings', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'deleteBuilding']);
+    Route::post('/buildings/tariff', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateBuildingTariff']);
+    Route::post('/tariffs/batch-assign', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'batchAssignTariff']);
+    Route::put('/officers/{id}', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'updateOfficer']);
+    Route::post('/stalls/{id}/claim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'claimStall']);
+    Route::post('/stalls/{id}/verify-claim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'verifyClaim']);
+    Route::post('/stalls/{id}/unclaim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'unclaimStall']);
+    Route::post('/tax-objects/{taxObjectId}/unclaim', [\App\Http\Controllers\Api\V1\Disperindag\MarketController::class, 'unclaimByTaxObject']);
 };
 
 Route::prefix('disperindag')->group($disperindagPublicRoutes);
 Route::prefix('v1/disperindag')->group($disperindagPublicRoutes);
+
+Route::prefix('disperindag')->middleware('auth:sanctum')->group($disperindagAuthRoutes);
+Route::prefix('v1/disperindag')->middleware('auth:sanctum')->group($disperindagAuthRoutes);
 
 // ------------------------------------------------------------------------
 // BANK SULTRA — callback VA (dipanggil Bank Sultra saat pembayaran masuk)

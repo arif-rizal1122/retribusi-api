@@ -13,9 +13,43 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Models\MarketDailyTicket;
+use App\Models\User;
+use App\Support\SpatialAuditLogger;
 
 class MarketController extends Controller
 {
+    /**
+     * Verifikasi otorisasi petugas/admin operasional Disperindagkop (RBAC Disperindag).
+     */
+    private function authorizeDisperindagOfficer(?User $user): bool
+    {
+        if (!$user) return false;
+        if (in_array($user->role, ['super_admin', 'admin'], true)) return true;
+
+        $opd = $user->opd;
+        $opdCode = strtoupper($opd?->code ?? '');
+        $metadata = is_array($user->metadata) ? $user->metadata : [];
+        $roleCode = strtolower($metadata['role_code'] ?? ($user->role_code ?? ''));
+
+        return $user->opd_id === 3
+            || in_array($opdCode, ['DISPERINDAG', 'PERINDAG', 'DISPERINDAGKOP', 'PERDAGINKOP'], true)
+            || in_array($roleCode, ['perindag', 'disperindag', 'admin_disperindag', 'juru_pungut_pasar'], true)
+            || MarketOfficerAssignment::where('user_id', $user->id)->exists();
+    }
+
+    /**
+     * Verifikasi wewenang admin manajemen Disperindagkop (manajemen tarif/gedung).
+     */
+    private function authorizeDisperindagAdmin(?User $user): bool
+    {
+        if (!$user) return false;
+        if ($user->role === 'super_admin') return true;
+        if (in_array($user->role, ['admin', 'opd'], true)) {
+            return $this->authorizeDisperindagOfficer($user);
+        }
+        return false;
+    }
+
     /**
      * Ringkasan eksekutif tata kelola pasar Disperindag (Dashboard Metrics & KPI).
      */
@@ -96,6 +130,24 @@ class MarketController extends Controller
         $totalArrears = (clone $billQuery)->where('status', '!=', 'lunas')->sum('amount');
         $collectionRate = $totalBilled > 0 ? round(($totalCollected / $totalBilled) * 100, 1) : 0;
 
+        // Realisasi Karcis Harian PKL & Pelataran (MarketDailyTicket)
+        $today = now()->toDateString();
+        $ticketQuery = MarketDailyTicket::query();
+        if ($marketId) {
+            $selectedMarket = Market::find($marketId);
+            if ($selectedMarket) {
+                $ticketQuery->where('market_name', $selectedMarket->name);
+            }
+        }
+
+        $totalDailyTicketsCount = (clone $ticketQuery)->sum('quantity') ?: 0;
+        $totalDailyTicketsAmount = (clone $ticketQuery)->sum('total_amount') ?: 0;
+        $todayDailyTicketsCount = (clone $ticketQuery)->whereDate('issued_at', $today)->sum('quantity') ?: 0;
+        $todayDailyTicketsAmount = (clone $ticketQuery)->whereDate('issued_at', $today)->sum('total_amount') ?: 0;
+        $dailyTicketsCash = (clone $ticketQuery)->where('payment_method', 'TUNAI')->sum('total_amount') ?: 0;
+        $dailyTicketsQris = (clone $ticketQuery)->where('payment_method', 'QRIS')->sum('total_amount') ?: 0;
+        $recentTickets = (clone $ticketQuery)->orderBy('issued_at', 'desc')->take(10)->get();
+
         $totalOfficers = MarketOfficerAssignment::count();
 
         return response()->json([
@@ -118,10 +170,17 @@ class MarketController extends Controller
                     'total_collected' => (float) $totalCollected,
                     'total_arrears' => (float) $totalArrears,
                     'collection_rate' => $collectionRate,
+                    'daily_tickets_count' => (int) $totalDailyTicketsCount,
+                    'daily_tickets_amount' => (float) $totalDailyTicketsAmount,
+                    'today_daily_tickets_count' => (int) $todayDailyTicketsCount,
+                    'today_daily_tickets_amount' => (float) $todayDailyTicketsAmount,
+                    'daily_tickets_cash' => (float) $dailyTicketsCash,
+                    'daily_tickets_qris' => (float) $dailyTicketsQris,
                     'officer_teams_count' => $totalOfficers,
                 ],
                 'markets' => $marketsSummary,
                 'buildings' => $buildingsSummary,
+                'recent_tickets' => $recentTickets,
             ]
         ]);
     }
@@ -256,6 +315,14 @@ class MarketController extends Controller
      */
     public function updateStall(Request $request, int $id): JsonResponse
     {
+        $user = $request->user();
+        if (!$this->authorizeDisperindagOfficer($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak: Anda tidak memiliki wewenang untuk mengubah data lapak pasar.',
+            ], 403);
+        }
+
         $stall = MarketStall::findOrFail($id);
 
         $validated = $request->validate([
@@ -313,6 +380,14 @@ class MarketController extends Controller
      */
     public function updateBuildingTariff(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$this->authorizeDisperindagAdmin($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak: Wewenang admin Disperindagkop diperlukan untuk mengubah tarif gedung pasar.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'market_name' => 'required|string',
             'building_name' => 'required|string',
@@ -623,12 +698,29 @@ class MarketController extends Controller
             'quantity' => 'nullable|integer|min:1|max:50',
             'unit_amount' => 'nullable|numeric|min:500',
             'payment_method' => 'nullable|string|in:TUNAI,QRIS',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'accuracy' => 'nullable|numeric',
         ]);
 
         $qty = $validated['quantity'] ?? 1;
         $unitAmount = $validated['unit_amount'] ?? 1000;
         $totalAmount = $qty * $unitAmount;
         $user = $request->user();
+
+        if (!$this->authorizeDisperindagOfficer($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak: Hanya petugas juru pungut resmi Disperindagkop yang berwenang menerbitkan karcis pasar.',
+            ], 403);
+        }
+
+        $lat = isset($validated['latitude']) ? (float) $validated['latitude'] : null;
+        $lng = isset($validated['longitude']) ? (float) $validated['longitude'] : null;
+
+        if ($user && $lat && $lng) {
+            $user->update(['latitude' => $lat, 'longitude' => $lng]);
+        }
 
         $ticketCode = 'TKT-PSR-' . date('Ymd') . '-' . strtoupper(Str::random(6));
         $qrToken = 'QR-TKT-' . Str::uuid();
@@ -647,6 +739,23 @@ class MarketController extends Controller
             'qr_token' => $qrToken,
             'issued_at' => now(),
         ]);
+
+        SpatialAuditLogger::log(
+            action: 'DISPERINDAG_DAILY_TICKET_ISSUED',
+            nop: null,
+            latitude: $lat,
+            longitude: $lng,
+            deviceLat: $lat,
+            deviceLng: $lng,
+            details: [
+                'ticket_code' => $ticketCode,
+                'market_name' => $validated['market_name'],
+                'building_name' => $validated['building_name'] ?? 'Pelataran PKL',
+                'amount' => $totalAmount,
+                'payment_method' => $validated['payment_method'] ?? 'TUNAI',
+                'accuracy' => $validated['accuracy'] ?? null,
+            ]
+        );
 
         return response()->json([
             'success' => true,
@@ -667,9 +776,27 @@ class MarketController extends Controller
             'payment_method' => 'nullable|string|in:TUNAI,QRIS,TRANSFER',
             'period' => 'nullable|string',
             'notes' => 'nullable|string',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'accuracy' => 'nullable|numeric',
         ]);
 
         $user = $request->user();
+
+        if (!$this->authorizeDisperindagOfficer($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak: Hanya petugas penagihan resmi Disperindagkop yang berwenang mencatat setoran retribusi pasar.',
+            ], 403);
+        }
+
+        $lat = isset($validated['latitude']) ? (float) $validated['latitude'] : null;
+        $lng = isset($validated['longitude']) ? (float) $validated['longitude'] : null;
+
+        if ($user && $lat && $lng) {
+            $user->update(['latitude' => $lat, 'longitude' => $lng]);
+        }
+
         $ntpd = 'NTPD-PSR-' . date('Ymd') . '-' . strtoupper(Str::random(6));
 
         // Update status stall menjadi aktif
@@ -677,6 +804,23 @@ class MarketController extends Controller
             'status' => 'aktif',
             'notes' => $validated['notes'] ?? $stall->notes,
         ]);
+
+        SpatialAuditLogger::log(
+            action: 'DISPERINDAG_STALL_PAID',
+            nop: null,
+            latitude: $lat,
+            longitude: $lng,
+            deviceLat: $lat,
+            deviceLng: $lng,
+            details: [
+                'stall_id' => $stall->id,
+                'full_code' => $stall->full_code,
+                'amount' => $validated['amount'],
+                'ntpd' => $ntpd,
+                'payment_method' => $validated['payment_method'] ?? 'TUNAI',
+                'accuracy' => $validated['accuracy'] ?? null,
+            ]
+        );
 
         $receiptData = [
             'stall_id' => $stall->id,
@@ -1227,5 +1371,47 @@ class MarketController extends Controller
             ->update(['taxpayer_id' => null]);
 
         return response()->json(['success' => true, 'message' => 'Tautan objek berhasil dilepas.']);
+    }
+
+    /**
+     * Daftar log transaksi karcis harian pelataran / PKL untuk admin & audit pengawas.
+     */
+    public function dailyTickets(Request $request): JsonResponse
+    {
+        $query = MarketDailyTicket::with('collector');
+
+        if ($request->filled('market_name')) {
+            $query->where('market_name', $request->query('market_name'));
+        }
+
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', strtoupper($request->query('payment_method')));
+        }
+
+        if ($request->filled('date')) {
+            $query->whereDate('issued_at', $request->query('date'));
+        }
+
+        if ($request->filled('collector_name')) {
+            $query->where('collector_name', 'like', '%' . $request->query('collector_name') . '%');
+        }
+
+        if ($request->filled('q')) {
+            $search = trim($request->query('q'));
+            $query->where(function ($q) use ($search) {
+                $q->where('ticket_code', 'like', "%{$search}%")
+                  ->orWhere('merchant_name', 'like', "%{$search}%")
+                  ->orWhere('building_name', 'like', "%{$search}%")
+                  ->orWhere('collector_name', 'like', "%{$search}%");
+            });
+        }
+
+        $tickets = $query->orderBy('issued_at', 'desc')
+            ->paginate($request->query('per_page', 25));
+
+        return response()->json([
+            'success' => true,
+            'data' => $tickets,
+        ]);
     }
 }
