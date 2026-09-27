@@ -191,7 +191,7 @@ class ServiceApplicationController extends Controller
 
         $user = $request->user();
         $isOwner = (int) $app->user_id === (int) $user->id;
-        $isOfficer = in_array($user->role, ['admin_ptsp', 'petugas_lapangan', 'surveyor', 'kabid', 'admin', 'super_admin'], true);
+        $isOfficer = in_array($user->role, ['admin_ptsp', 'petugas', 'kabid', 'kabid_pengawas', 'kasubid_pengawas', 'admin', 'super_admin'], true);
 
         if (!$isOwner && !$isOfficer) {
             return response()->json(['success' => false, 'message' => 'Tidak berwenang'], 403);
@@ -452,13 +452,15 @@ class ServiceApplicationController extends Controller
     /** GET /api/ptsp/officers — daftar petugas lapangan untuk dropdown assign */
     public function officers(Request $request)
     {
+        // Petugas lapangan Bapenda (eksekutor akhir cek fisik reklame) — keputusan
+        // Pak Massad Kaban Bapenda 27 Sep 2026: penugasan lapangan diserahkan ke
+        // petugas Bapenda, bukan PTSP. Role asli di DB adalah `petugas` yang
+        // dibedakan lewat opd_id (5 = Bapenda). Role petugas lain tidak disentuh.
         $q = User::query()
-            ->whereIn('role', ['petugas_lapangan', 'surveyor'])
+            ->where('role', 'petugas')
+            ->where('opd_id', $request->filled('opd_id') ? $request->opd_id : self::OPD_BAPENDA)
+            ->where('status', 'active')
             ->select('id', 'name', 'role', 'phone', 'opd_id');
-
-        if ($request->filled('opd_id')) {
-            $q->where('opd_id', $request->opd_id);
-        }
 
         return response()->json([
             'success' => true,
