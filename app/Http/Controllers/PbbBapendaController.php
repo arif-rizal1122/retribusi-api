@@ -12,6 +12,8 @@ use App\Services\BillCreationService;
 use App\Services\PbbBapendaService;
 use App\Services\Payment\Snap\SnapBrivaReadiness;
 use App\Services\Payment\Snap\BankSultraCitizenVaReadiness;
+use App\Support\NopHelper;
+use App\Support\SpatialAuditLogger;
 use App\Support\SqlDate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -41,9 +43,11 @@ class PbbBapendaController extends Controller
             'tahun' => 'required|string|size:4',
         ]);
 
+        $cleanNop = NopHelper::normalize($request->nop);
+
         try {
             $result = $this->bapendaService->inquiryWithFallback(
-                trim($request->nop),
+                $cleanNop,
                 trim($request->tahun)
             );
 
@@ -51,13 +55,37 @@ class PbbBapendaController extends Controller
                 // Skema 2026 mengembalikan data di dalam key 'data'
                 $data = $result['data'] ?? [];
 
+                // UU PDP No. 27/2022 Data Minimization & Masking:
+                // Nama wajib pajak lengkap hanya dibuka untuk admin/petugas atau pemilik terverifikasi NOP.
+                $user = Auth::guard('sanctum')->user();
+                $isAuthorized = false;
+                if ($user) {
+                    if ($user instanceof \App\Models\User) {
+                        $isAuthorized = true; // Admin/petugas internal Bapenda
+                    } elseif ($user instanceof \App\Models\Taxpayer) {
+                        $isVerifiedOwner = TaxpayerPbbObject::where('taxpayer_id', $user->id)
+                            ->where('nop', $cleanNop)
+                            ->where('is_verified', true)
+                            ->exists();
+                        if ($isVerifiedOwner) {
+                            $isAuthorized = true;
+                        }
+                    }
+                }
+
+                $rawNama = $data['nama_wp'] ?? '-';
+                $maskedNama = NopHelper::maskName($rawNama);
+
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Data tagihan ditemukan',
                     'data' => [
-                        'nop' => $request->nop,
+                        'nop' => $cleanNop,
+                        'nop_masked' => NopHelper::mask($cleanNop),
                         'tahun' => $data['tahun'] ?? $result['tahun'] ?? $request->tahun,
-                        'nama_wp' => $data['nama_wp'] ?? '-',
+                        'nama_wp' => $isAuthorized ? $rawNama : $maskedNama,
+                        'nama_wp_masked' => $maskedNama,
+                        'is_owner_verified' => $isAuthorized,
                         'alamat_wp' => $data['alamat_wp'] ?? '-',
                         'kelurahan' => $data['kelurahan'] ?? '-',
                         'kota' => $data['kota'] ?? '-',
@@ -78,9 +106,6 @@ class PbbBapendaController extends Controller
                         'tarif' => (float) ($data['tarif'] ?? 0),
                         'kelas_bumi' => $data['kelas_bumi'] ?? null,
                         'kelas_bangunan' => $data['kelas_bangunan'] ?? null,
-                        // Kelengkapan verifikasi Bapenda — sebelumnya difilter habis di sini
-                        // walau service sudah menyediakannya, sehingga verifikator tidak
-                        // bisa menilai kewajaran NJOP objek.
                         'kecamatan' => $data['kecamatan'] ?? null,
                         'njop_bumi_per_m2' => (float) ($data['njop_bumi_per_m2'] ?? 0),
                         'njop_bangunan_per_m2' => (float) ($data['njop_bangunan_per_m2'] ?? 0),
@@ -112,7 +137,10 @@ class PbbBapendaController extends Controller
 
     /**
      * Wajib pajak menautkan NOP ke akun mereka.
-     * Sistem otomatis inquiry ke Bapenda untuk validasi.
+     * Dilengkapi perlindungan UU PDP No. 27/2022:
+     * 1. Kunci Sengketa (Dispute Locking): Klaim ganda dibekukan sebagai klaim sementara (pending verification).
+     * 2. Geofencing check: Jarak > 10 km dari centroid bidang ditandai sebagai klaim jarak jauh.
+     * 3. Audit trail: Seluruh interaksi tercatat secara transparan.
      */
     public function linkNop(Request $request)
     {
@@ -120,6 +148,11 @@ class PbbBapendaController extends Controller
             'nop' => 'required|string|size:18',
             'tahun' => 'nullable|string|size:4',
             'description' => 'nullable|string|max:100',
+            'last_ntpd' => 'nullable|string|max:50',
+            'previous_sppt_number' => 'nullable|string|max:50',
+            'confirmed_land_area' => 'nullable|numeric',
+            'client_lat' => 'nullable|numeric|between:-90,90',
+            'client_lng' => 'nullable|numeric|between:-180,180',
         ]);
 
         $taxpayer = Auth::guard('sanctum')->user();
@@ -127,9 +160,11 @@ class PbbBapendaController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
 
-        // Cek duplikat
+        $cleanNop = NopHelper::normalize($request->nop);
+
+        // Cek apakah NOP sudah pernah ditautkan oleh wajib pajak yang sama
         $exists = TaxpayerPbbObject::where('taxpayer_id', $taxpayer->id)
-            ->where('nop', $request->nop)
+            ->where('nop', $cleanNop)
             ->exists();
 
         if ($exists) {
@@ -139,10 +174,33 @@ class PbbBapendaController extends Controller
             ], 422);
         }
 
+        // Pilar 2: Kunci Sengketa (Dispute Locking)
+        // Jika NOP telah diklaim oleh wajib pajak lain, bekukan klaim kedua sebagai klaim sengketa (pending verification).
+        $otherClaim = TaxpayerPbbObject::where('taxpayer_id', '!=', $taxpayer->id)
+            ->where('nop', $cleanNop)
+            ->first();
+
+        $isDisputed = false;
+        $isVerified = true;
+        if ($otherClaim) {
+            $isDisputed = true;
+            $isVerified = false;
+
+            SpatialAuditLogger::log(
+                action: 'dispute_flagged',
+                nop: $cleanNop,
+                details: [
+                    'original_taxpayer_id' => $otherClaim->taxpayer_id,
+                    'claimant_taxpayer_id' => $taxpayer->id,
+                    'reason' => 'Multiple claimant dispute locking',
+                ]
+            );
+        }
+
         // Validasi ke Bapenda (dengan fallback SPPT lokal)
         $tahun = $request->tahun ?? date('Y');
         try {
-            $result = $this->bapendaService->inquiryWithFallback($request->nop, $tahun);
+            $result = $this->bapendaService->inquiryWithFallback($cleanNop, $tahun);
 
             if (($result['status'] ?? 0) !== 200) {
                 return response()->json([
@@ -152,24 +210,94 @@ class PbbBapendaController extends Controller
             }
 
             $fallbackUsed = $result['fallback_used'] ?? false;
-            $notes = $request->description;
+            $notes = $request->description ?? '';
+
             if ($fallbackUsed) {
                 $notes = trim(($notes ? $notes.' | ' : '').'Sumber: SPPT lokal (fallback H2H)');
             }
 
+            // Pilar 3: Geofencing & Location-Aware Claiming
+            $distanceKm = null;
+            $isFlaggedRemote = false;
+            $centroidLat = null;
+            $centroidLng = null;
+
+            try {
+                $centroid = DB::connection(env('SMARTGIS_CONNECTION', 'smartgis'))->selectOne("
+                    SELECT ST_X(ST_Centroid(geometry)) as lng, ST_Y(ST_Centroid(geometry)) as lat
+                    FROM smartgis_bidang
+                    WHERE nop = ?
+                    LIMIT 1
+                ", [$cleanNop]);
+
+                if ($centroid && $centroid->lat !== null && $centroid->lng !== null) {
+                    $centroidLat = (float) $centroid->lat;
+                    $centroidLng = (float) $centroid->lng;
+
+                    if ($request->filled('client_lat') && $request->filled('client_lng')) {
+                        $distanceKm = SpatialAuditLogger::calculateDistanceKm(
+                            (float) $request->client_lat,
+                            (float) $request->client_lng,
+                            $centroidLat,
+                            $centroidLng
+                        );
+
+                        if ($distanceKm > 10.0) {
+                            $isFlaggedRemote = true;
+                            $notes = trim(($notes ? $notes.' | ' : '').'Flag: Klaim Jarak Jauh ('.$distanceKm.' km)');
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Spatial centroid lookup error during linkNop: '.$e->getMessage());
+            }
+
+            if ($isDisputed) {
+                $notes = trim(($notes ? $notes.' | ' : '').'STATUS: SENGKETA/KLAIM GANDA (Dispute Locking) - Memerlukan verifikasi fisik verifikator Bapenda');
+            }
+
             $pbbObject = TaxpayerPbbObject::create([
                 'taxpayer_id' => $taxpayer->id,
-                'nop' => $request->nop,
+                'nop' => $cleanNop,
                 'name_on_sppt' => $result['nama_wp'] ?? null,
                 'address_on_sppt' => $result['alamat_wp'] ?? null,
                 'kelurahan' => $result['kelurahan'] ?? null,
                 'kota' => $result['kota'] ?? null,
-                'is_verified' => true,
-                'notes' => $notes,
+                'is_verified' => $isVerified,
+                'notes' => $notes ?: null,
             ]);
+
+            // Audit Trail
+            SpatialAuditLogger::log(
+                action: 'nop_claim_attempt',
+                nop: $cleanNop,
+                latitude: $centroidLat,
+                longitude: $centroidLng,
+                deviceLat: $request->client_lat ? (float) $request->client_lat : null,
+                deviceLng: $request->client_lng ? (float) $request->client_lng : null,
+                distanceKm: $distanceKm,
+                isFlaggedRemote: $isFlaggedRemote,
+                details: [
+                    'is_disputed' => $isDisputed,
+                    'is_verified' => $isVerified,
+                ]
+            );
+
+            if ($isDisputed) {
+                return response()->json([
+                    'status' => 'success',
+                    'is_disputed' => true,
+                    'is_verified' => false,
+                    'message' => 'Klaim NOP dicatat sebagai klaim sementara (Pending Verification). Terdapat catatan klaim sebelumnya untuk NOP ini sehingga memerlukan verifikasi dokumen hak di kantor Bapenda.',
+                    'data' => $pbbObject,
+                    'source' => $result['source'] ?? 'simpbb',
+                ], 202);
+            }
 
             return response()->json([
                 'status' => 'success',
+                'is_disputed' => false,
+                'is_verified' => true,
                 'message' => 'NOP berhasil ditautkan ke akun Anda.',
                 'data' => $pbbObject,
                 'source' => $result['source'] ?? 'simpbb',

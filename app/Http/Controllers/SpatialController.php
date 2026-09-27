@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\NopHelper;
+use App\Support\SpatialAuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -19,6 +21,9 @@ use Illuminate\Support\Facades\DB;
  *   smartgis_dati2      — 1 batas kota
  *
  * Catatan: MariaDB 10.6 — fungsi ST_IsValid TIDAK tersedia (MySQL 8+ only).
+ * Standar Keamanan & UU PDP No. 27/2022:
+ * - NOP disamarkan (nop_masked) untuk proteksi profiling objek pajak.
+ * - Jejak pencarian koordinat dicatat di geom_activity_logs.
  */
 class SpatialController extends Controller
 {
@@ -33,8 +38,8 @@ class SpatialController extends Controller
             'lng' => 'required|numeric|between:-180,180',
         ]);
 
-        $lat = $data['lat'];
-        $lng = $data['lng'];
+        $lat = (float) $data['lat'];
+        $lng = (float) $data['lng'];
 
         // POINT(lng lat) — perhatikan urutan: X=lng, Y=lat
         $rows = DB::connection($this->conn())->select("
@@ -46,11 +51,27 @@ class SpatialController extends Controller
             LIMIT 10
         ", ["POINT($lng $lat)"]);
 
+        // Audit Trail (UU PDP No. 27/2022)
+        $firstNop = $rows[0]->nop ?? null;
+        SpatialAuditLogger::log(
+            action: 'spatial_query_by_point',
+            nop: $firstNop,
+            latitude: $lat,
+            longitude: $lng,
+            details: ['match_count' => count($rows)]
+        );
+
+        $sanitized = array_map(function ($r) {
+            $r->nop_masked = NopHelper::mask($r->nop);
+            return $r;
+        }, $rows);
+
         return response()->json([
-            'sukses'  => true,
-            'titik'   => ['lat' => $lat, 'lng' => $lng],
-            'jumlah'  => count($rows),
-            'bidang'  => $rows,
+            'sukses'     => true,
+            'titik'      => ['lat' => $lat, 'lng' => $lng],
+            'jumlah'     => count($sanitized),
+            'nop_masked' => $firstNop ? NopHelper::mask($firstNop) : null,
+            'bidang'     => $sanitized,
         ]);
     }
 
@@ -60,20 +81,29 @@ class SpatialController extends Controller
      */
     public function bidangByNop(string $nop)
     {
+        $cleanNop = NopHelper::normalize($nop);
+
         $rows = DB::connection($this->conn())->select("
             SELECT gid, nop, luas, d_luas,
                    ST_AsGeoJSON(geometry) AS geojson
             FROM smartgis_bidang
             WHERE nop = ?
             LIMIT 50
-        ", [$nop]);
+        ", [$cleanNop]);
 
         if (empty($rows)) {
             return response()->json([
                 'sukses' => false,
-                'pesan'  => "NOP $nop tidak ditemukan di layer SmartGIS",
+                'pesan'  => "NOP ".NopHelper::mask($cleanNop)." tidak ditemukan di layer SmartGIS",
             ], 404);
         }
+
+        // Audit Trail (UU PDP No. 27/2022)
+        SpatialAuditLogger::log(
+            action: 'spatial_query_by_nop',
+            nop: $cleanNop,
+            details: ['found' => true]
+        );
 
         // Ambil geometri bidang pertama sebagai GeoJSON siap-pakai Leaflet.
         // Frontend (modal "Peta Bidang") membaca res.geometry langsung.
@@ -82,19 +112,25 @@ class SpatialController extends Controller
         if ($geojson) {
             $decoded = json_decode($geojson, true);
             if (is_array($decoded)) {
-                $geometry = ['type' => 'Feature', 'properties' => [], 'geometry' => $decoded];
+                $geometry = ['type' => 'Feature', 'properties' => ['nop_masked' => NopHelper::mask($cleanNop)], 'geometry' => $decoded];
             }
         }
 
+        $sanitized = array_map(function ($r) {
+            $r->nop_masked = NopHelper::mask($r->nop);
+            return $r;
+        }, $rows);
+
         return response()->json([
-            'sukses'      => true,
-            'nop'         => $nop,
-            'jumlah'      => count($rows),
-            'luas'        => $rows[0]->luas ?? null,
-            'd_luas'      => $rows[0]->d_luas ?? null,
-            'geometry'    => $geometry,
+            'sukses'       => true,
+            'nop'          => $cleanNop,
+            'nop_masked'   => NopHelper::mask($cleanNop),
+            'jumlah'       => count($sanitized),
+            'luas'         => $sanitized[0]->luas ?? null,
+            'd_luas'       => $sanitized[0]->d_luas ?? null,
+            'geometry'     => $geometry,
             'geometry_raw' => $geojson,
-            'bidang'      => $rows,
+            'bidang'       => $sanitized,
         ]);
     }
 
@@ -128,11 +164,16 @@ class SpatialController extends Controller
             LIMIT ?
         ", [$bbox, $limit]);
 
+        $sanitized = array_map(function ($r) {
+            $r->nop_masked = NopHelper::mask($r->nop);
+            return $r;
+        }, $rows);
+
         return response()->json([
             'sukses' => true,
             'bbox'   => $data,
-            'jumlah' => count($rows),
-            'bidang' => $rows,
+            'jumlah' => count($sanitized),
+            'bidang' => $sanitized,
         ]);
     }
 
@@ -273,15 +314,16 @@ class SpatialController extends Controller
         $data = [];
         foreach ($rows as $r) {
             $data[] = [
-                'gid'      => (int) $r->gid,
-                'nop'      => $r->nop,
-                'kd_kec'   => $r->kd_kec,
-                'nm_kec'   => $r->nm_kec,
-                'kd_kel'   => $r->kd_kel,
-                'nm_kel'   => $r->nm_kel,
-                'luas'     => $r->luas !== null ? (float) $r->luas : null,
-                'd_luas'   => $r->d_luas !== null ? (float) $r->d_luas : null,
-                'geojson'  => $r->geojson,
+                'gid'            => (int) $r->gid,
+                'nop'            => $r->nop,
+                'nop_masked'     => NopHelper::mask($r->nop),
+                'kd_kec'         => $r->kd_kec,
+                'nm_kec'         => $r->nm_kec,
+                'kd_kel'         => $r->kd_kel,
+                'nm_kel'         => $r->nm_kel,
+                'luas'           => $r->luas !== null ? (float) $r->luas : null,
+                'd_luas'         => $r->d_luas !== null ? (float) $r->d_luas : null,
+                'geojson'        => $r->geojson,
                 'punya_geometri' => !empty($r->geojson),
             ];
         }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\NopHelper;
+use App\Support\SpatialAuditLogger;
 use Illuminate\Http\Request;
 
 use App\Models\PbbNopApplication;
@@ -267,6 +269,10 @@ class PbbNopApplicationController extends Controller
             'nir_applied' => 'nullable|numeric',
             'is_bpn_verified' => 'nullable|boolean',
             'polygon_coordinates' => 'nullable',
+            'client_lat' => 'nullable|numeric|between:-90,90',
+            'client_lng' => 'nullable|numeric|between:-180,180',
+            'last_ntpd' => 'nullable|string|max:50',
+            'previous_sppt_number' => 'nullable|string|max:50',
         ];
 
         // Validasi khusus tab "Untuk Orang Lain"
@@ -430,12 +436,64 @@ class PbbNopApplicationController extends Controller
         if ($request->has('is_fasum')) {
             $metadata['is_fasum'] = $request->boolean('is_fasum');
         }
+        if ($request->filled('last_ntpd')) {
+            $metadata['last_ntpd'] = $request->input('last_ntpd');
+        }
+        if ($request->filled('previous_sppt_number')) {
+            $metadata['previous_sppt_number'] = $request->input('previous_sppt_number');
+        }
+
+        // Geofencing Check (Pilar 3: Location-Aware Claiming)
+        $distKm = null;
+        $isFlaggedRemote = false;
+        if ($request->filled('latitude') && $request->filled('longitude') && $request->filled('client_lat') && $request->filled('client_lng')) {
+            $distKm = SpatialAuditLogger::calculateDistanceKm(
+                (float) $request->client_lat,
+                (float) $request->client_lng,
+                (float) $request->latitude,
+                (float) $request->longitude
+            );
+            $metadata['device_distance_km'] = $distKm;
+            if ($distKm > 10.0) {
+                $isFlaggedRemote = true;
+                $metadata['is_flagged_remote'] = true;
+                $metadata['remote_warning'] = 'Pengajuan berjarak '.$distKm.' km dari koordinat objek (Klaim Jarak Jauh).';
+            }
+        }
 
         $polyCoords = $request->input('polygon_coordinates');
         if (is_string($polyCoords)) {
             $decoded = json_decode($polyCoords, true);
             if (is_array($decoded)) {
                 $polyCoords = $decoded;
+            }
+        }
+
+        // Anti-Overlap Topology Check (Pilar 3)
+        if (! empty($polyCoords) && is_array($polyCoords)) {
+            try {
+                // Pastikan format koordinat GeoJSON (Polygon rings: [[[lng, lat], ...]])
+                $rings = is_array($polyCoords[0] ?? null) && is_array($polyCoords[0][0] ?? null)
+                    ? $polyCoords
+                    : [$polyCoords];
+
+                $geoJsonString = json_encode([
+                    'type' => 'Polygon',
+                    'coordinates' => $rings,
+                ]);
+
+                $overlap = DB::connection(env('SMARTGIS_CONNECTION', 'smartgis'))->selectOne("
+                    SELECT nop, gid FROM smartgis_bidang
+                    WHERE ST_Overlaps(geometry, ST_GeomFromGeoJSON(?))
+                    LIMIT 1
+                ", [$geoJsonString]);
+
+                if ($overlap) {
+                    $metadata['topology_warning'] = 'Poligon beririsan (overlap) dengan persel SmartGIS ber-NOP '.NopHelper::mask($overlap->nop);
+                    $metadata['overlap_nop'] = $overlap->nop;
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Spatial topology check error: '.$e->getMessage());
             }
         }
 
@@ -463,6 +521,23 @@ class PbbNopApplicationController extends Controller
             'polygon_coordinates' => $polyCoords,
             'is_bpn_verified' => $request->boolean('is_bpn_verified'),
         ]);
+
+        // Audit Trail (UU PDP No. 27/2022)
+        SpatialAuditLogger::log(
+            action: 'nop_application_submission',
+            nop: $request->input('nop'),
+            latitude: $request->latitude ? (float) $request->latitude : null,
+            longitude: $request->longitude ? (float) $request->longitude : null,
+            deviceLat: $request->client_lat ? (float) $request->client_lat : null,
+            deviceLng: $request->client_lng ? (float) $request->client_lng : null,
+            distanceKm: $distKm,
+            isFlaggedRemote: $isFlaggedRemote,
+            details: [
+                'application_id' => $application->id,
+                'has_topology_warning' => ! empty($metadata['topology_warning']),
+                'has_building' => $hasBuilding,
+            ]
+        );
 
         return response()->json([
             'status' => 'success',

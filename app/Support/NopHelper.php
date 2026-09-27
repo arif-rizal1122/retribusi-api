@@ -144,4 +144,60 @@ class NopHelper
             $p['check_digit']
         );
     }
+
+    /**
+     * Samarkan NOP untuk tampilan publik / peta umum:
+     * Contoh: 747201000100100010 -> 74.72.***.***.***-001.0
+     * Sesuai UU PDP No. 27/2022 untuk mencegah profiling aset tanpa otorisasi.
+     */
+    public static function mask(?string $nop): string
+    {
+        $clean = self::normalize($nop);
+        if (strlen($clean) !== self::LENGTH) {
+            return (string) $nop;
+        }
+
+        $p = self::parse($clean);
+        if (! $p) {
+            return (string) $nop;
+        }
+
+        return sprintf(
+            '%s.%s.***.***.***-%s.%s',
+            $p['province'],
+            $p['city'],
+            $p['serial'],
+            $p['check_digit']
+        );
+    }
+
+    /**
+     * Samarkan nama wajib pajak untuk antarmuka publik:
+     * Menampilkan inisial huruf pertama diikuti asteris (*) untuk setiap kata.
+     * Contoh: "MUHDAN FYAN" -> "M***** F***"
+     * Contoh: "BUDI SANTOSO" -> "B*** S******"
+     */
+    public static function maskName(?string $name): string
+    {
+        if (empty($name)) {
+            return '-';
+        }
+
+        $trimmed = trim($name);
+        $words = preg_split('/\s+/', $trimmed);
+        $maskedWords = [];
+
+        foreach ($words as $word) {
+            $len = mb_strlen($word);
+            if ($len <= 1) {
+                $maskedWords[] = $word;
+            } elseif ($len === 2) {
+                $maskedWords[] = mb_substr($word, 0, 1).'*';
+            } else {
+                $maskedWords[] = mb_substr($word, 0, 1).str_repeat('*', min(5, $len - 1));
+            }
+        }
+
+        return implode(' ', $maskedWords);
+    }
 }
