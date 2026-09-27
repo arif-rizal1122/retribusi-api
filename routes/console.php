@@ -29,3 +29,11 @@ Schedule::command('enforcements:generate-drafts')->dailyAt('07:00')->timezone('A
 // Dicek tiap 30 menit: ambang eskalasi tahapan terpendek (otorisasi Kabid)
 // hanya 3 jam, sehingga pemeriksaan harian akan terlambat memberi peringatan.
 Schedule::command('sla:escalate')->everyThirtyMinutes()->timezone('Asia/Makassar');
+
+// Modul Permohonan Layanan (Reklame/PBG/Air Tanah/TKA) — SLA hari kerja.
+// Pengingat H-4 jam + eskalasi saat deadline lewat. Jalur TERPISAH dari sla:escalate
+// (yang menangani alur PBB dengan menit kalender) — jangan digabung.
+Schedule::command('service:sla-monitor')
+    ->everyThirtyMinutes()
+    ->timezone('Asia/Makassar')
+    ->withoutOverlapping();

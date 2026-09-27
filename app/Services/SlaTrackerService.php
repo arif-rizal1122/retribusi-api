@@ -91,6 +91,22 @@ class SlaTrackerService
             'escalate_after' => 1080,
             'pic'            => 'Kasubid Penagihan Wilayah I & II',
         ],
+        // ---- Modul Permohonan Layanan (Reklame/PBG/Air Tanah/TKA) ----
+        // Entry BARU, tidak mengubah tahap di atas (alur PBB tetap utuh).
+        // Catatan: minutes di sini = jam KALENDER, dipakai SlaTrackerService lama.
+        // SLA hari-kerja modul permohonan dihitung BusinessDayCalculator.
+        'VERIFIKASI_PTSP' => [
+            'label'          => 'Verifikasi Berkas & Disposisi PTSP',
+            'minutes'        => 1440,  // 1x24 jam (hari kerja, lihat BusinessDayCalculator)
+            'escalate_after' => 1200,  // 20 jam (H-4 jam)
+            'pic'            => 'Admin PTSP',
+        ],
+        'SURVEI_LAPANGAN_REKLAME' => [
+            'label'          => 'Cek Fisik Ruang Reklame',
+            'minutes'        => 1440,  // 1x24 jam (hari kerja)
+            'escalate_after' => 1200,  // 20 jam (H-4 jam)
+            'pic'            => 'Petugas Lapangan',
+        ],
     ];
 
     public const STATUS_PENDING = 'PENDING';
