@@ -567,7 +567,19 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/dashboard/taxpayers', [\App\Http\Controllers\PtspDashboardController::class, 'taxpayers']);
             Route::get('/candidates', [\App\Http\Controllers\PtspCandidateController::class, 'index']);
             Route::post('/candidates/{id}/nib', [\App\Http\Controllers\PtspCandidateController::class, 'markNib']);
+
+            // ---- Modul Permohonan Layanan (Reklame 188, PBG 193, Air Tanah 197, TKA 194) ----
+            Route::get('/service-applications', [\App\Http\Controllers\Api\V1\ServiceApplicationController::class, 'ptspIndex']);
+            Route::post('/service-applications/{id}/assign', [\App\Http\Controllers\Api\V1\ServiceApplicationController::class, 'assignOfficer']);
+            Route::post('/service-applications/{id}/field-check', [\App\Http\Controllers\Api\V1\ServiceApplicationController::class, 'fieldCheck']);
+            Route::post('/service-applications/{id}/decide', [\App\Http\Controllers\Api\V1\ServiceApplicationController::class, 'decide']);
+            Route::get('/officers', [\App\Http\Controllers\Api\V1\ServiceApplicationController::class, 'officers']);
         });
+
+        // Modul Permohonan Layanan — sisi PEMOHON (semua user terautentikasi)
+        Route::get('/service-applications', [\App\Http\Controllers\Api\V1\ServiceApplicationController::class, 'mine']);
+        Route::post('/service-applications', [\App\Http\Controllers\Api\V1\ServiceApplicationController::class, 'store']);
+        Route::get('/service-applications/{id}', [\App\Http\Controllers\Api\V1\ServiceApplicationController::class, 'show']);
 
         Route::prefix('pengawas')->group(function () {
             Route::get('/audit-logs', [\App\Http\Controllers\Pengawas\AuditLogController::class, 'index']);
