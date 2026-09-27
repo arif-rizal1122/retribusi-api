@@ -203,19 +203,14 @@ class ClassificationSchemaSeeder extends Seeder
             ['key' => 'foto_lahan_parkir', 'name' => 'Foto Lahan Parkir', 'required' => true],
         ]);
 
-        // 11. Retribusi Persampahan
+        // 11. Retribusi Persampahan (Sesuai Dokumen 02_Proses_Bisnis_dan_Alur_Layanan_Persampahan)
         $this->updateSchema('Persampahan', [
             ['key' => 'kategori_objek', 'label' => 'Kategori Penghasil Sampah', 'type' => 'select', 'required' => true, 'options' => [
-                ['label' => 'Rumah Tinggal Sederhana (Rp 10.000/bln)', 'value' => 'rumah_sederhana'],
-                ['label' => 'Rumah Tinggal Menengah (Rp 20.000/bln)', 'value' => 'rumah_menengah'],
-                ['label' => 'Rumah Mewah / Bertingkat (Rp 35.000/bln)', 'value' => 'rumah_mewah'],
-                ['label' => 'Kios / Warung / Toko Kecil (Rp 25.000/bln)', 'value' => 'toko_kecil'],
-                ['label' => 'Restoran / Rumah Makan (Rp 50.000/bln)', 'value' => 'restoran'],
-                ['label' => 'Hotel / Penginapan (Rp 100.000/bln)', 'value' => 'hotel'],
-                ['label' => 'Perkantoran / Instansi (Rp 75.000/bln)', 'value' => 'kantor'],
-                ['label' => 'Industri / Pabrik / Gudang (Rp 150.000/bln)', 'value' => 'industri'],
+                ['label' => 'Rumah Tinggal', 'value' => 'rumah_tinggal'],
+                ['label' => 'Tempat Usaha / Komersial', 'value' => 'tempat_usaha'],
+                ['label' => 'Fasilitas Sosial / Rumah Ibadah (Bebas Biaya)', 'value' => 'sosial_ibadah'],
             ]],
-            ['key' => 'volume_estimasi', 'label' => 'Perkiraan Volume Sampah Harian', 'type' => 'select', 'options' => [
+            ['key' => 'volume_estimasi', 'label' => 'Perkiraan Volume Sampah Harian', 'type' => 'select', 'required' => false, 'options' => [
                 ['label' => '< 0.5 m3 per hari', 'value' => 'kecil'],
                 ['label' => '0.5 - 1.5 m3 per hari', 'value' => 'sedang'],
                 ['label' => '> 1.5 m3 per hari', 'value' => 'besar'],
