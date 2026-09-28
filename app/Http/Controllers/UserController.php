@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Opd;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -15,7 +16,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        
+
         // Pelaku lapangan (petugas) tidak boleh melihat daftar user admin/staff lainnya
         if ($user->role === 'petugas') {
             return response()->json(['message' => 'Unauthorized: Officers cannot access user management.'], 403);
@@ -23,9 +24,19 @@ class UserController extends Controller
 
         $query = User::query();
 
-        // If not super_admin, scope by OPD
-        if (!$user->isSuperAdmin()) {
-            $query->where('opd_id', $user->opd_id);
+        // If not super_admin, scope by OPD with cross-OPD technical verification support
+        if (! $user->isSuperAdmin()) {
+            $isTechnicalQuery = $request->role === 'petugas' && (
+                $request->boolean('include_technical_opd') ||
+                in_array((int) $user->opd_id, [4, 5, 9, 11])
+            );
+
+            if ($isTechnicalQuery) {
+                // Cross-OPD field verification for MBLB, Tata Ruang, Lingkungan Hidup
+                $query->whereIn('opd_id', [4, 5, 9, 11]);
+            } else {
+                $query->where('opd_id', $user->opd_id);
+            }
         }
 
         if ($request->has('role')) {
@@ -37,6 +48,8 @@ class UserController extends Controller
             ->get()
             ->map(function ($u) {
                 $u->department = $u->opd?->name ?? 'All';
+                $u->opd_code = $u->opd?->code ?? '';
+
                 return $u;
             });
 
@@ -49,7 +62,7 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $loggedInUser = $request->user();
-        
+
         if ($loggedInUser->role === 'petugas') {
             return response()->json(['message' => 'Unauthorized: Officers cannot create users.'], 403);
         }
@@ -66,7 +79,7 @@ class UserController extends Controller
         ]);
 
         // If not super_admin, force same opd_id and restrict role elevation
-        if (!$loggedInUser->isSuperAdmin()) {
+        if (! $loggedInUser->isSuperAdmin()) {
             $validated['opd_id'] = $loggedInUser->opd_id;
             if ($validated['role'] === 'super_admin' || $validated['role'] === 'opd') {
                 $validated['role'] = 'viewer'; // Default to lower role if attempted elevation
@@ -107,7 +120,7 @@ class UserController extends Controller
     {
         $loggedInUser = $request->user();
 
-        if (!$loggedInUser->isSuperAdmin() && $user->opd_id !== $loggedInUser->opd_id) {
+        if (! $loggedInUser->isSuperAdmin() && $user->opd_id !== $loggedInUser->opd_id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -125,7 +138,7 @@ class UserController extends Controller
             return response()->json(['message' => 'Unauthorized: Officers cannot update users.'], 403);
         }
 
-        if (!$loggedInUser->isSuperAdmin() && $user->opd_id !== $loggedInUser->opd_id) {
+        if (! $loggedInUser->isSuperAdmin() && $user->opd_id !== $loggedInUser->opd_id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -140,7 +153,7 @@ class UserController extends Controller
             'phone' => 'nullable|string|max:20',
         ]);
 
-        if (!$loggedInUser->isSuperAdmin()) {
+        if (! $loggedInUser->isSuperAdmin()) {
             unset($validated['opd_id']); // Cannot change OPD
             if (isset($validated['role']) && ($validated['role'] === 'super_admin' || $validated['role'] === 'opd')) {
                 unset($validated['role']); // Cannot elevate to opd/super_admin
@@ -166,7 +179,7 @@ class UserController extends Controller
 
         if ($user->role === 'opd' && isset($validated['email'])) {
             // Also update the associated OPD email
-            \App\Models\Opd::where('id', $user->opd_id)->update(['email' => $validated['email']]);
+            Opd::where('id', $user->opd_id)->update(['email' => $validated['email']]);
         }
 
         $user->load(['opd', 'assignments.retributionType', 'assignments.retributionClassification']);
@@ -176,46 +189,46 @@ class UserController extends Controller
     }
 
     /**
- * Remove the specified resource from storage.
- */
-public function destroy(User $user, Request $request)
-{
-    $loggedInUser = $request->user();
+     * Remove the specified resource from storage.
+     */
+    public function destroy(User $user, Request $request)
+    {
+        $loggedInUser = $request->user();
 
-    if ($loggedInUser->role === 'petugas') {
-        return response()->json(['message' => 'Unauthorized: Officers cannot delete users.'], 403);
-    }
+        if ($loggedInUser->role === 'petugas') {
+            return response()->json(['message' => 'Unauthorized: Officers cannot delete users.'], 403);
+        }
 
-    // Validasi: tidak bisa hapus diri sendiri
-    if ($user->id === $loggedInUser->id) {
+        // Validasi: tidak bisa hapus diri sendiri
+        if ($user->id === $loggedInUser->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak dapat menghapus akun sendiri',
+            ], 400);
+        }
+
+        // Validasi: super_admin tidak bisa dihapus oleh non-super_admin
+        if ($user->role === 'super_admin' && ! $loggedInUser->isSuperAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak memiliki izin untuk menghapus Super Admin',
+            ], 403);
+        }
+
+        // Validasi: OPD user hanya bisa dihapus oleh admin OPD yang sama atau super_admin
+        if (! $loggedInUser->isSuperAdmin() && $user->opd_id !== $loggedInUser->opd_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak memiliki izin untuk menghapus user dari OPD lain',
+            ], 403);
+        }
+
+        $userName = $user->name;
+        $user->delete();
+
         return response()->json([
-            'success' => false,
-            'message' => 'Tidak dapat menghapus akun sendiri'
-        ], 400);
+            'success' => true,
+            'message' => "User '{$userName}' berhasil dihapus",
+        ], 200);
     }
-
-    // Validasi: super_admin tidak bisa dihapus oleh non-super_admin
-    if ($user->role === 'super_admin' && !$loggedInUser->isSuperAdmin()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Tidak memiliki izin untuk menghapus Super Admin'
-        ], 403);
-    }
-
-    // Validasi: OPD user hanya bisa dihapus oleh admin OPD yang sama atau super_admin
-    if (!$loggedInUser->isSuperAdmin() && $user->opd_id !== $loggedInUser->opd_id) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Tidak memiliki izin untuk menghapus user dari OPD lain'
-        ], 403);
-    }
-
-    $userName = $user->name;
-    $user->delete();
-
-    return response()->json([
-        'success' => true,
-        'message' => "User '{$userName}' berhasil dihapus"
-    ], 200);
-}
 }

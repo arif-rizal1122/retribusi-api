@@ -23,6 +23,19 @@ class RusunRoom extends Model
         'floor' => 'integer',
     ];
 
+    protected $appends = [
+        'monthly_rate',
+    ];
+
+    public function getMonthlyRateAttribute(): int
+    {
+        if ($this->relationLoaded('assetItem') && $this->assetItem) {
+            return (int) $this->assetItem->tarif_default;
+        }
+
+        return (int) ($this->assetItem()->value('tarif_default') ?? 0);
+    }
+
     public function assetItem(): BelongsTo
     {
         return $this->belongsTo(AssetItem::class, 'asset_item_id');

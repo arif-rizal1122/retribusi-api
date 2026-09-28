@@ -3,20 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bill;
+use App\Models\MarketStall;
 use App\Models\PbbNopApplication;
 use App\Models\RetributionClassification;
 use App\Models\TaxObject;
 use App\Models\Taxpayer;
 use App\Models\TaxpayerPbbObject;
 use App\Models\Verification;
+use App\Services\AiSmartGisService;
 use App\Services\BillingService;
 use App\Services\CloudinaryService;
 use App\Services\PbbBapendaService;
 use App\Services\RequirementFileService;
+use App\Services\TaxCalculationService;
+use App\Services\WaGatewayService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class CitizenServiceController extends Controller
@@ -216,7 +221,7 @@ class CitizenServiceController extends Controller
             $facilityType = strtolower((string) ($metadata['jenis_fasilitas'] ?? ''));
 
             if ($buildingName && empty($facilityType)) {
-                $sampleStall = \App\Models\MarketStall::where('building_name', $buildingName)->first();
+                $sampleStall = MarketStall::where('building_name', $buildingName)->first();
                 if ($sampleStall) {
                     $facilityType = strtolower((string) $sampleStall->stall_type);
                     $metadata['jenis_fasilitas'] = $facilityType;
@@ -297,13 +302,13 @@ class CitizenServiceController extends Controller
         }
 
         // Sinkronisasi alias omset <-> omzet dan fallback 0 untuk registrasi profil awal objek
-        if (!isset($metadata['omzet']) && isset($metadata['omset'])) {
+        if (! isset($metadata['omzet']) && isset($metadata['omset'])) {
             $metadata['omzet'] = $metadata['omset'];
         }
-        if (!isset($metadata['omset']) && isset($metadata['omzet'])) {
+        if (! isset($metadata['omset']) && isset($metadata['omzet'])) {
             $metadata['omset'] = $metadata['omzet'];
         }
-        if (!isset($metadata['omset']) && !isset($metadata['omzet'])) {
+        if (! isset($metadata['omset']) && ! isset($metadata['omzet'])) {
             $metadata['omset'] = 0;
             $metadata['omzet'] = 0;
         }
@@ -316,7 +321,7 @@ class CitizenServiceController extends Controller
             $metadata['alamat_usaha'] = $request->input('address');
         }
         if (empty($metadata['koordinat_usaha']) && $request->filled('latitude') && $request->filled('longitude')) {
-            $metadata['koordinat_usaha'] = $request->input('latitude') . ',' . $request->input('longitude');
+            $metadata['koordinat_usaha'] = $request->input('latitude').','.$request->input('longitude');
         }
         // Pencatatan Yuridis Pakta Integritas / Pernyataan Hukum
         $metadata['legal_consent'] = true;
@@ -340,28 +345,27 @@ class CitizenServiceController extends Controller
             $metadata['harga_satuan_njtl'] = 1444; // Standar NJTL tarif acuan listrik
         }
 
-
         // Auto-isi "Link Lokasi Google Maps" bila kosong: turunkan dari koordinat
         // jika tersedia, atau dari alamat objek agar warga tak wajib klik peta.
         if (empty($metadata['lokasi_google_maps'])) {
-            $coord = $request->input('latitude') . ',' . $request->input('longitude');
+            $coord = $request->input('latitude').','.$request->input('longitude');
             if ($request->filled('latitude') && $request->filled('longitude')) {
-                $coord = round((float) $request->input('latitude'), 6) . ',' . round((float) $request->input('longitude'), 6);
-                $metadata['lokasi_google_maps'] = 'https://maps.google.com/?q=' . $coord;
+                $coord = round((float) $request->input('latitude'), 6).','.round((float) $request->input('longitude'), 6);
+                $metadata['lokasi_google_maps'] = 'https://maps.google.com/?q='.$coord;
             } else {
                 foreach (['koordinat_usaha', 'koordinat', 'titik_koordinat'] as $metaKey) {
                     $raw = $metadata[$metaKey] ?? null;
                     if (is_string($raw) && preg_match('/^[-+]?\d+(\.\d+)?\s*[,;\s]\s*[-+]?\d+(\.\d+)?$/', trim($raw))) {
                         $parts = preg_split('/[,;\s]+/', trim($raw));
-                        $metadata['lokasi_google_maps'] = 'https://maps.google.com/?q=' . round((float) $parts[0], 6) . ',' . round((float) $parts[1], 6);
+                        $metadata['lokasi_google_maps'] = 'https://maps.google.com/?q='.round((float) $parts[0], 6).','.round((float) $parts[1], 6);
                         break;
                     }
                 }
             }
             if (empty($metadata['lokasi_google_maps']) && ! empty($metadata['alamat_usaha'])) {
-                $metadata['lokasi_google_maps'] = 'https://www.google.com/maps/search/?api=1&query=' . urlencode($metadata['alamat_usaha']);
+                $metadata['lokasi_google_maps'] = 'https://www.google.com/maps/search/?api=1&query='.urlencode($metadata['alamat_usaha']);
             } elseif (empty($metadata['lokasi_google_maps']) && $request->filled('address')) {
-                $metadata['lokasi_google_maps'] = 'https://www.google.com/maps/search/?api=1&query=' . urlencode((string) $request->input('address'));
+                $metadata['lokasi_google_maps'] = 'https://www.google.com/maps/search/?api=1&query='.urlencode((string) $request->input('address'));
             }
         }
 
@@ -464,6 +468,38 @@ class CitizenServiceController extends Controller
             }
         }
 
+        // AI Inspection & SmartGIS Ground Truth Data Synthesis
+        $firstUploadedFile = null;
+        foreach ($requirements as $req) {
+            $k = $req['key'] ?? null;
+            if ($k && $request->hasFile($k)) {
+                $firstUploadedFile = $request->file($k);
+                break;
+            }
+        }
+        if (! $firstUploadedFile) {
+            foreach (['foto_lokasi_open_kamera', 'formulir_data_dukung', 'foto_titik', 'foto_lokasi'] as $fbKey) {
+                if ($request->hasFile($fbKey)) {
+                    $firstUploadedFile = $request->file($fbKey);
+                    break;
+                }
+            }
+        }
+
+        $declaredLat = $request->filled('latitude') ? (float) $request->input('latitude') : null;
+        $declaredLng = $request->filled('longitude') ? (float) $request->input('longitude') : null;
+
+        $aiService = app(AiSmartGisService::class);
+        $photoAudit = $aiService->inspectUploadedPhoto($firstUploadedFile, $declaredLat, $declaredLng);
+        $smartGis = $aiService->querySmartGisGroundTruth($declaredLat, $declaredLng, $classification->code ?? 'MBLB');
+        $aiAnalysis = $aiService->synthesizeValidation($photoAudit, $smartGis, $classification->name ?? 'Layanan');
+
+        $metadata['ai_smartgis_analysis'] = $aiAnalysis;
+        $metadata['sla_hours'] = 24;
+        $metadata['sla_deadline'] = Carbon::now()->addHours(24)->toIso8601String();
+        $metadata['sla_label'] = 'Maksimal 1 x 24 Jam Kerja';
+        $metadata['estimated_completion_at'] = Carbon::now()->addHours(24)->translatedFormat('d F Y, H:i').' WITA';
+
         // Auto-approve untuk PBB: NOP 18 digit + form lengkap = langsung aktif.
         // H2H Bapenda tidak selalu tersedia (kredensial/integrasi belum siap), sehingga
         // bergantung pada h2h_verified_at membuat SEMUA pendaftaran nyangkut di PENDING
@@ -471,7 +507,7 @@ class CitizenServiceController extends Controller
         $nopFormatValid = (bool) preg_match('/^[0-9]{18}$/', (string) $nop);
         $autoApproved = $isPbb && ($h2hVerified || $nopFormatValid);
 
-        [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata, $isPbb, $autoApproved, $h2hVerified) {
+        [$taxObject, $verification] = DB::transaction(function () use ($request, $taxpayer, $classification, $service, $metadata, $isPbb, $autoApproved, $photoAudit) {
             // Create the tax object
             // Lengkapi kolom tabel dari metadata — halaman verifikasi admin Bapenda
             // membaca kolom tabel, bukan metadata. Sebelum ini luas/kelurahan/
@@ -529,8 +565,8 @@ class CitizenServiceController extends Controller
             // Auto-link ke unit lapak MarketStall jika terdapat kecocokan data pasar Disperindag
             $stallNumber = $metadata['nomor_kios'] ?? $metadata['nomor_unit'] ?? null;
             $marketBuilding = $metadata['nama_gedung'] ?? null;
-            if ($stallNumber && $marketBuilding && class_exists(\App\Models\MarketStall::class)) {
-                $matchedStall = \App\Models\MarketStall::where('building_name', $marketBuilding)
+            if ($stallNumber && $marketBuilding && class_exists(MarketStall::class)) {
+                $matchedStall = MarketStall::where('building_name', $marketBuilding)
                     ->where('stall_number', (string) $stallNumber)
                     ->first();
                 if ($matchedStall) {
@@ -557,7 +593,7 @@ class CitizenServiceController extends Controller
             // Calculate initial estimated amount for verification record
             $estimatedAmount = 0;
             try {
-                $calcService = app(\App\Services\TaxCalculationService::class);
+                $calcService = app(TaxCalculationService::class);
                 $estimatedAmount = (float) $calcService->calculateAmount($taxObject);
             } catch (\Throwable $e) {
                 \Log::warning('Failed calculating estimated amount for verification: '.$e->getMessage());
@@ -578,7 +614,11 @@ class CitizenServiceController extends Controller
                 'verified_at' => $autoApproved ? Carbon::now() : null,
                 'notes' => $autoApproved
                     ? 'NOP terverifikasi otomatis via inquiry Bapenda (H2H). Objek langsung aktif.'
-                    : 'Pendaftaran unit baru ('.$classification->name.'): '.$taxObject->name,
+                    : 'Pendaftaran unit baru ('.$classification->name.'): '.$taxObject->name.(
+                        (($photoAudit['status'] ?? '') === 'UNVERIFIED_OR_RANDOM')
+                            ? ' [AUDIT AI: Dokumen foto tidak memiliki geotag kamera lapangan (terindikasi foto galeri/sembarang). Didekatkan dengan data riel SmartGIS. Disarankan verifikasi faktual DLH/PUPR/PERKIMTAN].'
+                            : ''
+                    ),
             ]);
 
             if (! $taxpayer->opd_id) {
@@ -650,10 +690,10 @@ class CitizenServiceController extends Controller
                 $taxObject->update(['metadata' => $metadata]);
 
                 // Sinkronkan ke nib_nop_mappings
-                if (\Illuminate\Support\Facades\Schema::hasTable('nib_nop_mappings')) {
-                    $existsMapping = \Illuminate\Support\Facades\DB::table('nib_nop_mappings')->where('nib', $nib)->exists();
+                if (Schema::hasTable('nib_nop_mappings')) {
+                    $existsMapping = DB::table('nib_nop_mappings')->where('nib', $nib)->exists();
                     if (! $existsMapping) {
-                        \Illuminate\Support\Facades\DB::table('nib_nop_mappings')->insert([
+                        DB::table('nib_nop_mappings')->insert([
                             'nib' => $nib,
                             'nop' => $metadata['nop_pbb'] ?? null,
                             'taxpayer_name' => $taxpayer->name,
@@ -669,8 +709,8 @@ class CitizenServiceController extends Controller
                 }
 
                 // Sinkronkan ke ptsp_data_candidates (Daftar Calon Wajib Pajak / Pelaku Usaha Ber-NIB DPMPTSP)
-                if (\Illuminate\Support\Facades\Schema::hasTable('ptsp_data_candidates')) {
-                    \Illuminate\Support\Facades\DB::table('ptsp_data_candidates')->updateOrInsert(
+                if (Schema::hasTable('ptsp_data_candidates')) {
+                    DB::table('ptsp_data_candidates')->updateOrInsert(
                         [
                             'nik' => $taxpayer->nik,
                             'jenis_usaha' => $isWalet ? 'Pajak Sarang Burung Walet' : ($classification->name ?? 'Usaha'),
@@ -691,8 +731,8 @@ class CitizenServiceController extends Controller
                 }
 
                 // Kirim notifikasi resmi sistem DPMPTSP ke notification_logs
-                if (\Illuminate\Support\Facades\Schema::hasTable('notification_logs')) {
-                    \Illuminate\Support\Facades\DB::table('notification_logs')->insert([
+                if (Schema::hasTable('notification_logs')) {
+                    DB::table('notification_logs')->insert([
                         'taxpayer_id' => $taxpayer->id,
                         'phone' => $taxpayer->phone ?: null,
                         'channel' => 'ptsp_system',
@@ -708,8 +748,8 @@ class CitizenServiceController extends Controller
                 }
             } elseif ($isWalet && $requestPtspAssistance) {
                 // Wajib Pajak walet belum punya NIB dan meminta permohonan pendampingan PTSP
-                if (\Illuminate\Support\Facades\Schema::hasTable('ptsp_data_candidates')) {
-                    \Illuminate\Support\Facades\DB::table('ptsp_data_candidates')->updateOrInsert(
+                if (Schema::hasTable('ptsp_data_candidates')) {
+                    DB::table('ptsp_data_candidates')->updateOrInsert(
                         [
                             'nik' => $taxpayer->nik,
                             'jenis_usaha' => 'Pajak Sarang Burung Walet',
@@ -729,8 +769,8 @@ class CitizenServiceController extends Controller
                     );
                 }
 
-                if (\Illuminate\Support\Facades\Schema::hasTable('notification_logs')) {
-                    \Illuminate\Support\Facades\DB::table('notification_logs')->insert([
+                if (Schema::hasTable('notification_logs')) {
+                    DB::table('notification_logs')->insert([
                         'taxpayer_id' => $taxpayer->id,
                         'phone' => $taxpayer->phone ?: null,
                         'channel' => 'ptsp_system',
@@ -751,6 +791,54 @@ class CitizenServiceController extends Controller
 
             return [$taxObject, $verification];
         });
+
+        // Kirim notifikasi WhatsApp resmi ke nomor terdaftar wajib pajak
+        $phone = $taxpayer->phone ?: ($request->user()?->phone ?? null);
+        if (! empty($phone)) {
+            try {
+                $waGateway = app(WaGatewayService::class);
+                $docNumber = $verification->document_number;
+                $objName = $taxObject->name;
+                $serviceName = $classification->name ?: $service->name;
+                $address = $taxObject->address ?: 'Kota Baubau';
+                $slaDeadline = Carbon::now()->addHours(24)->translatedFormat('d M Y, H:i');
+
+                $waMessage = "🏛️ *PEMERINTAH KOTA BAUBAU*\n"
+                           ."*Badan Pendapatan Daerah (BAPENDA)*\n"
+                           ."━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                           ."Halo, *{$taxpayer->name}*!\n\n"
+                           ."Pendaftaran unit/objek baru Anda telah berhasil kami terima:\n"
+                           ."📋 *Layanan*: {$serviceName}\n"
+                           ."🏷️ *Nama Objek*: {$objName}\n"
+                           ."📍 *Lokasi*: {$address}\n"
+                           ."🔢 *No. Registrasi*: `{$docNumber}`\n"
+                           ."⏱️ *Estimasi Verifikasi*: Maksimal 1 x 24 Jam Kerja (Estimasi Selesai: {$slaDeadline} WITA)\n\n"
+                           ."Status permohonan Anda saat ini: *MENUNGGU VERIFIKASI*\n"
+                           ."Data lokasi Anda telah ditautkan dengan peta spasial SmartGIS Bapenda. Admin dan dinas teknis (DLH / PUPR / PERKIMTAN) sesuai Tupoksinya akan memverifikasi berkas dan keabsahan kegiatan usaha/galian.\n\n"
+                           ."Anda dapat memantau status secara berkala melalui aplikasi *M-PAD Baubau*.\n\n"
+                           .'_Pesan otomatis resmi Sistem M-PAD Pemerintah Kota Baubau_';
+
+                $waGateway->sendMessage($phone, $waMessage);
+
+                if (Schema::hasTable('notification_logs')) {
+                    DB::table('notification_logs')->insert([
+                        'taxpayer_id' => $taxpayer->id,
+                        'phone' => $phone,
+                        'channel' => 'whatsapp',
+                        'type' => 'unit_registration_received',
+                        'reference_type' => 'tax_objects',
+                        'reference_id' => $taxObject->id,
+                        'message_preview' => "Pendaftaran unit {$objName} diterima. No: {$docNumber}, SLA: 24 Jam.",
+                        'status' => 'sent',
+                        'sent_at' => Carbon::now(),
+                        'created_at' => Carbon::now(),
+                        'updated_at' => Carbon::now(),
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('WhatsApp registration notification failed: '.$e->getMessage());
+            }
+        }
 
         return response()->json([
             'message' => $autoApproved

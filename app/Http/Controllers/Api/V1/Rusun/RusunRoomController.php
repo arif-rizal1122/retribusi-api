@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Rusun;
 
 use App\Http\Controllers\Controller;
+use App\Models\Bill;
 use App\Models\RusunRoom;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class RusunRoomController extends Controller
      */
     public function complexes(): JsonResponse
     {
-        if (!Schema::hasTable('rusun_rooms')) {
+        if (! Schema::hasTable('rusun_rooms')) {
             $data = collect(['kotamara', 'mahasiswa', 'wameo', 'asn'])->map(function ($code) {
                 return [
                     'code' => $code,
@@ -46,9 +47,14 @@ class RusunRoomController extends Controller
         }
 
         $data = $codes->map(function ($code) {
+            $availableCount = Schema::hasTable('rusun_rooms')
+                ? RusunRoom::where('complex_code', $code)->where('status', 'available')->count()
+                : 0;
+
             return [
                 'code' => $code,
                 'name' => self::COMPLEX_NAMES[$code] ?? ucfirst($code),
+                'available_count' => $availableCount,
             ];
         })->values();
 
@@ -71,12 +77,13 @@ class RusunRoomController extends Controller
             ], 422);
         }
 
-        if (!Schema::hasTable('rusun_rooms')) {
+        if (! Schema::hasTable('rusun_rooms')) {
             $floors = $complex === 'kotamara' ? collect([1, 2]) : collect([1, 2, 3, 4]);
             $data = $floors->map(function ($f) {
                 return [
                     'floor' => (int) $f,
-                    'label' => 'Lantai ' . $f,
+                    'label' => 'Lantai '.$f,
+                    'available_count' => 0,
                 ];
             })->values();
 
@@ -98,10 +105,16 @@ class RusunRoomController extends Controller
             $floors = $complex === 'kotamara' ? collect([1, 2]) : collect([1, 2, 3, 4]);
         }
 
-        $data = $floors->map(function ($f) {
+        $data = $floors->map(function ($f) use ($complex) {
+            $availableCount = RusunRoom::where('complex_code', $complex)
+                ->where('floor', $f)
+                ->where('status', 'available')
+                ->count();
+
             return [
                 'floor' => (int) $f,
-                'label' => 'Lantai ' . $f,
+                'label' => 'Lantai '.$f,
+                'available_count' => $availableCount,
             ];
         })->values();
 
@@ -131,7 +144,7 @@ class RusunRoomController extends Controller
 
         $floor = (int) $request->input('floor');
 
-        if (!Schema::hasTable('rusun_rooms')) {
+        if (! Schema::hasTable('rusun_rooms')) {
             return response()->json([
                 'success' => true,
                 'complex' => $complex,
@@ -160,7 +173,7 @@ class RusunRoomController extends Controller
      */
     public function adminRooms(Request $request): JsonResponse
     {
-        if (!Schema::hasTable('rusun_rooms')) {
+        if (! Schema::hasTable('rusun_rooms')) {
             return response()->json([
                 'success' => true,
                 'data' => [],
@@ -194,7 +207,7 @@ class RusunRoomController extends Controller
 
         $unpaidStats = collect();
         if ($taxpayerIds->isNotEmpty()) {
-            $unpaidStats = \App\Models\Bill::whereIn('taxpayer_id', $taxpayerIds)
+            $unpaidStats = Bill::whereIn('taxpayer_id', $taxpayerIds)
                 ->where('opd_id', 11)
                 ->whereIn('status', ['pending', 'overdue', 'unpaid'])
                 ->selectRaw('taxpayer_id, COUNT(*) as count, SUM(amount) as total')

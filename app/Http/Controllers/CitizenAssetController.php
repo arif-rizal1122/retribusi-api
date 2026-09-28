@@ -136,6 +136,7 @@ class CitizenAssetController extends Controller
             'asset_item_id' => 'required|exists:asset_items,id',
             'tanggal_mulai' => 'required|date|after_or_equal:today',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
+            'lama_sewa' => 'nullable|numeric|min:1',
             'satuan_sewa' => 'nullable|string',
             'tarif_per_satuan' => 'nullable|numeric|min:0',
             'dp' => 'nullable|numeric|min:0',
@@ -227,7 +228,7 @@ class CitizenAssetController extends Controller
                 }
 
                 $bufferHari = 0;
-                $days = 1;
+                $days = isset($validated['lama_sewa']) ? max(1, (int) $validated['lama_sewa']) : 1;
                 $satuanSewa = 'per bulan';
                 $tarifPerSatuan = (float) $asset->tarif_default;
                 $includeTronton = false;
@@ -399,7 +400,7 @@ class CitizenAssetController extends Controller
                 'retribution_type_id' => $asetType?->id ?? 106,
                 'retribution_classification_id' => $asetClassification?->id ?? 211,
                 'tanggal_mulai' => $mulai->toDateString(),
-                'tanggal_selesai' => ! empty($validated['tanggal_selesai']) ? $selesai->toDateString() : null,
+                'tanggal_selesai' => ! empty($validated['tanggal_selesai']) ? $selesai->toDateString() : ($isRusunawa ? $mulai->copy()->addMonths($days)->subDay()->toDateString() : null),
                 'lama_sewa' => $days,
                 'satuan_sewa' => $satuanSewa,
                 'periode_bulan' => $isRusunawa ? $mulai->format('Y-m') : null,
@@ -439,7 +440,7 @@ class CitizenAssetController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'data' => $this->citizenRentalPayload($rental->load(['assetItem:id,name,code', 'room:id,room_number,floor,complex_code'])),
+                'data' => $this->citizenRentalPayload($rental->load(['assetItem:id,name,code', 'room:id,asset_item_id,room_number,floor,complex_code'])),
             ], 201);
         });
     }
@@ -458,7 +459,7 @@ class CitizenAssetController extends Controller
     public function myRentals(Request $request)
     {
         $taxpayer = $this->citizenTaxpayer($request);
-        $rentals = AssetRental::with(['assetItem:id,name,code', 'surveyor:id,name'])
+        $rentals = AssetRental::with(['assetItem:id,name,code', 'surveyor:id,name', 'room:id,asset_item_id,room_number,floor,complex_code'])
             ->where('taxpayer_id', $taxpayer->id)
             ->orderByDesc('created_at')
             ->get();
@@ -472,7 +473,7 @@ class CitizenAssetController extends Controller
     public function showRental(Request $request, $id)
     {
         $taxpayer = $this->citizenTaxpayer($request);
-        $rental = AssetRental::with(['assetItem:id,name,code,category_id', 'surveyor:id,name', 'verifiedBy:id,name', 'approvedBy:id,name'])
+        $rental = AssetRental::with(['assetItem:id,name,code,category_id', 'surveyor:id,name', 'verifiedBy:id,name', 'approvedBy:id,name', 'room:id,asset_item_id,room_number,floor,complex_code'])
             ->where('id', $id)
             ->where('taxpayer_id', $taxpayer->id)
             ->firstOrFail();
