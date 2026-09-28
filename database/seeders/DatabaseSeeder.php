@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use App\Models\Opd;
 use App\Models\RetributionType;
-use App\Models\Taxpayer;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -250,6 +249,7 @@ class DatabaseSeeder extends Seeder
         $this->call(AchievementSeeder::class);
         $this->call(AdminWilayahSeeder::class);
         $this->call(DemoLoginSeeder::class);
+        $this->call(RusunRealDataSeeder::class);
 
         $this->command->info('Database seeded successfully!');
         $this->command->info('Super Admin: superadmin@sipanda.online / Mpad123#');
