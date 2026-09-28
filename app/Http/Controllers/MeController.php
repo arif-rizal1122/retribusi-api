@@ -2,21 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Taxpayer;
+use App\Models\User;
 use App\Services\CloudinaryService;
+use App\Support\RoleResolver;
+use Illuminate\Http\Request;
 
 class MeController extends Controller
 {
     public function show(Request $request)
     {
         $user = $request->user();
-        
-        if (!$user) {
+
+        if (! $user) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $isTaxpayer = $user instanceof \App\Models\Taxpayer;
+        $isTaxpayer = $user instanceof Taxpayer;
 
         $load = ['opd'];
         if ($isTaxpayer) {
@@ -24,23 +26,23 @@ class MeController extends Controller
         }
 
         // Suntik atribut role (role_code/opd_role/role_group) untuk deteksi role non-warga.
-        \App\Support\RoleResolver::enrich($user);
+        RoleResolver::enrich($user);
 
         return response()->json([
-            'data' => $user->load($load)
+            'data' => $user->load($load),
         ]);
     }
 
     public function update(Request $request)
     {
         $user = $request->user();
-        
-        if (!$user) {
+
+        if (! $user) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         $cloudinary = app(CloudinaryService::class);
-        $isTaxpayer = $user instanceof \App\Models\Taxpayer;
+        $isTaxpayer = $user instanceof Taxpayer;
 
         $request->validate([
             'name' => 'sometimes|string|max:255',
@@ -58,28 +60,42 @@ class MeController extends Controller
         ]);
 
         // Basic fields
-        if ($request->has('name')) $user->name = $request->name;
-        if ($request->has('address')) $user->address = $request->address;
-        if ($request->has('phone')) $user->phone = $request->phone;
-        if ($request->has('district')) $user->district = $request->district;
-        if ($request->has('sub_district')) $user->sub_district = $request->sub_district;
-        if ($request->has('latitude')) $user->latitude = $request->latitude;
-        if ($request->has('longitude')) $user->longitude = $request->longitude;
-        
+        if ($request->has('name')) {
+            $user->name = $request->name;
+        }
+        if ($request->has('address')) {
+            $user->address = $request->address;
+        }
+        if ($request->has('phone')) {
+            $user->phone = $request->phone;
+        }
+        if ($request->has('district')) {
+            $user->district = $request->district;
+        }
+        if ($request->has('sub_district')) {
+            $user->sub_district = $request->sub_district;
+        }
+        if ($request->has('latitude')) {
+            $user->latitude = $request->latitude;
+        }
+        if ($request->has('longitude')) {
+            $user->longitude = $request->longitude;
+        }
+
         // Email update (with unique check only if email changed)
         if ($request->has('email')) {
-            $newEmail = !empty($request->email) ? strtolower(trim((string)$request->email)) : null;
-            $currentEmail = !empty($user->email) ? strtolower(trim((string)$user->email)) : null;
+            $newEmail = ! empty($request->email) ? strtolower(trim((string) $request->email)) : null;
+            $currentEmail = ! empty($user->email) ? strtolower(trim((string) $user->email)) : null;
 
             if ($newEmail !== $currentEmail) {
-                if (!empty($newEmail)) {
+                if (! empty($newEmail)) {
                     $emailExists = false;
                     if ($isTaxpayer) {
-                        $emailExists = \App\Models\Taxpayer::where('email', $newEmail)
+                        $emailExists = Taxpayer::where('email', $newEmail)
                             ->where('id', '!=', $user->id)
                             ->exists();
                     } else {
-                        $emailExists = \App\Models\User::where('email', $newEmail)
+                        $emailExists = User::where('email', $newEmail)
                             ->where('id', '!=', $user->id)
                             ->exists();
                     }
@@ -94,7 +110,7 @@ class MeController extends Controller
                 $user->email = $newEmail;
             }
         }
-        
+
         // Metadata fields
         $metadata = $user->metadata ?? [];
         if (is_string($metadata)) {
@@ -114,7 +130,7 @@ class MeController extends Controller
         if ($request->hasFile('avatar')) {
             $folder = $isTaxpayer ? 'avatars/taxpayers' : 'avatars/users';
             $avatarUrl = $cloudinary->upload(
-                $request->file('avatar'), 
+                $request->file('avatar'),
                 $folder
             );
             $metadata['avatar_url'] = $avatarUrl;
@@ -133,9 +149,9 @@ class MeController extends Controller
         $user->save();
 
         // Log for debugging
-        \Log::info('Profile updated for ID: ' . $user->id . ' (Type: ' . class_basename($user) . ')', [
+        \Log::info('Profile updated for ID: '.$user->id.' (Type: '.class_basename($user).')', [
             'name' => $user->name,
-            'has_avatar' => isset($metadata['avatar_url'])
+            'has_avatar' => isset($metadata['avatar_url']),
         ]);
 
         $load = ['opd'];
@@ -144,7 +160,7 @@ class MeController extends Controller
         }
 
         $freshUser = $user->fresh()->load($load);
-        \App\Support\RoleResolver::enrich($freshUser);
+        RoleResolver::enrich($freshUser);
 
         return response()->json([
             'message' => 'Profil berhasil diperbarui',
