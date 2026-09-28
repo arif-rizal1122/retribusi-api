@@ -127,8 +127,9 @@ class RusunRealDataSeeder extends Seeder
             }
         }
 
-        // Hapus kamar dummy lama (misal kamar 101..120 dari seed lama) khusus complex yang di-update
+        // Hapus sewa & kamar dummy/lama khusus complex yang di-update
         $targetComplexCodes = array_keys($allData);
+        DB::table('asset_rentals')->where('jenis_pekerjaan', 'Sewa Hunian Rusunawa')->delete();
         DB::table('rusun_rooms')->whereIn('complex_code', $targetComplexCodes)->delete();
 
         $totalInserted = 0;
@@ -164,7 +165,9 @@ class RusunRealDataSeeder extends Seeder
                     'floor' => $floor,
                     'room_number' => $roomNumber,
                     'status' => $status,
-                    'notes' => $notes ?: ($status === 'occupied' ? 'Dihuni: '.$penghuniName : 'Siap huni'),
+                    'notes' => $status === 'occupied' 
+                        ? ('Sudah Terisi' . ($penghuniName ? ' - Dihuni: ' . $penghuniName : '') . ($notes ? " ({$notes})" : ''))
+                        : ($status === 'maintenance' ? ($notes ?: 'Kamar Rusak') : 'Siap Huni'),
                     'current_rental_id' => null,
                     'created_at' => now(),
                     'updated_at' => now(),

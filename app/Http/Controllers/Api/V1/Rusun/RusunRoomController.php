@@ -231,6 +231,14 @@ class RusunRoomController extends Controller
                 $arr['current_rental']['sisa_pembayaran'] = $unpaidAmount;
             }
 
+            $keterangan = match ($room->status) {
+                'occupied' => 'Sudah Terisi',
+                'maintenance' => 'Dalam Pemeliharaan / Rusak',
+                default => 'Siap Huni (Kosong)',
+            };
+            $arr['keterangan'] = $keterangan;
+            $arr['status_label'] = $keterangan;
+
             return $arr;
         });
 
