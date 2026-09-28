@@ -72,6 +72,33 @@ return [
             'after_commit' => false,
         ],
 
+        'redis-notif-high' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
+            'queue' => 'notif-high',
+            'retry_after' => 30,
+            'block_for' => 5,
+            'after_commit' => false,
+        ],
+
+        'redis-notif-medium' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
+            'queue' => 'notif-medium',
+            'retry_after' => 60,
+            'block_for' => 5,
+            'after_commit' => false,
+        ],
+
+        'redis-notif-low' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
+            'queue' => 'notif-low',
+            'retry_after' => 120,
+            'block_for' => 5,
+            'after_commit' => false,
+        ],
+
     ],
 
     /*
