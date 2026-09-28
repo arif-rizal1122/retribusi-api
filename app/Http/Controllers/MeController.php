@@ -46,8 +46,9 @@ class MeController extends Controller
             'name' => 'sometimes|string|max:255',
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:20',
-            'email' => 'sometimes|email|max:255',
+            'email' => 'nullable|email|max:255',
             'avatar' => 'nullable|image|max:2048',
+            'avatar_url' => 'nullable|string|max:1000',
             'surat_penugasan' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'district' => 'nullable|string',
             'sub_district' => 'nullable|string',
@@ -65,20 +66,33 @@ class MeController extends Controller
         if ($request->has('latitude')) $user->latitude = $request->latitude;
         if ($request->has('longitude')) $user->longitude = $request->longitude;
         
-        // Email update (with unique check)
+        // Email update (with unique check only if email changed)
         if ($request->has('email')) {
-            $email = strtolower(trim($request->email));
-            $emailExists = \App\Models\Taxpayer::where('email', $email)
-                    ->where('id', '!=', $user->id)->exists()
-                || \App\Models\User::where('email', $email)
-                    ->where('id', '!=', $user->id)->exists();
-            if ($emailExists) {
-                return response()->json([
-                    'message' => 'Email sudah digunakan',
-                    'errors' => ['email' => ['Email sudah terdaftar. Gunakan email lain.']],
-                ], 422);
+            $newEmail = !empty($request->email) ? strtolower(trim((string)$request->email)) : null;
+            $currentEmail = !empty($user->email) ? strtolower(trim((string)$user->email)) : null;
+
+            if ($newEmail !== $currentEmail) {
+                if (!empty($newEmail)) {
+                    $emailExists = false;
+                    if ($isTaxpayer) {
+                        $emailExists = \App\Models\Taxpayer::where('email', $newEmail)
+                            ->where('id', '!=', $user->id)
+                            ->exists();
+                    } else {
+                        $emailExists = \App\Models\User::where('email', $newEmail)
+                            ->where('id', '!=', $user->id)
+                            ->exists();
+                    }
+
+                    if ($emailExists) {
+                        return response()->json([
+                            'message' => 'Email sudah digunakan',
+                            'errors' => ['email' => ['Email sudah terdaftar. Gunakan email lain.']],
+                        ], 422);
+                    }
+                }
+                $user->email = $newEmail;
             }
-            $user->email = $email;
         }
         
         // Metadata fields
@@ -91,7 +105,12 @@ class MeController extends Controller
             $metadata['mother_name'] = $request->mother_name;
         }
 
-        // Handle Avatar/Photo Upload
+        // Handle Avatar URL directly (from decoupled upload)
+        if ($request->filled('avatar_url')) {
+            $metadata['avatar_url'] = $request->avatar_url;
+        }
+
+        // Handle Avatar/Photo Upload (multipart)
         if ($request->hasFile('avatar')) {
             $folder = $isTaxpayer ? 'avatars/taxpayers' : 'avatars/users';
             $avatarUrl = $cloudinary->upload(
@@ -124,9 +143,13 @@ class MeController extends Controller
             $load = array_merge($load, ['retributionTypes', 'retributionClassifications']);
         }
 
+        $freshUser = $user->fresh()->load($load);
+        \App\Support\RoleResolver::enrich($freshUser);
+
         return response()->json([
             'message' => 'Profil berhasil diperbarui',
-            'data' => $user->fresh()->load($load)
+            'data' => $freshUser,
+            'user' => $freshUser,
         ]);
     }
 }

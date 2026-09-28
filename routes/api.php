@@ -197,12 +197,13 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     // Shared Routes (Admin, Petugas, Citizen)
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
-    Route::put('/user/profile', [AuthController::class, 'updateProfile']);
+    Route::match(['put', 'post'], '/user/profile', [\App\Http\Controllers\MeController::class, 'update']);
+    Route::match(['put', 'post'], '/profile', [\App\Http\Controllers\MeController::class, 'update']);
     Route::post('/user/password', [AuthController::class, 'changePassword']);
     Route::put('/user/location', [AuthController::class, 'updateLocation']);
     Route::post('/upload', [\App\Http\Controllers\UploadController::class, 'uploadImage']);
     Route::get('/me', [\App\Http\Controllers\MeController::class, 'show']);
-    Route::post('/me/update', [\App\Http\Controllers\MeController::class, 'update']);
+    Route::match(['put', 'post'], '/me/update', [\App\Http\Controllers\MeController::class, 'update']);
 
     // Dashboard agregat M39 (semua role internal; scope OPD via middleware opd_scope)
     Route::middleware('opd_scope')->prefix('dashboard')->group(function () {
