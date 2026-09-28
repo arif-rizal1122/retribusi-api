@@ -61,3 +61,15 @@ storage/backup_pwd_*.csv
 .env.backup
 kaji_*.php
 docs/user.md
+
+# ⚠️ KRITIS — Sesi WhatsApp Baileys = private key matter. HARAM masuk git (insiden 28 Sep 2026)
+wa-gateway/auth_info_baileys/
+wa-gateway/**/creds.json
+wa-gateway/**/pre-key-*.json
+wa-gateway/**/sender-key-*.json
+wa-gateway/**/app-state-sync-*.json
+wa-gateway/**/tctoken-*.json
+wa-gateway/**/lid-mapping-*.json
+wa-gateway/**/device-list-*.json
+wa-gateway/node_modules/
+wa-gateway/.npm-cache/
