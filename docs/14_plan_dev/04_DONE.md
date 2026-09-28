@@ -125,3 +125,13 @@ NTPD  : 7472.xxxxxxxxxxxx
 ================================
 
 ```
+
+---
+
+### 6. Integrasi Area / Dimensi Petak Pelataran & Geotagging GPS
+
+Untuk akuntabilitas pemanfaatan ruang terbuka pasar dan audit spasial GIS:
+1. **Dimensi Standar Petak Pelataran**: 1 Petak = `3 m²` (dimensi fisik `1,5 m × 2,0 m`).
+2. **Kalkulasi Skala**: Penarikan multi-lembar otomatis mengalikan luas petak (`$qty \times 3 \text{ m}^2`).
+3. **Perekaman Koordinat GPS**: Perangkat petugas lapangan merekam `latitude`, `longitude`, dan `accuracy` saat penarikan e-Karcis.
+4. **GIS Mapping Dashboard**: Admin Disperindag dapat memantau sebaran pedagang pelataran di peta spasial Leaflet dengan marker khusus (`pelataranTicketIcon`), filter visibilitas, popup detail luas/dimensi, serta ekspor CSV lengkap.

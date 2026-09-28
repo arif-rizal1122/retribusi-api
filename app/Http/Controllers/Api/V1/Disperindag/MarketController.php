@@ -696,6 +696,8 @@ class MarketController extends Controller
             'building_name' => 'nullable|string',
             'merchant_name' => 'nullable|string|max:255',
             'quantity' => 'nullable|integer|min:1|max:50',
+            'area_sqm' => 'nullable|numeric|min:0.5',
+            'dimensions' => 'nullable|string|max:100',
             'unit_amount' => 'nullable|numeric|min:500',
             'payment_method' => 'nullable|string|in:TUNAI,QRIS',
             'latitude' => 'nullable|numeric',
@@ -706,6 +708,8 @@ class MarketController extends Controller
         $qty = $validated['quantity'] ?? 1;
         $unitAmount = $validated['unit_amount'] ?? 1000;
         $totalAmount = $qty * $unitAmount;
+        $areaSqm = isset($validated['area_sqm']) ? (float) $validated['area_sqm'] : ($qty * 3);
+        $dimensions = $validated['dimensions'] ?? ($qty == 1 ? '1,5 m × 2,0 m (3 m²)' : ($qty * 1.5) . ' m × 2,0 m (' . ($qty * 3) . ' m²)');
         $user = $request->user();
 
         if (!$this->authorizeDisperindagOfficer($user)) {
@@ -733,9 +737,14 @@ class MarketController extends Controller
             'building_name' => $validated['building_name'] ?? 'Pelataran PKL',
             'merchant_name' => $validated['merchant_name'] ?? 'Pedagang Harian',
             'quantity' => $qty,
+            'area_sqm' => $areaSqm,
+            'dimensions' => $dimensions,
             'unit_amount' => $unitAmount,
             'total_amount' => $totalAmount,
             'payment_method' => $validated['payment_method'] ?? 'TUNAI',
+            'latitude' => $lat,
+            'longitude' => $lng,
+            'accuracy' => isset($validated['accuracy']) ? (float) $validated['accuracy'] : null,
             'qr_token' => $qrToken,
             'issued_at' => now(),
         ]);
