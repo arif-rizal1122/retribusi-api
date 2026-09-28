@@ -10,21 +10,26 @@
 
 ### Fitur yang Diimplementasikan:
 - **Dedicated Sub-View**: Menambahkan tab tampilan baru `Peta Aktivitas GIS` (`ticketViewMode === 'map-activity'`) pada modul Karcis Harian Disperindag.
-- **Peta Interaktif Leaflet**:
-  - Render seluruh transaksi karcis harian yang memiliki titik koordinat GPS (`latitude`, `longitude`).
-  - Marker khusus pelataran (`pelataranTicketIcon`) dengan visualisasi detail: kode tiket, nama pedagang, zona, luas petak (`m²`), nama juru pungut, nominal, dan jam transaksi.
-  - Dukungan toggle tampilan: Titik Marker vs Cluster Grup.
+- **Peta Interaktif Leaflet dengan 3 Mode**:
+  - **Mode Titik Marker**: Render seluruh transaksi karcis harian yang memiliki titik koordinat GPS (`latitude`, `longitude`) dengan marker `pelataranTicketIcon`, popup detail pedagang, luas ($m^2$), juru pungut, nominal, jam, dan tombol modal audit.
+  - **Mode Cluster Grup**: Mengelompokkan titik transaksi terdekat dengan lingkaran visual bertuliskan total karcis, nominal agregat, dan daftar pedagang di titik tersebut.
+  - **Mode Heatmap Densitas**: Visualisasi gradien panas berbasis nilai transaksi/kepadatan (Hijau -> Amber -> Merah) menggunakan `CircleMarker` berskala dinamis.
+- **Interactive Timeline & Playback**:
+  - **Autoplay Loop (▶ Putar Animasi / ⏸ Jeda)**: Menganimasikan kronologi transaksi dari pagi (pukul 05:00) hingga sore dengan interval 1,5 detik per jam.
+  - **Klik Bar Jam**: Setiap bar jam pada timeline dapat diklik langsung untuk memfilter peta ke jam tertentu.
+  - **Shortcut Jam**: Tombol jam instan (05:00 s/d 18:00) di toolbar.
 - **Toolbar Filter**:
   - Filter petugas / juru pungut spesifik secara real-time.
   - Integrasi dengan filter tanggal harian.
 - **Panel Monitoring Spasial (Real-time Dashboard)**:
   - **KPI Cards**: Total Karcis GPS, Total Nominal Terkumpul, Jumlah Petugas Aktif, dan Jumlah Zona Terlayani.
-  - **Timeline Aktivitas Per Jam**: Visualisasi grafik progresif penarikan retribusi dari subuh (pukul 05:00) hingga sore hari.
+  - **Timeline Aktivitas Per Jam**: Visualisasi grafik progresif penarikan retribusi dari subuh hingga sore hari.
   - **Breakdown Per Petugas**: Akuntabilitas kontribusi per kolektor beserta total lembar karcis dan nominal kas.
   - **Breakdown Per Zona/Sektor**: Sebaran intensitas pemungutan per blok pasar.
-- **Verifikasi**:
+- **Verifikasi & Deployment Production**:
   - `npm run typecheck` lolos (exit code 0).
-  - `npm run build` sukses dan terbundel di `dist/` (exit code 0).
+  - `npm run build` sukses (exit code 0).
+  - Dideploy ke server production: `https://adminmpad.baubaukota.go.id/` (HTTP 200 OK).
 
 ---
 
