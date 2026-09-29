@@ -615,8 +615,13 @@ class AuthController extends Controller
                 if (!$taxpayer->google_id) {
                     $updates['google_id'] = $googleId;
                 }
-                if ($avatar && !$taxpayer->avatar_url) {
+                if ($avatar && $taxpayer->avatar_url !== $avatar) {
                     $updates['avatar_url'] = $avatar;
+                }
+                $meta = is_array($taxpayer->metadata) ? $taxpayer->metadata : [];
+                if ($avatar && ($meta['avatar_url'] ?? null) !== $avatar) {
+                    $meta['avatar_url'] = $avatar;
+                    $updates['metadata'] = $meta;
                 }
                 if (!empty($updates)) {
                     $taxpayer->update($updates);
@@ -624,11 +629,16 @@ class AuthController extends Controller
             } else {
                 // Auto-register sebagai Taxpayer baru (Tier 1 — tanpa NIK)
                 // NPWPD otomatis di-generate oleh Taxpayer::creating() boot event
+                $metadata = [];
+                if ($avatar) {
+                    $metadata['avatar_url'] = $avatar;
+                }
                 $taxpayer = \App\Models\Taxpayer::create([
                     'name'       => strip_tags($name),
                     'email'      => $email,
                     'google_id'  => $googleId,
                     'avatar_url' => $avatar,
+                    'metadata'   => $metadata,
                     'is_active'  => true,
                     // password null → tidak bisa login via email/password
                     // nik null → Tier 1, belum terverifikasi yuridis
