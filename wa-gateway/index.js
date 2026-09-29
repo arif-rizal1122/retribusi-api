@@ -124,9 +124,21 @@ app.get('/qr', (req, res) => {
     });
 });
 
-// 3. Send Message Endpoint
+// Helper: resolve spintax if incoming message contains variations
+function parseSpintax(text) {
+    if (!text || typeof text !== 'string') return text;
+    while (/\{([^{}]+)\}/.test(text)) {
+        text = text.replace(/\{([^{}]+)\}/g, (_, group) => {
+            const parts = group.split('|');
+            return parts[Math.floor(Math.random() * parts.length)];
+        });
+    }
+    return text;
+}
+
+// 3. Send Message Endpoint (with Anti-Ban Protocol: Typing Simulation & Jittering)
 app.post('/send-message', async (req, res) => {
-    const { number, phone, message } = req.body;
+    const { number, phone, message, priority = 'high', skip_typing = false } = req.body;
     let targetNumber = number || phone;
 
     if (!targetNumber || !message) {
@@ -151,14 +163,45 @@ app.post('/send-message', async (req, res) => {
         }
 
         const whatsappJid = `${cleanPhone}@s.whatsapp.net`;
-        const result = await sock.sendMessage(whatsappJid, { text: message });
+        const spunMessage = parseSpintax(message);
 
-        console.log(`[WA-GATEWAY] Message sent to +${cleanPhone}`);
+        // Anti-Ban Protocol 1: Jittering Algorithm
+        // High: 500-1500ms (instant OTP) | Medium: 2000-4000ms | Low/Bulk: 5000-15000ms
+        let jitterMs = 800;
+        if (priority === 'low' || priority === 'bulk') {
+            jitterMs = Math.floor(Math.random() * 10000) + 5000; // 5s to 15s
+        } else if (priority === 'medium') {
+            jitterMs = Math.floor(Math.random() * 2000) + 2000; // 2s to 4s
+        } else {
+            jitterMs = Math.floor(Math.random() * 1000) + 500; // 0.5s to 1.5s
+        }
+        await new Promise(resolve => setTimeout(resolve, jitterMs));
+
+        // Anti-Ban Protocol 2: Typing Simulation (sendPresenceUpdate 'composing')
+        if (!skip_typing) {
+            try {
+                await sock.sendPresenceUpdate('composing', whatsappJid);
+                // 2 to 4 seconds typing simulation (or 1.5s for high priority OTP)
+                const typingMs = priority === 'high' 
+                    ? Math.floor(Math.random() * 1000) + 1500 
+                    : Math.floor(Math.random() * 2000) + 2000;
+                await new Promise(resolve => setTimeout(resolve, typingMs));
+                await sock.sendPresenceUpdate('paused', whatsappJid);
+            } catch (errPresence) {
+                console.warn('[WA-GATEWAY] Typing presence warning:', errPresence.message);
+            }
+        }
+
+        const result = await sock.sendMessage(whatsappJid, { text: spunMessage });
+
+        console.log(`[WA-GATEWAY] Message sent to +${cleanPhone} (Priority: ${priority}, Jitter: ${jitterMs}ms)`);
         return res.json({ 
             success: true, 
             message: 'Message sent successfully',
             jid: whatsappJid,
-            messageId: result?.key?.id
+            messageId: result?.key?.id,
+            priority,
+            jitterMs
         });
     } catch (err) {
         console.error('[WA-GATEWAY] Failed to send message:', err);
