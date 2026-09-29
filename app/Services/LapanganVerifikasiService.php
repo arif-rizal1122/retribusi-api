@@ -39,8 +39,10 @@ class LapanganVerifikasiService
         'pendataan' => 'VERIFIKASI_HASIL_SURVEI',
     ];
 
-    public function __construct(private AutoAssignService $audit)
-    {
+    public function __construct(
+        private AutoAssignService $audit,
+        private OfficialResolverService $resolver = new OfficialResolverService(),
+    ) {
     }
 
     // ==================================================================
@@ -164,14 +166,29 @@ class LapanganVerifikasiService
             ]);
         });
 
-        // Buka tahapan SLA verifikasi agar Kasubid punya tenggat yang terlihat.
+        // Tentukan PEJABAT yang berhak memverifikasi.
+        //
+        // Sebelumnya di sini ditulis `null` secara hardcode, sehingga tugas
+        // verifikasi lahir tanpa PIC dan tidak pernah muncul di dashboard
+        // Kasubid/Kabid (temuan 29 Sep 2026: 7 baris orphan). Sekarang PIC
+        // diturunkan dari (stage + tax_domain) via OfficialResolverService.
+        $pejabatId = $this->resolver->resolve($stageVerif, $row->tax_domain);
+        $labelJabatan = $this->resolver->labelJabatan($stageVerif, $row->tax_domain);
+
+        // Bila resolver gagal, tugas TETAP dibuat — tapi dengan catatan eksplisit
+        // supaya terlihat di kolam "belum tertugaskan" dan tidak diam-diam hilang.
+        $catatanSla = $pejabatId === null
+            ? 'PERLU PENUGASAN MANUAL: ' . $labelJabatan . ' tidak ditemukan/tidak aktif.'
+            : 'Menunggu verifikasi ' . $labelJabatan . ' atas hasil pekerjaan lapangan.';
+
         $slaId = SlaTrackerService::assign($stageVerif, [
             'reference_type'      => $row->reference_type,
             'reference_id'        => $row->reference_id,
             'tax_domain'          => $row->tax_domain,
             'tax_sector_code'     => $row->tax_sector_code,
-            'assigned_to_user_id' => null,
-            'notes'               => 'Menunggu verifikasi Kasubid atas hasil pekerjaan lapangan.',
+            'assigned_to_user_id' => $pejabatId,
+            'assigned_by_user_id' => $petugasId,
+            'notes'               => $catatanSla,
         ]);
 
         return [
