@@ -35,6 +35,11 @@ return [
         ],
     ],
 
+    // Google Sign-In (OAuth 2.0 — verifikasi ID Token untuk login warga)
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID', ''),
+    ],
+
     'wa_gateway' => [
         'url' => env('WA_GATEWAY_URL', 'http://localhost:3001'),
     ],

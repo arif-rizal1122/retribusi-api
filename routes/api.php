@@ -116,6 +116,7 @@ Route::group(['middleware' => 'throttle:10,1'], function () {
     Route::post('/citizen/request-otp', [AuthController::class, 'requestCitizenOtp']);
     Route::post('/citizen/verify-otp', [AuthController::class, 'verifyCitizenOtp']);
     Route::post('/citizen/register', [AuthController::class, 'registerCitizen']);
+    Route::post('/citizen/google-login', [AuthController::class, 'googleLogin']);
     Route::post('/nik-lookup', NikLookupController::class)->middleware('throttle:30,1');
 });
 

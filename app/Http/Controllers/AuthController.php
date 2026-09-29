@@ -548,4 +548,114 @@ class AuthController extends Controller
             ]
         ], 201);
     }
+
+    /**
+     * Login/Register citizen via Google Sign-In (ID Token verification).
+     *
+     * Flow:
+     * 1. Verifikasi ID Token secara kriptografis menggunakan Google_Client.
+     * 2. Blokir jika email sudah terdaftar sebagai staf dinas (tabel users).
+     * 3. Cari/buat Taxpayer berdasarkan google_id atau email.
+     * 4. Terbitkan token Sanctum (citizen_token).
+     *
+     * Keamanan: Google hanya sebagai IdP — NIK, NPWPD, dan data fiskal
+     * tetap dikelola oleh M-PAD. Tidak ada data warga yang dikirim ke Google.
+     */
+    public function googleLogin(Request $request)
+    {
+        $request->validate([
+            'id_token' => 'required|string',
+        ]);
+
+        $clientId = config('services.google.client_id');
+
+        if (empty($clientId)) {
+            return response()->json([
+                'message' => 'Google Sign-In belum dikonfigurasi di server.',
+            ], 503);
+        }
+
+        $client = new \Google_Client(['client_id' => $clientId]);
+        $payload = $client->verifyIdToken($request->id_token);
+
+        if (!$payload) {
+            return response()->json([
+                'message' => 'Token Google tidak valid atau telah kedaluwarsa.',
+            ], 401);
+        }
+
+        $googleId = $payload['sub'];
+        $email    = $payload['email'] ?? null;
+        $name     = $payload['name'] ?? 'Warga M-PAD';
+        $avatar   = $payload['picture'] ?? null;
+
+        if (!$email) {
+            return response()->json([
+                'message' => 'Akun Google tidak menyertakan alamat email.',
+            ], 422);
+        }
+
+        // Keamanan: Cegah email staf dinas (tabel users) masuk via Google
+        if (User::where('email', $email)->exists()) {
+            return response()->json([
+                'message' => 'Email ini terdaftar sebagai akun internal Pemkot. '
+                    . 'Silakan gunakan portal login resmi.',
+            ], 403);
+        }
+
+        return DB::transaction(function () use ($googleId, $email, $name, $avatar) {
+            // Cari taxpayer existing by google_id ATAU email
+            $taxpayer = \App\Models\Taxpayer::where('google_id', $googleId)
+                ->orWhere('email', $email)
+                ->first();
+
+            if ($taxpayer) {
+                // Link Google ID jika belum terpasang
+                $updates = [];
+                if (!$taxpayer->google_id) {
+                    $updates['google_id'] = $googleId;
+                }
+                if ($avatar && !$taxpayer->avatar_url) {
+                    $updates['avatar_url'] = $avatar;
+                }
+                if (!empty($updates)) {
+                    $taxpayer->update($updates);
+                }
+            } else {
+                // Auto-register sebagai Taxpayer baru (Tier 1 — tanpa NIK)
+                // NPWPD otomatis di-generate oleh Taxpayer::creating() boot event
+                $taxpayer = \App\Models\Taxpayer::create([
+                    'name'       => strip_tags($name),
+                    'email'      => $email,
+                    'google_id'  => $googleId,
+                    'avatar_url' => $avatar,
+                    'is_active'  => true,
+                    // password null → tidak bisa login via email/password
+                    // nik null → Tier 1, belum terverifikasi yuridis
+                ]);
+            }
+
+            if (!$taxpayer->is_active) {
+                return response()->json([
+                    'message' => 'Akun Wajib Pajak tidak aktif',
+                ], 403);
+            }
+
+            \App\Support\RoleResolver::persistToMetadata($taxpayer);
+            $taxpayer->refresh();
+            \App\Support\RoleResolver::enrich($taxpayer);
+
+            $token = $taxpayer->createToken('citizen_token')->plainTextToken;
+
+            // Background sync BPN assets (existing pattern)
+            \App\Jobs\SyncBpnTaxpayerAssetsJob::dispatch($taxpayer);
+
+            return response()->json([
+                'user'       => $taxpayer,
+                'token'      => $token,
+                'token_type' => 'Bearer',
+                'message'    => 'Login berhasil (Google)',
+            ]);
+        });
+    }
 }
