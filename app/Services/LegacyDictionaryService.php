@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\RefLegacyDictionary;
+use App\Support\KualitasKamus;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -80,7 +81,9 @@ class LegacyDictionaryService
             return collect();
         }
 
-        return $query->orderBy('sector_code')->orderBy('commercial_brand_name')->limit(25)->get();
+        return $query->orderBy('sector_code')->orderBy('commercial_brand_name')->limit(25)->get()
+            ->reject(fn ($b) => KualitasKamus::alasanTidakLayak($b) !== null)
+            ->values();
     }
 
     /**
@@ -99,7 +102,9 @@ class LegacyDictionaryService
             ->where('owner_nik_or_nib', $nikAtauNib)
             ->orderBy('commercial_brand_name')
             ->limit(25)
-            ->get();
+            ->get()
+            ->reject(fn ($b) => KualitasKamus::alasanTidakLayak($b) !== null)
+            ->values();
     }
 
     /**
@@ -113,6 +118,11 @@ class LegacyDictionaryService
 
         if (! $dict) {
             throw new InvalidArgumentException('Objek usaha lama tidak ditemukan pada kamus referensi.');
+        }
+
+        $alasan = KualitasKamus::alasanTidakLayak($dict);
+        if ($alasan !== null) {
+            throw new InvalidArgumentException('Objek usaha lama tidak dapat diklaim (data tidak memenuhi syarat: ' . $alasan . ').');
         }
 
         if ($dict->claim_status === 'VERIFIED') {
@@ -181,6 +191,8 @@ class LegacyDictionaryService
             })
             ->orderBy('commercial_brand_name')
             ->limit($limit)
-            ->get();
+            ->get()
+            ->reject(fn ($b) => KualitasKamus::alasanTidakLayak($b) !== null)
+            ->values();
     }
 }
