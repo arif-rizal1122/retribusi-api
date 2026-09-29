@@ -51,6 +51,9 @@ class NotificationDispatcher
             $phone = $recipientUser->phone;
         }
 
+        // Normalize payload aliases
+        $payload = self::normalizePayload($templateCode, $payload);
+
         // Build Idempotency Key
         $idempotencyKey = $this->generateIdempotencyKey(
             $templateCode,
@@ -138,7 +141,7 @@ class NotificationDispatcher
         // Step 2: Apply spintax variations
         $finalMessage = SpintaxService::spin($text);
 
-        $sent = $this->waGateway->sendMessage($phone, $finalMessage);
+        $sent = $this->waGateway->sendMessage($phone, $finalMessage, $template->priority ?? 'medium');
 
         $status = $sent ? 'success' : 'failed';
         $now = $sent ? Carbon::now(self::TZ) : null;
@@ -262,5 +265,95 @@ class NotificationDispatcher
         }
 
         return hash('sha256', implode(':', $components));
+    }
+
+    /**
+     * Normalize synonymous variables across templates and callers
+     */
+    public static function normalizePayload(string $templateCode, array $payload): array
+    {
+        // Aliases mapping
+        if (isset($payload['otp']) && !isset($payload['otp_code'])) {
+            $payload['otp_code'] = $payload['otp'];
+        }
+        if (isset($payload['otp_code']) && !isset($payload['otp'])) {
+            $payload['otp'] = $payload['otp_code'];
+        }
+
+        if (isset($payload['nama_pemohon']) && !isset($payload['nama_warga'])) {
+            $payload['nama_warga'] = $payload['nama_pemohon'];
+        }
+        if (isset($payload['nama_warga']) && !isset($payload['nama_pemohon'])) {
+            $payload['nama_pemohon'] = $payload['nama_warga'];
+        }
+        if (isset($payload['name']) && !isset($payload['nama_warga'])) {
+            $payload['nama_warga'] = $payload['name'];
+            $payload['nama_pemohon'] = $payload['name'];
+        }
+
+        if (isset($payload['application_no']) && !isset($payload['nomor_berkas'])) {
+            $payload['nomor_berkas'] = $payload['application_no'];
+        }
+
+        if (isset($payload['catatan_revisi']) && !isset($payload['catatan_verifikator'])) {
+            $payload['catatan_verifikator'] = $payload['catatan_revisi'];
+        }
+        if (isset($payload['catatan_verifikator']) && !isset($payload['catatan_singkat'])) {
+            $payload['catatan_singkat'] = mb_substr($payload['catatan_verifikator'], 0, 50);
+        }
+
+        if (isset($payload['nominal']) && !isset($payload['nominal_rupiah'])) {
+            $payload['nominal_rupiah'] = is_numeric($payload['nominal']) 
+                ? number_format((float)$payload['nominal'], 0, ',', '.') 
+                : (string)$payload['nominal'];
+        }
+
+        if (isset($payload['jatuh_tempo']) && !isset($payload['tanggal_jatuh_tempo'])) {
+            $payload['tanggal_jatuh_tempo'] = $payload['jatuh_tempo'];
+        }
+
+        if (isset($payload['kode_billing']) && !isset($payload['kode_billing_snap'])) {
+            $payload['kode_billing_snap'] = $payload['kode_billing'];
+        }
+        if (isset($payload['kode_snap']) && !isset($payload['kode_billing_snap'])) {
+            $payload['kode_billing_snap'] = $payload['kode_snap'];
+        }
+        if (isset($payload['kode_billing_snap']) && !isset($payload['kode_snap'])) {
+            $payload['kode_snap'] = $payload['kode_billing_snap'];
+        }
+
+        if (isset($payload['briva']) && !isset($payload['kode_briva_16_digit'])) {
+            $payload['kode_briva_16_digit'] = $payload['briva'];
+        }
+        if (isset($payload['kode_briva']) && !isset($payload['kode_briva_16_digit'])) {
+            $payload['kode_briva_16_digit'] = $payload['kode_briva'];
+        }
+        if (isset($payload['kode_briva_16_digit']) && !isset($payload['kode_briva'])) {
+            $payload['kode_briva'] = $payload['kode_briva_16_digit'];
+        }
+
+        if (isset($payload['sisa_hari']) && !isset($payload['sisa_hari_lagi'])) {
+            $payload['sisa_hari_lagi'] = (string)$payload['sisa_hari'];
+        }
+
+        if (isset($payload['ntpd']) && !isset($payload['nomor_ntpd'])) {
+            $payload['nomor_ntpd'] = $payload['ntpd'];
+        }
+
+        if (isset($payload['nomor_ketetapan']) && !isset($payload['nomor_skrd'])) {
+            $payload['nomor_skrd'] = $payload['nomor_ketetapan'];
+        }
+
+        if (isset($payload['total_kas_tunai']) && !isset($payload['total_kas_di_tangan'])) {
+            $payload['total_kas_di_tangan'] = is_numeric($payload['total_kas_tunai']) 
+                ? number_format((float)$payload['total_kas_tunai'], 0, ',', '.') 
+                : (string)$payload['total_kas_tunai'];
+        }
+
+        if (isset($payload['va_setor']) && !isset($payload['nomor_va_setor'])) {
+            $payload['nomor_va_setor'] = $payload['va_setor'];
+        }
+
+        return $payload;
     }
 }

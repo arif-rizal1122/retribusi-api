@@ -12,55 +12,73 @@ class SendDueDateNotifications extends Command
     /**
      * The name and signature of the console command.
      */
-    protected $signature = 'billing:notify-due {--days=14 : Number of days before due date}';
+    protected $signature = 'billing:notify-due {--days= : Specific days before due date (default runs H-7, H-3, and H-0)}';
 
     /**
      * The console command description.
      */
-    protected $description = 'Send automatic notifications (WhatsApp) for bills expiring in given days (default 14 days / H-14).';
+    protected $description = 'Kirim notifikasi pengingat jatuh tempo berkala (H-7, H-3, H-0) sesuai NOTIF-WRG-005.';
 
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(\App\Services\NotificationService $notifService)
     {
-        $days = (int) ($this->option('days') ?: 14);
-        $targetDate = Carbon::now()->addDays($days)->toDateString();
+        $specificDays = $this->option('days');
+        $dayIntervals = $specificDays !== null ? [(int)$specificDays] : [7, 3, 0];
 
-        $bills = Bill::where('status', 'pending')
-            ->whereDate('due_date', $targetDate)
-            ->with(['taxpayer', 'taxObject.taxpayer', 'taxObject'])
-            ->get();
+        foreach ($dayIntervals as $days) {
+            $targetDate = Carbon::now('Asia/Makassar')->addDays($days)->toDateString();
 
-        $this->info("Found " . $bills->count() . " bills due on $targetDate (H-{$days})");
+            $bills = Bill::where('status', 'pending')
+                ->whereDate('due_date', $targetDate)
+                ->with(['taxpayer', 'taxObject.taxpayer', 'taxObject', 'retributionType'])
+                ->get();
 
-        $waService = app(\App\Services\WhatsAppService::class);
+            $this->info("Memeriksa tagihan jatuh tempo {$targetDate} (H-{$days}): {$bills->count()} ditemukan.");
 
-        foreach ($bills as $bill) {
-            $taxpayer = $bill->taxpayer ?? optional($bill->taxObject)->taxpayer ?? null;
-            if (!$taxpayer || empty($taxpayer->phone)) {
-                continue;
-            }
+            foreach ($bills as $bill) {
+                $taxpayer = $bill->taxpayer ?? optional($bill->taxObject)->taxpayer ?? null;
+                if (!$taxpayer || empty($taxpayer->phone)) {
+                    continue;
+                }
 
-            $taxObjectName = $bill->taxObject?->name ?? 'Objek Retribusi/Pajak';
-            $formattedAmount = number_format($bill->amount, 0, ',', '.');
-            $formattedDueDate = Carbon::parse($bill->due_date)->format('d/m/Y');
+                // Check if already notified for this interval
+                $billMeta = $bill->metadata ?? [];
+                $notifiedDays = $billMeta['due_notified_days'] ?? [];
+                if (in_array($days, $notifiedDays)) {
+                    continue;
+                }
 
-            $message = "Yth. Wajib Pajak {$taxpayer->name},\n\nTagihan {$bill->bill_number} untuk objek {$taxObjectName} sebesar Rp {$formattedAmount} akan jatuh tempo pada {$formattedDueDate}.\n\nMohon segera lakukan pembayaran melalui aplikasi M-PAD Kota Baubau atau melalui kanal perbankan rekanan untuk menghindari sanksi administratif denda keterlambatan 1% per bulan.\n\nTerima kasih.\nBAPENDA KOTA BAUBAU";
+                $namaLayanan = $bill->retributionType?->name ?: ($bill->taxObject?->name ?: 'Layanan M-PAD');
+                $dueDateFormatted = Carbon::parse($bill->due_date)->format('d/m/Y');
+                $briva = $bill->briva_number ?? ($bill->va_number ?? '-');
+                $snap = $bill->snap_token ?? ($bill->payment_code ?? '-');
 
-            $sent = $waService->sendMessage($taxpayer->phone, $message);
+                $res = $notifService->notifyDueDateReminder(
+                    phone: $taxpayer->phone,
+                    namaWarga: $taxpayer->name ?: 'Wajib Pajak',
+                    nomorSkrd: $bill->bill_number ?: (string)$bill->id,
+                    namaLayanan: $namaLayanan,
+                    nominal: $bill->total_amount,
+                    tanggalJatuhTempo: $dueDateFormatted,
+                    sisaHari: $days,
+                    kodeSnap: $snap,
+                    kodeBriva: $briva,
+                    user: $taxpayer->user ?? null,
+                    refId: $bill->id
+                );
 
-            if ($sent) {
-                $billMetadata = $bill->metadata ?? [];
-                $billMetadata['due_date_notified_at'] = now()->toISOString();
-                $billMetadata['due_date_notification_days'] = $days;
-                $bill->update(['metadata' => $billMetadata]);
-                $this->line("Sent H-{$days} notification to {$taxpayer->name} ({$taxpayer->phone})");
-            } else {
-                Log::warning("Failed sending H-{$days} notification to {$taxpayer->phone} for Bill #{$bill->id}");
+                if ($res['success'] ?? false) {
+                    $notifiedDays[] = $days;
+                    $billMeta['due_notified_days'] = $notifiedDays;
+                    $billMeta['last_due_notified_at'] = now()->toISOString();
+                    $bill->update(['metadata' => $billMeta]);
+                    $this->line("  [OK] NOTIF-WRG-005 dikirim ke {$taxpayer->name} ({$taxpayer->phone}) untuk H-{$days}");
+                }
             }
         }
 
-        $this->info("Notifications dispatched successfully.");
+        $this->info("Siklus pengingat jatuh tempo selesai.");
     }
 }

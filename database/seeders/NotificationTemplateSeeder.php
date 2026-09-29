@@ -141,6 +141,18 @@ class NotificationTemplateSeeder extends Seeder
                 'deep_link_pattern' => '/shift/close',
                 'is_active' => true,
             ],
+            [
+                'code' => 'NOTIF-PTG-005',
+                'group' => 'petugas',
+                'label' => 'Broadcast Operasi Lapangan / Uji Petik Terpadu',
+                'channels' => ['whatsapp', 'push'],
+                'priority' => 'high',
+                'wa_template' => "*[M-PAD PETUGAS - INSTRUKSI OPERASI LAPANGAN & UJI PETIK]*\n\nPerhatian Seluruh Petugas {nama_tim},\n\nInstruksi Operasi Pengawasan & Uji Petik Kepatuhan Fiskal Daerah resmi diterbitkan oleh Pimpinan Bapenda Kota Baubau:\n\n📅 *Jadwal Kegiatan:* {jadwal_kegiatan} WITA\n📍 *Titik Kumpul / Lokasi:* {titik_lokasi}\n🎯 *Target Operasi:* {target_operasi}\n👮 *Koordinator Lapangan:* {nama_koordinator}\n\n*INSTRUKSI OPERASIONAL:*\n1. Hadir tepat waktu dengan mengenakan atribut rompi resmi dan ID Card M-PAD.\n2. Siapkan aplikasi Petugas Lapangan dalam kondisi baterai mencukupi.\n3. Buka menu Uji Petik / Pengawasan Lapangan:\n   🔗 https://petugasmpad.baubaukota.go.id/tasks\n4. Lakukan penindakan atau pencatatan sesuai SOP Perda No. 1/2024.\n\nBadan Pendapatan Daerah Kota Baubau.",
+                'push_title' => 'Operasi Lapangan: {target_operasi}',
+                'push_body' => 'Titik kumpul di {titik_lokasi} pada {jadwal_kegiatan}. Buka aplikasi untuk briefing.',
+                'deep_link_pattern' => '/tasks',
+                'is_active' => true,
+            ],
 
             // =========================================================================
             // KELOMPOK C: NOTIFIKASI ADMIN OPD & PIMPINAN BAPENDA

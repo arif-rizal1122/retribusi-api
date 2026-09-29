@@ -26,7 +26,14 @@ class ServiceApplicationNotifier
     /** Prefix reference_type agar mudah difilter di log. */
     public const REF_TYPE = 'service_applications';
 
-    public function __construct(protected WaGatewayService $wa) {}
+    protected ?NotificationService $notif = null;
+
+    public function __construct(
+        protected WaGatewayService $wa,
+        ?NotificationService $notif = null
+    ) {
+        $this->notif = $notif ?: app(NotificationService::class);
+    }
 
     /**
      * Normalisasi nomor HP ke format 628xxx.
@@ -116,7 +123,6 @@ class ServiceApplicationNotifier
                 'sent_at'         => $sent ? now() : null,
             ]);
         } catch (\Throwable $e) {
-            // Log gagal bukan alasan memblokir alur bisnis
             Log::warning('ServiceApplicationNotifier: log gagal', [
                 'application' => $app->application_no,
                 'error'       => $e->getMessage(),
@@ -127,48 +133,78 @@ class ServiceApplicationNotifier
     }
 
     // ---------------------------------------------------------------------
-    // Template pesan (copywriting standar dari keputusan arsitektur)
+    // Standarisasi Notifikasi Sesuai Katalog Resmi M-PAD (2026)
     // ---------------------------------------------------------------------
 
+    /**
+     * NOTIF-WRG-002: Konfirmasi Pendaftaran Berkas Masuk Antrean
+     */
     public function notifySubmitted(ServiceApplication $app): bool
     {
-        $phone = $this->resolveRecipient($app);
-        if (!$phone) {
-            Log::info('ServiceApplicationNotifier: nomor pemohon kosong', ['app' => $app->application_no]);
-            return false;
+        try {
+            $res = $this->notif->notifyApplicationSubmitted($app, async: false);
+            return (bool)($res['success'] ?? false);
+        } catch (\Throwable $e) {
+            Log::warning('ServiceApplicationNotifier: notifySubmitted fallback', ['error' => $e->getMessage()]);
+            $phone = $this->resolveRecipient($app);
+            if (!$phone) {
+                return false;
+            }
+            $nama = $app->contact_name ?: optional($app->applicant)->name ?: 'Pemohon';
+            $msg = "Halo {$nama}, pengajuan Anda (#{$app->application_no}) telah kami terima dan dalam antrean verifikasi OPD.";
+            return $this->send($phone, $msg, $app, 'submitted');
         }
-
-        $nama = $app->contact_name ?: optional($app->applicant)->name ?: 'Pemohon';
-        $msg = "Halo {$nama}, permohonan reklame Anda (#{$app->application_no}) telah kami terima "
-             . "dan sedang dalam proses verifikasi teknis oleh tim DPMPTSP Kota Baubau. "
-             . "Estimasi verifikasi maksimal 2 hari kerja. Pantau status berkala di M-PAD.";
-
-        return $this->send($phone, $msg, $app, 'submitted');
     }
 
+    /**
+     * NOTIF-PTG-001: Alert Dispatch Penugasan Survei Lapangan Baru
+     */
     public function notifyFieldAssignment(ServiceApplication $app): bool
     {
         $officer = $app->officer;
+        if ($officer) {
+            try {
+                $payload = $app->payload ?: [];
+                $alamat = data_get($payload, 'alamat_singkat') ?: data_get($payload, 'alamat') ?: '-';
+                $lat = data_get($payload, 'latitude') ?: data_get($payload, 'lat') ?: '-5.4632';
+                $lng = data_get($payload, 'longitude') ?: data_get($payload, 'lng') ?: '122.6074';
+                $deadline = $app->sla_deadline
+                    ? Carbon::parse($app->sla_deadline)->timezone(self::TZ)->format('d/m/Y H:i')
+                    : Carbon::now(self::TZ)->addHours(24)->format('d/m/Y H:i');
+
+                $res = $this->notif->notifyFieldDispatch(
+                    petugasUser: $officer,
+                    namaOpd: 'Bapenda / OPD Pengampu',
+                    nomorBerkas: $app->application_no,
+                    namaPemohon: $app->contact_name ?: optional($app->applicant)->name ?: 'Wajib Pajak',
+                    alamatLengkap: $alamat,
+                    latitude: $lat,
+                    longitude: $lng,
+                    tenggatWaktuWita: $deadline,
+                    taskId: $app->id,
+                    async: false
+                );
+                return (bool)($res['success'] ?? false);
+            } catch (\Throwable $e) {
+                Log::warning('ServiceApplicationNotifier: notifyFieldAssignment fallback', ['error' => $e->getMessage()]);
+            }
+        }
+
         $phone = self::normalizePhone(optional($officer)->phone);
         if (!$phone) {
-            Log::info('ServiceApplicationNotifier: nomor petugas kosong', ['app' => $app->application_no]);
             return false;
         }
 
-        $alamat = data_get($app->payload, 'alamat_singkat')
-            ?: data_get($app->payload, 'alamat')
-            ?: '-';
-        $deadline = $app->sla_deadline
-            ? BusinessDayCalculator::formatId(Carbon::parse($app->sla_deadline))
-            : '-';
-
-        $msg = "Tugas Baru: Anda ditugaskan melakukan verifikasi fisik ruang reklame "
-             . "#{$app->application_no} di {$alamat}. Batas waktu verifikasi lapangan: {$deadline}. "
-             . "Buka aplikasi M-PAD Petugas untuk melihat titik lokasi peta.";
+        $alamat = data_get($app->payload, 'alamat_singkat') ?: data_get($app->payload, 'alamat') ?: '-';
+        $deadline = $app->sla_deadline ? BusinessDayCalculator::formatId(Carbon::parse($app->sla_deadline)) : '-';
+        $msg = "Tugas Baru: Anda ditugaskan melakukan verifikasi lapangan #{$app->application_no} di {$alamat}. Batas waktu: {$deadline}.";
 
         return $this->send($phone, $msg, $app, 'field_assigned', $officer?->id);
     }
 
+    /**
+     * NOTIF-WRG-004: Penerbitan Ketetapan SKRD/SKPD & Kode Billing Bayar
+     */
     public function notifyBillingIssued(ServiceApplication $app, ?string $dueDate = null): bool
     {
         $phone = $this->resolveRecipient($app);
@@ -176,12 +212,49 @@ class ServiceApplicationNotifier
             return false;
         }
 
-        $due = $dueDate ?: '-';
-        $msg = "Kabar baik! Permohonan reklame Anda (#{$app->application_no}) telah disetujui. "
-             . "SKPD dan kode bayar telah diterbitkan. Silakan buka aplikasi M-PAD dan lakukan "
-             . "pembayaran sebelum {$due} agar reklame dapat ditayangkan secara legal.";
+        $due = $dueDate ?: Carbon::now(self::TZ)->addDays(30)->format('d/m/Y');
+        $nama = $app->contact_name ?: optional($app->applicant)->name ?: 'Wajib Pajak';
+        $nominal = data_get($app->payload, 'nominal') ?: data_get($app->payload, 'total_retribusi') ?: 0;
 
+        try {
+            $res = $this->notif->notifyBillingIssued(
+                phone: $phone,
+                namaWarga: $nama,
+                nomorSkrd: $app->application_no,
+                namaLayanan: $app->retributionType?->name ?: $app->service_type ?: 'Layanan M-PAD',
+                nominal: $nominal,
+                tanggalJatuhTempo: $due,
+                user: $app->applicant,
+                refId: $app->id,
+                async: false
+            );
+            return (bool)($res['success'] ?? false);
+        } catch (\Throwable $e) {
+            Log::warning('ServiceApplicationNotifier: notifyBillingIssued fallback', ['error' => $e->getMessage()]);
+        }
+
+        $msg = "Tagihan Anda (#{$app->application_no}) telah disetujui. SKRD dan kode bayar telah terbit. Silakan lakukan pembayaran sebelum {$due}.";
         return $this->send($phone, $msg, $app, 'billing_issued');
+    }
+
+    /**
+     * NOTIF-WRG-003: Instruksi Perbaikan / Revisi Berkas Permohonan
+     */
+    public function notifyRevision(ServiceApplication $app, string $catatanVerifikator, ?string $catatanSingkat = null): bool
+    {
+        try {
+            $res = $this->notif->notifyApplicationRevision($app, $catatanVerifikator, $catatanSingkat, async: false);
+            return (bool)($res['success'] ?? false);
+        } catch (\Throwable $e) {
+            Log::warning('ServiceApplicationNotifier: notifyRevision fallback', ['error' => $e->getMessage()]);
+            $phone = $this->resolveRecipient($app);
+            if (!$phone) {
+                return false;
+            }
+            $nama = $app->contact_name ?: optional($app->applicant)->name ?: 'Pemohon';
+            $msg = "Permohonan #{$app->application_no} memerlukan perbaikan: {$catatanVerifikator}. Segera unggah revisi di aplikasi M-PAD.";
+            return $this->send($phone, $msg, $app, 'revision_needed');
+        }
     }
 
     public function notifyStatusChange(ServiceApplication $app, string $toStatus, ?string $extra = null): bool
@@ -201,7 +274,7 @@ class ServiceApplicationNotifier
     }
 
     // ---------------------------------------------------------------------
-    // Notifikasi ke pihak internal
+    // Notifikasi ke pihak internal & Pejabat OPD
     // ---------------------------------------------------------------------
 
     public function notifyPtspNewApplication(ServiceApplication $app, ?string $ptspPhone = null): bool
@@ -221,6 +294,9 @@ class ServiceApplicationNotifier
         return $this->send($phone, $msg, $app, 'ptsp_new');
     }
 
+    /**
+     * NOTIF-ADM-001: Peringatan Dini Batas Waktu Verifikasi Berkas (SLA Jam ke-18)
+     */
     public function notifySlaReminder(ServiceApplication $app, ?string $phone = null): bool
     {
         $target = self::normalizePhone($phone)
@@ -229,12 +305,29 @@ class ServiceApplicationNotifier
             return false;
         }
 
-        $msg = "Pengingat: Permohonan Reklame #{$app->application_no} tersisa 4 jam sebelum "
-             . "batas SLA. Segera selesaikan verifikasi.";
+        try {
+            $res = $this->notif->notifySlaWarning18h(
+                opdPhone: $target,
+                namaOpd: 'OPD Pengampu Teknis',
+                nomorBerkas: $app->application_no,
+                namaPemohon: $app->contact_name ?: optional($app->applicant)->name ?: 'Wajib Pajak',
+                namaLayanan: $app->retributionType?->name ?: $app->service_type ?: 'Layanan M-PAD',
+                verifikatorUser: $app->officer,
+                appId: $app->id,
+                async: false
+            );
+            return (bool)($res['success'] ?? false);
+        } catch (\Throwable $e) {
+            Log::warning('ServiceApplicationNotifier: notifySlaReminder fallback', ['error' => $e->getMessage()]);
+        }
 
+        $msg = "Pengingat: Permohonan Reklame #{$app->application_no} mendekati batas SLA. Segera selesaikan verifikasi.";
         return $this->send($target, $msg, $app, 'sla_reminder');
     }
 
+    /**
+     * NOTIF-ADM-002: Eskalasi Kritis Pelanggaran SLA (Jam ke-23)
+     */
     public function notifySlaBreached(ServiceApplication $app, ?string $kabidPhone = null): bool
     {
         $target = self::normalizePhone($kabidPhone);
@@ -242,9 +335,22 @@ class ServiceApplicationNotifier
             return false;
         }
 
-        $msg = "Peringatan: Permohonan Reklame #{$app->application_no} telah melewati batas "
-             . "waktu SLA. Mohon disposisi segera.";
+        try {
+            $res = $this->notif->notifySlaCritical23h(
+                leaderPhone: $target,
+                namaOpd: 'OPD Pengampu / Bapenda',
+                nomorBerkas: $app->application_no,
+                namaPemohon: $app->contact_name ?: optional($app->applicant)->name ?: 'Wajib Pajak',
+                leaderUser: null,
+                appId: $app->id,
+                async: false
+            );
+            return (bool)($res['success'] ?? false);
+        } catch (\Throwable $e) {
+            Log::warning('ServiceApplicationNotifier: notifySlaBreached fallback', ['error' => $e->getMessage()]);
+        }
 
+        $msg = "Peringatan: Permohonan Reklame #{$app->application_no} telah melewati batas waktu SLA. Mohon disposisi segera.";
         return $this->send($target, $msg, $app, 'sla_breached');
     }
 }

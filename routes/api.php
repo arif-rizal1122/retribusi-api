@@ -981,6 +981,9 @@ Route::middleware('auth:sanctum')->prefix('corrections')->group(function () {
 Route::post('/auto-deduct/webhook', [AutoDeductWebhookController::class, 'handle'])
     ->middleware('auto_deduct_access:webhook');
 
+// WhatsApp Gateway Two-Way Interactive Webhook
+Route::post('/wa/webhook', [\App\Http\Controllers\Api\V1\WaWebhookController::class, 'handle']);
+
 // ------------------------------------------------------------------------
 // MODUL TEMPAT PELELANGAN IKAN (TPI) & DINAS PERIKANAN (Perda 1/2024)
 // Rujukan: 01_Dokumen_Arsitektur_Teknis_dan_Roadmap_TPI_MPAD.pdf & Dokumen (172/173)

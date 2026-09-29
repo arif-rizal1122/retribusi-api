@@ -81,6 +81,23 @@ class WaGatewayService
                      . "Sistem M-PAD Badan Pendapatan Daerah Kota Baubau.";
 
             $sent = $this->sendMessage($phone, $message, 'high');
+
+            try {
+                \App\Models\NotificationLog::create([
+                    'phone' => $phone,
+                    'channel' => 'whatsapp',
+                    'type' => 'NOTIF-WRG-001',
+                    'template_code' => 'NOTIF-WRG-001',
+                    'reference_type' => 'auth_otp',
+                    'message_preview' => mb_substr($message, 0, 500),
+                    'status' => $sent ? 'success' : 'failed',
+                    'sent_at' => $sent ? now() : null,
+                    'delivered_at' => $sent ? now() : null,
+                ]);
+            } catch (\Throwable $logEx) {
+                Log::warning('WaGatewayService: Failed to log OTP to notification_logs: '.$logEx->getMessage());
+            }
+
             if (! $sent && app()->environment('local', 'testing')) {
                 Log::info("[DEV WA OTP] Nomor: {$phone} | Kode OTP: {$otp}");
 

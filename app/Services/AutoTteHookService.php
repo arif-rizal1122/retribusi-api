@@ -75,6 +75,31 @@ class AutoTteHookService
             );
 
             Log::info("AutoTteHook: Bill {$bill->bill_number} automatically sealed as {$docType} ber-TTE: {$signedDoc->document_number}");
+
+            // Trigger NOTIF-WRG-006 (Bukti Lunas Sah e-SSPD / Segel Elektronik BSrE)
+            try {
+                $phone = $bill->taxpayer?->phone;
+                if ($phone) {
+                    $officialNtpd = $ntpd ?? ('NTPD-'.date('Ymd').'-'.$bill->id);
+                    $notifService = app(NotificationService::class);
+                    $notifService->notifyPaymentSuccess(
+                        phone: $phone,
+                        namaWarga: $bill->taxpayer?->name ?: 'Wajib Pajak',
+                        ntpd: $officialNtpd,
+                        nomorSkrd: $bill->bill_number ?: (string)$bill->id,
+                        namaLayanan: $bill->retributionType?->name ?: ($bill->taxObject?->name ?: 'Layanan M-PAD'),
+                        nominal: $bill->total_amount,
+                        waktuBayar: now()->timezone('Asia/Makassar')->format('d/m/Y H:i'),
+                        namaChannelBank: $paymentMethod,
+                        user: null,
+                        paymentId: $bill->id,
+                        async: false
+                    );
+                }
+            } catch (\Throwable $notifEx) {
+                Log::warning("AutoTteHook: Failed to send NOTIF-WRG-006: " . $notifEx->getMessage());
+            }
+
             return $signedDoc;
         } catch (\Throwable $e) {
             Log::error("AutoTteHook Exception for Bill {$bill->id}: " . $e->getMessage(), [

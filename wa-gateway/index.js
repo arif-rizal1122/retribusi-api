@@ -90,6 +90,45 @@ async function connectToWhatsApp() {
 
         sock.ev.on('creds.update', saveCreds);
 
+        // Two-Way Interactive WhatsApp Service: Listen to incoming messages
+        sock.ev.on('messages.upsert', async ({ messages, type }) => {
+            if (type !== 'notify') return;
+
+            for (const msg of messages) {
+                if (!msg.message || msg.key.fromMe) continue;
+                const remoteJid = msg.key.remoteJid || '';
+                if (remoteJid.endsWith('@g.us') || remoteJid === 'status@broadcast') continue;
+
+                const text = msg.message.conversation 
+                    || msg.message.extendedTextMessage?.text 
+                    || msg.message.imageMessage?.caption 
+                    || '';
+
+                if (!text.trim()) continue;
+
+                const phone = remoteJid.split('@')[0];
+                console.log(`[WA-GATEWAY] Incoming message from +${phone}: "${text}"`);
+
+                // Forward to Laravel M-PAD Webhook
+                try {
+                    const webhookUrl = process.env.LARAVEL_WEBHOOK_URL || 'http://retribusi-api.test/api/wa/webhook';
+                    const response = await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            from: remoteJid,
+                            phone,
+                            message: text
+                        })
+                    });
+                    const resJson = await response.json();
+                    console.log(`[WA-GATEWAY] Webhook auto-reply result:`, resJson.success ? 'Success' : 'Ignored/Failed');
+                } catch (webhookErr) {
+                    console.warn(`[WA-GATEWAY] Failed forwarding to webhook:`, webhookErr.message);
+                }
+            }
+        });
+
     } catch (error) {
         console.error('[WA-GATEWAY] Error in connectToWhatsApp:', error);
         connectionState = 'DISCONNECTED';
