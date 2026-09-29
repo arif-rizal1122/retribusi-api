@@ -283,19 +283,23 @@ class OfficialDelegationService
             'kasubid_penagihan_wil1', 'kasubid_penagihan_wil2',
         ];
 
+        // ⚠️ JANGAN pakai ->select('id','name','role','opd_id') di sini.
+        // TaxDomainHelper::getDomain() membaca kolom `metadata` untuk menentukan
+        // wilayah. Bila kolom itu tidak ikut di-select, pembacaan gagal senyap
+        // dan SEMUA kandidat dilaporkan berdomain 'all' -- akibatnya Kabid
+        // Wilayah II sendiri tertulis "(beda wilayah)" di formulir.
         $q = User::whereIn('role', $peranBidang)
             ->where('opd_id', 5)
-                           ->where('status', '!=', 'inactive')
-            ->select('id', 'name', 'role', 'opd_id');
+            ->where('status', '!=', 'inactive');
 
-        return $q->get()->map(function ($u) use ($domain) {
-            $d = \App\Support\TaxDomainHelper::getDomain($u) ?: 'SEMUA';
+        return $q->get(['id', 'name', 'role', 'opd_id', 'metadata'])->map(function ($u) use ($domain) {
+            $d = \App\Support\TaxDomainHelper::getDomain($u) ?: 'all';
             return [
                 'id'     => $u->id,
                 'nama'   => $u->name,
                 'role'   => $u->role,
                 'domain' => $d,
-                'cocok'  => ! $domain || $d === 'SEMUA' || $d === $domain,
+                'cocok'  => ! $domain || $d === 'all' || $d === $domain,
             ];
         })->all();
     }
