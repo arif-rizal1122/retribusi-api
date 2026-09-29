@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SyncBpnTaxpayerAssetsJob;
 use App\Models\Taxpayer;
 use App\Models\User;
 use App\Services\CloudinaryService;
+use App\Services\DukcapilNikService;
 use App\Support\RoleResolver;
 use Illuminate\Http\Request;
 
@@ -49,6 +51,7 @@ class MeController extends Controller
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
+            'nik' => 'nullable|string|max:20',
             'avatar' => 'nullable|image|max:2048',
             'avatar_url' => 'nullable|string|max:1000',
             'surat_penugasan' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
@@ -80,6 +83,52 @@ class MeController extends Controller
         }
         if ($request->has('longitude')) {
             $user->longitude = $request->longitude;
+        }
+
+        // NIK update & validation for Taxpayers
+        if ($isTaxpayer && $request->has('nik')) {
+            $rawNik = trim((string) $request->nik);
+            if ($rawNik !== '' && $rawNik !== (string) $user->nik) {
+                $dukcapilService = app(DukcapilNikService::class);
+                if (! $dukcapilService->validateFormat($rawNik)) {
+                    return response()->json([
+                        'message' => 'Format NIK tidak valid. Pastikan 16 digit sesuai KTP elektronik.',
+                        'errors' => ['nik' => ['Format NIK tidak valid. Pastikan 16 digit sesuai KTP elektronik.']],
+                    ], 422);
+                }
+
+                $nikExists = Taxpayer::where('nik', $rawNik)
+                    ->where('id', '!=', $user->id)
+                    ->exists();
+
+                if ($nikExists) {
+                    return response()->json([
+                        'message' => 'NIK sudah digunakan oleh akun warga lain.',
+                        'errors' => ['nik' => ['NIK sudah terdaftar pada akun lain.']],
+                    ], 422);
+                }
+
+                if ($dukcapilService->available()) {
+                    $dukcapil = $dukcapilService->validate($rawNik, $user->name);
+                    if (($dukcapil['valid'] ?? false) !== true) {
+                        return response()->json([
+                            'message' => 'NIK tidak valid menurut Dukcapil.',
+                            'errors' => ['nik' => [$dukcapil['reason'] ?? 'NIK tidak valid menurut Dukcapil.']],
+                        ], 422);
+                    }
+                    $user->nik_verified_source = 'dukcapil';
+                } else {
+                    $user->nik_verified_source = 'local';
+                }
+
+                $user->nik = $rawNik;
+
+                try {
+                    SyncBpnTaxpayerAssetsJob::dispatch($user);
+                } catch (\Throwable $e) {
+                    \Log::warning('SyncBpnTaxpayerAssetsJob error on NIK update: '.$e->getMessage());
+                }
+            }
         }
 
         // Email update (with unique check only if email changed)
@@ -124,6 +173,9 @@ class MeController extends Controller
         // Handle Avatar URL directly (from decoupled upload)
         if ($request->filled('avatar_url')) {
             $metadata['avatar_url'] = $request->avatar_url;
+            if ($isTaxpayer) {
+                $user->avatar_url = $request->avatar_url;
+            }
         }
 
         // Handle Avatar/Photo Upload (multipart)
@@ -134,6 +186,9 @@ class MeController extends Controller
                 $folder
             );
             $metadata['avatar_url'] = $avatarUrl;
+            if ($isTaxpayer) {
+                $user->avatar_url = $avatarUrl;
+            }
         }
 
         // Handle Surat Penugasan Upload

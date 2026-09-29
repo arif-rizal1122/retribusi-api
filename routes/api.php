@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\H2h\BpdWebhookController;
 use App\Http\Controllers\Api\MblbVehicleController;
 use App\Http\Controllers\Api\MediaProxyController;
 use App\Http\Controllers\Api\Merchant\KalkulatorBisnisController;
+use App\Http\Controllers\Api\PbjtParkingDeclarationController;
 use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\SimpadKoneksiController;
 use App\Http\Controllers\Api\TpiTransactionController;
@@ -16,8 +17,6 @@ use App\Http\Controllers\Api\V1\Admin\WaGatewayController;
 use App\Http\Controllers\Api\V1\Bank\BankH2HController;
 use App\Http\Controllers\Api\V1\BidangPajakController;
 use App\Http\Controllers\Api\V1\DelegasiPejabatController;
-use App\Http\Controllers\Api\V1\KabidPerObjekController;
-use App\Http\Controllers\Api\V1\PekerjaanLapanganController;
 use App\Http\Controllers\Api\V1\Dishub\HarborProxyGtController;
 use App\Http\Controllers\Api\V1\Dishub\LakologouManifestController;
 use App\Http\Controllers\Api\V1\Disperindag\MarketController;
@@ -26,7 +25,9 @@ use App\Http\Controllers\Api\V1\Dlh\DlhMarketRemittanceController;
 use App\Http\Controllers\Api\V1\Dlh\DlhReportController;
 use App\Http\Controllers\Api\V1\Dlh\DlhSpatialMonitoringController;
 use App\Http\Controllers\Api\V1\Dlh\DlhTrashBillingController;
+use App\Http\Controllers\Api\V1\KabidPerObjekController;
 use App\Http\Controllers\Api\V1\Payment\CitizenPaymentRequestController;
+use App\Http\Controllers\Api\V1\PekerjaanLapanganController;
 use App\Http\Controllers\Api\V1\Public\PublicTaxObjectBillController;
 use App\Http\Controllers\Api\V1\Pupr\AssetCalendarController;
 use App\Http\Controllers\Api\V1\Pupr\InspectionController;
@@ -41,6 +42,7 @@ use App\Http\Controllers\BillboardAuditController;
 use App\Http\Controllers\BillController;
 use App\Http\Controllers\BusinessUnitController;
 use App\Http\Controllers\CitizenAssetController;
+use App\Http\Controllers\CitizenPinController;
 use App\Http\Controllers\CitizenServiceController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\CorrectionController;
@@ -50,6 +52,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\H2HBphtbController;
 use App\Http\Controllers\H2HBpnController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\MblbReportController;
 use App\Http\Controllers\MeController;
 use App\Http\Controllers\MonthlyReportController;
 use App\Http\Controllers\MutationController;
@@ -57,6 +60,7 @@ use App\Http\Controllers\NibNopMappingController;
 use App\Http\Controllers\NibPublicController;
 use App\Http\Controllers\NikLookupController;
 use App\Http\Controllers\NotarisApprovalController;
+use App\Http\Controllers\ObjectNumberController;
 use App\Http\Controllers\OpdController;
 use App\Http\Controllers\OpdSectorDataController;
 use App\Http\Controllers\ParkingController;
@@ -79,6 +83,7 @@ use App\Http\Controllers\PtspDashboardController;
 use App\Http\Controllers\PublicRegistrationController;
 use App\Http\Controllers\PublicVerificationController;
 use App\Http\Controllers\QrController;
+use App\Http\Controllers\QrObjekRetribusiController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RetributionClassificationController;
 use App\Http\Controllers\RetributionRateController;
@@ -276,6 +281,12 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::match(['put', 'post'], '/user/profile', [MeController::class, 'update']);
     Route::match(['put', 'post'], '/profile', [MeController::class, 'update']);
+    Route::post('/citizen/link-phone/request-otp', [AuthController::class, 'requestLinkPhoneOtp']);
+    Route::post('/citizen/link-phone/verify-otp', [AuthController::class, 'verifyLinkPhoneOtp']);
+    Route::post('/citizen/pin/setup', [CitizenPinController::class, 'setup']);
+    Route::post('/citizen/pin/verify', [CitizenPinController::class, 'verify']);
+    Route::post('/citizen/pin/request-reset-otp', [CitizenPinController::class, 'requestResetOtp']);
+    Route::post('/citizen/pin/reset', [CitizenPinController::class, 'resetWithOtp']);
     Route::post('/user/password', [AuthController::class, 'changePassword']);
     Route::put('/user/location', [AuthController::class, 'updateLocation']);
     Route::post('/upload', [UploadController::class, 'uploadImage']);
@@ -318,12 +329,12 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
 
         // SPTPD PBJT Parkir — Pelaporan Bulanan Warga & Antrean Verifikasi Bapenda
         // Memakai monthly_reports existing (SPTPD universal) + parking_sessions untuk tapping box.
-        Route::post('/declarations', [\App\Http\Controllers\Api\PbjtParkingDeclarationController::class, 'store']);
-        Route::get('/declarations', [\App\Http\Controllers\Api\PbjtParkingDeclarationController::class, 'history']);
-        Route::post('/declarations/fetch-tapbox', [\App\Http\Controllers\Api\PbjtParkingDeclarationController::class, 'fetchTapbox']);
-        Route::get('/admin/declarations', [\App\Http\Controllers\Api\PbjtParkingDeclarationController::class, 'queue']);
-        Route::post('/admin/declarations/{id}/approve', [\App\Http\Controllers\Api\PbjtParkingDeclarationController::class, 'approve']);
-        Route::post('/admin/declarations/{id}/reject', [\App\Http\Controllers\Api\PbjtParkingDeclarationController::class, 'reject']);
+        Route::post('/declarations', [PbjtParkingDeclarationController::class, 'store']);
+        Route::get('/declarations', [PbjtParkingDeclarationController::class, 'history']);
+        Route::post('/declarations/fetch-tapbox', [PbjtParkingDeclarationController::class, 'fetchTapbox']);
+        Route::get('/admin/declarations', [PbjtParkingDeclarationController::class, 'queue']);
+        Route::post('/admin/declarations/{id}/approve', [PbjtParkingDeclarationController::class, 'approve']);
+        Route::post('/admin/declarations/{id}/reject', [PbjtParkingDeclarationController::class, 'reject']);
 
         // Kawasan Terpadu Jembatan Batu & Proxy GT Kepelabuhanan (Perda 1/2024)
         Route::get('/kios-jembatan-batu', [ParkingController::class, 'kiosJembatanBatu']);
@@ -996,25 +1007,25 @@ Route::post('/admin/deploy-hook', [DeployHookController::class, 'handle']);
 // (blok aditif — tidak mengubah route yang sudah ada)
 // ------------------------------------------------------------------------
 Route::prefix('object-numbers')->group(function () {
-    Route::get('/sektor', [\App\Http\Controllers\ObjectNumberController::class, 'sektor']);
+    Route::get('/sektor', [ObjectNumberController::class, 'sektor']);
 
-    Route::post('/legacy-lookup', [\App\Http\Controllers\ObjectNumberController::class, 'legacyLookup'])
+    Route::post('/legacy-lookup', [ObjectNumberController::class, 'legacyLookup'])
         ->middleware('throttle:30,1');
 
-    Route::get('/kandidat-klaim', [\App\Http\Controllers\ObjectNumberController::class, 'kandidatKlaim'])
+    Route::get('/kandidat-klaim', [ObjectNumberController::class, 'kandidatKlaim'])
         ->middleware('throttle:30,1');
 
-    Route::get('/lookup', [\App\Http\Controllers\ObjectNumberController::class, 'lookup'])
+    Route::get('/lookup', [ObjectNumberController::class, 'lookup'])
         ->middleware('throttle:60,1');
 
-    Route::post('/claim', [\App\Http\Controllers\ObjectNumberController::class, 'claim'])
+    Route::post('/claim', [ObjectNumberController::class, 'claim'])
         ->middleware('auth:sanctum');
 
     // Kartu NOPD/NORD (PDF) — WAJIB di atas route {nomor}, kalau tidak akan tertelan.
-    Route::get('/{nomor}/kartu', [\App\Http\Controllers\ObjectNumberController::class, 'kartu'])
+    Route::get('/{nomor}/kartu', [ObjectNumberController::class, 'kartu'])
         ->where('nomor', '[0-9.]+');
 
-    Route::get('/{nomor}', [\App\Http\Controllers\ObjectNumberController::class, 'show'])
+    Route::get('/{nomor}', [ObjectNumberController::class, 'show'])
         ->where('nomor', '[0-9.]+');
 });
 // ------------------------------------------------------------------------
@@ -1176,28 +1187,28 @@ Route::prefix('bidang-pajak')->middleware('auth:sanctum')->group(function () {
 // PAJAK MBLB (sektor NOPD 09) — laporan ringkas + triangulasi ritase pos jaga
 // ------------------------------------------------------------------------
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/mblb/kuari-saya', [App\Http\Controllers\MblbReportController::class, 'kuariSaya']);
-    Route::post('/mblb/hitung', [App\Http\Controllers\MblbReportController::class, 'hitung']);
+    Route::get('/mblb/kuari-saya', [MblbReportController::class, 'kuariSaya']);
+    Route::post('/mblb/hitung', [MblbReportController::class, 'hitung']);
 });
-Route::get('/public/mblb-kendaraan', [App\Http\Controllers\MblbReportController::class, 'kendaraan']);
+Route::get('/public/mblb-kendaraan', [MblbReportController::class, 'kendaraan']);
 
 // ------------------------------------------------------------------------
 // IDENTITAS FISIK BER-QR objek retribusi daerah (NORD)
 // Stiker ditempel di kios pasar / pos parkir / persil sampah / lapak TPI
 // ------------------------------------------------------------------------
-Route::get('/public/qr-objek/{token}', [App\Http\Controllers\QrObjekRetribusiController::class, 'cari'])
+Route::get('/public/qr-objek/{token}', [QrObjekRetribusiController::class, 'cari'])
     ->where('token', '[a-z0-9]{8,32}');
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/qr-objek/{id}', [App\Http\Controllers\QrObjekRetribusiController::class, 'tampil'])->whereNumber('id');
-    Route::post('/qr-objek/{id}/pastikan', [App\Http\Controllers\QrObjekRetribusiController::class, 'pastikan'])->whereNumber('id');
+    Route::get('/qr-objek/{id}', [QrObjekRetribusiController::class, 'tampil'])->whereNumber('id');
+    Route::post('/qr-objek/{id}/pastikan', [QrObjekRetribusiController::class, 'pastikan'])->whereNumber('id');
 });
 
 // ------------------------------------------------------------------------
 // AUTO-MATCH objek lama <-> akun warga (Legacy 9Pajak Bridge)
 // Dipakai setelah login: tawarkan klaim bila ada objek atas nama warga.
 // ------------------------------------------------------------------------
-Route::middleware("auth:sanctum")->group(function () {
-    Route::get("/object-numbers/auto-match", [App\Http\Controllers\ObjectNumberController::class, "autoMatch"]);
-    Route::get("/object-numbers/auto-match/{taxpayerId}", [App\Http\Controllers\ObjectNumberController::class, "autoMatchUntuk"])
-        ->whereNumber("taxpayerId");
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/object-numbers/auto-match', [ObjectNumberController::class, 'autoMatch']);
+    Route::get('/object-numbers/auto-match/{taxpayerId}', [ObjectNumberController::class, 'autoMatchUntuk'])
+        ->whereNumber('taxpayerId');
 });

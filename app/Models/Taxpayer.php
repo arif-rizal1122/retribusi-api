@@ -2,22 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\RetributionTypeScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
 class Taxpayer extends Authenticatable
 {
-    use HasFactory, HasApiTokens;
+    use HasApiTokens, HasFactory;
 
     protected static function booted()
     {
-        static::addGlobalScope(new \App\Models\Scopes\RetributionTypeScope);
+        static::addGlobalScope(new RetributionTypeScope);
 
         static::creating(function ($taxpayer) {
             if (empty($taxpayer->npwpd)) {
@@ -47,17 +45,29 @@ class Taxpayer extends Authenticatable
         'is_active',
         'metadata',
         'created_by',
-        'password'
+        'password',
     ];
 
     protected $hidden = [
         'password',
+        'pin_hash',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'metadata' => 'array',
+        'pin_set_at' => 'datetime',
+        'pin_locked_until' => 'datetime',
     ];
+
+    protected $appends = [
+        'has_pin',
+    ];
+
+    public function getHasPinAttribute(): bool
+    {
+        return ! empty($this->pin_hash);
+    }
 
     /**
      * Get the OPD that owns this taxpayer
@@ -145,10 +155,6 @@ class Taxpayer extends Authenticatable
      * 1. If a taxpayer with the same NIK already exists, return their NPWPD.
      * 2. If a manual NPWPD is provided and unique, use it.
      * 3. Otherwise, auto-generate a unique NPWPD.
-     *
-     * @param string|null $nik
-     * @param string|null $manualNpwpd
-     * @return string
      */
     public static function resolveNpwpd(?string $nik, ?string $manualNpwpd = null): string
     {
@@ -167,7 +173,7 @@ class Taxpayer extends Authenticatable
 
         // 2. Use manual NPWPD if provided and unique
         if ($manualNpwpd) {
-            $isUnique = !static::withoutGlobalScopes()
+            $isUnique = ! static::withoutGlobalScopes()
                 ->where('npwpd', $manualNpwpd)
                 ->exists();
 
@@ -182,8 +188,6 @@ class Taxpayer extends Authenticatable
 
     /**
      * Generate a unique NPWPD with format P.YYYY.XXXXX
-     *
-     * @return string
      */
     public static function generateNpwpd(): string
     {
@@ -191,16 +195,17 @@ class Taxpayer extends Authenticatable
         $prefix = "P.{$year}.";
 
         $lastSequence = static::withoutGlobalScopes()
-            ->where('npwpd', 'like', $prefix . '%')
+            ->where('npwpd', 'like', $prefix.'%')
             ->pluck('npwpd')
             ->map(function ($npwpd) use ($prefix) {
                 $sequence = substr((string) $npwpd, strlen($prefix));
+
                 return ctype_digit($sequence) ? (int) $sequence : 0;
             })
             ->max() ?? 0;
 
         $nextSeq = $lastSequence + 1;
 
-        return $prefix . str_pad($nextSeq, 5, '0', STR_PAD_LEFT);
+        return $prefix.str_pad($nextSeq, 5, '0', STR_PAD_LEFT);
     }
 }

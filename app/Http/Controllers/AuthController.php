@@ -2,16 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Jobs\SyncBpnTaxpayerAssetsJob;
+use App\Models\H2hConnectorLog;
 use App\Models\Opd;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rules\Password;
-use Illuminate\Support\Facades\Cache;
-use App\Services\WaGatewayService;
+use App\Models\Taxpayer;
+use App\Models\User;
+use App\Services\CloudinaryService;
 use App\Services\DukcapilNikService;
+use App\Services\WaGatewayService;
+use App\Support\OpdAccess;
+use App\Support\RoleResolver;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
@@ -29,15 +35,15 @@ class AuthController extends Controller
             ->orWhere('nik', $request->email)
             ->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'Email/NIK atau password salah'
+                'message' => 'Email/NIK atau password salah',
             ], 401);
         }
 
         if ($user->status !== 'active') {
             return response()->json([
-                'message' => 'Akun Anda tidak aktif'
+                'message' => 'Akun Anda tidak aktif',
             ], 403);
         }
 
@@ -45,25 +51,25 @@ class AuthController extends Controller
         if ($user->role === 'opd' && $user->opd) {
             if ($user->opd->status !== 'approved') {
                 return response()->json([
-                    'message' => 'OPD Anda belum disetujui oleh admin'
+                    'message' => 'OPD Anda belum disetujui oleh admin',
                 ], 403);
             }
         }
 
         // Isi metadata role (role_code/opd_role/role_group) untuk deteksi role non-warga
         // (FE resolveDashboardRole membaca user.metadata.role_code / opd_role / role).
-        \App\Support\RoleResolver::persistToMetadata($user);
+        RoleResolver::persistToMetadata($user);
         $user->refresh();
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        \App\Support\RoleResolver::enrich($user);
+        RoleResolver::enrich($user);
 
         return response()->json([
             'user' => $user->load('opd'),
             'token' => $token,
             'token_type' => 'Bearer',
-            'access' => \App\Support\OpdAccess::for($user),
+            'access' => OpdAccess::for($user),
         ]);
     }
 
@@ -75,7 +81,7 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'message' => 'Logout berhasil'
+            'message' => 'Logout berhasil',
         ]);
     }
 
@@ -85,11 +91,11 @@ class AuthController extends Controller
     public function user(Request $request)
     {
         $user = $request->user();
-        \App\Support\RoleResolver::enrich($user);
+        RoleResolver::enrich($user);
 
         return response()->json([
             'user' => $user->load('opd'),
-            'access' => \App\Support\OpdAccess::for($user),
+            'access' => $user instanceof User ? OpdAccess::for($user) : null,
         ]);
     }
 
@@ -99,10 +105,10 @@ class AuthController extends Controller
     public function updateProfile(Request $request)
     {
         $user = $request->user();
-        
+
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:' . ($user instanceof \App\Models\User ? 'users' : 'taxpayers') . ',email,' . $user->id,
+            'email' => 'required|string|email|max:255|unique:'.($user instanceof User ? 'users' : 'taxpayers').',email,'.$user->id,
             'surat_penugasan' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
@@ -110,7 +116,7 @@ class AuthController extends Controller
 
         // Handle Surat Penugasan upload
         if ($request->hasFile('surat_penugasan')) {
-            $cloudinary = app(\App\Services\CloudinaryService::class);
+            $cloudinary = app(CloudinaryService::class);
             $url = $cloudinary->upload(
                 $request->file('surat_penugasan'),
                 'retribusi/surat_penugasan'
@@ -127,7 +133,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Profil berhasil diperbarui',
-            'user' => $user->fresh()->load('opd')
+            'user' => $user->fresh()->load('opd'),
         ]);
     }
 
@@ -143,18 +149,18 @@ class AuthController extends Controller
             'new_password' => ['required', 'string', 'confirmed', Password::min(8)],
         ]);
 
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (! Hash::check($request->current_password, $user->password)) {
             return response()->json([
-                'message' => 'Password saat ini tidak sesuai'
+                'message' => 'Password saat ini tidak sesuai',
             ], 422);
         }
 
         $user->update([
-            'password' => Hash::make($request->new_password)
+            'password' => Hash::make($request->new_password),
         ]);
 
         return response()->json([
-            'message' => 'Password berhasil diubah'
+            'message' => 'Password berhasil diubah',
         ]);
     }
 
@@ -169,7 +175,7 @@ class AuthController extends Controller
         ]);
 
         $user = $request->user();
-        if (!($user instanceof \App\Models\User)) {
+        if (! ($user instanceof User)) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -199,54 +205,54 @@ class AuthController extends Controller
         // akun (data warisan impor), warga selalu masuk sebagai akun pertama —
         // bukan akun miliknya, sehingga tagihannya tidak muncul. Sekarang nomor
         // ambigu ditolak dengan pesan yang mengarahkan.
-        $candidates = \App\Models\Taxpayer::where('phone', $request->phone)->get();
+        $candidates = Taxpayer::where('phone', $request->phone)->get();
 
         if ($candidates->isEmpty()) {
             return response()->json([
-                'message' => 'Nomor WhatsApp tidak terdaftar di sistem'
+                'message' => 'Nomor WhatsApp tidak terdaftar di sistem',
             ], 404);
         }
 
         if ($candidates->count() > 1) {
             // Kalau tepat SATU di antaranya yang jelas milik warga (punya email/NIK
             // lengkap + ada aktivitas tagihan), pakai itu. Sisanya data warisan.
-            $withEmail = $candidates->filter(fn ($t) => !empty($t->email));
+            $withEmail = $candidates->filter(fn ($t) => ! empty($t->email));
             if ($withEmail->count() === 1) {
                 $taxpayer = $withEmail->first();
             } else {
                 return response()->json([
                     'message' => 'Nomor WhatsApp ini terdaftar di lebih dari satu akun. '
-                        . 'Silakan hubungi petugas Bapenda untuk menggabungkan data Anda '
-                        . 'agar tagihan dapat ditampilkan dengan benar.'
+                        .'Silakan hubungi petugas Bapenda untuk menggabungkan data Anda '
+                        .'agar tagihan dapat ditampilkan dengan benar.',
                 ], 409);
             }
         } else {
             $taxpayer = $candidates->first();
         }
 
-        if (!$taxpayer->is_active) {
+        if (! $taxpayer->is_active) {
             return response()->json([
-                'message' => 'Akun Wajib Pajak tidak aktif'
+                'message' => 'Akun Wajib Pajak tidak aktif',
             ], 403);
         }
 
         // Generate 6-digit OTP
         $otp = (string) random_int(100000, 999999);
-        
+
         // Save OTP to Cache for 5 minutes
         Cache::put("otp_citizen_{$request->phone}", $otp, now()->addMinutes(5));
 
         // Send via WA
         $sent = $waGateway->sendOtp($request->phone, $otp);
 
-        if (!$sent) {
+        if (! $sent) {
             return response()->json([
-                'message' => 'Gagal mengirim OTP via WhatsApp. Pastikan nomor aktif.'
+                'message' => 'Gagal mengirim OTP via WhatsApp. Pastikan nomor aktif.',
             ], 500);
         }
 
         return response()->json([
-            'message' => 'OTP telah dikirim ke WhatsApp Anda'
+            'message' => 'OTP telah dikirim ke WhatsApp Anda',
         ]);
     }
 
@@ -265,31 +271,31 @@ class AuthController extends Controller
         // Bypass for demo account logic (1234567890123456)
         $isDemo = ($request->phone === '081234567890') && $request->otp === '123456';
 
-        if (!$isDemo && (!$cachedOtp || $cachedOtp !== $request->otp)) {
+        if (! $isDemo && (! $cachedOtp || $cachedOtp !== $request->otp)) {
             return response()->json([
-                'message' => 'Kode OTP salah atau telah kedaluwarsa'
+                'message' => 'Kode OTP salah atau telah kedaluwarsa',
             ], 401);
         }
 
         // Kunci yang sama seperti requestCitizenOtp: nomor ambigu tidak boleh
         // dipilih sembarangan dengan ->first(), harus persis satu akun.
-        $candidates = \App\Models\Taxpayer::where('phone', $request->phone)->get();
+        $candidates = Taxpayer::where('phone', $request->phone)->get();
 
         if ($candidates->isEmpty()) {
             return response()->json([
-                'message' => 'Nomor WhatsApp tidak terdaftar'
+                'message' => 'Nomor WhatsApp tidak terdaftar',
             ], 404);
         }
 
         if ($candidates->count() > 1) {
-            $withEmail = $candidates->filter(fn ($t) => !empty($t->email));
+            $withEmail = $candidates->filter(fn ($t) => ! empty($t->email));
             if ($withEmail->count() === 1) {
                 $taxpayer = $withEmail->first();
             } else {
                 return response()->json([
                     'message' => 'Nomor WhatsApp ini terdaftar di lebih dari satu akun. '
-                        . 'Silakan hubungi petugas Bapenda untuk menggabungkan data Anda '
-                        . 'agar tagihan dapat ditampilkan dengan benar.'
+                        .'Silakan hubungi petugas Bapenda untuk menggabungkan data Anda '
+                        .'agar tagihan dapat ditampilkan dengan benar.',
                 ], 409);
             }
         } else {
@@ -299,9 +305,9 @@ class AuthController extends Controller
         // Clear OTP after successful login
         Cache::forget("otp_citizen_{$request->phone}");
 
-        \App\Support\RoleResolver::persistToMetadata($taxpayer);
+        RoleResolver::persistToMetadata($taxpayer);
         $taxpayer->refresh();
-        \App\Support\RoleResolver::enrich($taxpayer);
+        RoleResolver::enrich($taxpayer);
 
         $token = $taxpayer->createToken('citizen_token')->plainTextToken;
 
@@ -321,33 +327,33 @@ class AuthController extends Controller
             'password' => 'required_if:method,email|string',
         ]);
 
-        $query = \App\Models\Taxpayer::query();
-        
+        $query = Taxpayer::query();
+
         if ($request->method === 'email') {
             $query->where('email', $request->identifier);
         } else {
             $query->where('nik', $request->identifier);
         }
-        
+
         $taxpayer = $query->first();
 
-        if (!$taxpayer) {
+        if (! $taxpayer) {
             return response()->json([
-                'message' => 'Akun tidak ditemukan'
+                'message' => 'Akun tidak ditemukan',
             ], 404);
         }
 
         if ($request->method === 'email') {
-            if (!$taxpayer->password || !Hash::check($request->password, $taxpayer->password)) {
+            if (! $taxpayer->password || ! Hash::check($request->password, $taxpayer->password)) {
                 return response()->json([
-                    'message' => 'Email atau password salah'
+                    'message' => 'Email atau password salah',
                 ], 401);
             }
         } else {
             // For NIK (IKD Dummy), require mother_name check
-            if (!$request->has('mother_name')) {
+            if (! $request->has('mother_name')) {
                 return response()->json([
-                    'message' => 'Nama Ibu Kandung wajib diisi untuk verifikasi NIK'
+                    'message' => 'Nama Ibu Kandung wajib diisi untuk verifikasi NIK',
                 ], 401);
             }
 
@@ -358,28 +364,28 @@ class AuthController extends Controller
             $storedMotherName = $metadata['mother_name'] ?? null;
             $cleanInput = strtolower(preg_replace('/\s+/', '', $request->mother_name));
             $cleanStored = $storedMotherName ? strtolower(preg_replace('/\s+/', '', $storedMotherName)) : '';
-            
-            if (!$storedMotherName || $cleanInput !== $cleanStored) {
+
+            if (! $storedMotherName || $cleanInput !== $cleanStored) {
                 return response()->json([
-                    'message' => 'Nama Ibu Kandung tidak cocok dengan data verifikasi'
+                    'message' => 'Nama Ibu Kandung tidak cocok dengan data verifikasi',
                 ], 401);
             }
         }
 
-        if (!$taxpayer->is_active) {
+        if (! $taxpayer->is_active) {
             return response()->json([
-                'message' => 'Akun Wajib Pajak tidak aktif'
+                'message' => 'Akun Wajib Pajak tidak aktif',
             ], 403);
         }
 
-        \App\Support\RoleResolver::persistToMetadata($taxpayer);
+        RoleResolver::persistToMetadata($taxpayer);
         $taxpayer->refresh();
-        \App\Support\RoleResolver::enrich($taxpayer);
+        RoleResolver::enrich($taxpayer);
 
         $token = $taxpayer->createToken('citizen_token')->plainTextToken;
 
         // Dispatch background job to sync BPN assets
-        \App\Jobs\SyncBpnTaxpayerAssetsJob::dispatch($taxpayer);
+        SyncBpnTaxpayerAssetsJob::dispatch($taxpayer);
 
         return response()->json([
             'user' => $taxpayer,
@@ -406,7 +412,7 @@ class AuthController extends Controller
             'sub_district' => 'nullable|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'mother_name' => 'nullable|string'
+            'mother_name' => 'nullable|string',
         ]);
 
         $metadata = [];
@@ -440,11 +446,11 @@ class AuthController extends Controller
                 Log::info('DUKCAPIL not configured, NIK validation skipped', [
                     'nik' => substr($request->nik, 0, 6).'****',
                 ]);
-                \App\Models\H2hConnectorLog::record('dukcapil', 'not_configured', null, 'DUKCAPIL_BASE_URL kosong — validasi NIK lokal hanya format', ['nik_prefix' => substr($request->nik, 0, 6).'****']);
+                H2hConnectorLog::record('dukcapil', 'not_configured', null, 'DUKCAPIL_BASE_URL kosong — validasi NIK lokal hanya format', ['nik_prefix' => substr($request->nik, 0, 6).'****']);
             }
         }
 
-        $taxpayer = \App\Models\Taxpayer::create([
+        $taxpayer = Taxpayer::create([
             'nik' => ! empty($request->nik) ? strip_tags($request->nik) : null,
             'name' => strip_tags($request->name),
             'email' => $request->email,
@@ -461,9 +467,9 @@ class AuthController extends Controller
             'nik_verified_source' => $nikVerifiedSource,
         ]);
 
-        \App\Support\RoleResolver::persistToMetadata($taxpayer);
+        RoleResolver::persistToMetadata($taxpayer);
         $taxpayer->refresh();
-        \App\Support\RoleResolver::enrich($taxpayer);
+        RoleResolver::enrich($taxpayer);
 
         $token = $taxpayer->createToken('citizen_token')->plainTextToken;
 
@@ -487,18 +493,18 @@ class AuthController extends Controller
 
         $taxpayer = $request->user();
 
-        if (!Hash::check($request->current_password, $taxpayer->password)) {
+        if (! Hash::check($request->current_password, $taxpayer->password)) {
             return response()->json([
-                'message' => 'Password saat ini tidak sesuai'
+                'message' => 'Password saat ini tidak sesuai',
             ], 422);
         }
 
         $taxpayer->update([
-            'password' => Hash::make($request->new_password)
+            'password' => Hash::make($request->new_password),
         ]);
 
         return response()->json([
-            'message' => 'Password berhasil diubah'
+            'message' => 'Password berhasil diubah',
         ]);
     }
 
@@ -517,25 +523,25 @@ class AuthController extends Controller
             'sk_dokumen' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
-        $cloudinary = app(\App\Services\CloudinaryService::class);
+        $cloudinary = app(CloudinaryService::class);
         $skUrl = $cloudinary->upload(
             $request->file('sk_dokumen'),
             'retribusi/notaris_sk'
         );
 
-        $user = \App\Models\User::create([
+        $user = User::create([
             'name' => strip_tags($request->name),
             'email' => strip_tags($request->email),
             'nik' => strip_tags($request->nik),
             'password' => Hash::make($request->password),
             'phone' => strip_tags($request->phone),
             'address' => strip_tags($request->address),
-            'role' => \App\Models\User::ROLE_NOTARIS,
+            'role' => User::ROLE_NOTARIS,
             'status' => 'pending', // Requires approval
             'metadata' => [
                 'sk_dokumen_url' => $skUrl,
-                'registered_at' => now()->toIso8601String()
-            ]
+                'registered_at' => now()->toIso8601String(),
+            ],
         ]);
 
         return response()->json([
@@ -544,8 +550,8 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'status' => $user->status,
-                'role' => $user->role
-            ]
+                'role' => $user->role,
+            ],
         ], 201);
     }
 
@@ -578,18 +584,18 @@ class AuthController extends Controller
         $client = new \Google_Client(['client_id' => $clientId]);
         $payload = $client->verifyIdToken($request->id_token);
 
-        if (!$payload) {
+        if (! $payload) {
             return response()->json([
                 'message' => 'Token Google tidak valid atau telah kedaluwarsa.',
             ], 401);
         }
 
         $googleId = $payload['sub'];
-        $email    = $payload['email'] ?? null;
-        $name     = $payload['name'] ?? 'Warga M-PAD';
-        $avatar   = $payload['picture'] ?? null;
+        $email = $payload['email'] ?? null;
+        $name = $payload['name'] ?? 'Warga M-PAD';
+        $avatar = $payload['picture'] ?? null;
 
-        if (!$email) {
+        if (! $email) {
             return response()->json([
                 'message' => 'Akun Google tidak menyertakan alamat email.',
             ], 422);
@@ -599,20 +605,20 @@ class AuthController extends Controller
         if (User::where('email', $email)->exists()) {
             return response()->json([
                 'message' => 'Email ini terdaftar sebagai akun internal Pemkot. '
-                    . 'Silakan gunakan portal login resmi.',
+                    .'Silakan gunakan portal login resmi.',
             ], 403);
         }
 
         return DB::transaction(function () use ($googleId, $email, $name, $avatar) {
             // Cari taxpayer existing by google_id ATAU email
-            $taxpayer = \App\Models\Taxpayer::where('google_id', $googleId)
+            $taxpayer = Taxpayer::where('google_id', $googleId)
                 ->orWhere('email', $email)
                 ->first();
 
             if ($taxpayer) {
                 // Link Google ID jika belum terpasang
                 $updates = [];
-                if (!$taxpayer->google_id) {
+                if (! $taxpayer->google_id) {
                     $updates['google_id'] = $googleId;
                 }
                 if ($avatar && $taxpayer->avatar_url !== $avatar) {
@@ -623,7 +629,7 @@ class AuthController extends Controller
                     $meta['avatar_url'] = $avatar;
                     $updates['metadata'] = $meta;
                 }
-                if (!empty($updates)) {
+                if (! empty($updates)) {
                     $taxpayer->update($updates);
                 }
             } else {
@@ -633,39 +639,136 @@ class AuthController extends Controller
                 if ($avatar) {
                     $metadata['avatar_url'] = $avatar;
                 }
-                $taxpayer = \App\Models\Taxpayer::create([
-                    'name'       => strip_tags($name),
-                    'email'      => $email,
-                    'google_id'  => $googleId,
+                $taxpayer = Taxpayer::create([
+                    'name' => strip_tags($name),
+                    'email' => $email,
+                    'google_id' => $googleId,
                     'avatar_url' => $avatar,
-                    'metadata'   => $metadata,
-                    'is_active'  => true,
+                    'metadata' => $metadata,
+                    'is_active' => true,
                     // password null → tidak bisa login via email/password
                     // nik null → Tier 1, belum terverifikasi yuridis
                 ]);
             }
 
-            if (!$taxpayer->is_active) {
+            if (! $taxpayer->is_active) {
                 return response()->json([
                     'message' => 'Akun Wajib Pajak tidak aktif',
                 ], 403);
             }
 
-            \App\Support\RoleResolver::persistToMetadata($taxpayer);
+            RoleResolver::persistToMetadata($taxpayer);
             $taxpayer->refresh();
-            \App\Support\RoleResolver::enrich($taxpayer);
+            RoleResolver::enrich($taxpayer);
 
             $token = $taxpayer->createToken('citizen_token')->plainTextToken;
 
             // Background sync BPN assets (existing pattern)
-            \App\Jobs\SyncBpnTaxpayerAssetsJob::dispatch($taxpayer);
+            SyncBpnTaxpayerAssetsJob::dispatch($taxpayer);
 
             return response()->json([
-                'user'       => $taxpayer,
-                'token'      => $token,
+                'user' => $taxpayer,
+                'token' => $token,
                 'token_type' => 'Bearer',
-                'message'    => 'Login berhasil (Google)',
+                'message' => 'Login berhasil (Google)',
             ]);
         });
+    }
+
+    /**
+     * Request OTP to link/verify WhatsApp phone number for an authenticated citizen.
+     */
+    public function requestLinkPhoneOtp(Request $request, WaGatewayService $waGateway)
+    {
+        $request->validate([
+            'phone' => 'required|string|min:9|max:20',
+        ]);
+
+        $user = $request->user();
+        if (! $user instanceof Taxpayer) {
+            return response()->json(['message' => 'Hanya untuk akun wajib pajak/warga.'], 403);
+        }
+
+        $cleanPhone = preg_replace('/[^0-9]/', '', (string) $request->phone);
+        if (str_starts_with($cleanPhone, '0')) {
+            $cleanPhone = '62'.substr($cleanPhone, 1);
+        }
+
+        // Cek jika nomor ini sudah dipakai oleh akun taxpayer lain yang aktif
+        $duplicate = Taxpayer::where('phone', $cleanPhone)
+            ->where('id', '!=', $user->id)
+            ->where('is_active', true)
+            ->exists();
+
+        if ($duplicate) {
+            return response()->json([
+                'message' => 'Nomor WhatsApp ini sudah terdaftar pada akun warga lain.',
+                'errors' => ['phone' => ['Nomor WhatsApp ini sudah terdaftar pada akun warga lain.']],
+            ], 422);
+        }
+
+        $otp = (string) random_int(100000, 999999);
+        Cache::put("otp_link_phone_{$user->id}_{$cleanPhone}", $otp, now()->addMinutes(5));
+
+        $sent = $waGateway->sendOtp($cleanPhone, $otp);
+        if (! $sent) {
+            return response()->json([
+                'message' => 'Gagal mengirim OTP via WhatsApp. Pastikan nomor aktif.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kode OTP berhasil dikirim ke WhatsApp '.$cleanPhone,
+        ]);
+    }
+
+    /**
+     * Verify OTP and link WhatsApp phone number to authenticated citizen.
+     */
+    public function verifyLinkPhoneOtp(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string',
+            'otp' => 'required|string|size:6',
+        ]);
+
+        $user = $request->user();
+        if (! $user instanceof Taxpayer) {
+            return response()->json(['message' => 'Hanya untuk akun wajib pajak/warga.'], 403);
+        }
+
+        $cleanPhone = preg_replace('/[^0-9]/', '', (string) $request->phone);
+        if (str_starts_with($cleanPhone, '0')) {
+            $cleanPhone = '62'.substr($cleanPhone, 1);
+        }
+
+        $cacheKey = "otp_link_phone_{$user->id}_{$cleanPhone}";
+        $cachedOtp = Cache::get($cacheKey);
+
+        if (! $cachedOtp || $cachedOtp !== $request->otp) {
+            return response()->json([
+                'message' => 'Kode OTP salah atau telah kedaluwarsa.',
+                'errors' => ['otp' => ['Kode OTP salah atau telah kedaluwarsa.']],
+            ], 422);
+        }
+
+        Cache::forget($cacheKey);
+
+        $metadata = is_array($user->metadata) ? $user->metadata : [];
+        $metadata['phone_verified_at'] = now()->toIso8601String();
+        $metadata['phone_verified'] = true;
+
+        $user->phone = $cleanPhone;
+        $user->metadata = $metadata;
+        $user->save();
+
+        RoleResolver::enrich($user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Nomor WhatsApp berhasil diverifikasi dan ditautkan!',
+            'user' => $user,
+        ]);
     }
 }
