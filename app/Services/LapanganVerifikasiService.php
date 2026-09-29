@@ -211,17 +211,32 @@ class LapanganVerifikasiService
     {
         $row = $this->ambilAssignment($assignmentId);
 
-        if ($row->status !== self::AWAITING) {
+        // Baris verifikasi LAHIR sebagai PENDING (dari SlaTrackerService::assign),
+        // sedangkan MENUNGGU_VERIFIKASI dipasang pada baris pekerjaan lapangan
+        // milik petugas. Keduanya sah sebagai titik masuk verifikasi
+        // (temuan 29 Sep 2026 — sebelumnya Kasubid selalu ditolak).
+        $statusSah = [self::AWAITING, SlaTrackerService::STATUS_PENDING];
+
+        if (! in_array($row->status, $statusSah, true)) {
             throw new InvalidArgumentException(
                 'Tugas ini belum diajukan petugas atau sudah diproses (status: '
                 . $row->status . ').'
             );
         }
 
-        // Anti self-verification: pemeriksa tidak boleh PIC-nya sendiri.
-        if ((int) $row->assigned_to_user_id === $kasubidId) {
+        // Anti self-verification: pemeriksa tidak boleh orang yang MENGERJAKAN.
+        //
+        // Perhatikan arah perbandingannya. Pada baris verifikasi:
+        //   assigned_to_user_id  = PEJABAT penerima verifikasi (mis. Kasubid)
+        //   assigned_by_user_id  = PETUGAS yang mengajukan hasil kerja
+        // Jadi yang harus dibandingkan adalah assigned_BY, bukan assigned_TO.
+        // Versi lama membandingkan assigned_to sehingga Kasubid yang berhak
+        // selalu ditolak dengan alasan keliru (temuan 29 Sep 2026).
+        $pengerja = (int) ($row->assigned_by_user_id ?? 0);
+
+        if ($pengerja !== 0 && $pengerja === $kasubidId) {
             throw new InvalidArgumentException(
-                'Anda adalah petugas PIC tugas ini. Verifikasi harus dilakukan pejabat lain.'
+                'Anda adalah petugas yang mengerjakan tugas ini. Verifikasi harus dilakukan pejabat lain.'
             );
         }
 
@@ -271,7 +286,13 @@ class LapanganVerifikasiService
 
         $row = $this->ambilAssignment($assignmentId);
 
-        if ($row->status !== self::AWAITING) {
+        // Baris verifikasi LAHIR sebagai PENDING (dari SlaTrackerService::assign),
+        // sedangkan MENUNGGU_VERIFIKASI dipasang pada baris pekerjaan lapangan
+        // milik petugas. Keduanya sah sebagai titik masuk verifikasi
+        // (temuan 29 Sep 2026 — sebelumnya Kasubid selalu ditolak).
+        $statusSah = [self::AWAITING, SlaTrackerService::STATUS_PENDING];
+
+        if (! in_array($row->status, $statusSah, true)) {
             throw new InvalidArgumentException(
                 'Tugas ini belum diajukan petugas atau sudah diproses (status: '
                 . $row->status . ').'
@@ -346,10 +367,20 @@ class LapanganVerifikasiService
                 'sta.tax_domain', 'sta.tax_sector_code', 'sta.status',
                 'sta.sla_deadline', 'sta.escalation_alert_at', 'sta.escalated_at',
                 'sta.started_at', 'sta.updated_at', 'sta.notes',
-                'p.name as petugas_nama', 'p.id as petugas_id',
-                'k.name as penugasan_oleh'
+                'p.name as pic_nama', 'p.id as pic_id',
+                'k.name as penugasan_oleh',
+                // Untuk baris VERIFIKASI: assigned_to = pejabat penerima,
+                // assigned_by = petugas yang mengajukan. Field 'petugas_*' sengaja
+                // diarahkan ke pengaju supaya antrian tidak menampilkan nama
+                // Kasubid sendiri sebagai "petugas" (membingungkan).
+                'k.name as petugas_nama', 'k.id as petugas_id'
             )
-            ->where('sta.status', self::AWAITING)
+            // Tahap verifikasi LAHIR sebagai PENDING (dari
+            // SlaTrackerService::assign) — yang berubah ke MENUNGGU_VERIFIKASI
+            // adalah baris pekerjaan lapangan milik petugas, BUKAN baris
+            // verifikasi ini. Keduanya harus diterima, kalau tidak antrian
+            // Kasubid selalu kosong (temuan 29 Sep 2026).
+            ->whereIn('sta.status', [self::AWAITING, SlaTrackerService::STATUS_PENDING])
             ->orderBy('sta.updated_at');
 
         $this->batasiDomain($q, $domain, $typeIds);

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Bill;
 use App\Models\EnforcementNotice;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 
@@ -712,5 +713,183 @@ class OfficialDocumentService
         }
         
         return trim($terbilang);
+    }
+
+    /**
+     * SURAT PENUGASAN PEKERJAAN LAPANGAN (Surat Tugas).
+     *
+     * Diterbitkan Kabid untuk menugaskan seorang petugas mengerjakan satu objek
+     * pekerjaan. Inilah dasar hukum yang menyertai entri di
+     * service_task_assignments — sebelum ini penugasan hanya berupa baris DB
+     * tanpa dokumen resmi.
+     *
+     * Format nomor: ST/{tahun}/{kode_opd}/{urut}
+     *   contoh: ST/2026/5/000123
+     *
+     * Yang dikembalikan adalah DATA siap-cetak (bukan PDF jadi), mengikuti pola
+     * generator lain di kelas ini, supaya template tampilan bebas berubah tanpa
+     * menyentuh logika bisnis.
+     *
+     * @param  int      $assignmentId  id baris service_task_assignments
+     * @param  \App\Models\User  $kabid  pejabat penanda tangan (harus Kabid wilayah objek)
+     * @return array{number:string,signature:array,siap_tte:bool,...}
+     */
+    public function generateSuratPenugasan(int $assignmentId, \App\Models\User $kabid): array
+    {
+        $sta = DB::table('service_task_assignments as sta')
+            ->leftJoin('users as p', 'p.id', '=', 'sta.assigned_to_user_id')
+            ->leftJoin('users as k', 'k.id', '=', 'sta.assigned_by_user_id')
+            ->where('sta.id', $assignmentId)
+            ->select(
+                'sta.*',
+                'p.name as petugas_nama', 'p.role as petugas_role',
+                'k.name as penugasan_oleh_nama'
+            )
+            ->first();
+
+        if (! $sta) {
+            throw new \InvalidArgumentException('Penugasan tidak ditemukan.');
+        }
+
+        if (! $sta->assigned_to_user_id) {
+            throw new \InvalidArgumentException(
+                'Penugasan ini belum punya petugas (PIC). Tetapkan petugas lebih dulu.'
+            );
+        }
+
+        // Objek pekerjaan — dipakai untuk menuliskan apa yang ditugaskan.
+        $objek = null;
+        if ($sta->reference_type === 'tax_object' && $sta->reference_id) {
+            $objek = DB::table('tax_objects as t')
+                ->leftJoin('taxpayers as wp', 'wp.id', '=', 't.taxpayer_id')
+                ->where('t.id', $sta->reference_id)
+                ->select('t.id', 't.name', 't.nop', 't.address', 'wp.name as wp_nama', 'wp.npwpd')
+                ->first();
+        }
+
+        // Nama pejabat bisa datang dari query yang di-join ATAU dari relasi User.
+        // Diutamakan relasi supaya tetap benar bila ada delegasi/backup pejabat.
+        $petugas = \App\Models\User::find($sta->assigned_to_user_id);
+
+        $nomor = $this->nomorSuratPenugasan($assignmentId);
+
+        // Catat dokumen di signed_documents supaya bisa dilacak & ditandatangani.
+        // Tidak menimpa bila sudah ada (idempoten) — penerbitan ulang memakai
+        // nomor yang sama, mencegah duplikasi nomor surat.
+        $sudah = DB::table('signed_documents')
+            ->where('document_type', 'surat_penugasan')
+            ->where('document_id', $assignmentId)
+            ->first();
+
+        if (! $sudah) {
+            DB::table('signed_documents')->insert([
+                'document_type'   => 'surat_penugasan',
+                'document_id'     => $assignmentId,
+                'opd_id'          => $kabid->opd_id,
+                'document_number' => $nomor,
+                'file_path'       => null,
+                'sha256_checksum' => null,
+                'signed_by'       => null,
+                'signer_name'     => null,
+                'signer_nip'      => null,
+                'signer_role'     => null,
+                // Kolom NOT NULL: draf belum diteken -> DRAFT (bukan null, bukan BSRE_PERSONAL).
+                'signature_type'  => 'DRAFT',
+                'signed_at'       => null,
+                'metadata'        => json_encode([
+                    'sumber'      => 'generateSuratPenugasan',
+                    'stage'       => $sta->stage,
+                    'tax_domain'  => $sta->tax_domain,
+                    'sector'      => $sta->tax_sector_code,
+                    'petugas_id'  => $sta->assigned_to_user_id,
+                ]),
+                'verification_url' => url("/api/tte/verify/{$nomor}"),
+                'status'           => 'DRAFT',
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ]);
+        }
+
+        return [
+            'number'        => $nomor,
+            'jenis'         => 'SURAT TUGAS',
+            'judul'         => 'SURAT TUGAS PEKERJAAN LAPANGAN',
+            'penomoran'     => [
+                'format' => 'ST/{tahun}/{kode_opd}/{urut}',
+                'contoh' => 'ST/' . date('Y') . '/5/000123',
+            ],
+
+            // ---- Pihak yang ditugaskan ----
+            'petugas' => [
+                'nama'  => $petugas?->name ?? $sta->petugas_nama ?? '-',
+                'nip'   => $petugas?->nip ?? null,
+                'role'  => $sta->petugas_role ?? '-',
+                'id'    => (int) $sta->assigned_to_user_id,
+            ],
+
+            // ---- Apa yang ditugaskan ----
+            'pekerjaan' => [
+                'stage'       => $sta->stage,
+                'stage_label' => SlaTrackerService::SLA_MATRIX[$sta->stage]['label'] ?? $sta->stage,
+                'tax_domain'  => $sta->tax_domain,
+                'sektor'      => $sta->tax_sector_code,
+                'objek_id'    => $sta->reference_id,
+                'objek_nama'  => $objek->name ?? null,
+                'objek_nop'   => $objek->nop ?? null,
+                'objek_alamat' => $objek->address ?? null,
+                'wajib_pajak' => $objek->wp_nama ?? null,
+                'npwpd'       => $objek->npwpd ?? null,
+            ],
+
+            // ---- Tenggat ----
+            'waktu' => [
+                'mulai'        => $sta->started_at,
+                'batas_sla'    => $sta->sla_deadline,
+                'peringatan'   => $sta->escalation_alert_at,
+                'lama_jam'     => $sta->sla_deadline
+                    ? round(\Carbon\Carbon::parse($sta->started_at)
+                        ->diffInMinutes(\Carbon\Carbon::parse($sta->sla_deadline)) / 60, 1)
+                    : null,
+            ],
+
+            'tanggal_surat' => now()->translatedFormat('d F Y'),
+
+            // Blok tanda tangan — nama penanda tangan diambil dari user Kabid
+            // yang menekan tombol terbit, BUKAN dari .env. Ini yang membuat surat
+            // benar-benar mencerminkan pejabat yang berwenang saat itu.
+            'signature' => array_merge(
+                $this->signatureBlock($nomor),
+                [
+                    'nama'    => $kabid->name,
+                    'nip'     => $kabid->nip ?? null,
+                    'jabatan' => $kabid->position
+                        ?? (str_contains((string) $kabid->role, 'kabid_wilayah_1')
+                            ? 'Kepala Bidang Pajak Daerah Wilayah I'
+                            : 'Kepala Bidang Pajak Daerah Wilayah II'),
+                    'kota'    => config('services.bapenda.signature_city', 'Baubau'),
+                ]
+            ),
+
+            'qr_url'  => url("/api/tte/verify/{$nomor}"),
+            'siap_tte' => true,
+            'status_dokumen' => $sudah->status ?? 'DRAFT',
+        ];
+    }
+
+    /**
+     * Nomor surat tugas yang STABIL per penugasan.
+     *
+     * Memakai md5(id + salt) supaya penerbitan ulang menghasilkan nomor yang
+     * sama — bukan nomor baru setiap kali halaman dibuka. Kalau nomor berubah
+     * tiap kali, jejaknya tidak bisa diaudit.
+     */
+    private function nomorSuratPenugasan(int $assignmentId): string
+    {
+        $tahun = date('Y');
+
+        // Urut 6 digit deterministik dari id penugasan.
+        $urut = str_pad((string) (($assignmentId * 7919) % 1000000), 6, '0', STR_PAD_LEFT);
+
+        return "ST/{$tahun}/5/{$urut}";
     }
 }

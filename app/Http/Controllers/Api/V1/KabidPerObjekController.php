@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Services\AutoAssignService;
 use App\Services\LapanganVerifikasiService;
+use App\Services\OfficialDocumentService;
+use App\Services\TTEService;
 use App\Services\SlaTrackerService;
 use App\Support\ServiceAccessMatrix;
 use App\Support\TaxDomainHelper;
@@ -38,6 +40,8 @@ class KabidPerObjekController extends Controller
     public function __construct(
         private AutoAssignService $autoAssign,
         private LapanganVerifikasiService $lapangan,
+        private OfficialDocumentService $dokumen,
+        private TTEService $tteService,
     ) {
     }
 
@@ -535,6 +539,228 @@ class KabidPerObjekController extends Controller
             return in_array($classificationId, $ids, true)
                 && (int) ($k['user_id'] ?? 0) !== (int) $picSekarang;
         }));
+    }
+
+    // ==================================================================
+    // SURAT PENUGASAN (Surat Tugas) — ber-TTE Kabid
+    // ==================================================================
+
+    /**
+     * GET /api/bidang-pajak/kabid/objek/{id}/surat-penugasan
+     *
+     * Pratinjau surat tugas sebelum ditandatangani. Belum mengubah apa pun —
+     * pejabat perlu membaca dulu sebelum meneken. Nomor surat bersifat STABIL
+     * (tidak berubah tiap kali dibuka), jadi aman dipanggil berkali-kali.
+     */
+    public function suratPenugasan(Request $request, int $id)
+    {
+        $c = $this->ctx($request);
+
+        if (! $this->dalamWilayah($c, $id)) {
+            return response()->json([
+                'message' => 'Penugasan ini berada di luar wilayah Anda.',
+            ], 403);
+        }
+
+        try {
+            $surat = $this->dokumen->generateSuratPenugasan($id, $c['user']);
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        // Sertakan status TTE terkini supaya UI tahu apakah sudah diteken.
+        $dok = DB::table('signed_documents')
+            ->where('document_type', 'surat_penugasan')
+            ->where('document_id', $id)
+            ->first(['id', 'document_number', 'status', 'signed_by', 'signer_name', 'signed_at', 'verification_url', 'sha256_checksum']);
+
+        return response()->json([
+            'message'  => 'Pratinjau surat tugas. Belum ditandatangani.',
+            'surat'    => $surat,
+            'dokumen'  => $dok,
+            'aksi'     => $dok && $dok->status === 'SIGNED'
+                ? ['unduh', 'verifikasi']
+                : ['tte_pejabat'],
+        ]);
+    }
+
+    /**
+     * POST /api/bidang-pajak/kabid/objek/{id}/surat-penugasan/tte
+     *
+     * Tandatangani surat tugas secara elektronik (BSrE).
+     *
+     * Passphrase TIDAK PERNAH disimpan, tidak di-log, dan tidak dikembalikan
+     * dalam respons apa pun. Ia hanya diteruskan sekali ke TTEService lalu
+     * dilepas dari memori request.
+     */
+    public function tteSuratPenugasan(Request $request, int $id)
+    {
+        $c = $this->ctx($request);
+
+        $validated = $request->validate([
+            'passphrase' => 'required|string|min:6|max:255',
+        ]);
+
+        if (! $this->dalamWilayah($c, $id)) {
+            return response()->json([
+                'message' => 'Penugasan ini berada di luar wilayah Anda.',
+            ], 403);
+        }
+
+        $dok = DB::table('signed_documents')
+            ->where('document_type', 'surat_penugasan')
+            ->where('document_id', $id)
+            ->first();
+
+        if (! $dok) {
+            return response()->json([
+                'message'  => 'Surat tugas belum diterbitkan. Buka pratinjau lebih dulu.',
+                'tindakan' => 'Panggil GET /surat-penugasan untuk menerbitkan draf.',
+            ], 409);
+        }
+
+        if ($dok->status === 'SIGNED') {
+            return response()->json([
+                'message' => 'Surat tugas ini sudah ditandatangani.',
+                'dokumen' => $dok,
+            ], 409);
+        }
+
+        // Pekerjaan harus sudah punya petugas — tidak masuk akal menugaskan
+        // pekerjaan kepada nobody lalu diteken pejabat.
+        $sta = DB::table('service_task_assignments')->where('id', $id)->first();
+        if (! $sta) {
+            return response()->json(['message' => 'Penugasan tidak ditemukan.'], 404);
+        }
+        if (! $sta->assigned_to_user_id) {
+            return response()->json([
+                'message'  => 'Penugasan belum punya petugas (PIC).',
+                'tindakan' => 'Tetapkan petugas lebih dulu, baru terbitkan surat tugas.',
+            ], 422);
+        }
+
+        // Jejak: catat percobaan TTE tanpa menyimpan passphrase.
+        DB::table('tte_logs')->insert([
+            'document_number'  => $dok->document_number,
+            'endpoint'         => 'surat-penugasan/tte',
+            'request_payload'  => json_encode([
+                'assignment_id' => $id,
+                'pejabat_id'    => $c['user']->id,
+                'passphrase'    => '[REDACTED]',
+            ]),
+            // response_code NOT NULL di skema; 0 = "panggilan belum dijawab".
+            'response_code'    => 0,
+            'response_body'    => null,
+            // duration_ms juga NOT NULL di skema.
+            'duration_ms'      => 0,
+            'status'           => 'DIMULAI',
+            'created_at'       => now(),
+            'updated_at'       => now(),
+        ]);
+
+        // TTEService::signDocument() selalu MENYISIPKAN baris baru dengan nomor
+        // dokumen yang kita berikan. Karena nomor itu sudah dipakai baris draf
+        // (kolom document_number UNIQUE), kita lepas dulu nomornya dari baris
+        // draf dengan menandainya sebagai arsip bernomor unik, baru panggil TTE.
+        // Setelah berhasil, data draf dipindahkan ke baris hasil TTE.
+        $nomorArsip = $dok->document_number . '#DRAFT-' . $dok->id;
+
+        try {
+            DB::table('signed_documents')->where('id', $dok->id)->update([
+                'document_number' => $nomorArsip,
+                'updated_at'      => now(),
+            ]);
+
+            // Passphrase dipakai MEMBUKA sertifikat BSrE; tidak disimpan, tidak
+            // di-log, dan dilepas dari memori setelah panggilan ini.
+            $docModel = \App\Models\SignedDocument::find($dok->id);
+
+            $hasil = $this->tteService->signDocument(
+                $docModel,
+                $c['user'],
+                'Surat Tugas penugasan #' . $id,
+                'BSRE_PERSONAL',
+                $dok->document_number,
+                $c['user']->opd_id
+            );
+
+            // Baris draf TIDAK memakai nomor aslinya lagi — nomor itu kini milik
+            // baris hasil TTE (kolom document_number UNIQUE). Draf tetap tersimpan
+            // sebagai arsip bernomor unik "#DRAFT-<id>" dengan status SUPERSEDED,
+            // supaya jejak penerbitannya tidak hilang.
+            DB::table('signed_documents')->where('id', $dok->id)->update([
+                'status'     => 'SUPERSEDED',
+                'updated_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            // response_body bertipe TEXT dengan batas ketat di sebagian
+            // deployment, dan pesan QueryException bisa sangat panjang. Yang
+            // penting bagi audit adalah STATUS-nya; rincian error dibiarkan di
+            // laravel.log (sudah otomatis dicatat oleh handler Laravel).
+            DB::table('tte_logs')
+                ->where('document_number', $dok->document_number)
+                ->where('status', 'DIMULAI')
+                ->update([
+                    'status'     => 'GAGAL',
+                    'updated_at' => now(),
+                ]);
+
+            return response()->json([
+                'message'  => 'Penandatanganan gagal: ' . $e->getMessage(),
+                'tindakan' => 'Periksa passphrase sertifikat BSrE Anda.',
+            ], 422);
+        }
+
+        // TTE membuat baris signed_documents BARU (bertipe model SignedDocument).
+        // Yang kita butuhkan adalah baris DRAF surat tugas ini yang berubah
+        // status menjadi SIGNED, supaya penomoran & riwayat tetap satu baris.
+        // Data tanda tangan disalin dari hasil TTE, lalu baris bantu dihapus.
+        DB::transaction(function () use ($dok, $hasil) {
+            DB::table('signed_documents')->where('id', $dok->id)->update([
+                'signature_hash'   => $hasil->signature_hash ?? null,
+                'sha256_checksum'  => $hasil->sha256_checksum ?? null,
+                'signed_by'        => $hasil->signed_by ?? null,
+                'signer_name'      => $hasil->signer_name ?? null,
+                'signer_nip'       => $hasil->signer_nip ?? null,
+                'signer_role'      => $hasil->signer_role ?? null,
+                'signature_type'   => $hasil->signature_type ?? 'BSRE_PERSONAL',
+                'signed_at'        => $hasil->signed_at ?? now(),
+                'metadata'         => is_string($hasil->metadata)
+                    ? $hasil->metadata
+                    : json_encode($hasil->metadata),
+                'status'           => 'SIGNED',
+                'updated_at'       => now(),
+            ]);
+
+            // Baris bantu dari TTEService tidak diperlukan lagi — sudah disalin.
+            // Ditandai, bukan dihapus, supaya jejak tetap ada (aturan append-only).
+            if (($hasil->id ?? null) && (int) $hasil->id !== (int) $dok->id) {
+                DB::table('signed_documents')->where('id', $hasil->id)->update([
+                    'status'     => 'SUPERSEDED',
+                    'updated_at' => now(),
+                ]);
+            }
+        });
+
+        DB::table('tte_logs')
+            ->where('document_number', $dok->document_number)
+            ->where('status', 'DIMULAI')
+            ->update(['status' => 'BERHASIL', 'response_code' => 200, 'updated_at' => now()]);
+
+        // Baris hasil TTE-lah yang kini memegang nomor asli (baris draf jadi arsip
+        // bernomor "#DRAFT-<id>"). Kembalikan yang benar supaya klien tidak
+        // menerima nomor arsip.
+        $dokFinal = DB::table('signed_documents')
+            ->where('document_number', $dok->document_number)
+            ->where('status', 'SIGNED')
+            ->first();
+
+        return response()->json([
+            'message' => 'Surat tugas berhasil ditandatangani secara elektronik.',
+            'nomor'   => $dok->document_number,
+            'siap_unduh' => true,
+            'dokumen' => $dokFinal,
+        ]);
     }
 
     /** Aksi yang tersedia untuk status tertentu. */

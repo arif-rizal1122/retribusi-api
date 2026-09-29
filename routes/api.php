@@ -14,6 +14,9 @@ use App\Http\Controllers\Api\TpiTransactionController;
 use App\Http\Controllers\Api\V1\Admin\H2HMonitorController;
 use App\Http\Controllers\Api\V1\Admin\WaGatewayController;
 use App\Http\Controllers\Api\V1\Bank\BankH2HController;
+use App\Http\Controllers\Api\V1\BidangPajakController;
+use App\Http\Controllers\Api\V1\KabidPerObjekController;
+use App\Http\Controllers\Api\V1\PekerjaanLapanganController;
 use App\Http\Controllers\Api\V1\Dishub\HarborProxyGtController;
 use App\Http\Controllers\Api\V1\Dishub\LakologouManifestController;
 use App\Http\Controllers\Api\V1\Disperindag\MarketController;
@@ -1005,4 +1008,131 @@ Route::prefix('object-numbers')->group(function () {
 });
 // ------------------------------------------------------------------------
 // AKHIR BLOK NOPD / NORD 14 DIGIT
+// ------------------------------------------------------------------------
+
+// ------------------------------------------------------------------------
+// BIDANG PAJAK DAERAH — ALUR KERJA KASUBID (VERIFIKASI) & KABID (OTORISASI)
+// Rantai maker-checker: petugas ajukan -> Kasubid verifikasi -> Kabid konfirmasi
+//
+// Gate RBAC: middleware 'service_action'
+//   - verify  : Kasubid memeriksa data (dan Kabid, karena matriksnya superset)
+//   - assign  : Kabid menugaskan pekerjaan
+//   - approve : Kabid otorisasi akhir (L3)
+//
+// CATATAN PENTING: middleware ini FAIL-CLOSED. Role di luar matriks tupoksi
+// (mis. 'petugas', 'opd') akan menerima 403 — itu memang yang diinginkan.
+//
+// Blok ini ADITIF: tidak mengubah route yang sudah ada.
+// Dipasang 29 Sep 2026 — sebelumnya ketiga controller ini sudah ada di
+// app/Http/Controllers/Api/V1/ tetapi TIDAK TERDAFTAR sama sekali, sehingga
+// Kabid & Kasubid tidak punya jalan masuk ke daftar penugasan mereka.
+// ------------------------------------------------------------------------
+// Semua endpoint di bawah WAJIB login (auth:sanctum). Group autentikasi utama
+// berakhir di baris ~830, sedangkan blok aditif ini ditempel di akhir file —
+// tanpa pembungkus ini permintaan akan selalu 401 sebelum sempat dievaluasi.
+Route::prefix('bidang-pajak')->middleware('auth:sanctum')->group(function () {
+
+    // ==================================================================
+    // SISI PETUGAS LAPANGAN (PIC tugas)
+    // ==================================================================
+    Route::prefix('lapangan')->group(function () {
+        // Petugas melihat tugasnya sendiri. Tidak digate service_action —
+        // role 'petugas' justru di luar matriks tupoksi (akan 403 kalau digate).
+        Route::get('/tugas-saya', [PekerjaanLapanganController::class, 'tugasSaya']);
+
+        // Petugas mengajukan hasil pekerjaan: status MENUNGGU_VERIFIKASI.
+        // Bukan "selesai" — yang memastikan selesai adalah Kasubid.
+        Route::post('/{id}/ajukan', [PekerjaanLapanganController::class, 'ajukan'])
+            ->whereNumber('id');
+
+        // ==============================================================
+        // SISI KASUBID — memeriksa & memverifikasi (maker-checker L1-L2)
+        // ==============================================================
+        Route::middleware('service_action:verify')->group(function () {
+            // Antrian tugas yang menunggu verifikasi Kasubid.
+            Route::get('/daftar', [PekerjaanLapanganController::class, 'daftar']);
+
+            // Detail + riwayat audit lengkap.
+            Route::get('/{id}', [PekerjaanLapanganController::class, 'detail'])
+                ->whereNumber('id');
+
+            // Kasubid menyatakan TERVERIFIKASI. Hanya dari sini kata
+            // "selesai" berasal; diteruskan ke Kepala Bidang.
+            Route::post('/{id}/verifikasi', [PekerjaanLapanganController::class, 'verifikasi'])
+                ->whereNumber('id');
+
+            // Tolak -> kembali ke petugas untuk diperbaiki. Catatan WAJIB
+            // (divalidasi di controller, fail-closed).
+            Route::post('/{id}/tolak', [PekerjaanLapanganController::class, 'tolak'])
+                ->whereNumber('id');
+        });
+    });
+
+    // ==================================================================
+    // SISI KABID — aksi atas satu objek pekerjaan (otorisasi L3)
+    // ==================================================================
+    Route::prefix('kabid/objek')->middleware('service_action:approve')->group(function () {
+        // Daftar objek tanggung jawab Kabid (disaring wilayah).
+        Route::get('/', [KabidPerObjekController::class, 'daftar']);
+
+        // Detail satu objek.
+        Route::get('/{id}', [KabidPerObjekController::class, 'detail'])
+            ->whereNumber('id');
+
+        // Konfirmasi akhir -> APPROVED. Hanya sah bila sudah TERVERIFIKASI
+        // Kasubid (dijaga di service, bukan sekadar UI).
+        Route::post('/{id}/konfirmasi', [KabidPerObjekController::class, 'konfirmasi'])
+            ->whereNumber('id');
+
+        // Alihkan PIC ke petugas lain. WAJIB beralasan, jejak di tabel audit.
+        Route::post('/{id}/ganti-petugas', [KabidPerObjekController::class, 'gantiPetugas'])
+            ->whereNumber('id');
+
+        // Daftar petugas kompeten + beban kerja (dasar memilih PIC baru).
+        Route::get('/{id}/kandidat', [KabidPerObjekController::class, 'kandidat'])
+            ->whereNumber('id');
+
+        // --- SURAT TUGAS (Surat Penugasan) ber-TTE Kabid ---
+        // Pratinjau: menerbitkan draf + nomor stabil, belum menandatangani.
+        Route::get('/{id}/surat-penugasan', [KabidPerObjekController::class, 'suratPenugasan'])
+            ->whereNumber('id');
+
+        // Teken elektronik. Passphrase tidak pernah disimpan/di-log.
+        Route::post('/{id}/surat-penugasan/tte', [KabidPerObjekController::class, 'tteSuratPenugasan'])
+            ->whereNumber('id');
+    });
+
+    // ==================================================================
+    // VERIFIKASI, PENUGASAN & OTORISASI (Bidang Pajak Daerah)
+    // ==================================================================
+
+    // --- Antrian verifikasi (Kasubid) ---
+    Route::prefix('verifikasi')->middleware('service_action:verify')->group(function () {
+        Route::get('/daftar', [BidangPajakController::class, 'daftarVerifikasi']);
+        Route::get('/{id}', [BidangPajakController::class, 'detailVerifikasi'])
+            ->whereNumber('id');
+        Route::post('/{id}/periksa', [BidangPajakController::class, 'periksaVerifikasi'])
+            ->whereNumber('id');
+    });
+
+    // --- Penugasan (Kabid) ---
+    Route::prefix('penugasan')->middleware('service_action:assign')->group(function () {
+        Route::get('/daftar', [BidangPajakController::class, 'daftarPenugasan']);
+        Route::post('/', [BidangPajakController::class, 'buatPenugasan']);
+    });
+
+    // --- Otorisasi akhir (Kabid) ---
+    Route::prefix('otorisasi')->middleware('service_action:approve')->group(function () {
+        Route::get('/daftar', [BidangPajakController::class, 'daftarOtorisasi']);
+        Route::post('/{id}', [BidangPajakController::class, 'putuskanOtorisasi'])
+            ->whereNumber('id');
+    });
+
+    // Otorisasi atas sebuah penugasan (Kabid).
+    Route::post('penugasan/{id}/otorisasi', [BidangPajakController::class, 'otorisasiPenugasan'])
+        ->whereNumber('id')
+        ->middleware('service_action:approve');
+});
+// ------------------------------------------------------------------------
+// AKHIR BLOK ALUR KERJA KASUBID & KABID
 // ------------------------------------------------------------------------
