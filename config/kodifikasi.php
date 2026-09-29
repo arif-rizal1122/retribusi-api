@@ -97,6 +97,12 @@ return [
         'ukuran_default' => 320,
     ],
 
+    // ---- Pencocokan otomatis objek lama <-> akun warga ----
+    'cocok' => [
+        'ambang_nama' => 0.72,   // minimal kemiripan nama untuk jadi saran
+        'maks_kandidat' => 5,    // batas kandidat yang dikirim ke aplikasi
+    ],
+
     // Jenis penomoran
     'jenis' => [
         'NOPD' => 'Nomor Objek Pajak Daerah',

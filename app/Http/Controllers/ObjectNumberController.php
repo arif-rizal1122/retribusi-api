@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\LegacyAutoMatchService;
 use App\Services\LegacyDictionaryService;
 use App\Services\ObjectNumberRegistryService;
 use App\Services\ObjectNumberService;
@@ -70,6 +71,18 @@ class ObjectNumberController extends Controller
             ], 404);
         }
 
+        // Nomor SUPERSEDED (digantikan nomor lain) tidak boleh dicetak —
+        // kartunya akan menyesatkan wajib pajak.
+        if (($record->status ?? 'aktif') !== 'aktif') {
+            $pengganti = $record->metadata['superseded_by_nomor'] ?? null;
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Nomor ini sudah tidak berlaku (digantikan).'
+                    .($pengganti ? ' Gunakan nomor: '.$this->numbers->formatTampilan($pengganti) : ''),
+            ], 409);
+        }
+
         $taxObject = $record->tax_object_id
             ? \App\Models\TaxObject::with(['taxpayer', 'opd'])->find($record->tax_object_id)
             : null;
@@ -135,6 +148,10 @@ class ObjectNumberController extends Controller
         $hasil = $this->registry->cariApaSaja($data['q']);
         $saran = $this->legacy->saran($data['q']);
 
+        // Petugas hanya boleh melihat nomor AKTIF. Nomor SUPERSEDED (sisa run gagal
+        // 29 Sep 2026) disembunyikan dari hasil agar tidak salah dipakai menagih.
+        $hasil = array_values(array_filter($hasil, fn ($r) => ($r->status ?? 'aktif') === 'aktif'));
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -143,6 +160,7 @@ class ObjectNumberController extends Controller
                     'nomor' => $r->nomor,
                     'tampilan' => $this->numbers->formatTampilan($r->nomor),
                     'jenis' => $r->jenis,
+                    'status' => $r->status,
                     'claim_status' => $r->claim_status,
                     'legacy_code' => $r->legacy_code,
                 ], $hasil),
@@ -266,5 +284,40 @@ class ObjectNumberController extends Controller
             'message' => 'Objek usaha berhasil diklaim. Nomor baru sudah diterbitkan.',
             'data' => $hasil,
         ], 201);
+    }
+
+    /**
+     * GET /api/object-numbers/auto-match
+     * Cari objek usaha lama atas nama warga yang login (Legacy 9Pajak Bridge).
+     *
+     * Dipakai aplikasi warga setelah login: bila ada kandidat, tampilkan
+     * tawaran klaim sehingga warga tidak perlu mengisi ulang data usaha.
+     */
+    public function autoMatch(Request $request)
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Perlu masuk terlebih dahulu.'], 401);
+        }
+
+        $svc = app(LegacyAutoMatchService::class);
+        $ringkas = $svc->ringkas($user->taxpayer_id ?: $user->id);
+
+        return response()->json(['success' => true, 'data' => $ringkas]);
+    }
+
+    /**
+     * GET /api/object-numbers/auto-match/{taxpayerId}
+     * Versi petugas: cek kandidat atas nama wajib pajak tertentu.
+     */
+    public function autoMatchUntuk(Request $request, int $taxpayerId)
+    {
+        $svc = app(LegacyAutoMatchService::class);
+
+        return response()->json([
+            'success' => true,
+            'data' => $svc->ringkas($taxpayerId),
+        ]);
     }
 }

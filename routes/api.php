@@ -1190,3 +1190,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/qr-objek/{id}', [App\Http\Controllers\QrObjekRetribusiController::class, 'tampil'])->whereNumber('id');
     Route::post('/qr-objek/{id}/pastikan', [App\Http\Controllers\QrObjekRetribusiController::class, 'pastikan'])->whereNumber('id');
 });
+
+// ------------------------------------------------------------------------
+// AUTO-MATCH objek lama <-> akun warga (Legacy 9Pajak Bridge)
+// Dipakai setelah login: tawarkan klaim bila ada objek atas nama warga.
+// ------------------------------------------------------------------------
+Route::middleware("auth:sanctum")->group(function () {
+    Route::get("/object-numbers/auto-match", [App\Http\Controllers\ObjectNumberController::class, "autoMatch"]);
+    Route::get("/object-numbers/auto-match/{taxpayerId}", [App\Http\Controllers\ObjectNumberController::class, "autoMatchUntuk"])
+        ->whereNumber("taxpayerId");
+});

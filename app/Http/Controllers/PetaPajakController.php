@@ -587,13 +587,29 @@ class PetaPajakController extends Controller
                 ->count();
         }
 
+        // Hitung capaian NYATA (tanpa pembulatan/pemaksaan angka).
+        $totalMappings = Schema::hasTable('nib_nop_mappings')
+            ? DB::table('nib_nop_mappings')->count()
+            : 0;
+        $matchedTotal = Schema::hasTable('nib_nop_mappings')
+            ? DB::table('nib_nop_mappings')->where('match_status', 'matched')->count()
+            : 0;
+        $pendingTotal = Schema::hasTable('nib_nop_mappings')
+            ? DB::table('nib_nop_mappings')->where('match_status', 'pending')->count()
+            : 0;
+
+        $persen = $totalMappings > 0 ? round($matchedTotal / $totalMappings * 100, 2) : 0.0;
+
         return response()->json([
             'status' => 'success',
             'message' => 'Otomasi rekonsiliasi data selesai dijalankan.',
             'data' => [
-                'newly_matched' => max($matchedCount, 12),
+                'newly_matched' => $matchedCount,
                 'conflicts_identified' => $conflictCount,
-                'target_threshold' => 'Melampaui Target 40% KPK',
+                'total_mappings' => $totalMappings,
+                'matched_total' => $matchedTotal,
+                'pending_total' => $pendingTotal,
+                'capaian_persen' => $persen,
                 'executed_at' => now()->toIso8601String(),
             ],
         ]);
