@@ -311,6 +311,15 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/admin/anomalies', [ParkingController::class, 'anomalies']);
         Route::post('/citizen/claim-receipt', [ParkingController::class, 'claimReceipt']);
 
+        // SPTPD PBJT Parkir — Pelaporan Bulanan Warga & Antrean Verifikasi Bapenda
+        // Memakai monthly_reports existing (SPTPD universal) + parking_sessions untuk tapping box.
+        Route::post('/declarations', [\App\Http\Controllers\Api\PbjtParkingDeclarationController::class, 'store']);
+        Route::get('/declarations', [\App\Http\Controllers\Api\PbjtParkingDeclarationController::class, 'history']);
+        Route::post('/declarations/fetch-tapbox', [\App\Http\Controllers\Api\PbjtParkingDeclarationController::class, 'fetchTapbox']);
+        Route::get('/admin/declarations', [\App\Http\Controllers\Api\PbjtParkingDeclarationController::class, 'queue']);
+        Route::post('/admin/declarations/{id}/approve', [\App\Http\Controllers\Api\PbjtParkingDeclarationController::class, 'approve']);
+        Route::post('/admin/declarations/{id}/reject', [\App\Http\Controllers\Api\PbjtParkingDeclarationController::class, 'reject']);
+
         // Kawasan Terpadu Jembatan Batu & Proxy GT Kepelabuhanan (Perda 1/2024)
         Route::get('/kios-jembatan-batu', [ParkingController::class, 'kiosJembatanBatu']);
         Route::post('/kios-jembatan-batu/generate-bills', [ParkingController::class, 'generateKiosBills']);
@@ -970,3 +979,30 @@ Route::middleware('auth:sanctum')->prefix('tpi')->group(function () {
 // DEPLOY HOOK (Staging only - protected by X-Deploy-Secret header)
 // ------------------------------------------------------------------------
 Route::post('/admin/deploy-hook', [DeployHookController::class, 'handle']);
+
+// ------------------------------------------------------------------------
+// NOPD / NORD 14 DIGIT — KODIFIKASI, KAMUS REFERENSI LEGACY & KLAIM OBJEK
+// Lingkup: pajak daerah non-PBB/BPHTB + retribusi daerah
+// (blok aditif — tidak mengubah route yang sudah ada)
+// ------------------------------------------------------------------------
+Route::prefix('object-numbers')->group(function () {
+    Route::get('/sektor', [\App\Http\Controllers\ObjectNumberController::class, 'sektor']);
+
+    Route::post('/legacy-lookup', [\App\Http\Controllers\ObjectNumberController::class, 'legacyLookup'])
+        ->middleware('throttle:30,1');
+
+    Route::get('/kandidat-klaim', [\App\Http\Controllers\ObjectNumberController::class, 'kandidatKlaim'])
+        ->middleware('throttle:30,1');
+
+    Route::get('/lookup', [\App\Http\Controllers\ObjectNumberController::class, 'lookup'])
+        ->middleware('throttle:60,1');
+
+    Route::post('/claim', [\App\Http\Controllers\ObjectNumberController::class, 'claim'])
+        ->middleware('auth:sanctum');
+
+    Route::get('/{nomor}', [\App\Http\Controllers\ObjectNumberController::class, 'show'])
+        ->where('nomor', '[0-9.]+');
+});
+// ------------------------------------------------------------------------
+// AKHIR BLOK NOPD / NORD 14 DIGIT
+// ------------------------------------------------------------------------
