@@ -1179,3 +1179,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/mblb/hitung', [App\Http\Controllers\MblbReportController::class, 'hitung']);
 });
 Route::get('/public/mblb-kendaraan', [App\Http\Controllers\MblbReportController::class, 'kendaraan']);
+
+// ------------------------------------------------------------------------
+// IDENTITAS FISIK BER-QR objek retribusi daerah (NORD)
+// Stiker ditempel di kios pasar / pos parkir / persil sampah / lapak TPI
+// ------------------------------------------------------------------------
+Route::get('/public/qr-objek/{token}', [App\Http\Controllers\QrObjekRetribusiController::class, 'cari'])
+    ->where('token', '[a-z0-9]{8,32}');
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/qr-objek/{id}', [App\Http\Controllers\QrObjekRetribusiController::class, 'tampil'])->whereNumber('id');
+    Route::post('/qr-objek/{id}/pastikan', [App\Http\Controllers\QrObjekRetribusiController::class, 'pastikan'])->whereNumber('id');
+});

@@ -89,6 +89,14 @@ return [
         'terbit_walau_selisih' => false, // true = tetap terbit walau perlu diperiksa
     ],
 
+    // ---- Identitas fisik ber-QR (retribusi daerah / NORD) ----
+    // Stiker QR ditempel pada objek fisik: kios pasar, pos parkir, persil
+    // sampah, lapak TPI. Token acak (bukan nomor NORD) dipakai di URL.
+    'qr' => [
+        'basis_url' => env('MPAD_QR_BASIS_URL', 'https://mpad.baubaukota.go.id'),
+        'ukuran_default' => 320,
+    ],
+
     // Jenis penomoran
     'jenis' => [
         'NOPD' => 'Nomor Objek Pajak Daerah',
