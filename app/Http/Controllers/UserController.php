@@ -24,16 +24,18 @@ class UserController extends Controller
 
         $query = User::query();
 
-        // If not super_admin, scope by OPD with cross-OPD technical verification support
-        if (! $user->isSuperAdmin()) {
+        if ($request->filled('opd_id')) {
+            $query->where('opd_id', $request->opd_id);
+        } elseif (! $user->isSuperAdmin()) {
             $isTechnicalQuery = $request->role === 'petugas' && (
                 $request->boolean('include_technical_opd') ||
-                in_array((int) $user->opd_id, [4, 5, 9, 11])
+                in_array((int) $user->opd_id, [4, 5, 9, 11, 13, 14, 15, 16])
             );
 
             if ($isTechnicalQuery) {
-                // Cross-OPD field verification for MBLB, Tata Ruang, Lingkungan Hidup
-                $query->whereIn('opd_id', [4, 5, 9, 11]);
+                // Allow cross-OPD field verification including BAPENDA, DISPERKIM, DISHUB, etc.
+                $opdIds = array_unique(array_merge([(int) $user->opd_id], [4, 5, 9, 11, 13, 14, 15, 16]));
+                $query->whereIn('opd_id', $opdIds);
             } else {
                 $query->where('opd_id', $user->opd_id);
             }

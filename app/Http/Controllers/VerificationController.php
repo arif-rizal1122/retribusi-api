@@ -209,9 +209,86 @@ class VerificationController extends Controller
         $verification->load(['opd', 'submitter', 'verifier', 'taxObject.classification', 'taxObject.taxpayer', 'taxpayer']);
         $this->attachVerificationTimeline(collect([$verification]));
 
+        // ═══ STATE GUARD INFO: Kirim status pagar validasi ke UI ═══
+        $stateGuard = $this->buildStateGuardInfo($verification);
+
         return response()->json([
-            'data' => $verification
+            'data' => $verification,
+            'state_guard' => $stateGuard,
         ]);
+    }
+
+    /**
+     * Build state guard information for the admin UI.
+     * Menentukan apakah tombol "Setujui" boleh aktif berdasarkan aturan bisnis.
+     */
+    private function buildStateGuardInfo(Verification $verification): array
+    {
+        $guard = [
+            'can_approve' => true,
+            'requires_field_survey' => false,
+            'approval_method' => 'document_review',
+            'field_check_params' => [],
+            'survey_status' => null,
+            'survey_task' => null,
+            'block_reasons' => [],
+        ];
+
+        if (!$verification->tax_object_id || !$verification->taxObject || !$verification->taxObject->classification) {
+            return $guard;
+        }
+
+        $classification = $verification->taxObject->classification;
+        $guard['requires_field_survey'] = $classification->requiresFieldSurvey();
+        $guard['approval_method'] = $classification->approval_method ?? 'field_survey';
+        $guard['field_check_params'] = $classification->field_check_params ?? [];
+
+        if (!$classification->requiresFieldSurvey()) {
+            return $guard; // Tidak wajib survei → langsung boleh approve
+        }
+
+        // Cek penugasan field_survey
+        $latestTask = PetugasTask::where('tax_object_id', $verification->tax_object_id)
+            ->where('task_type', 'field_survey')
+            ->with('user:id,name')
+            ->latest('created_at')
+            ->first();
+
+        if (!$latestTask) {
+            $guard['can_approve'] = false;
+            $guard['survey_status'] = 'no_assignment';
+            $guard['block_reasons'][] = 'Wajib menugaskan petugas lapangan terlebih dahulu.';
+            return $guard;
+        }
+
+        $guard['survey_task'] = [
+            'id' => $latestTask->id,
+            'status' => $latestTask->status,
+            'officer_name' => $latestTask->user?->name,
+            'due_date' => $latestTask->due_date,
+            'completed_at' => $latestTask->completed_at,
+            'has_photo' => !empty($latestTask->completion_photo_path),
+            'notes' => $latestTask->notes,
+        ];
+
+        if ($latestTask->status !== 'completed') {
+            $guard['can_approve'] = false;
+            $guard['survey_status'] = 'in_progress';
+            $guard['block_reasons'][] = 'Penugasan survei lapangan belum selesai. Tunggu petugas menyelesaikan laporan.';
+            return $guard;
+        }
+
+        if (empty($latestTask->completion_photo_path)) {
+            $guard['can_approve'] = false;
+            $guard['survey_status'] = 'incomplete_report';
+            $guard['block_reasons'][] = 'Laporan lapangan belum memuat foto bukti fisik.';
+            return $guard;
+        }
+
+        $guard['survey_status'] = 'completed';
+        $guard['can_approve'] = true;
+
+        return $guard;
     }
 
     private function attachVerificationTimeline($verifications): void
@@ -270,6 +347,7 @@ class VerificationController extends Controller
 
             $verification->taxObject->setAttribute('field_survey_tasks', $surveyTasks);
             $verification->taxObject->setAttribute('latest_field_survey_task', $surveyTasks->last());
+            $verification->setAttribute('state_guard', $this->buildStateGuardInfo($verification));
         });
     }
 
