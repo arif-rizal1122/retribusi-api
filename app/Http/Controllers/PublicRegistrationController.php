@@ -386,8 +386,26 @@ class PublicRegistrationController extends Controller
 
     private function firstUploadedFileUrl(array $metadata): ?string
     {
+        $isMaps = function ($url) {
+            return is_string($url) && (
+                str_contains($url, 'maps.google.') ||
+                str_contains($url, 'google.com/maps') ||
+                str_contains($url, 'goo.gl')
+            );
+        };
+
+        // 1. Prioritas dokumen gambar
         foreach ($metadata as $value) {
-            if (is_string($value) && (str_starts_with($value, 'http') || str_starts_with($value, 'storage/') || str_contains($value, 'cloudinary'))) {
+            if (is_string($value) && !$isMaps($value) && (str_starts_with($value, 'http') || str_starts_with($value, 'storage/') || str_contains($value, 'cloudinary'))) {
+                if (preg_match('/\.(jpe?g|png|webp|gif|svg)(\?.*)?$/i', $value) || str_contains($value, '/image/upload/')) {
+                    return $value;
+                }
+            }
+        }
+
+        // 2. Berkas dokumen lain (bukan maps)
+        foreach ($metadata as $value) {
+            if (is_string($value) && !$isMaps($value) && (str_starts_with($value, 'http') || str_starts_with($value, 'storage/') || str_contains($value, 'cloudinary'))) {
                 return $value;
             }
         }

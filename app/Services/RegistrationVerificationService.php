@@ -36,8 +36,91 @@ class RegistrationVerificationService
                     ->update(['status' => 'rejected']);
             }
 
-            return $verification->fresh(['opd', 'submitter', 'verifier', 'taxObject.classification', 'taxObject.taxpayer']);
+            $updated = $verification->fresh(['opd', 'submitter', 'verifier', 'taxObject.classification', 'taxObject.taxpayer']);
+
+            $this->notifyTaxpayerVerificationResult($updated, $status, $notes);
+
+            return $updated;
         });
+    }
+
+    private function notifyTaxpayerVerificationResult(Verification $verification, string $status, ?string $notes): void
+    {
+        try {
+            $taxObject = $verification->taxObject;
+            $taxpayer = $verification->taxpayer ?: $taxObject?->taxpayer;
+            $phone = $taxpayer?->phone;
+
+            if (empty($phone) && $taxObject && !empty($taxObject->metadata)) {
+                $phone = $taxObject->metadata['phone']
+                    ?? $taxObject->metadata['no_hp']
+                    ?? $taxObject->metadata['telepon']
+                    ?? $taxObject->metadata['kontak_pemohon']
+                    ?? $taxObject->metadata['kontak_wp']
+                    ?? null;
+            }
+
+            if (empty($phone)) {
+                return;
+            }
+
+            $waGateway = app(WaGatewayService::class);
+            $taxpayerName = $taxpayer?->name ?: $verification->taxpayer_name ?: 'Wajib Pajak';
+            $docNumber = $verification->document_number;
+            $objName = $taxObject?->name ?: 'Objek Pajak / Retribusi';
+            $serviceName = $taxObject?->classification?->name ?: $taxObject?->retributionType?->name ?: 'Layanan M-PAD';
+
+            if ($status === 'approved') {
+                $waMessage = "🏛️ *PEMERINTAH KOTA BAUBAU*\n"
+                           . "*Badan Pendapatan Daerah (BAPENDA)*\n"
+                           . "━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                           . "Halo, *{$taxpayerName}*!\n\n"
+                           . "Kabar baik! Permohonan pendaftaran unit/objek baru Anda telah *DISETUJUI* oleh Tim Verifikator:\n"
+                           . "📋 *Layanan*: {$serviceName}\n"
+                           . "🏷️ *Nama Objek*: {$objName}\n"
+                           . "🔢 *No. Registrasi*: `{$docNumber}`\n"
+                           . "✅ *Status*: *DISETUJUI / AKTIF*\n\n"
+                           . "Unit/objek Anda kini telah resmi terdaftar dan aktif di sistem M-PAD Kota Baubau.\n"
+                           . "Anda dapat melihat rincian unit dan melakukan pelaporan SPTPD/pembayaran melalui aplikasi *M-PAD Baubau*.\n\n"
+                           . "_Pesan otomatis resmi Sistem M-PAD Pemerintah Kota Baubau_";
+            } elseif ($status === 'rejected') {
+                $catatan = $notes ? ":\n_\"{$notes}\"_" : ". Silakan periksa kelengkapan dokumen pendukung.";
+                $waMessage = "🏛️ *PEMERINTAH KOTA BAUBAU*\n"
+                           . "*Badan Pendapatan Daerah (BAPENDA)*\n"
+                           . "━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                           . "Halo, *{$taxpayerName}*!\n\n"
+                           . "Pemberitahuan terkait permohonan pendaftaran unit/objek Anda:\n"
+                           . "📋 *Layanan*: {$serviceName}\n"
+                           . "🏷️ *Nama Objek*: {$objName}\n"
+                           . "🔢 *No. Registrasi*: `{$docNumber}`\n"
+                           . "⚠️ *Status*: *PERLU PERBAIKAN / DITOLAK*\n\n"
+                           . "Catatan verifikator{$catatan}\n\n"
+                           . "Silakan perbaiki data atau hubungi petugas Bapenda melalui aplikasi *M-PAD Baubau*.\n\n"
+                           . "_Pesan otomatis resmi Sistem M-PAD Pemerintah Kota Baubau_";
+            } else {
+                return;
+            }
+
+            $waGateway->sendMessage($phone, $waMessage);
+
+            if (\Illuminate\Support\Facades\Schema::hasTable('notification_logs')) {
+                \Illuminate\Support\Facades\DB::table('notification_logs')->insert([
+                    'taxpayer_id' => $taxpayer?->id,
+                    'phone' => $phone,
+                    'channel' => 'whatsapp',
+                    'type' => 'unit_verification_'.$status,
+                    'reference_type' => 'verifications',
+                    'reference_id' => $verification->id,
+                    'message_preview' => "Verifikasi {$docNumber} ({$objName}) {$status}.",
+                    'status' => 'sent',
+                    'sent_at' => Carbon::now(),
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('WhatsApp verification result notification failed: '.$e->getMessage());
+        }
     }
 
     private function approveTaxObject(Verification $verification, User $user): void
@@ -58,20 +141,32 @@ class RegistrationVerificationService
             'approved_by' => $user->id,
         ]);
 
-        $this->billCreationService->createForTaxObject(
-            $taxObject,
-            $user,
-            null,
-            $taxObject->metadata ?? [],
-            [
-                'source' => 'verification_approval',
-                'verification_id' => $verification->id,
-            ],
-            null,
-            'verification_approval',
-            null,
-            true
-        );
+        // Terbitkan tagihan otomatis HANYA jika kalkulasi menghasilkan nominal > 0.
+        // Objek pajak self-assessment (seperti Walet/PBJT) yang belum memiliki laporan panen/omzet
+        // tidak boleh diterbitkan tagihan Rp 0, melainkan menunggu pelaporan SPTPD dari wajib pajak.
+        try {
+            $calcService = app(TaxCalculationService::class);
+            $estimatedAmount = (float) $calcService->calculateAmount($taxObject);
+
+            if ($estimatedAmount > 0) {
+                $this->billCreationService->createForTaxObject(
+                    $taxObject,
+                    $user,
+                    null,
+                    $taxObject->metadata ?? [],
+                    [
+                        'source' => 'verification_approval',
+                        'verification_id' => $verification->id,
+                    ],
+                    null,
+                    'verification_approval',
+                    null,
+                    true
+                );
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Automatic bill creation on approval skipped: '.$e->getMessage());
+        }
     }
 
     private function assertTaxObjectCanBeApproved(TaxObject $taxObject): void

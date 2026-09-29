@@ -78,8 +78,19 @@ class TaxCalculationService
         }
 
         if ($classification && filled($classification->calculation_formula)) {
+            $amount = max(0, (float) $this->formulaParser->calculate($classification->calculation_formula, $variables));
+
+            // Reklame Multi-Titik (Unit multiplier): Total = kalkulasi per titik x jumlah titik (unit)
+            if ($this->isReklameObject($taxObject)) {
+                $units = max(1, (int) ($variables['unit'] ?? $variables['jumlah_titik'] ?? 1));
+                $formulaLower = strtolower($classification->calculation_formula);
+                if (!str_contains($formulaLower, 'unit') && !str_contains($formulaLower, 'jumlah_titik')) {
+                    $amount = $amount * $units;
+                }
+            }
+
             return [
-                'amount' => max(0, (float) $this->formulaParser->calculate($classification->calculation_formula, $variables)),
+                'amount' => $amount,
                 'source' => 'classification_formula',
                 'formula' => $classification->calculation_formula,
                 'rate_id' => $rate?->id,
@@ -169,6 +180,24 @@ class TaxCalculationService
             $variables['turnover_amount'] = $variables['omzet'];
         }
 
+        // Untuk formula yang menggunakan (volume * harga) seperti Pajak Sarang Burung Walet:
+        // Jika pelaporan SPTPD menginput omzet / turnover_amount, turunkan volume dari omzet / harga
+        $harga = (float) ($variables['harga'] ?? 6000000);
+        if ($harga <= 0) {
+            $harga = 6000000;
+        }
+        $variables['harga'] = $harga;
+
+        // Jika ada input omzet dari pelaporan SPTPD, selalu override volume berdasarkan omzet aktual / harga
+        if (isset($inputData['turnover_amount']) || isset($inputData['omzet'])) {
+            $actualTurnover = (float) ($inputData['turnover_amount'] ?? $inputData['omzet']);
+            $variables['turnover_amount'] = $actualTurnover;
+            $variables['omzet'] = $actualTurnover;
+            $variables['volume'] = round($actualTurnover / $harga, 4);
+        } elseif (!empty($variables['turnover_amount']) && empty($variables['volume'])) {
+            $variables['volume'] = round((float) $variables['turnover_amount'] / $harga, 4);
+        }
+
         return $variables;
     }
 
@@ -197,6 +226,21 @@ class TaxCalculationService
         ]));
 
         return str_contains($haystack, 'pbb') || str_contains($haystack, 'pajak bumi');
+    }
+
+    private function isReklameObject(TaxObject $taxObject): bool
+    {
+        $type = $taxObject->retributionType;
+        $classification = $taxObject->classification;
+
+        $haystack = strtolower(implode(' ', [
+            $type->name ?? '',
+            $type->category ?? '',
+            $classification->name ?? '',
+            $classification->code ?? '',
+        ]));
+
+        return str_contains($haystack, 'reklame');
     }
 
     private function calculatePbb(TaxObject $taxObject, array $inputData): array

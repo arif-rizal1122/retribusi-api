@@ -271,6 +271,28 @@ class CitizenServiceController extends Controller
                 $metadata['luas'] = round($p * $l * $s, 2);
             }
         }
+
+        // Normalisasi Reklame Multi-Titik (Pajak Reklame ID 188 / REKLAME)
+        if (!empty($metadata['titik_lokasi'])) {
+            if (is_string($metadata['titik_lokasi'])) {
+                $metadata['titik_lokasi'] = json_decode($metadata['titik_lokasi'], true) ?: [];
+            }
+            if (is_array($metadata['titik_lokasi']) && count($metadata['titik_lokasi']) > 0) {
+                $metadata['jumlah_titik'] = count($metadata['titik_lokasi']);
+                $metadata['unit'] = $metadata['jumlah_titik'];
+
+                // Auto-fill koordinat dan alamat dari titik pertama jika belum diisi
+                $firstPoint = $metadata['titik_lokasi'][0] ?? null;
+                if ($firstPoint && is_array($firstPoint)) {
+                    if (empty($metadata['koordinat_usaha']) && !empty($firstPoint['latitude']) && !empty($firstPoint['longitude'])) {
+                        $metadata['koordinat_usaha'] = $firstPoint['latitude'].','.$firstPoint['longitude'];
+                    }
+                    if (empty($metadata['alamat_usaha']) && !empty($firstPoint['alamat'])) {
+                        $metadata['alamat_usaha'] = $firstPoint['alamat'];
+                    }
+                }
+            }
+        }
         if (empty($metadata['penjualan']) && ! empty($metadata['volume']) && ! empty($metadata['harga'])) {
             $v = (float) $metadata['volume'];
             $h = (float) $metadata['harga'];
@@ -544,9 +566,9 @@ class CitizenServiceController extends Controller
                 'opd_id' => $service->opd_id,
                 'zone_id' => $request->zone_id,
                 'name' => $request->name,
-                'address' => $request->address,
-                'latitude' => $request->latitude,
-                'longitude' => $request->longitude,
+                'address' => $request->address ?: ($metadata['titik_lokasi'][0]['alamat'] ?? 'Kota Baubau'),
+                'latitude' => $request->latitude ?? ($metadata['titik_lokasi'][0]['latitude'] ?? null),
+                'longitude' => $request->longitude ?? ($metadata['titik_lokasi'][0]['longitude'] ?? null),
                 'metadata' => $metadata,
                 'status' => $autoApproved ? 'active' : 'pending',
 
@@ -581,14 +603,8 @@ class CitizenServiceController extends Controller
                 }
             }
 
-            // Pick the first available file URL for the primary verification proof
-            $firstFileUrl = null;
-            foreach ($metadata as $val) {
-                if (is_string($val) && (str_starts_with($val, 'http') || str_contains($val, 'cloudinary'))) {
-                    $firstFileUrl = $val;
-                    break;
-                }
-            }
+            // Pick the best available file URL (prioritize real photo/image, exclude maps coordinates)
+            $firstFileUrl = $this->resolvePrimaryProofUrl($metadata);
 
             // Calculate initial estimated amount for verification record
             $estimatedAmount = 0;
@@ -792,9 +808,28 @@ class CitizenServiceController extends Controller
             return [$taxObject, $verification];
         });
 
-        // Kirim notifikasi WhatsApp resmi ke nomor terdaftar wajib pajak
-        $phone = $taxpayer->phone ?: ($request->user()?->phone ?? null);
+        // Kirim notifikasi WhatsApp resmi ke nomor pemesan / terdaftar wajib pajak
+        $phone = $request->input('phone')
+            ?: $request->input('no_hp')
+            ?: $request->input('telepon')
+            ?: $request->input('kontak_pemohon')
+            ?: ($metadata['kontak_pemohon'] ?? null)
+            ?: ($metadata['no_hp'] ?? null)
+            ?: ($metadata['telepon'] ?? null)
+            ?: ($metadata['phone'] ?? null)
+            ?: ($metadata['whatsapp'] ?? null)
+            ?: ($metadata['kontak_wp'] ?? null)
+            ?: $taxpayer->phone
+            ?: ($request->user()?->phone ?? null);
+
         if (! empty($phone)) {
+            // Update nomor HP taxpayer jika sebelumnya belum terisi
+            if (empty($taxpayer->phone)) {
+                try {
+                    $taxpayer->update(['phone' => $phone]);
+                } catch (\Throwable $ignored) {}
+            }
+
             try {
                 $waGateway = app(WaGatewayService::class);
                 $docNumber = $verification->document_number;
@@ -882,8 +917,13 @@ class CitizenServiceController extends Controller
                 continue;
             }
 
-            // Field readonly seperti HDA, luas reklame, penjualan walet tidak boleh ditolak jika sudah ada atau dihitung
-            if (! empty($field['readonly']) && ! empty($metadata[$key])) {
+            // Field readonly seperti HDA, luas reklame, penjualan walet tidak diisi manual oleh warga
+            if (! empty($field['readonly'])) {
+                continue;
+            }
+
+            // Field pelaporan masa panen (volume / omzet panen) adalah bagian dari SPTPD, bukan pendaftaran master gedung objek walet
+            if (in_array($key, ['volume', 'perkiraan_hasil_panen', 'hasil_panen', 'penjualan'], true)) {
                 continue;
             }
 
@@ -926,6 +966,11 @@ class CitizenServiceController extends Controller
                 if ($request->user()) {
                     continue;
                 }
+            }
+
+            // Bukti hak lahan bersifat opsional bagi pendaftaran objek walet
+            if ($key === 'bukti_lahan') {
+                continue;
             }
 
             $label = $requirement['label'] ?? $requirement['name'] ?? $key;
@@ -1064,5 +1109,75 @@ class CitizenServiceController extends Controller
         abort_unless($user instanceof Taxpayer, 403, 'Endpoint ini hanya untuk wajib pajak.');
 
         return $user;
+    }
+
+    private function resolvePrimaryProofUrl(array $metadata): ?string
+    {
+        $isMaps = function ($url) {
+            return is_string($url) && (
+                str_contains($url, 'maps.google.com') ||
+                str_contains($url, 'google.com/maps') ||
+                str_contains($url, 'goo.gl') ||
+                str_contains($url, 'openstreetmap.org')
+            );
+        };
+
+        $isMediaFile = function ($url) use ($isMaps) {
+            if (! is_string($url) || $isMaps($url)) {
+                return false;
+            }
+
+            return str_starts_with($url, 'http://') ||
+                   str_starts_with($url, 'https://') ||
+                   str_starts_with($url, '/storage') ||
+                   str_starts_with($url, 'storage/') ||
+                   str_contains($url, 'cloudinary');
+        };
+
+        $isImage = function ($url) use ($isMediaFile) {
+            if (! $isMediaFile($url)) {
+                return false;
+            }
+
+            return (bool) preg_match('/\.(jpe?g|png|webp|gif|svg)(\?.*)?$/i', $url) || str_contains($url, '/image/upload/');
+        };
+
+        // 1. Prioritas dokumen visual bangunan / fisik objek
+        $priorityKeys = [
+            'foto_bangunan',
+            'foto_gedung',
+            'foto_lokasi_open_kamera',
+            'foto_lokasi',
+            'foto_titik',
+            'foto_objek',
+            'foto_tempat',
+            'foto_usaha',
+            'materi_reklame',
+            'foto_reklame',
+            'formulir_data_dukung',
+            'bukti_lahan',
+        ];
+
+        foreach ($priorityKeys as $key) {
+            if (! empty($metadata[$key]) && $isImage($metadata[$key])) {
+                return $metadata[$key];
+            }
+        }
+
+        // 2. Cari gambar apapun di metadata
+        foreach ($metadata as $val) {
+            if ($isImage($val)) {
+                return $val;
+            }
+        }
+
+        // 3. Cari berkas media dokumen lain (misalnya PDF)
+        foreach ($metadata as $val) {
+            if ($isMediaFile($val)) {
+                return $val;
+            }
+        }
+
+        return null;
     }
 }

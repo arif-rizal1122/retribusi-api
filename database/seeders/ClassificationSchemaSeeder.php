@@ -151,12 +151,11 @@ class ClassificationSchemaSeeder extends Seeder
                 ['label' => '3 Bulan Sekali', 'value' => '3_bulan'],
                 ['label' => '4 Bulan Sekali', 'value' => '4_bulan'],
             ]],
-            ['key' => 'volume', 'label' => 'Perkiraan Hasil Panen per Siklus (Kg)', 'type' => 'number', 'required' => true],
-            ['key' => 'harga', 'label' => 'Harga Pasar Berlaku (Rp / Kg)', 'type' => 'number', 'required' => true],
+            ['key' => 'volume', 'label' => 'Perkiraan Hasil Panen per Siklus (Kg)', 'type' => 'number', 'required' => false],
+            ['key' => 'harga', 'label' => 'Harga Pasar Berlaku (Rp / Kg)', 'type' => 'number', 'required' => false, 'default_value' => 6000000],
             ['key' => 'penjualan', 'label' => 'Estimasi Omzet Panen (Rp)', 'type' => 'number', 'readonly' => true, 'helper' => 'Otomatis dihitung: Volume × Harga'],
         ], [
             ['key' => 'foto_bangunan', 'name' => 'Foto Fisik Gedung Walet', 'required' => true],
-            ['key' => 'bukti_lahan', 'name' => 'Bukti Hak / Penguasaan Lahan atau Bangunan', 'required' => true],
         ]);
 
         // 8. PBJT Jasa Kesenian dan Hiburan

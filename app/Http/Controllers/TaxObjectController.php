@@ -481,6 +481,16 @@ class TaxObjectController extends Controller
                 continue;
             }
 
+            // Field readonly dihitung oleh sistem
+            if (!empty($field['readonly'])) {
+                continue;
+            }
+
+            // Field pelaporan masa panen (volume / omzet panen) adalah bagian dari SPTPD
+            if (in_array($key, ['volume', 'perkiraan_hasil_panen', 'hasil_panen', 'penjualan'], true)) {
+                continue;
+            }
+
             $value = $metadata[$key] ?? null;
             if ($value === null || (is_string($value) && trim($value) === '')) {
                 $label = $field['label'] ?? $key;
@@ -512,6 +522,11 @@ class TaxObjectController extends Controller
                 }
             }
 
+            // Bukti hak lahan bersifat opsional bagi pendaftaran objek walet
+            if ($key === 'bukti_lahan') {
+                continue;
+            }
+
             $label = $requirement['label'] ?? $requirement['name'] ?? $key;
             $errors[$key] = "{$label} wajib diunggah sebelum pengajuan dikirim ulang.";
         }
@@ -541,8 +556,26 @@ class TaxObjectController extends Controller
 
     private function firstFileUrl(array $metadata): ?string
     {
+        $isMaps = function ($url) {
+            return is_string($url) && (
+                str_contains($url, 'maps.google.') ||
+                str_contains($url, 'google.com/maps') ||
+                str_contains($url, 'goo.gl')
+            );
+        };
+
+        // 1. Prioritas dokumen gambar
         foreach ($metadata as $value) {
-            if (is_string($value) && (str_starts_with($value, 'http') || str_starts_with($value, '/storage') || str_contains($value, 'cloudinary'))) {
+            if (is_string($value) && !$isMaps($value) && (str_starts_with($value, 'http') || str_starts_with($value, '/storage') || str_contains($value, 'cloudinary'))) {
+                if (preg_match('/\.(jpe?g|png|webp|gif|svg)(\?.*)?$/i', $value) || str_contains($value, '/image/upload/')) {
+                    return $value;
+                }
+            }
+        }
+
+        // 2. Berkas dokumen lain (bukan maps)
+        foreach ($metadata as $value) {
+            if (is_string($value) && !$isMaps($value) && (str_starts_with($value, 'http') || str_starts_with($value, '/storage') || str_contains($value, 'cloudinary'))) {
                 return $value;
             }
         }

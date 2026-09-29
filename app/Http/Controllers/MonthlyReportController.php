@@ -101,6 +101,27 @@ class MonthlyReportController extends Controller
                 'status' => 'pending',
             ]);
 
+            // Catat notifikasi otomatis ke Bapenda / Admin
+            try {
+                $taxpayerName = $taxObject->taxpayer?->name ?: 'Wajib Pajak';
+                \App\Models\NotificationLog::create([
+                    'taxpayer_id' => $user->id,
+                    'user_id' => null,
+                    'phone' => $taxObject->taxpayer?->phone ?? '-',
+                    'channel' => 'in_app',
+                    'type' => 'sptpd_submitted',
+                    'template_code' => 'NOTIF-ADM-SPTPD',
+                    'reference_type' => 'monthly_report',
+                    'reference_id' => $report->id,
+                    'message_preview' => "SPTPD Baru ({$taxObject->name} - {$taxpayerName}): Periode {$report->period}, Nilai Panen Rp " . number_format((float) $report->turnover_amount, 0, ',', '.') . " siap ditinjau untuk penetapan SKPD.",
+                    'status' => 'delivered',
+                    'idempotency_key' => "sptpd-submit-{$report->id}",
+                    'sent_at' => now(),
+                ]);
+            } catch (\Throwable $ne) {
+                \Log::warning('Failed logging admin notif for SPTPD: ' . $ne->getMessage());
+            }
+
             return response()->json([
                 'message' => 'Laporan omzet periode ' . $request->period . ' berhasil dikirim',
                 'data' => $report
@@ -130,10 +151,13 @@ class MonthlyReportController extends Controller
         $user = $request->user();
         $query = MonthlyReport::with(['taxObject.classification', 'taxObject.retributionType', 'taxpayer', 'validator']);
 
-        if ($user->role === 'citizen') {
+        if ($user instanceof \App\Models\Taxpayer) {
             $query->where('taxpayer_id', $user->id);
-        } elseif (!$user->isSuperAdmin()) {
-            if ($user->opd_id) {
+        } elseif ($user->role === 'citizen' || $user->role === 'wajib_pajak') {
+            $taxpayerId = $user->taxpayer_id ?? $user->id;
+            $query->where('taxpayer_id', $taxpayerId);
+        } elseif (method_exists($user, 'isSuperAdmin') && !$user->isSuperAdmin()) {
+            if (!empty($user->opd_id)) {
                 $query->whereHas('taxObject', function ($q) use ($user) {
                     $q->where('opd_id', $user->opd_id);
                 });
