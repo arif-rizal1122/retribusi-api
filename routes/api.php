@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\Admin\H2HMonitorController;
 use App\Http\Controllers\Api\V1\Admin\WaGatewayController;
 use App\Http\Controllers\Api\V1\Bank\BankH2HController;
 use App\Http\Controllers\Api\V1\BidangPajakController;
+use App\Http\Controllers\Api\V1\DelegasiPejabatController;
 use App\Http\Controllers\Api\V1\KabidPerObjekController;
 use App\Http\Controllers\Api\V1\PekerjaanLapanganController;
 use App\Http\Controllers\Api\V1\Dishub\HarborProxyGtController;
@@ -1132,6 +1133,30 @@ Route::prefix('bidang-pajak')->middleware('auth:sanctum')->group(function () {
     Route::post('penugasan/{id}/otorisasi', [BidangPajakController::class, 'otorisasiPenugasan'])
         ->whereNumber('id')
         ->middleware('service_action:approve');
+
+    // ==================================================================
+    // DELEGASI / BACKUP PEJABAT (Kabid & Kasubid)
+    // ==================================================================
+    // Masalah: role kabid_wilayah_1/2 dan kasubid_* hanya dipegang 1 user.
+    // Bila pejabat cuti/sakit/dinas luar, tugas lapangan berhenti total.
+    // Endpoint ini memberi cara tercatat menunjuk pengganti pada rentang
+    // tanggal tertentu — bukan ubah role manual di database.
+    Route::prefix('delegasi')->group(function () {
+        // Baca: Kasubid ke atas (gate 'verify').
+        Route::get('/daftar', [DelegasiPejabatController::class, 'daftar'])
+            ->middleware('service_action:verify');
+
+        Route::get('/kandidat', [DelegasiPejabatController::class, 'kandidat'])
+            ->middleware('service_action:verify');
+
+        // Tulis: Kabid / Kepala Bapenda (gate 'approve').
+        Route::post('/', [DelegasiPejabatController::class, 'buat'])
+            ->middleware('service_action:approve');
+
+        Route::post('/{id}/cabut', [DelegasiPejabatController::class, 'cabut'])
+            ->whereNumber('id')
+            ->middleware('service_action:approve');
+    });
 });
 // ------------------------------------------------------------------------
 // AKHIR BLOK ALUR KERJA KASUBID & KABID

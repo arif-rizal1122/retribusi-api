@@ -148,6 +148,24 @@ class OfficialResolverService
             return null;
         }
 
+        // ── DELEGASI/BACKUP (29 Sep 2026) ────────────────────────
+        // Pejabat pemegang role bisa cuti/sakit. Bila ada delegasi AKTIF untuk
+        // role ini, pakai penggantinya LEBIH DULU. Fail-safe: delegasi tidak
+        // valid dilewati, bukan dianggap sah.
+        $delegasiSvc = app(\App\Services\OfficialDelegationService::class);
+        $delegatedUserId = $delegasiSvc->resolveDelegate($role, $domain);
+
+        if ($delegatedUserId !== null) {
+            Log::info('[OfficialResolver] Memakai pejabat PENGGANTI (delegasi aktif).', [
+                'stage'    => $stage,
+                'domain'   => $domain,
+                'role'     => $role,
+                'delegate' => $delegatedUserId,
+            ]);
+
+            return $delegatedUserId;
+        }
+
         $userId = $this->cariUserByRole($role);
 
         if ($userId !== null) {
