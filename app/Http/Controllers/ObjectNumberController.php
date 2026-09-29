@@ -52,6 +52,49 @@ class ObjectNumberController extends Controller
     }
 
     /**
+     * GET /api/object-numbers/{nomor}/kartu
+     * Kartu NOPD/NORD dalam bentuk PDF (A4 portrait).
+     *
+     * Nomor diambil dari object_number_registry (sumber kebenaran), lalu objek pajaknya
+     * ditelusuri lewat tax_object_id. NOP lama dipasang apa adanya, tetap bisa dicetak.
+     */
+    public function kartu(string $nomor)
+    {
+        $bersih = $this->numbers->normalisasiInput($nomor);
+        $record = $this->registry->cariNomor($bersih);
+
+        if (! $record) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nomor objek tidak terdaftar pada registry NOPD/NORD.',
+            ], 404);
+        }
+
+        $taxObject = $record->tax_object_id
+            ? \App\Models\TaxObject::with(['taxpayer', 'opd'])->find($record->tax_object_id)
+            : null;
+
+        if (! $taxObject) {
+            // Registry ada tapi objek pajaknya belum tertaut — tetap terbitkan kartu
+            // dari data registry supaya nomor yang sudah beredar selalu bisa dicetak.
+            $taxObject = new \App\Models\TaxObject([
+                'id' => null,
+                'name' => $record->metadata['business_name'] ?? 'Objek ' . ($record->jenis ?? 'Pajak/Retribusi'),
+                'address' => $record->metadata['address_text'] ?? '-',
+            ]);
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.nopd', [
+            'taxObject' => $taxObject,
+            'nomor' => $record->nomor,
+            'jenis' => $record->jenis,
+            'sektor' => $record->sector_code,
+        ])->setPaper('A4', 'portrait');
+
+        return $pdf->download('NOPD-' . preg_replace('/[^0-9]/', '', (string) $record->nomor) . '.pdf');
+    }
+
+    /**
      * GET /api/object-numbers/{nomor}
      * Cek nomor NOPD/NORD (bisa diisi dengan/atau tanpa titik).
      */

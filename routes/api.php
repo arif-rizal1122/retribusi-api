@@ -1004,6 +1004,10 @@ Route::prefix('object-numbers')->group(function () {
     Route::post('/claim', [\App\Http\Controllers\ObjectNumberController::class, 'claim'])
         ->middleware('auth:sanctum');
 
+    // Kartu NOPD/NORD (PDF) — WAJIB di atas route {nomor}, kalau tidak akan tertelan.
+    Route::get('/{nomor}/kartu', [\App\Http\Controllers\ObjectNumberController::class, 'kartu'])
+        ->where('nomor', '[0-9.]+');
+
     Route::get('/{nomor}', [\App\Http\Controllers\ObjectNumberController::class, 'show'])
         ->where('nomor', '[0-9.]+');
 });
