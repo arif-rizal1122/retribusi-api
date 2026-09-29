@@ -684,6 +684,11 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         });
 
         Route::prefix('reports')->group(function () {
+            // Daftar SPTPD / laporan bulanan untuk panel admin (badge pending di sidebar).
+            // Sebelumnya belum terdaftar — frontend Layout.tsx memanggil GET /api/reports?status=pending
+            // dan menerima 404. Arahkan ke MonthlyReportController@index yang sudah mendukung
+            // filter status/period/search/classification_id. (29 Sep 2026)
+            Route::get('/', [MonthlyReportController::class, 'index']);
             Route::get('/summary', [ReportController::class, 'getSummary']);
             Route::get('/recent', [ReportController::class, 'getRecent']);
             Route::get('/petugas-performance', [ReportController::class, 'getPetugasPerformance']);
@@ -1165,3 +1170,12 @@ Route::prefix('bidang-pajak')->middleware('auth:sanctum')->group(function () {
 // ------------------------------------------------------------------------
 // AKHIR BLOK ALUR KERJA KASUBID & KABID
 // ------------------------------------------------------------------------
+
+// ------------------------------------------------------------------------
+// PAJAK MBLB (sektor NOPD 09) — laporan ringkas + triangulasi ritase pos jaga
+// ------------------------------------------------------------------------
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/mblb/kuari-saya', [App\Http\Controllers\MblbReportController::class, 'kuariSaya']);
+    Route::post('/mblb/hitung', [App\Http\Controllers\MblbReportController::class, 'hitung']);
+});
+Route::get('/public/mblb-kendaraan', [App\Http\Controllers\MblbReportController::class, 'kendaraan']);

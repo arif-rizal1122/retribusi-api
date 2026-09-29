@@ -81,6 +81,14 @@ return [
         '31' => ['nama' => 'Retribusi Penggunaan Tenaga Kerja Asing (PTKA)', 'jenis' => 'NORD', 'opd' => 'Disnaker / DPMPTSP'],
     ],
 
+    // ---- Pajak MBLB (sektor 09) ----
+    // Rumus Perda: (volume x harga_patokan) x tarif
+    'mblb' => [
+        'tarif' => 0.15,               // 15% sesuai Perda
+        'ambang_selisih' => 0.10,      // toleransi selisih laporan vs ritase (10%)
+        'terbit_walau_selisih' => false, // true = tetap terbit walau perlu diperiksa
+    ],
+
     // Jenis penomoran
     'jenis' => [
         'NOPD' => 'Nomor Objek Pajak Daerah',
