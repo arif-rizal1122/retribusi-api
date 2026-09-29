@@ -4,7 +4,16 @@
  * Kodifikasi objek pajak daerah (NOPD) dan retribusi daerah (NORD)
  * Kota Baubau — struktur 14 digit digital-ready.
  *
- * Format: 7472 . XX (sektor) . XXXX (kode kecamatan + kelurahan) . XXXX (nomor urut titik)
+ * Format LAMA (existing, DIPERTAHANKAN APA ADANYA):
+ *   7472 . XX (sektor) . XXXX (kec+kel) . XXXX (nomor urut titik)   = 14 digit
+ *
+ * Format BARU (generated, kapasitas diperluas):
+ *   7472 . XX (sektor) . XXXX (kec+kel) . UUUUUU (nomor urut titik) = 16 digit
+ *
+ * Perluasan 29 Sep 2026: ember sektor 01 + kelurahan 7215 (Lipuu) memuat
+ * 62.568 objek restoran > kapasitas 4 digit (9.999). Slot urut diperpanjang
+ * ke 6 digit agar tidak ada objek gagal terbit. Nomor existing TIDAK diubah.
+ *
  * Lingkup: Pajak daerah NON-PBB/BPHTB (NOPD) dan Retribusi Daerah (NORD).
  */
 
@@ -13,12 +22,28 @@ return [
     // Kode kota Baubau (BPS 7472)
     'kode_kota' => '7472',
 
-    // Panjang total nomor
+    // Panjang total nomor (default, kompatibilitas existing)
     'panjang' => 14,
 
-    // Rentang nomor urut titik (4 digit)
+    // Panjang nomor BARU yang digenerate (slot urut 6 digit)
+    'panjang_baru' => 16,
+
+    // Panjang slot nomor urut (digit)
+    'urut_panjang_lama' => 4,
+    'urut_panjang_baru' => 6,
+
+    // Rentang nomor urut titik
     'urut_min' => 1,
-    'urut_max' => 9999,
+    'urut_max' => 9999,          // batas format lama (4 digit)
+    'urut_max_baru' => 999999,   // batas format baru (6 digit)
+
+    // ---- Alokasi nomor urut ACAK (sejak 29 Sep 2026) ----
+    // Nomor urut tidak lagi berurutan (MAX+1) supaya urutan pendaftaran tidak
+    // bocor lewat nomor. Rentang acak adaptif: makin padat ember makin lebar.
+    'acak_faktor_ruang' => 8,     // langit = jumlah_terpakai * faktor
+    'acak_margin' => 32,          // langit = urut_tertinggi + margin
+    'acak_langit_minimum' => 64,  // langit minimum untuk ember baru/kosong
+    'acak_percobaan_maks' => 50,  // batas ulang saat tabrakan unique
 
     // Kode kecamatan yang sah (2 digit) — 71 s/d 78
     'kode_kecamatan_min' => 71,

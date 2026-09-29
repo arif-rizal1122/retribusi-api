@@ -9,7 +9,11 @@ use InvalidArgumentException;
 use RuntimeException;
 
 /**
- * Alokasi & penerbitan nomor objek NOPD/NORD 14 digit.
+ * Alokasi & penerbitan nomor objek NOPD/NORD.
+ *
+ * Mendukung dua format:
+ *   - 14 digit (lama, existing) — slot urut 4 digit, dipertahankan apa adanya
+ *   - 16 digit (baru, digenerate) — slot urut 6 digit, kapasitas 999.999/ember
  *
  * Menjaga keunikan nomor (DB unique + retry bila balapan) dan mencatat alias kode lama
  * supaya petugas loket bisa mencari dengan NOP/NPWPD lama.
@@ -22,20 +26,96 @@ class ObjectNumberRegistryService
     ) {}
 
     /**
-     * Alokasi nomor urut berikutnya untuk pasangan sektor + kode wilayah.
+     * Nomor urut TERTINGGI yang sudah terpakai pada ember (sektor + kode wilayah).
+     * Dipakai untuk menghitung sisa kapasitas — BUKAN lagi untuk alokasi.
      */
-    public function urutBerikutnya(string $sectorCode, string $kodeWilayah): int
+    public function urutTertinggi(string $sectorCode, string $kodeWilayah): int
     {
-        $max = (int) DB::table('object_number_registry')
+        return (int) DB::table('object_number_registry')
             ->where('sector_code', $sectorCode)
             ->where('kode_wilayah', $kodeWilayah)
             ->max('urut');
-
-        return $max + 1;
     }
 
     /**
-     * Terbitkan nomor NOPD/NORD baru.
+     * Jumlah nomor yang sudah terpakai pada ember.
+     */
+    public function jumlahTerpakai(string $sectorCode, string $kodeWilayah): int
+    {
+        return DB::table('object_number_registry')
+            ->where('sector_code', $sectorCode)
+            ->where('kode_wilayah', $kodeWilayah)
+            ->count();
+    }
+
+    /**
+     * Alokasi nomor urut SECARA ACAK dalam ember (sektor + kode wilayah).
+     *
+     * Sejak 29 Sep 2026 nomor urut tidak lagi berurutan (MAX+1) melainkan diacak
+     * dalam rentang yang tersedia. Tujuannya:
+     *   - urutan pendaftaran tidak bocor lewat nomor (privasi & keamanan)
+     *   - pembagian nomor antar ember tidak bisa ditebak pihak luar
+     *   - tetap unik: dijaga index unik (sector_code, kode_wilayah, urut)
+     *
+     * Rentang acak dibatasi "langit-langit" adaptif (lihat langitUrutAcak) supaya
+     * nomor tidak melejit ke 999999 saat ember baru terisi beberapa baris.
+     */
+    public function urutBerikutnya(string $sectorCode, string $kodeWilayah): int
+    {
+        $langit = $this->langitUrutAcak($sectorCode, $kodeWilayah);
+
+        return random_int(1, $langit);
+    }
+
+    /**
+     * Langit-langit rentang acak untuk ember.
+     *
+     * Adaptif: makin padat ember, makin lebar rentangnya — supaya peluang
+     * tabrakan tetap kecil tanpa membuat nomor meloncat ke angka besar.
+     *
+     * Rumus: max(64, jumlah_terpakai * faktor, urut_tertinggi + margin)
+     * dibatasi oleh urut_max_baru.
+     */
+    public function langitUrutAcak(string $sectorCode, string $kodeWilayah): int
+    {
+        $batasMax = (int) config('kodifikasi.urut_max_baru', 999999);
+        $faktor = (int) config('kodifikasi.acak_faktor_ruang', 8);
+        $margin = (int) config('kodifikasi.acak_margin', 32);
+        $minimum = (int) config('kodifikasi.acak_langit_minimum', 64);
+
+        $terpakai = $this->jumlahTerpakai($sectorCode, $kodeWilayah);
+        $tertinggi = $this->urutTertinggi($sectorCode, $kodeWilayah);
+
+        $langit = max($minimum, $terpakai * $faktor, $tertinggi + $margin);
+
+        return min($langit, $batasMax);
+    }
+
+    /**
+     * Sisa kapasitas ember pada slot urut 6 digit.
+     */
+    public function sisaKapasitas(string $sectorCode, string $kodeWilayah): int
+    {
+        $batasMax = (int) config('kodifikasi.urut_max_baru', 999999);
+
+        return max(0, $batasMax - $this->jumlahTerpakai($sectorCode, $kodeWilayah));
+    }
+
+    /**
+     * Cek apakah ember (sektor + kode wilayah) sudah penuh untuk slot 6 digit.
+     *
+     * Dihitung dari JUMLAH terpakai (bukan urut tertinggi), karena alokasi acak
+     * bisa membuat urut tertinggi tinggi sementara ember masih longgar.
+     */
+    public function emberPenuh(string $sectorCode, string $kodeWilayah): bool
+    {
+        $batasMax = (int) config('kodifikasi.urut_max_baru', 999999);
+
+        return $this->jumlahTerpakai($sectorCode, $kodeWilayah) >= $batasMax;
+    }
+
+    /**
+     * Terbitkan nomor NOPD/NORD baru (format 16 digit, slot urut 6 digit).
      *
      * @param  array{tax_object_id?:int,taxpayer_id?:int,opd_id?:int,legacy_code?:string,legacy_npwpd?:string,legacy_source?:string,latitude?:float,longitude?:float,metadata?:array,claim_status?:string}  $atribut
      */
@@ -43,13 +123,24 @@ class ObjectNumberRegistryService
     {
         $this->numbers->sektor($sectorCode);
 
-        return DB::transaction(function () use ($sectorCode, $kodeWilayah, $atribut) {
+        $panjang = $this->numbers->panjangBaru();
+        $lebarUrut = $this->numbers->urutPanjangUntuk($panjang);
+
+        // Gagal cepat bila ember sudah penuh — jangan ulangi 5x dengan urut naik terus.
+        if ($this->emberPenuh($sectorCode, $kodeWilayah)) {
+            throw new RuntimeException(
+                "Kapasitas ember nomor penuh untuk sektor {$sectorCode} + wilayah {$kodeWilayah}. ".
+                'Sebar ke kode wilayah lain atau perluas slot urut.'
+            );
+        }
+
+        return DB::transaction(function () use ($sectorCode, $kodeWilayah, $atribut, $panjang, $lebarUrut) {
             $percobaan = 0;
 
             do {
                 $percobaan++;
                 $urut = $this->urutBerikutnya($sectorCode, $kodeWilayah);
-                $nomor = $this->numbers->generate($sectorCode, $kodeWilayah, $urut);
+                $nomor = $this->numbers->generate($sectorCode, $kodeWilayah, $urut, $panjang);
                 $jenis = $this->numbers->jenis($sectorCode);
 
                 try {
@@ -66,7 +157,12 @@ class ObjectNumberRegistryService
                     ], $atribut));
                 } catch (QueryException $e) {
                     // Balapan alokasi (unique dilanggar) -> ulangi sampai batas aman
-                    if ($percobaan >= 5) {
+                    if ($percobaan >= (int) config('kodifikasi.acak_percobaan_maks', 50)) {
+                        throw $e;
+                    }
+
+                    // Jangan ulang sia-sia kalau ember sudah benar-benar penuh
+                    if ($this->emberPenuh($sectorCode, $kodeWilayah)) {
                         throw $e;
                     }
                 }
@@ -154,13 +250,17 @@ class ObjectNumberRegistryService
         }
 
         if ($this->numbers->isValid($bersih)) {
-            return ObjectNumberRegistry::where('nomor', $bersih)
-                ->orWhere('nomor_baku', $bersih)
+            // Utamakan baris AKTIF. Nomor SUPERSEDED masih bisa ditemukan
+            // (untuk audit) hanya bila tidak ada baris aktif yang cocok.
+            return ObjectNumberRegistry::where(fn ($q) => $q->where('nomor', $bersih)->orWhere('nomor_baku', $bersih))
+                ->orderByRaw("CASE WHEN status = 'aktif' THEN 0 ELSE 1 END")
                 ->first();
         }
 
         // Nomor lama (bertitik / 13 digit / 18 digit) tetap bisa dicari
-        return ObjectNumberRegistry::where('nomor', $bersih)->first();
+        return ObjectNumberRegistry::where('nomor', $bersih)
+            ->orderByRaw("CASE WHEN status = 'aktif' THEN 0 ELSE 1 END")
+            ->first();
     }
 
     /**
@@ -176,21 +276,29 @@ class ObjectNumberRegistryService
 
         $hasil = collect();
 
+        // Urutkan agar baris AKTIF selalu di depan; SUPERSEDED ikut untuk jejak audit.
+        $urutAktif = fn ($q) => $q->orderByRaw("CASE WHEN status = 'aktif' THEN 0 ELSE 1 END");
+
         $nomor = $this->numbers->normalisasiInput($kunci);
         if ($this->numbers->isValid($nomor)) {
-            $hasil = $hasil->merge(ObjectNumberRegistry::where('nomor', $nomor)->get());
+            $hasil = $hasil->merge($urutAktif(ObjectNumberRegistry::where('nomor', $nomor))->get());
         }
 
         $kandidat = (new LegacyDictionaryService($this->numbers))->kandidatKode($kunci);
         if ($kandidat !== []) {
             $hasil = $hasil->merge(
-                ObjectNumberRegistry::whereIn('legacy_code', $kandidat)
-                    ->orWhereIn('legacy_npwpd', $kandidat)
-                    ->get()
+                $urutAktif(
+                    ObjectNumberRegistry::where(fn ($q) => $q->whereIn('legacy_code', $kandidat)->orWhereIn('legacy_npwpd', $kandidat))
+                )->get()
             );
         }
 
-        return $hasil->unique('id')->values()->all();
+        // Buang duplikat nomor: kalau nomor sama ada baris aktif & superseded, simpan yang aktif.
+        return $hasil
+            ->sortBy(fn ($r) => $r->status === 'aktif' ? 0 : 1)
+            ->unique(fn ($r) => trim((string) $r->nomor))
+            ->values()
+            ->all();
     }
 
     /**
