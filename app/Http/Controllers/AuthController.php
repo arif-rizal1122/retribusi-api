@@ -582,7 +582,21 @@ class AuthController extends Controller
         }
 
         $client = new \Google_Client(['client_id' => $clientId]);
-        $payload = $client->verifyIdToken($request->id_token);
+
+        // verifyIdToken() MELEMPAR exception untuk token cacat/kedaluwarsa
+        // (bukan mengembalikan null) -> wajib dibungkus try/catch supaya
+        // token invalid dijawab 401, bukan 500 Server Error.
+        try {
+            $payload = $client->verifyIdToken($request->id_token);
+        } catch (\Throwable $e) {
+            \Log::warning('Google login: verifyIdToken gagal', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Token Google tidak valid atau telah kedaluwarsa.',
+            ], 401);
+        }
 
         if (! $payload) {
             return response()->json([
