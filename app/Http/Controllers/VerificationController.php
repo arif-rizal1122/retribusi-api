@@ -269,6 +269,7 @@ class VerificationController extends Controller
             'completed_at' => $latestTask->completed_at,
             'has_photo' => !empty($latestTask->completion_photo_path),
             'notes' => $latestTask->notes,
+            'late_reason' => $latestTask->late_reason,
         ];
 
         if ($latestTask->status !== 'completed') {
@@ -384,6 +385,7 @@ class VerificationController extends Controller
             'created_by_name' => $task->creator?->name,
             'completion_photo_path' => $photoUrl ?? $task->completion_photo_path,
             'completion_photo_url' => $photoUrl,
+            'late_reason' => $task->late_reason,
         ];
     }
 }
