@@ -169,6 +169,64 @@ class RusunRoomController extends Controller
     }
 
     /**
+     * Daftar semua kamar (available, occupied, maintenance) untuk mode klaim warga.
+     */
+    public function allRooms(Request $request): JsonResponse
+    {
+        $complex = strtolower($request->input('complex_code') ?? $request->input('complex') ?? '');
+        if (empty($complex)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parameter complex atau complex_code wajib diisi.',
+            ], 422);
+        }
+
+        $request->validate([
+            'floor' => 'required|integer',
+        ]);
+
+        $floor = (int) $request->input('floor');
+
+        if (! Schema::hasTable('rusun_rooms')) {
+            return response()->json([
+                'success' => true,
+                'complex' => $complex,
+                'floor' => $floor,
+                'data' => [],
+            ]);
+        }
+
+        $rooms = RusunRoom::with([
+            'assetItem:id,name,code,tarif_default,satuan_tarif,lokasi',
+            'currentRental.taxpayer:id,name,nik',
+        ])
+            ->where('complex_code', $complex)
+            ->where('floor', $floor)
+            ->orderBy('room_number', 'asc')
+            ->get();
+
+        $data = $rooms->map(function ($room) {
+            $arr = $room->toArray();
+            $tenant = $room->currentRental?->taxpayer;
+            $arr['tenant_name_masked'] = $tenant ? \App\Support\NopHelper::maskName($tenant->name) : null;
+            $arr['status_label'] = match ($room->status) {
+                'occupied' => 'Sudah Terisi',
+                'maintenance' => 'Pemeliharaan',
+                default => 'Kosong (Tersedia)',
+            };
+
+            return $arr;
+        });
+
+        return response()->json([
+            'success' => true,
+            'complex' => $complex,
+            'floor' => $floor,
+            'data' => $data,
+        ]);
+    }
+
+    /**
      * Daftar semua kamar untuk admin Disperkim (scope OPD).
      */
     public function adminRooms(Request $request): JsonResponse
