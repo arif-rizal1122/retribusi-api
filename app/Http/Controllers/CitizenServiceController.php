@@ -340,8 +340,10 @@ class CitizenServiceController extends Controller
         if (empty($metadata['nama_usaha']) && $request->filled('name')) {
             $metadata['nama_usaha'] = $request->input('name');
         }
-        if (empty($metadata['alamat_usaha']) && $request->filled('address')) {
-            $metadata['alamat_usaha'] = $request->input('address');
+        foreach (['alamat_usaha', 'alamat_lokasi', 'lokasi', 'alamat'] as $addrKey) {
+            if (empty($metadata[$addrKey]) && $request->filled('address')) {
+                $metadata[$addrKey] = $request->input('address');
+            }
         }
         if (empty($metadata['koordinat_usaha']) && $request->filled('latitude') && $request->filled('longitude')) {
             $metadata['koordinat_usaha'] = $request->input('latitude').','.$request->input('longitude');
@@ -892,12 +894,27 @@ class CitizenServiceController extends Controller
     {
         foreach ($schema as $field) {
             $key = $field['key'] ?? null;
-            if (! $key || array_key_exists($key, $metadata)) {
+            if (! $key) {
                 continue;
             }
 
-            if (array_key_exists('default_value', $field)) {
+            $currentVal = $metadata[$key] ?? null;
+            $isEmpty = $currentVal === null || (is_string($currentVal) && trim($currentVal) === '');
+            if (! $isEmpty) {
+                continue;
+            }
+
+            if (array_key_exists('default_value', $field) && $field['default_value'] !== null && $field['default_value'] !== '') {
                 $metadata[$key] = $field['default_value'];
+                continue;
+            }
+
+            if (($field['type'] ?? '') === 'select' && ! empty($field['options']) && is_array($field['options'])) {
+                $firstOpt = reset($field['options']);
+                $optVal = is_array($firstOpt) ? ($firstOpt['value'] ?? $firstOpt['label'] ?? null) : $firstOpt;
+                if ($optVal !== null && $optVal !== '') {
+                    $metadata[$key] = $optVal;
+                }
             }
         }
 
@@ -907,6 +924,19 @@ class CitizenServiceController extends Controller
     private function missingRequiredMetadata(array $schema, array $metadata): array
     {
         $errors = [];
+
+        $hiddenFrontendKeys = [
+            'tarif_flat', 'tarif_per_satuan', 'total_biaya', 'rate_amount', 'tarif', 'tarif_dasar', 'noptkp', 'npop',
+            'kuantitas', 'durasi', 'jenis_layanan', 'jenis_fasilitas',
+            'nama_pemohon', 'nama_pengguna', 'nama_wajib_pajak', 'nama_subjek', 'nama_pemilik',
+            'nik', 'nik_pemohon', 'no_ktp', 'telepon', 'no_hp', 'email', 'identitas_pemohon',
+            'legal_consent', 'persetujuan', 'pernyataan',
+            'nama_usaha', 'alamat_usaha', 'koordinat_usaha', 'alamat_lokasi', 'lokasi_google_maps', 'koordinat',
+            'jumlah_karyawan', 'jam_operasional', 'tarif_kamar_min', 'tarif_kamar_max', 'occupancy_rate',
+            'luas_parkir', 'kapasitas_kendaraan', 'kapasitas_pengunjung', 'jumlah_ruangan',
+            'kode_aset', 'opd_pengelola', 'unit_pengelola', 'pic',
+            'njopr', 'nspr', 'znt', 'hda', 'koefisien', 'harga_satuan_njtl', 'estimasi_kwh_bulanan', 'pokok_provinsi',
+        ];
 
         foreach ($schema as $field) {
             if (! ($field['required'] ?? false)) {
@@ -918,8 +948,17 @@ class CitizenServiceController extends Controller
                 continue;
             }
 
+            $type = strtolower((string) ($field['type'] ?? ''));
+            if (in_array($type, ['upload', 'file', 'badge', 'label', 'info', 'heading', 'divider'], true)) {
+                continue;
+            }
+
             // Field readonly seperti HDA, luas reklame, penjualan walet tidak diisi manual oleh warga
             if (! empty($field['readonly'])) {
+                continue;
+            }
+
+            if (in_array(strtolower($key), $hiddenFrontendKeys, true)) {
                 continue;
             }
 
