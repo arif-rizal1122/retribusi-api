@@ -65,11 +65,13 @@ class AnomalyDetectionJob implements ShouldQueue
 
         foreach ($taxObjects as $obj) {
             // Get reported revenue (SPTPD) for current period
+            // Kolom: 'turnover_amount' (= omzet dilaporkan), BUKAN 'reported_revenue'.
+            // Kolom periode: 'period' berformat 'M-YYYY' tanpa leading zero
+            // (contoh: '2-2026', '12-2025'), BUKAN kolom tanggal 'period_date'.
             $reportedRevenue = DB::table('monthly_reports')
                 ->where('taxpayer_id', $obj->taxpayer_id)
-                ->whereMonth('period_date', $currentMonth)
-                ->whereYear('period_date', $currentYear)
-                ->sum('reported_revenue');
+                ->where('period', $currentMonth . '-' . $currentYear)
+                ->sum('turnover_amount');
 
             // Get system-expected revenue (from billing)
             $expectedRevenue = DB::table('bills')
