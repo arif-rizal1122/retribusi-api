@@ -316,14 +316,6 @@ class PetugasTaskController extends Controller
                 ->update($objectUpdates);
         }
 
-        // Auto-approve the verification document directly when surveyor completes task
-        if ($validated['status'] === 'completed' && $task->verification_id) {
-            \App\Models\Verification::whereKey($task->verification_id)->update([
-                'status' => 'approved',
-                'verified_at' => now(),
-                'verifier_id' => $user->id,
-            ]);
-        }
 
         return response()->json([
             'status' => 'success',

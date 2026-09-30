@@ -22,8 +22,9 @@ class RegistrationVerificationService
 
             // ═══ STATE GUARD: Pagar Validasi Alur Verifikasi ═══
             // Jika admin mencoba approve, periksa apakah layanan ini wajib survei lapangan
+            // Bypassed: Admin diizinkan melakukan approve tanpa penugasan lapangan
             if ($status === 'approved' && $verification->tax_object_id) {
-                $this->assertFieldSurveyCompleted($verification);
+                // $this->assertFieldSurveyCompleted($verification);
             }
 
             $verification->update([
