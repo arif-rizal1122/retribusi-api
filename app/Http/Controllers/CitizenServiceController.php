@@ -17,6 +17,7 @@ use App\Services\PbbBapendaService;
 use App\Services\RequirementFileService;
 use App\Services\TaxCalculationService;
 use App\Services\WaGatewayService;
+use App\Support\NopHelper;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1100,6 +1101,201 @@ class CitizenServiceController extends Controller
         }
 
         return response()->json(['data' => $allPending]);
+    }
+
+    /**
+     * Cari objek pajak / retribusi terdaftar (berdasarkan NOP, NPWPD, nama usaha, atau NOPD)
+     * Digunakan untuk alur "Cek & Klaim Dulu" di aplikasi warga.
+     */
+    public function objectLookup(Request $request)
+    {
+        $citizen = $this->authenticatedTaxpayer($request);
+
+        $request->validate([
+            'q' => 'required|string|min:2',
+            'classification_id' => 'nullable|integer',
+            'limit' => 'nullable|integer|min:1|max:50',
+        ]);
+
+        $q = trim((string) $request->input('q'));
+        $classificationId = $request->input('classification_id');
+        $limit = (int) $request->input('limit', 15);
+        if ($limit < 1 || $limit > 50) {
+            $limit = 15;
+        }
+
+        $query = TaxObject::query()
+            ->with([
+                'taxpayer',
+                'classification',
+                'retributionType',
+                'bills' => function ($b) {
+                    $b->whereIn('status', ['unpaid', 'pending', 'overdue']);
+                },
+            ]);
+
+        if ($classificationId) {
+            $query->where('retribution_classification_id', $classificationId);
+        }
+
+        // Cari berdasarkan: NOP (legacy/baru), Nama Objek Usaha, Alamat, atau NPWPD/Nama Wajib Pajak
+        $query->where(function ($sub) use ($q) {
+            $sub->where('nop', 'like', "%{$q}%")
+                ->orWhere('name', 'like', "%{$q}%")
+                ->orWhere('address', 'like', "%{$q}%")
+                ->orWhereHas('taxpayer', function ($tpQ) use ($q) {
+                    $tpQ->where('npwpd', 'like', "%{$q}%")
+                        ->orWhere('name', 'like', "%{$q}%");
+                });
+        });
+
+        $objects = $query->take($limit)->get();
+
+        $results = $objects->map(function (TaxObject $obj) use ($citizen) {
+            $linkedTaxpayer = $obj->taxpayer;
+
+            // Claimable jika terhubung ke taxpayer hasil impor legacy (belum punya google_id dan belum punya email)
+            // ATAU belum punya taxpayer sama sekali
+            $isUnclaimedLegacy = $linkedTaxpayer
+                && empty($linkedTaxpayer->google_id)
+                && empty($linkedTaxpayer->email);
+
+            $isMine = ($obj->taxpayer_id === $citizen->id);
+
+            $isClaimable = (! $isMine) && ($isUnclaimedLegacy || empty($obj->taxpayer_id));
+
+            $unpaidBills = $obj->bills ?? collect();
+            $unpaidCount = $unpaidBills->count();
+            $totalUnpaid = (float) $unpaidBills->sum('amount');
+
+            // Ekstrak info legacy dari metadata bila ada
+            $metadata = $obj->metadata ?? [];
+            $legacyTable = $metadata['legacy_table'] ?? null;
+            $legacyTarif = $metadata['tarif_pajak'] ?? null;
+
+            return [
+                'id' => $obj->id,
+                'name' => $obj->name,
+                'nop' => $obj->nop,
+                'address' => $obj->address,
+                'district' => $obj->district,
+                'sub_district' => $obj->sub_district,
+                'classification_id' => $obj->retribution_classification_id,
+                'classification_name' => $obj->classification?->name,
+                'retribution_type_name' => $obj->retributionType?->name,
+                'taxpayer_name' => $isMine
+                    ? ($citizen->name ?? 'Anda')
+                    : NopHelper::maskName($linkedTaxpayer?->name ?? 'Wajib Pajak'),
+                'npwpd' => $linkedTaxpayer?->npwpd,
+                'is_claimable' => $isClaimable,
+                'is_mine' => $isMine,
+                'claimed_status' => $isMine ? 'mine' : ($isClaimable ? 'unclaimed' : 'claimed_by_other'),
+                'legacy_table' => $legacyTable,
+                'legacy_tarif' => $legacyTarif,
+                'unpaid_bills_count' => $unpaidCount,
+                'total_unpaid_amount' => $totalUnpaid,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'query' => $q,
+            'count' => $results->count(),
+            'data' => $results,
+        ]);
+    }
+
+    /**
+     * Klaim kepemilikan objek pajak legacy ke akun warga yang login.
+     */
+    public function claimObject(Request $request)
+    {
+        $citizen = $this->authenticatedTaxpayer($request);
+
+        $request->validate([
+            'tax_object_id' => 'required|integer',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        if (empty($citizen->nik)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lengkapi NIK Anda pada profil akun terlebih dahulu sebelum mengklaim objek pajak.',
+            ], 422);
+        }
+
+        $taxObject = TaxObject::with('taxpayer')->findOrFail($request->input('tax_object_id'));
+
+        // Jika objek sudah milik akun ini
+        if ($taxObject->taxpayer_id === $citizen->id) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Objek pajak ini sudah terdaftar di akun Anda.',
+                'data' => $taxObject,
+            ]);
+        }
+
+        $linkedTaxpayer = $taxObject->taxpayer;
+        $isUnclaimedLegacy = $linkedTaxpayer
+            && empty($linkedTaxpayer->google_id)
+            && empty($linkedTaxpayer->email);
+
+        $isClaimable = ($isUnclaimedLegacy || empty($taxObject->taxpayer_id));
+
+        if (! $isClaimable) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Objek pajak ini sudah diklaim oleh akun warga lain. Silakan hubungi loket Bapenda jika Anda adalah pemilik yang sah.',
+            ], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $previousTaxpayerId = $taxObject->taxpayer_id;
+            $metadata = $taxObject->metadata ?? [];
+            $metadata['claimed_at'] = now()->toIso8601String();
+            $metadata['claimed_by_taxpayer_id'] = $citizen->id;
+            $metadata['previous_taxpayer_id'] = $previousTaxpayerId;
+            if ($request->filled('notes')) {
+                $metadata['claim_notes'] = $request->input('notes');
+            }
+
+            $taxObject->taxpayer_id = $citizen->id;
+            $taxObject->metadata = $metadata;
+            $taxObject->save();
+
+            // Jika objek memiliki tagihan atas nama taxpayer legacy lama, alihkan ke warga
+            if ($previousTaxpayerId) {
+                Bill::where('tax_object_id', $taxObject->id)
+                    ->where('taxpayer_id', $previousTaxpayerId)
+                    ->update(['taxpayer_id' => $citizen->id]);
+            }
+
+            // Jika akun warga belum memiliki NPWPD tapi objek legacy memiliki NPWPD, sinkronkan ke akun warga
+            if (empty($citizen->npwpd) && ! empty($linkedTaxpayer?->npwpd)) {
+                $citizen->npwpd = $linkedTaxpayer->npwpd;
+                $citizen->save();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Objek '{$taxObject->name}' berhasil diklaim dan ditambahkan ke akun Anda.",
+                'data' => $taxObject->load(['classification', 'retributionType', 'taxpayer']),
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Gagal mengklaim objek pajak: ' . $e->getMessage(), [
+                'citizen_id' => $citizen->id,
+                'tax_object_id' => $taxObject->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem saat memproses klaim objek. Silakan coba beberapa saat lagi.',
+            ], 500);
+        }
     }
 
     private function authenticatedTaxpayer(Request $request): Taxpayer

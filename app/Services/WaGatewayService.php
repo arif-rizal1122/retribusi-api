@@ -66,13 +66,38 @@ class WaGatewayService
     }
 
     /**
-     * Send OTP via WhatsApp
+     * Send OTP via WhatsApp (Matches NOTIF-WRG-001 official template)
      */
     public function sendOtp(string $phone, string $otp): bool
     {
         try {
-            $message = "Halo! Ini adalah kode OTP M-PAD Kota Baubau Anda: *$otp*\n\nKode ini bersifat rahasia. JANGAN BERIKAN kepada siapapun termasuk petugas Bapenda.\n\nBerlaku selama 5 menit.";
-            $sent = $this->sendMessage($phone, $message);
+            $message = "*[M-PAD KOTA BAUBAU - KODE KEAMANAN]*\n\n"
+                     . "Yth. Warga Kota Baubau,\n\n"
+                     . "Berikut adalah Kode Keamanan (OTP) Anda untuk masuk ke sistem M-PAD:\n\n"
+                     . "👉 *{$otp}* 👈\n\n"
+                     . "Kode ini berlaku selama *5 menit*.\n\n"
+                     . "⚠️ *PERINGATAN KEAMANAN:*\n\n"
+                     . "JANGAN PERNAH membagikan kode ini kepada siapa pun, termasuk pihak yang mengaku sebagai petugas Bapenda atau Pemkot Baubau. Petugas resmi tidak pernah meminta kode OTP Anda.\n\n"
+                     . "Sistem M-PAD Badan Pendapatan Daerah Kota Baubau.";
+
+            $sent = $this->sendMessage($phone, $message, 'high');
+
+            try {
+                \App\Models\NotificationLog::create([
+                    'phone' => $phone,
+                    'channel' => 'whatsapp',
+                    'type' => 'NOTIF-WRG-001',
+                    'template_code' => 'NOTIF-WRG-001',
+                    'reference_type' => 'auth_otp',
+                    'message_preview' => mb_substr($message, 0, 500),
+                    'status' => $sent ? 'success' : 'failed',
+                    'sent_at' => $sent ? now() : null,
+                    'delivered_at' => $sent ? now() : null,
+                ]);
+            } catch (\Throwable $logEx) {
+                Log::warning('WaGatewayService: Failed to log OTP to notification_logs: '.$logEx->getMessage());
+            }
+
             if (! $sent && app()->environment('local', 'testing')) {
                 Log::info("[DEV WA OTP] Nomor: {$phone} | Kode OTP: {$otp}");
 
@@ -95,7 +120,7 @@ class WaGatewayService
     /**
      * Send general message via WhatsApp
      */
-    public function sendMessage(string $phone, string $message): bool
+    public function sendMessage(string $phone, string $message, string $priority = 'high'): bool
     {
         try {
             $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
@@ -103,13 +128,14 @@ class WaGatewayService
                 $cleanPhone = '62'.substr($cleanPhone, 1);
             }
 
-            $response = Http::timeout(10)->post("{$this->baseUrl}/send-message", [
+            $response = Http::timeout(20)->post("{$this->baseUrl}/send-message", [
                 'number' => $cleanPhone,
                 'message' => $message,
+                'priority' => $priority,
             ]);
 
             if ($response->successful()) {
-                Log::info("WhatsApp message sent to +{$cleanPhone} successfully.");
+                Log::info("WhatsApp message sent to +{$cleanPhone} successfully (Priority: {$priority}).");
 
                 return true;
             }
