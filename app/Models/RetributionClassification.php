@@ -21,6 +21,9 @@ class RetributionClassification extends Model
         'retribution_type_id',
         'name',
         'is_self_assessment',
+        'requires_field_survey',
+        'approval_method',
+        'field_check_params',
         'code',
         'description',
         'is_active',
@@ -33,11 +36,32 @@ class RetributionClassification extends Model
 
     protected $casts = [
         'is_self_assessment' => 'boolean',
+        'requires_field_survey' => 'boolean',
         'is_active' => 'boolean',
         'form_schema' => 'array',
         'requirements' => 'array',
         'bank_accounts' => 'array',
+        'field_check_params' => 'array',
     ];
+
+    /**
+     * Apakah layanan ini memerlukan survei lapangan sebelum approval?
+     */
+    public function requiresFieldSurvey(): bool
+    {
+        // default(false): layanan TIDAK wajib survei kecuali diaktifkan per layanan.
+        // Keputusan Bang Dadan 30 Sep 2026 — default true membuat SEMUA approval
+        // verifikasi terblokir di production.
+        return (bool) ($this->requires_field_survey ?? false);
+    }
+
+    /**
+     * Apakah layanan ini bisa di-approve tanpa survei lapangan?
+     */
+    public function canApproveWithoutSurvey(): bool
+    {
+        return in_array($this->approval_method, ['document_review', 'automatic'], true);
+    }
 
 
 

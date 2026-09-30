@@ -34,17 +34,23 @@ class FormulaParserService
                 continue;
             }
 
+            // WAJIB cocokkan sebagai identifier UTUH, bukan substring.
+            // str_ireplace() dulu mengganti 'harga' di dalam 'harga_satuan_njtl'
+            // sehingga menyisakan '9999999_satuan_njtl' -> syntax error di eval().
+            // Lookaround: karakter sebelum/sesudah tidak boleh alfanumerik atau '_'.
+            $pattern = '/(?<![0-9a-zA-Z_])' . preg_quote($key, '/') . '(?![0-9a-zA-Z_])/i';
+
             $numericValue = $this->normalizeNumericVariable($value);
             if ($numericValue !== null) {
                 $formattedValue = number_format($numericValue, 10, '.', '');
                 $formattedValue = rtrim(rtrim($formattedValue, '0'), '.');
-                $formula = str_ireplace($key, $formattedValue, $formula);
+                $formula = preg_replace($pattern, $formattedValue, $formula);
             } else {
                 // For strings, create a new literal placeholder to avoid mangling
                 $escapedValue = '"'.addslashes((string) $value).'"';
                 $placeholder = '___LIT_VAR_'.count($literals).'___';
                 $literals[$placeholder] = $escapedValue;
-                $formula = str_ireplace($key, $placeholder, $formula);
+                $formula = preg_replace($pattern, $placeholder, $formula);
             }
         }
 

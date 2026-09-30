@@ -325,7 +325,7 @@ class CorrectionService
             . "Pajak baru:       Rp " . $newTaxStr . "\n"
             . "Alasan: " . $reason . "\n"
             . "Waktu: " . Carbon::now()->format('d M Y H:i') . "\n\n"
-            . "Cek riwayat di https://sipanda.online";
+            . "Cek riwayat di https://mpad.baubaukota.go.id";
 
         try {
             $this->waGateway->sendMessage($taxpayer->phone, $message);

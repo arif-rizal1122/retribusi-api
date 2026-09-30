@@ -19,6 +19,13 @@ class RegistrationVerificationService
     public function updateStatus(Verification $verification, string $status, ?string $notes, User $user): Verification
     {
         return DB::transaction(function () use ($verification, $status, $notes, $user) {
+
+            // ═══ STATE GUARD: Pagar Validasi Alur Verifikasi ═══
+            // Jika admin mencoba approve, periksa apakah layanan ini wajib survei lapangan
+            if ($status === 'approved' && $verification->tax_object_id) {
+                $this->assertFieldSurveyCompleted($verification);
+            }
+
             $verification->update([
                 'status' => $status,
                 'notes' => $notes,
@@ -40,8 +47,75 @@ class RegistrationVerificationService
 
             $this->notifyTaxpayerVerificationResult($updated, $status, $notes);
 
+            // ═══ AUDIT TRAIL: Pencatatan Jejak Aksi ═══
+            \Illuminate\Support\Facades\Log::info('Verification status updated', [
+                'verification_id' => $verification->id,
+                'tax_object_id' => $verification->tax_object_id,
+                'old_status' => $verification->getOriginal('status'),
+                'new_status' => $status,
+                'admin_id' => $user->id,
+                'admin_name' => $user->name,
+                'timestamp' => Carbon::now()->toIso8601String(),
+            ]);
+
             return $updated;
         });
+    }
+
+    /**
+     * ═══ STATE GUARD: Pagar Validasi Survei Lapangan ═══
+     *
+     * Memastikan bahwa permohonan dengan jenis layanan "Wajib Survei Lapangan"
+     * TIDAK BISA disetujui jika:
+     * 1. Belum ada penugasan lapangan aktif (PetugasTask)
+     * 2. Penugasan belum berstatus 'completed'
+     * 3. Laporan lapangan belum memuat bukti foto dan koordinat
+     */
+    private function assertFieldSurveyCompleted(Verification $verification): void
+    {
+        $taxObject = TaxObject::withoutGlobalScopes()
+            ->with('classification')
+            ->find($verification->tax_object_id);
+
+        if (!$taxObject || !$taxObject->classification) {
+            return; // Tidak ada klasifikasi = tidak ada aturan khusus
+        }
+
+        $classification = $taxObject->classification;
+
+        // Jika layanan TIDAK wajib survei lapangan, izinkan langsung
+        if (!$classification->requiresFieldSurvey()) {
+            return;
+        }
+
+        // Cari penugasan field_survey untuk tax_object ini
+        $completedSurvey = \App\Models\PetugasTask::where('tax_object_id', $taxObject->id)
+            ->where('task_type', 'field_survey')
+            ->where('status', 'completed')
+            ->latest('completed_at')
+            ->first();
+
+        $errors = [];
+
+        // 1. Belum ada penugasan sama sekali atau belum selesai
+        $anyTask = \App\Models\PetugasTask::where('tax_object_id', $taxObject->id)
+            ->where('task_type', 'field_survey')
+            ->exists();
+
+        if (!$anyTask) {
+            $errors['field_survey'] = 'Layanan ini wajib survei lapangan. Silakan tugaskan petugas lapangan terlebih dahulu sebelum menyetujui.';
+        } elseif (!$completedSurvey) {
+            $errors['field_survey'] = 'Penugasan survei lapangan belum selesai. Tunggu petugas menyelesaikan dan mengunggah laporan lapangan.';
+        } else {
+            // 2. Periksa kelengkapan bukti lapangan
+            if (empty($completedSurvey->completion_photo_path)) {
+                $errors['completion_photo'] = 'Laporan lapangan belum memuat foto bukti fisik dari petugas.';
+            }
+        }
+
+        if (!empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 
     private function notifyTaxpayerVerificationResult(Verification $verification, string $status, ?string $notes): void

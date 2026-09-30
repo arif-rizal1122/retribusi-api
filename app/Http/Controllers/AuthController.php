@@ -582,7 +582,21 @@ class AuthController extends Controller
         }
 
         $client = new \Google_Client(['client_id' => $clientId]);
-        $payload = $client->verifyIdToken($request->id_token);
+
+        // verifyIdToken() MELEMPAR exception untuk token cacat/kedaluwarsa
+        // (bukan mengembalikan null) -> wajib dibungkus try/catch supaya
+        // token invalid dijawab 401, bukan 500 Server Error.
+        try {
+            $payload = $client->verifyIdToken($request->id_token);
+        } catch (\Throwable $e) {
+            \Log::warning('Google login: verifyIdToken gagal', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Token Google tidak valid atau telah kedaluwarsa.',
+            ], 401);
+        }
 
         if (! $payload) {
             return response()->json([
@@ -609,13 +623,54 @@ class AuthController extends Controller
             ], 403);
         }
 
-        return DB::transaction(function () use ($googleId, $email, $name, $avatar) {
-            // Cari taxpayer existing by google_id ATAU email
-            $taxpayer = Taxpayer::where('google_id', $googleId)
-                ->orWhere('email', $email)
-                ->first();
+        try {
+            return DB::transaction(function () use ($googleId, $email, $name, $avatar) {
+            // Cari taxpayer existing: google_id dan email diperiksa TERPISAH.
+            // PENTING: sebelumnya memakai ->orWhere('email')->first() yang bisa
+            // mengembalikan baris acak saat google_id dan email menunjuk ke DUA
+            // akun berbeda (kasus 1754 vs 2612, 30 Sep 2026). Akibatnya update
+            // google_id menabrak unique constraint -> 500 mentah ke warga.
+            $byGoogle = Taxpayer::where('google_id', $googleId)->first();
+            $byEmail = $email ? Taxpayer::where('email', $email)->first() : null;
+
+            // Lapis 1 — deteksi akun ganda: satu orang punya 2 baris.
+            // Dijawab 409 Conflict (bukan 500) + dicatat untuk tindak lanjut.
+            if ($byGoogle && $byEmail && $byGoogle->id !== $byEmail->id) {
+                \Log::warning('Google login: akun bentrok (google_id vs email)', [
+                    'google_id_row' => $byGoogle->id,
+                    'email_row' => $byEmail->id,
+                    'email' => $email,
+                ]);
+
+                return response()->json([
+                    'message' => 'Akun Anda terdeteksi ganda pada sistem. '
+                        .'Silakan hubungi petugas M-PAD untuk penggabungan akun.',
+                    'code' => 'ACCOUNT_CONFLICT',
+                ], 409);
+            }
+
+            $taxpayer = $byGoogle ?: $byEmail;
 
             if ($taxpayer) {
+                // Lapis 2 — jaring pengaman: pastikan google_id belum dipegang
+                // baris lain sebelum menulis (cegah unique constraint violation).
+                $owner = Taxpayer::where('google_id', $googleId)
+                    ->where('id', '!=', $taxpayer->id)
+                    ->first();
+
+                if ($owner) {
+                    \Log::warning('Google login: google_id sudah dipakai baris lain', [
+                        'target_row' => $taxpayer->id,
+                        'owner_row' => $owner->id,
+                    ]);
+
+                    return response()->json([
+                        'message' => 'Akun Anda terdeteksi ganda pada sistem. '
+                            .'Silakan hubungi petugas M-PAD untuk penggabungan akun.',
+                        'code' => 'ACCOUNT_CONFLICT',
+                    ], 409);
+                }
+
                 // Link Google ID jika belum terpasang
                 $updates = [];
                 if (! $taxpayer->google_id) {
@@ -672,7 +727,22 @@ class AuthController extends Controller
                 'token_type' => 'Bearer',
                 'message' => 'Login berhasil (Google)',
             ]);
-        });
+            });
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            // Lapis 3 — jaring terakhir: bila lapis 1 & 2 terlewat (race condition
+            // antar request paralel), pelanggaran unique TIDAK dijawab 500 mentah.
+            \Log::error('Google login: tabrakan unique constraint', [
+                'google_id' => $googleId,
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Terjadi bentrok data akun pada sistem. '
+                    .'Petugas M-PAD telah dicatat untuk menindaklanjuti.',
+                'code' => 'ACCOUNT_CONFLICT',
+            ], 409);
+        }
     }
 
     /**

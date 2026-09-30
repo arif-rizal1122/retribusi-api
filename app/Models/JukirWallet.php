@@ -20,6 +20,13 @@ class JukirWallet extends Model
         'settled',
         'settled_at',
         'settled_by',
+        'total_cash_collected',
+        'total_qris_collected',
+        'jukir_share_amount',
+        'korlap_share_amount',
+        'net_kasda_due',
+        'settlement_status',
+        'handshake_qr_token',
     ];
 
     protected $casts = [
@@ -29,6 +36,11 @@ class JukirWallet extends Model
         'settled_at' => 'datetime',
         'total_cash' => 'decimal:2',
         'total_qris' => 'decimal:2',
+        'total_cash_collected' => 'decimal:2',
+        'total_qris_collected' => 'decimal:2',
+        'jukir_share_amount' => 'decimal:2',
+        'korlap_share_amount' => 'decimal:2',
+        'net_kasda_due' => 'decimal:2',
         'total_sessions' => 'integer',
         'settled' => 'boolean',
     ];

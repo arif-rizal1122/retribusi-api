@@ -63,6 +63,7 @@ use App\Http\Controllers\NotarisApprovalController;
 use App\Http\Controllers\ObjectNumberController;
 use App\Http\Controllers\OpdController;
 use App\Http\Controllers\OpdSectorDataController;
+use App\Http\Controllers\KalkulatorJukirController;
 use App\Http\Controllers\ParkingController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PbbBapendaController;
@@ -176,6 +177,16 @@ Route::prefix('public')->group(function () {
     Route::post('/register-taxpayer', [PublicRegistrationController::class, 'register']);
     Route::get('/mblb-vehicles', [MblbVehicleController::class, 'index']);
 });
+
+// Public: Kalkulator / Kelola Bisnis Jukir Mitra (Simulasi & Onboarding Perda 1/2024)
+$jukirRoutes = function () {
+    Route::get('/zones', [KalkulatorJukirController::class, 'zones']);
+    Route::post('/simulate', [KalkulatorJukirController::class, 'simulate']);
+    Route::middleware('auth:sanctum')->post('/apply', [KalkulatorJukirController::class, 'apply']);
+};
+Route::prefix('v1/kalkulator/jukir')->group($jukirRoutes);
+Route::prefix('v1/kelola-bisnis/jukir')->group($jukirRoutes);
+Route::prefix('kelola-bisnis/jukir')->group($jukirRoutes);
 
 Route::post('/simulate-tax', function (Request $request) {
     $request->validate([
@@ -371,6 +382,8 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
     Route::group(['prefix' => 'citizen'], function () {
         Route::get('/bills', [BillController::class, 'citizenBills']);
         Route::get('/tax-objects', [CitizenServiceController::class, 'taxObjects']);
+        Route::post('/tax-objects/lookup', [CitizenServiceController::class, 'objectLookup']);
+        Route::post('/tax-objects/claim', [CitizenServiceController::class, 'claimObject']);
 
         // ASET DAERAH (JU-ASET) — kategori, unit, form template, sewa
         Route::get('/asset/categories', [CitizenAssetController::class, 'categories']);
@@ -385,6 +398,7 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
         Route::get('/rusun/complexes', [RusunRoomController::class, 'complexes']);
         Route::get('/rusun/floors', [RusunRoomController::class, 'floors']);
         Route::get('/rusun/rooms', [RusunRoomController::class, 'availableRooms']);
+        Route::get('/rusun/all-rooms', [RusunRoomController::class, 'allRooms']);
         Route::get('/rusun/available-rooms', [RusunRoomController::class, 'availableRooms']);
 
         // Pembayaran
@@ -401,6 +415,15 @@ Route::group(['middleware' => ['auth:sanctum', 'scope_user']], function () {
             Route::get('/aft-history', [KalkulatorBisnisController::class, 'getAftHistory']);
             Route::get('/aft-availability', [KalkulatorBisnisController::class, 'getAftAvailability']);
         });
+
+        // Jukir Mitra Onboarding (/kelola-bisnis/jukir)
+        $citizenJukirRoutes = function () {
+            Route::get('/zones', [KalkulatorJukirController::class, 'zones']);
+            Route::post('/simulate', [KalkulatorJukirController::class, 'simulate']);
+            Route::post('/apply', [KalkulatorJukirController::class, 'apply']);
+        };
+        Route::prefix('kelola-bisnis/jukir')->group($citizenJukirRoutes);
+        Route::prefix('kalkulator/jukir')->group($citizenJukirRoutes);
 
         Route::post('/reports', [MonthlyReportController::class, 'store']);
         Route::get('/reports', [MonthlyReportController::class, 'index']);
