@@ -60,10 +60,21 @@ class StagingUserSeeder extends Seeder
         ];
 
         foreach ($users as $data) {
-            User::updateOrCreate(
-                ['email' => $data['email']],
-                $data
-            );
+            if (in_array($data['role'], ['wajib_pajak', 'citizen'])) {
+                \App\Models\Taxpayer::updateOrCreate(
+                    ['email' => $data['email']],
+                    [
+                        'name' => $data['name'],
+                        'password' => $data['password'],
+                        'is_active' => true,
+                    ]
+                );
+            } else {
+                User::updateOrCreate(
+                    ['email' => $data['email']],
+                    $data
+                );
+            }
             $this->command->info("✅ User seeded: {$data['email']} [{$data['role']}]");
         }
 

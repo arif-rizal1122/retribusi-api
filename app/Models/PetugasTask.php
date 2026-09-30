@@ -18,6 +18,7 @@ class PetugasTask extends Model
         'status',
         'completed_at',
         'completion_photo_path',
+        'late_reason',
         'created_by'
     ];
 

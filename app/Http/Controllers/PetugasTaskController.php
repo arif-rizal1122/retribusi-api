@@ -287,6 +287,7 @@ class PetugasTaskController extends Controller
         $validated = $request->validate([
             'status' => 'required|in:pending,completed',
             'notes' => 'nullable|string',
+            'late_reason' => 'nullable|string',
             'photo' => 'nullable|image|max:2048',
         ]);
 
@@ -313,6 +314,15 @@ class PetugasTaskController extends Controller
             TaxObject::withoutGlobalScopes()
                 ->whereKey($task->tax_object_id)
                 ->update($objectUpdates);
+        }
+
+        // Auto-approve the verification document directly when surveyor completes task
+        if ($validated['status'] === 'completed' && $task->verification_id) {
+            \App\Models\Verification::whereKey($task->verification_id)->update([
+                'status' => 'approved',
+                'verified_at' => now(),
+                'verifier_id' => $user->id,
+            ]);
         }
 
         return response()->json([

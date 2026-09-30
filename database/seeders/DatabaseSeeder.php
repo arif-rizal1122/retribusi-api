@@ -250,6 +250,8 @@ class DatabaseSeeder extends Seeder
         $this->call(AdminWilayahSeeder::class);
         $this->call(DemoLoginSeeder::class);
         $this->call(RusunRealDataSeeder::class);
+        $this->call(StagingUserSeeder::class);
+        $this->call(TaxAmnestySeeder::class);
 
         $this->command->info('Database seeded successfully!');
         $this->command->info('Super Admin: superadmin@sipanda.online / Mpad123#');

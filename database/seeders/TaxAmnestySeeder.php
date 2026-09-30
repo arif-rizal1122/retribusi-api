@@ -45,7 +45,7 @@ class TaxAmnestySeeder extends Seeder
         // 2. Get or Create Taxpayer & Metadata
         $opd = Opd::first();
         $type = RetributionType::first();
-        $taxpayer = Taxpayer::first();
+        $taxpayer = Taxpayer::where('email', 'wp.contoh@gmail.com')->first();
 
         if (!$taxpayer) {
             $taxpayer = Taxpayer::create([
@@ -55,6 +55,7 @@ class TaxAmnestySeeder extends Seeder
                 'phone' => '081234567890',
                 'address' => 'Jl. Merdeka No. 45',
                 'password' => bcrypt('password123'),
+                'is_active' => true,
             ]);
         }
 
