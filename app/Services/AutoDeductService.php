@@ -246,7 +246,7 @@ class AutoDeductService
             . "- Aplikasi M-PAD\n"
             . "- Teller Bank Sultra\n"
             . "- QRIS/VA\n"
-            . "- https://sipanda.online\n\n"
+            . "- https://mpad.baubaukota.go.id\n\n"
             . "Bayar sebelum jatuh tempo ya";
 
         try {
@@ -273,7 +273,7 @@ class AutoDeductService
             . $ntpdLine
             . "\nWaktu: " . $timeStr
             . "\n\nPajak Anda sudah lunas\n"
-            . "Cek riwayat: https://sipanda.online";
+            . "Cek riwayat: https://mpad.baubaukota.go.id";
 
         try {
             $this->waGateway->sendMessage($taxpayer->phone, $message);
